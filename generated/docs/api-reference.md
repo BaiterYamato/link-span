@@ -51,6 +51,7 @@ Versão da API: `0.4.0`. Versão do schema: `1`.
 | `ship.oot.player.set_weight` | `weight: string` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.player.weight` | — |
 | `ship.oot.player.set_roll_mode` | `mode: string` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.player.roll` | — |
 | `ship.oot.player.set_goron_body` | `enabled: boolean` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.player.goron_body` | — |
+| `ship.oot.player.set_held_item_model` | `slot: string`, `path: string` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.player.held_item_model` | — |
 | `ship.oot.spawn_dog` | — | `boolean` | `oot` | `experimental` | `0.3.0` | `oot.spawn_dog` | — |
 | `ship.log.debug` | `message: string` | `nil` | `common` | `stable` | `0.1.0` | — | `invalid_argument` |
 | `ship.log.info` | `message: string` | `nil` | `common` | `stable` | `0.1.0` | — | `invalid_argument` |
@@ -127,6 +128,7 @@ Versão da API: `0.4.0`. Versão do schema: `1`.
 | `oot.player.weight` | `contract` | `oot` | Alterna o peso do jogador entre normal e pesado (afunda na água, resiste a empurrão). |
 | `oot.player.roll` | `contract` | `oot` | Ativa rolamento contínuo e dirigível, encadeado indefinidamente. |
 | `oot.player.goron_body` | `contract` | `oot` | Substitui o corpo visual do jogador pelo esqueleto real do Goron do MM, lido ao vivo do mm.o2r cross-world. Some ao trocar de cena — precisa religar. |
+| `oot.player.held_item_model` | `contract` | `oot` | Desenha um DL arbitrário ancorado no osso da mão do jogador, atualizado todo frame — o mecanismo que a maioria dos itens customizados com modelo na mão precisa. |
 | `oot.ocarina` | `planned` | `oot` | Eventos e estado de ocarina de OoT. |
 | `oot.dungeon_keys` | `planned` | `oot` | Estado de chaves de dungeon de OoT. |
 | `oot.equipment` | `planned` | `oot` | Equipamento específico de OoT. |

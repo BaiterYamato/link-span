@@ -114,6 +114,7 @@ enum class FunctionId {
     ShipOotPlayerSetWeight,
     ShipOotPlayerSetRollMode,
     ShipOotPlayerSetGoronBody,
+    ShipOotPlayerSetHeldItemModel,
     ShipOotSpawnDog,
     ShipLogDebug,
     ShipLogInfo,
@@ -309,6 +310,12 @@ inline constexpr std::array<FieldBinding, 1> kShipOotPlayerSetGoronBodyArguments
 }};
 inline constexpr std::array<std::string_view, 0> kShipOotPlayerSetGoronBodyErrors{{
 }};
+inline constexpr std::array<FieldBinding, 2> kShipOotPlayerSetHeldItemModelArguments{{
+    {"slot", "string", true},
+    {"path", "string", true},
+}};
+inline constexpr std::array<std::string_view, 0> kShipOotPlayerSetHeldItemModelErrors{{
+}};
 inline constexpr std::array<FieldBinding, 0> kShipOotSpawnDogArguments{{
 }};
 inline constexpr std::array<std::string_view, 0> kShipOotSpawnDogErrors{{
@@ -392,7 +399,7 @@ inline constexpr std::array<std::string_view, 1> kShipStorageClearErrors{{
     "unsupported",
 }};
 
-inline constexpr std::array<FunctionBinding, 40> kFunctions{{
+inline constexpr std::array<FunctionBinding, 41> kFunctions{{
     {FunctionId::ShipGameId, "ship.game.id", "0.1.0", "stable", "game_id", "raise", {}, "common", {}, kShipGameIdArguments, kShipGameIdErrors},
     {FunctionId::ShipGameHostVersion, "ship.game.host_version", "0.1.0", "stable", "string", "raise", {}, "common", {}, kShipGameHostVersionArguments, kShipGameHostVersionErrors},
     {FunctionId::ShipRuntimeVersion, "ship.runtime.version", "0.1.0", "stable", "string", "raise", {}, "common", {}, kShipRuntimeVersionArguments, kShipRuntimeVersionErrors},
@@ -421,6 +428,7 @@ inline constexpr std::array<FunctionBinding, 40> kFunctions{{
     {FunctionId::ShipOotPlayerSetWeight, "ship.oot.player.set_weight", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.player.weight", kShipOotPlayerSetWeightArguments, kShipOotPlayerSetWeightErrors},
     {FunctionId::ShipOotPlayerSetRollMode, "ship.oot.player.set_roll_mode", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.player.roll", kShipOotPlayerSetRollModeArguments, kShipOotPlayerSetRollModeErrors},
     {FunctionId::ShipOotPlayerSetGoronBody, "ship.oot.player.set_goron_body", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.player.goron_body", kShipOotPlayerSetGoronBodyArguments, kShipOotPlayerSetGoronBodyErrors},
+    {FunctionId::ShipOotPlayerSetHeldItemModel, "ship.oot.player.set_held_item_model", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.player.held_item_model", kShipOotPlayerSetHeldItemModelArguments, kShipOotPlayerSetHeldItemModelErrors},
     {FunctionId::ShipOotSpawnDog, "ship.oot.spawn_dog", "0.3.0", "experimental", "boolean", "raise", {}, "oot", "oot.spawn_dog", kShipOotSpawnDogArguments, kShipOotSpawnDogErrors},
     {FunctionId::ShipLogDebug, "ship.log.debug", "0.1.0", "stable", "nil", "raise", {}, "common", {}, kShipLogDebugArguments, kShipLogDebugErrors},
     {FunctionId::ShipLogInfo, "ship.log.info", "0.1.0", "stable", "nil", "raise", {}, "common", {}, kShipLogInfoArguments, kShipLogInfoErrors},
@@ -541,7 +549,7 @@ struct CapabilityBinding {
     bool supportsMm;
 };
 
-inline constexpr std::array<CapabilityBinding, 36> kCapabilities{{
+inline constexpr std::array<CapabilityBinding, 37> kCapabilities{{
     {"core.events", "contract", true, true},
     {"hooks.bridge", "contract", true, true},
     {"core.timers", "contract", true, true},
@@ -575,6 +583,7 @@ inline constexpr std::array<CapabilityBinding, 36> kCapabilities{{
     {"oot.player.weight", "contract", true, false},
     {"oot.player.roll", "contract", true, false},
     {"oot.player.goron_body", "contract", true, false},
+    {"oot.player.held_item_model", "contract", true, false},
     {"oot.ocarina", "planned", true, false},
     {"oot.dungeon_keys", "planned", true, false},
     {"oot.equipment", "planned", true, false},

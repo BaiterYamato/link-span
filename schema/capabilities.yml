@@ -35,6 +35,7 @@
     {"name": "oot.player.weight", "status": "contract", "hosts": ["oot"], "description": "Alterna o peso do jogador entre normal e pesado (afunda na água, resiste a empurrão)."},
     {"name": "oot.player.roll", "status": "contract", "hosts": ["oot"], "description": "Ativa rolamento contínuo e dirigível, encadeado indefinidamente."},
     {"name": "oot.player.goron_body", "status": "contract", "hosts": ["oot"], "description": "Substitui o corpo visual do jogador pelo esqueleto real do Goron do MM, lido ao vivo do mm.o2r cross-world. Some ao trocar de cena — precisa religar."},
+    {"name": "oot.player.held_item_model", "status": "contract", "hosts": ["oot"], "description": "Desenha um DL arbitrário ancorado no osso da mão do jogador, atualizado todo frame — o mecanismo que a maioria dos itens customizados com modelo na mão precisa."},
     {"name": "oot.ocarina", "status": "planned", "hosts": ["oot"], "description": "Eventos e estado de ocarina de OoT."},
     {"name": "oot.dungeon_keys", "status": "planned", "hosts": ["oot"], "description": "Estado de chaves de dungeon de OoT."},
     {"name": "oot.equipment", "status": "planned", "hosts": ["oot"], "description": "Equipamento específico de OoT."}

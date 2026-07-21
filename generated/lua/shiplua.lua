@@ -283,6 +283,12 @@ function ship.oot.player.set_roll_mode(mode) end
 ---@return boolean
 function ship.oot.player.set_goron_body(enabled) end
 
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: oot.player.held_item_model; erros: nenhum.
+---@param slot string
+---@param path string
+---@return boolean
+function ship.oot.player.set_held_item_model(slot, path) end
+
 --- API oot; estabilidade: experimental; desde: 0.3.0; capability: oot.spawn_dog; erros: nenhum.
 ---@return boolean
 function ship.oot.spawn_dog() end

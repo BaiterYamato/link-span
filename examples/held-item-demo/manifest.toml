@@ -1,0 +1,11 @@
+id = "baiteryamato.held_item_demo"
+name = "Item na mão (demo)"
+version = "0.1.0"
+api = ">=0.4 <0.5"
+entrypoint = "main.lua"
+description = "Prova o mecanismo por trás de 10+ itens customizados em forks reais (Ball and Chain, Gust Jar, Whip...): anexar um modelo à mão do jogador, sem função nativa dedicada por item."
+authors = ["BaiterYamato"]
+games = ["oot"]
+
+[capabilities]
+required = ["oot.player.held_item_model"]
