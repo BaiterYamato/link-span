@@ -1,0 +1,11 @@
+id = "baiteryamato.no_fall_damage"
+name = "Sem dano de queda (ponte de hooks)"
+version = "0.1.0"
+api = ">=0.4 <0.5"
+entrypoint = "main.lua"
+description = "Cancela o dano de queda do OoT via hook.oot.player.fall_damage — sem nenhuma função nativa dedicada."
+authors = ["BaiterYamato"]
+games = ["oot"]
+
+[capabilities]
+required = ["hooks.bridge"]

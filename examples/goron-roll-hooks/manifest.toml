@@ -1,0 +1,11 @@
+id = "baiteryamato.goron_roll_hooks"
+name = "Rolamento Goron infinito (ponte de hooks)"
+version = "0.1.0"
+api = ">=0.4 <0.5"
+entrypoint = "main.lua"
+description = "Prova a ponte de hooks: controla o rolamento-espinho REAL do Goron do MM (VB_GORON_ROLL_*) direto do Lua — nenhuma função nativa dedicada foi escrita para esta habilidade."
+authors = ["BaiterYamato"]
+games = ["mm"]
+
+[capabilities]
+required = ["hooks.bridge"]

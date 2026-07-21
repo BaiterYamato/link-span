@@ -31,6 +31,7 @@ Versão da API: `0.4.0`. Versão do schema: `1`.
 | `ship.capabilities.list` | — | `array<string>` | `common` | `stable` | `0.1.0` | — | — |
 | `ship.events.on` | `event: string`, `options_or_callback: any`, `callback: callback?` | `subscription` | `common` | `stable` | `0.1.0` | — | `invalid_argument`, `unsupported` |
 | `ship.events.off` | `subscription: subscription` | `boolean` | `common` | `stable` | `0.1.0` | — | `invalid_handle` |
+| `ship.hooks.result` | `value: any` | `boolean` | `common` | `experimental` | `0.4.0` | — | `invalid_argument` |
 | `ship.hotkeys.register` | `id: string`, `options: hotkey_options?`, `callback: callback` | `boolean` | `common` | `preview` | `0.2.0` | — | `invalid_argument`, `unsupported` |
 | `ship.actor.spawn` | `actor_type: string`, `options: actor_spawn_options` | `actor_handle, operation_error?` | `common` | `experimental` | `0.4.0` | `actor.spawn` | `invalid_argument`, `unsupported`, `permission_denied`, `invalid_state`, `resource_limit`, `host_failure` |
 | `ship.actor.destroy` | `handle: actor_handle` | `boolean, operation_error?` | `common` | `experimental` | `0.4.0` | `actor.destroy` | `invalid_argument`, `unsupported`, `permission_denied`, `invalid_handle`, `host_failure` |
@@ -46,6 +47,9 @@ Versão da API: `0.4.0`. Versão do schema: `1`.
 | `ship.player.get` | `field: string` | `any` | `oot` | `experimental` | `0.4.0` | `player.fields` | — |
 | `ship.player.set` | `field: string`, `value: number` | `boolean` | `oot` | `experimental` | `0.4.0` | `player.fields` | — |
 | `ship.oot.player.attach_model` | `slot: string`, `path: string` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.player.attach_model` | — |
+| `ship.oot.player.set_damage_immunity` | `kind: string`, `enabled: boolean` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.player.immunity` | — |
+| `ship.oot.player.set_weight` | `weight: string` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.player.weight` | — |
+| `ship.oot.player.set_roll_mode` | `mode: string` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.player.roll` | — |
 | `ship.oot.spawn_dog` | — | `boolean` | `oot` | `experimental` | `0.3.0` | `oot.spawn_dog` | — |
 | `ship.log.debug` | `message: string` | `nil` | `common` | `stable` | `0.1.0` | — | `invalid_argument` |
 | `ship.log.info` | `message: string` | `nil` | `common` | `stable` | `0.1.0` | — | `invalid_argument` |
@@ -74,12 +78,23 @@ Versão da API: `0.4.0`. Versão do schema: `1`.
 | `text.open` | `observe` | `host_bridge` | `oot`, `mm` | não | `text.events` | `text_id: integer` |
 | `audio.sequence_started` | `observe` | `host_bridge` | `oot`, `mm` | não | `audio.sequence.events` | `player_index: integer`, `sequence_id: integer` |
 | `input.hotkey` | `observe` | `host_bridge` | `oot`, `mm` | não | — | `action: string`, `key: string` |
+| `hook.oot.player.speed.run` | `transform` | `hook_bridge` | `oot` | não | `hooks.bridge` | `speed: number` |
+| `hook.oot.player.fall_damage` | `transform` | `hook_bridge` | `oot` | não | `hooks.bridge` | — |
+| `hook.oot.item.receive` | `observe` | `hook_bridge` | `oot` | não | `hooks.bridge` | `item_id: integer`, `get_item_id: integer` |
+| `hook.oot.player.health_change` | `observe` | `hook_bridge` | `oot` | não | `hooks.bridge` | `amount: integer` |
+| `hook.oot.player.bonk` | `observe` | `hook_bridge` | `oot` | não | `hooks.bridge` | — |
+| `hook.mm.player.speed.walk` | `transform` | `hook_bridge` | `mm` | não | `hooks.bridge` | `speed: number` |
+| `hook.mm.player.goron_roll.consume_magic` | `transform` | `hook_bridge` | `mm` | não | `hooks.bridge` | — |
+| `hook.mm.player.goron_roll.disable_spike_mode` | `transform` | `hook_bridge` | `mm` | não | `hooks.bridge` | — |
+| `hook.mm.player.goron_roll.increase_spike_level` | `transform` | `hook_bridge` | `mm` | não | `hooks.bridge` | — |
+| `hook.mm.item.give` | `observe` | `hook_bridge` | `mm` | não | `hooks.bridge` | `item: integer` |
 
 ## Capabilities
 
 | Capability | Estado | Hosts | Descrição |
 |---|---|---|---|
 | `core.events` | `contract` | `oot`, `mm` | Eventos e lifecycle centrais do host. |
+| `hooks.bridge` | `contract` | `oot`, `mm` | Ponte genérica para os pontos de instrumentação nativos (VB_*/On* do GameInteractor) — eventos hook.* assináveis com ship.events.on e decididos com ship.hooks.result, sem precisar de função nativa dedicada por habilidade. |
 | `core.timers` | `contract` | `oot`, `mm` | Timers por frame com ownership por mod. |
 | `core.input` | `contract` | `oot`, `mm` | Registro de hotkeys e eventos de input. |
 | `core.storage` | `contract` | `oot`, `mm` | Armazenamento chave-valor com namespace por mod. |
@@ -107,6 +122,9 @@ Versão da API: `0.4.0`. Versão do schema: `1`.
 | `player.fields` | `contract` | `oot` | Lê e escreve campos nomeados do jogador (vida, magia, rupees, posição, velocidade) com validação de faixa. |
 | `oot.player.attach_model` | `contract` | `oot` | Desenha uma display list arbitrária no jogador por caminho de resource, incluindo assets de mod e do jogo vizinho. |
 | `mod.assets` | `contract` | `oot` | Archives (.o2r/.otr) na pasta de mods ficam endereçáveis sob mod/<nome>/, permitindo que um mod traga conteúdo próprio. |
+| `oot.player.immunity` | `contract` | `oot` | Concede imunidade a um tipo de dano (hoje: fogo). |
+| `oot.player.weight` | `contract` | `oot` | Alterna o peso do jogador entre normal e pesado (afunda na água, resiste a empurrão). |
+| `oot.player.roll` | `contract` | `oot` | Ativa rolamento contínuo e dirigível, encadeado indefinidamente. |
 | `oot.ocarina` | `planned` | `oot` | Eventos e estado de ocarina de OoT. |
 | `oot.dungeon_keys` | `planned` | `oot` | Estado de chaves de dungeon de OoT. |
 | `oot.equipment` | `planned` | `oot` | Equipamento específico de OoT. |

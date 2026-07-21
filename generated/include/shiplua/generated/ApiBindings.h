@@ -94,6 +94,7 @@ enum class FunctionId {
     ShipCapabilitiesList,
     ShipEventsOn,
     ShipEventsOff,
+    ShipHooksResult,
     ShipHotkeysRegister,
     ShipActorSpawn,
     ShipActorDestroy,
@@ -109,6 +110,9 @@ enum class FunctionId {
     ShipPlayerGet,
     ShipPlayerSet,
     ShipOotPlayerAttachModel,
+    ShipOotPlayerSetDamageImmunity,
+    ShipOotPlayerSetWeight,
+    ShipOotPlayerSetRollMode,
     ShipOotSpawnDog,
     ShipLogDebug,
     ShipLogInfo,
@@ -177,6 +181,12 @@ inline constexpr std::array<FieldBinding, 1> kShipEventsOffArguments{{
 }};
 inline constexpr std::array<std::string_view, 1> kShipEventsOffErrors{{
     "invalid_handle",
+}};
+inline constexpr std::array<FieldBinding, 1> kShipHooksResultArguments{{
+    {"value", "any", true},
+}};
+inline constexpr std::array<std::string_view, 1> kShipHooksResultErrors{{
+    "invalid_argument",
 }};
 inline constexpr std::array<FieldBinding, 3> kShipHotkeysRegisterArguments{{
     {"id", "string", true},
@@ -277,6 +287,22 @@ inline constexpr std::array<FieldBinding, 2> kShipOotPlayerAttachModelArguments{
 }};
 inline constexpr std::array<std::string_view, 0> kShipOotPlayerAttachModelErrors{{
 }};
+inline constexpr std::array<FieldBinding, 2> kShipOotPlayerSetDamageImmunityArguments{{
+    {"kind", "string", true},
+    {"enabled", "boolean", true},
+}};
+inline constexpr std::array<std::string_view, 0> kShipOotPlayerSetDamageImmunityErrors{{
+}};
+inline constexpr std::array<FieldBinding, 1> kShipOotPlayerSetWeightArguments{{
+    {"weight", "string", true},
+}};
+inline constexpr std::array<std::string_view, 0> kShipOotPlayerSetWeightErrors{{
+}};
+inline constexpr std::array<FieldBinding, 1> kShipOotPlayerSetRollModeArguments{{
+    {"mode", "string", true},
+}};
+inline constexpr std::array<std::string_view, 0> kShipOotPlayerSetRollModeErrors{{
+}};
 inline constexpr std::array<FieldBinding, 0> kShipOotSpawnDogArguments{{
 }};
 inline constexpr std::array<std::string_view, 0> kShipOotSpawnDogErrors{{
@@ -360,7 +386,7 @@ inline constexpr std::array<std::string_view, 1> kShipStorageClearErrors{{
     "unsupported",
 }};
 
-inline constexpr std::array<FunctionBinding, 35> kFunctions{{
+inline constexpr std::array<FunctionBinding, 39> kFunctions{{
     {FunctionId::ShipGameId, "ship.game.id", "0.1.0", "stable", "game_id", "raise", {}, "common", {}, kShipGameIdArguments, kShipGameIdErrors},
     {FunctionId::ShipGameHostVersion, "ship.game.host_version", "0.1.0", "stable", "string", "raise", {}, "common", {}, kShipGameHostVersionArguments, kShipGameHostVersionErrors},
     {FunctionId::ShipRuntimeVersion, "ship.runtime.version", "0.1.0", "stable", "string", "raise", {}, "common", {}, kShipRuntimeVersionArguments, kShipRuntimeVersionErrors},
@@ -369,6 +395,7 @@ inline constexpr std::array<FunctionBinding, 35> kFunctions{{
     {FunctionId::ShipCapabilitiesList, "ship.capabilities.list", "0.1.0", "stable", "array<string>", "raise", {}, "common", {}, kShipCapabilitiesListArguments, kShipCapabilitiesListErrors},
     {FunctionId::ShipEventsOn, "ship.events.on", "0.1.0", "stable", "subscription", "raise", {}, "common", {}, kShipEventsOnArguments, kShipEventsOnErrors},
     {FunctionId::ShipEventsOff, "ship.events.off", "0.1.0", "stable", "boolean", "raise", {}, "common", {}, kShipEventsOffArguments, kShipEventsOffErrors},
+    {FunctionId::ShipHooksResult, "ship.hooks.result", "0.4.0", "experimental", "boolean", "raise", {}, "common", {}, kShipHooksResultArguments, kShipHooksResultErrors},
     {FunctionId::ShipHotkeysRegister, "ship.hotkeys.register", "0.2.0", "preview", "boolean", "raise", {}, "common", {}, kShipHotkeysRegisterArguments, kShipHotkeysRegisterErrors},
     {FunctionId::ShipActorSpawn, "ship.actor.spawn", "0.4.0", "experimental", "actor_handle", "return", "operation_error", "common", "actor.spawn", kShipActorSpawnArguments, kShipActorSpawnErrors},
     {FunctionId::ShipActorDestroy, "ship.actor.destroy", "0.4.0", "experimental", "boolean", "return", "operation_error", "common", "actor.destroy", kShipActorDestroyArguments, kShipActorDestroyErrors},
@@ -384,6 +411,9 @@ inline constexpr std::array<FunctionBinding, 35> kFunctions{{
     {FunctionId::ShipPlayerGet, "ship.player.get", "0.4.0", "experimental", "any", "raise", {}, "oot", "player.fields", kShipPlayerGetArguments, kShipPlayerGetErrors},
     {FunctionId::ShipPlayerSet, "ship.player.set", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "player.fields", kShipPlayerSetArguments, kShipPlayerSetErrors},
     {FunctionId::ShipOotPlayerAttachModel, "ship.oot.player.attach_model", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.player.attach_model", kShipOotPlayerAttachModelArguments, kShipOotPlayerAttachModelErrors},
+    {FunctionId::ShipOotPlayerSetDamageImmunity, "ship.oot.player.set_damage_immunity", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.player.immunity", kShipOotPlayerSetDamageImmunityArguments, kShipOotPlayerSetDamageImmunityErrors},
+    {FunctionId::ShipOotPlayerSetWeight, "ship.oot.player.set_weight", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.player.weight", kShipOotPlayerSetWeightArguments, kShipOotPlayerSetWeightErrors},
+    {FunctionId::ShipOotPlayerSetRollMode, "ship.oot.player.set_roll_mode", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.player.roll", kShipOotPlayerSetRollModeArguments, kShipOotPlayerSetRollModeErrors},
     {FunctionId::ShipOotSpawnDog, "ship.oot.spawn_dog", "0.3.0", "experimental", "boolean", "raise", {}, "oot", "oot.spawn_dog", kShipOotSpawnDogArguments, kShipOotSpawnDogErrors},
     {FunctionId::ShipLogDebug, "ship.log.debug", "0.1.0", "stable", "nil", "raise", {}, "common", {}, kShipLogDebugArguments, kShipLogDebugErrors},
     {FunctionId::ShipLogInfo, "ship.log.info", "0.1.0", "stable", "nil", "raise", {}, "common", {}, kShipLogInfoArguments, kShipLogInfoErrors},
@@ -446,8 +476,34 @@ inline constexpr std::array<FieldBinding, 2> kInputHotkeyPayload{{
     {"action", "string", true},
     {"key", "string", true},
 }};
+inline constexpr std::array<FieldBinding, 1> kHookOotPlayerSpeedRunPayload{{
+    {"speed", "number", true},
+}};
+inline constexpr std::array<FieldBinding, 0> kHookOotPlayerFallDamagePayload{{
+}};
+inline constexpr std::array<FieldBinding, 2> kHookOotItemReceivePayload{{
+    {"item_id", "integer", true},
+    {"get_item_id", "integer", true},
+}};
+inline constexpr std::array<FieldBinding, 1> kHookOotPlayerHealthChangePayload{{
+    {"amount", "integer", true},
+}};
+inline constexpr std::array<FieldBinding, 0> kHookOotPlayerBonkPayload{{
+}};
+inline constexpr std::array<FieldBinding, 1> kHookMmPlayerSpeedWalkPayload{{
+    {"speed", "number", true},
+}};
+inline constexpr std::array<FieldBinding, 0> kHookMmPlayerGoronRollConsumeMagicPayload{{
+}};
+inline constexpr std::array<FieldBinding, 0> kHookMmPlayerGoronRollDisableSpikeModePayload{{
+}};
+inline constexpr std::array<FieldBinding, 0> kHookMmPlayerGoronRollIncreaseSpikeLevelPayload{{
+}};
+inline constexpr std::array<FieldBinding, 1> kHookMmItemGivePayload{{
+    {"item", "integer", true},
+}};
 
-inline constexpr std::array<EventBinding, 11> kEvents{{
+inline constexpr std::array<EventBinding, 21> kEvents{{
     {"game.ready", EventKind::Observe, "mvp", false, true, true, {}, kGameReadyPayload},
     {"game.frame", EventKind::Observe, "mvp", false, true, true, {}, kGameFramePayload},
     {"game.shutdown", EventKind::Observe, "mvp", false, true, true, {}, kGameShutdownPayload},
@@ -459,6 +515,16 @@ inline constexpr std::array<EventBinding, 11> kEvents{{
     {"text.open", EventKind::Observe, "host_bridge", false, true, true, "text.events", kTextOpenPayload},
     {"audio.sequence_started", EventKind::Observe, "host_bridge", false, true, true, "audio.sequence.events", kAudioSequenceStartedPayload},
     {"input.hotkey", EventKind::Observe, "host_bridge", false, true, true, {}, kInputHotkeyPayload},
+    {"hook.oot.player.speed.run", EventKind::Transform, "hook_bridge", false, true, false, "hooks.bridge", kHookOotPlayerSpeedRunPayload},
+    {"hook.oot.player.fall_damage", EventKind::Transform, "hook_bridge", false, true, false, "hooks.bridge", kHookOotPlayerFallDamagePayload},
+    {"hook.oot.item.receive", EventKind::Observe, "hook_bridge", false, true, false, "hooks.bridge", kHookOotItemReceivePayload},
+    {"hook.oot.player.health_change", EventKind::Observe, "hook_bridge", false, true, false, "hooks.bridge", kHookOotPlayerHealthChangePayload},
+    {"hook.oot.player.bonk", EventKind::Observe, "hook_bridge", false, true, false, "hooks.bridge", kHookOotPlayerBonkPayload},
+    {"hook.mm.player.speed.walk", EventKind::Transform, "hook_bridge", false, false, true, "hooks.bridge", kHookMmPlayerSpeedWalkPayload},
+    {"hook.mm.player.goron_roll.consume_magic", EventKind::Transform, "hook_bridge", false, false, true, "hooks.bridge", kHookMmPlayerGoronRollConsumeMagicPayload},
+    {"hook.mm.player.goron_roll.disable_spike_mode", EventKind::Transform, "hook_bridge", false, false, true, "hooks.bridge", kHookMmPlayerGoronRollDisableSpikeModePayload},
+    {"hook.mm.player.goron_roll.increase_spike_level", EventKind::Transform, "hook_bridge", false, false, true, "hooks.bridge", kHookMmPlayerGoronRollIncreaseSpikeLevelPayload},
+    {"hook.mm.item.give", EventKind::Observe, "hook_bridge", false, false, true, "hooks.bridge", kHookMmItemGivePayload},
 }};
 
 struct CapabilityBinding {
@@ -468,8 +534,9 @@ struct CapabilityBinding {
     bool supportsMm;
 };
 
-inline constexpr std::array<CapabilityBinding, 31> kCapabilities{{
+inline constexpr std::array<CapabilityBinding, 35> kCapabilities{{
     {"core.events", "contract", true, true},
+    {"hooks.bridge", "contract", true, true},
     {"core.timers", "contract", true, true},
     {"core.input", "contract", true, true},
     {"core.storage", "contract", true, true},
@@ -497,6 +564,9 @@ inline constexpr std::array<CapabilityBinding, 31> kCapabilities{{
     {"player.fields", "contract", true, false},
     {"oot.player.attach_model", "contract", true, false},
     {"mod.assets", "contract", true, false},
+    {"oot.player.immunity", "contract", true, false},
+    {"oot.player.weight", "contract", true, false},
+    {"oot.player.roll", "contract", true, false},
     {"oot.ocarina", "planned", true, false},
     {"oot.dungeon_keys", "planned", true, false},
     {"oot.equipment", "planned", true, false},

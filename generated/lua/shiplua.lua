@@ -92,7 +92,33 @@
 ---@field action string
 ---@field key string
 
----@alias ShipLuaEventName "game.ready"|"game.frame"|"game.shutdown"|"scene.enter"|"actor.init"|"actor.update"|"actor.destroy"|"save.loaded"|"text.open"|"audio.sequence_started"|"input.hotkey"
+---@class ShipLuaEventHookOotPlayerSpeedRun
+---@field speed number
+
+---@class ShipLuaEventHookOotPlayerFallDamage
+
+---@class ShipLuaEventHookOotItemReceive
+---@field item_id integer
+---@field get_item_id integer
+
+---@class ShipLuaEventHookOotPlayerHealthChange
+---@field amount integer
+
+---@class ShipLuaEventHookOotPlayerBonk
+
+---@class ShipLuaEventHookMmPlayerSpeedWalk
+---@field speed number
+
+---@class ShipLuaEventHookMmPlayerGoronRollConsumeMagic
+
+---@class ShipLuaEventHookMmPlayerGoronRollDisableSpikeMode
+
+---@class ShipLuaEventHookMmPlayerGoronRollIncreaseSpikeLevel
+
+---@class ShipLuaEventHookMmItemGive
+---@field item integer
+
+---@alias ShipLuaEventName "game.ready"|"game.frame"|"game.shutdown"|"scene.enter"|"actor.init"|"actor.update"|"actor.destroy"|"save.loaded"|"text.open"|"audio.sequence_started"|"input.hotkey"|"hook.oot.player.speed.run"|"hook.oot.player.fall_damage"|"hook.oot.item.receive"|"hook.oot.player.health_change"|"hook.oot.player.bonk"|"hook.mm.player.speed.walk"|"hook.mm.player.goron_roll.consume_magic"|"hook.mm.player.goron_roll.disable_spike_mode"|"hook.mm.player.goron_roll.increase_spike_level"|"hook.mm.item.give"
 
 ship = ship or {}
 ship.actor = ship.actor or {}
@@ -100,6 +126,7 @@ ship.api = ship.api or {}
 ship.capabilities = ship.capabilities or {}
 ship.events = ship.events or {}
 ship.game = ship.game or {}
+ship.hooks = ship.hooks or {}
 ship.hotkeys = ship.hotkeys or {}
 ship.log = ship.log or {}
 ship.mm = ship.mm or {}
@@ -148,6 +175,11 @@ function ship.events.on(event, options_or_callback, callback) end
 ---@param subscription ShipLuaSubscription
 ---@return boolean
 function ship.events.off(subscription) end
+
+--- API common; estabilidade: experimental; desde: 0.4.0; capability: comum; erros: invalid_argument.
+---@param value any
+---@return boolean
+function ship.hooks.result(value) end
 
 --- API common; estabilidade: preview; desde: 0.2.0; capability: comum; erros: invalid_argument, unsupported.
 ---@param id string
@@ -229,6 +261,22 @@ function ship.player.set(field, value) end
 ---@param path string
 ---@return boolean
 function ship.oot.player.attach_model(slot, path) end
+
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: oot.player.immunity; erros: nenhum.
+---@param kind string
+---@param enabled boolean
+---@return boolean
+function ship.oot.player.set_damage_immunity(kind, enabled) end
+
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: oot.player.weight; erros: nenhum.
+---@param weight string
+---@return boolean
+function ship.oot.player.set_weight(weight) end
+
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: oot.player.roll; erros: nenhum.
+---@param mode string
+---@return boolean
+function ship.oot.player.set_roll_mode(mode) end
 
 --- API oot; estabilidade: experimental; desde: 0.3.0; capability: oot.spawn_dog; erros: nenhum.
 ---@return boolean

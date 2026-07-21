@@ -1,0 +1,12 @@
+id = "baiteryamato.goron_form"
+name = "Forma Goron"
+version = "0.1.0"
+api = ">=0.4 <0.5"
+entrypoint = "main.lua"
+description = "Aperte G para virar Goron: imunidade a fogo, peso pesado e rolamento contínuo dirigível. Composto inteiramente de primitivas — nenhuma delas é específica do Goron."
+authors = ["BaiterYamato"]
+games = ["oot"]
+
+[capabilities]
+required = ["oot.player.immunity", "oot.player.weight", "oot.player.roll"]
+optional = ["player.speed", "oot.player.mask", "oot.player.attach_model"]
