@@ -278,6 +278,11 @@ function ship.oot.player.set_weight(weight) end
 ---@return boolean
 function ship.oot.player.set_roll_mode(mode) end
 
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: oot.player.goron_body; erros: nenhum.
+---@param enabled boolean
+---@return boolean
+function ship.oot.player.set_goron_body(enabled) end
+
 --- API oot; estabilidade: experimental; desde: 0.3.0; capability: oot.spawn_dog; erros: nenhum.
 ---@return boolean
 function ship.oot.spawn_dog() end

@@ -34,6 +34,7 @@
     {"name": "oot.player.immunity", "status": "contract", "hosts": ["oot"], "description": "Concede imunidade a um tipo de dano (hoje: fogo)."},
     {"name": "oot.player.weight", "status": "contract", "hosts": ["oot"], "description": "Alterna o peso do jogador entre normal e pesado (afunda na água, resiste a empurrão)."},
     {"name": "oot.player.roll", "status": "contract", "hosts": ["oot"], "description": "Ativa rolamento contínuo e dirigível, encadeado indefinidamente."},
+    {"name": "oot.player.goron_body", "status": "contract", "hosts": ["oot"], "description": "Substitui o corpo visual do jogador pelo esqueleto real do Goron do MM, lido ao vivo do mm.o2r cross-world. Some ao trocar de cena — precisa religar."},
     {"name": "oot.ocarina", "status": "planned", "hosts": ["oot"], "description": "Eventos e estado de ocarina de OoT."},
     {"name": "oot.dungeon_keys", "status": "planned", "hosts": ["oot"], "description": "Estado de chaves de dungeon de OoT."},
     {"name": "oot.equipment", "status": "planned", "hosts": ["oot"], "description": "Equipamento específico de OoT."}

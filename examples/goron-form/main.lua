@@ -6,6 +6,7 @@ local ship = require("ship")
 --   imunidade a fogo -> ship.oot.player.set_damage_immunity("fire", true)
 --   peso pesado      -> ship.oot.player.set_weight("heavy")
 --   rolamento        -> ship.oot.player.set_roll_mode("chain")
+--   corpo visual     -> ship.oot.player.set_goron_body(true)
 --
 -- Qualquer outra forma (Zora, Wolfos, uma sua) reaproveita as mesmas peças.
 
@@ -21,11 +22,16 @@ local function apply(on)
     if ship.capabilities.has("player.speed") then
         ship.player.set_speed_multiplier(on and SPEED or 1.0)
     end
-    -- A máscara do Goron do próprio OoT como marcador visual. O modelo
-    -- completo do Goron Link (mm/objects/object_link_goron) ainda não é
-    -- utilizável: o esqueleto dele tem 25 limbs e os buffers do player do
-    -- OoT são dimensionados para 22 — trocar direto corromperia memória.
-    if ship.capabilities.has("oot.player.mask") then
+
+    -- Corpo real do Goron do MM, lido ao vivo do mm.o2r cross-world — um
+    -- SkelAnime próprio (25 limbs), não o do player (fixo em 22). Se o
+    -- mm.o2r não estiver montado, cai para a máscara Goron como marcador.
+    if ship.capabilities.has("oot.player.goron_body") then
+        local okBody = ship.oot.player.set_goron_body(on)
+        if not okBody and ship.capabilities.has("oot.player.mask") then
+            ship.oot.player.set_mask(on and "goron" or "none")
+        end
+    elseif ship.capabilities.has("oot.player.mask") then
         ship.oot.player.set_mask(on and "goron" or "none")
     end
 end
