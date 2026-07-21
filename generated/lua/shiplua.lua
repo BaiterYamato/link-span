@@ -113,6 +113,10 @@
 ---@field magic_arrow_type integer
 ---@field arrow_type integer
 
+---@class ShipLuaEventHookOotPlayerBodyAnimSelect
+---@field speed number
+---@field on_ground boolean
+
 ---@class ShipLuaEventHookMmPlayerSpeedWalk
 ---@field speed number
 
@@ -125,7 +129,7 @@
 ---@class ShipLuaEventHookMmItemGive
 ---@field item integer
 
----@alias ShipLuaEventName "game.ready"|"game.frame"|"game.shutdown"|"scene.enter"|"actor.init"|"actor.update"|"actor.destroy"|"save.loaded"|"text.open"|"audio.sequence_started"|"input.hotkey"|"hook.oot.player.speed.run"|"hook.oot.player.fall_damage"|"hook.oot.item.receive"|"hook.oot.player.health_change"|"hook.oot.player.bonk"|"hook.oot.player.first_person_control"|"hook.oot.player.arrow_type_select"|"hook.mm.player.speed.walk"|"hook.mm.player.goron_roll.consume_magic"|"hook.mm.player.goron_roll.disable_spike_mode"|"hook.mm.player.goron_roll.increase_spike_level"|"hook.mm.item.give"
+---@alias ShipLuaEventName "game.ready"|"game.frame"|"game.shutdown"|"scene.enter"|"actor.init"|"actor.update"|"actor.destroy"|"save.loaded"|"text.open"|"audio.sequence_started"|"input.hotkey"|"hook.oot.player.speed.run"|"hook.oot.player.fall_damage"|"hook.oot.item.receive"|"hook.oot.player.health_change"|"hook.oot.player.bonk"|"hook.oot.player.first_person_control"|"hook.oot.player.arrow_type_select"|"hook.oot.player.body_anim_select"|"hook.mm.player.speed.walk"|"hook.mm.player.goron_roll.consume_magic"|"hook.mm.player.goron_roll.disable_spike_mode"|"hook.mm.player.goron_roll.increase_spike_level"|"hook.mm.item.give"
 
 ship = ship or {}
 ship.actor = ship.actor or {}
@@ -285,10 +289,14 @@ function ship.oot.player.set_weight(weight) end
 ---@return boolean
 function ship.oot.player.set_roll_mode(mode) end
 
---- API oot; estabilidade: experimental; desde: 0.4.0; capability: oot.player.goron_body; erros: nenhum.
----@param enabled boolean
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: oot.player.custom_body; erros: nenhum.
+---@param spec any
 ---@return boolean
-function ship.oot.player.set_goron_body(enabled) end
+function ship.oot.player.set_body(spec) end
+
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: oot.player.custom_body; erros: nenhum.
+---@return any
+function ship.oot.player.get_body() end
 
 --- API oot; estabilidade: experimental; desde: 0.4.0; capability: oot.player.held_item_model; erros: nenhum.
 ---@param slot string

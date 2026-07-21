@@ -113,7 +113,8 @@ enum class FunctionId {
     ShipOotPlayerSetDamageImmunity,
     ShipOotPlayerSetWeight,
     ShipOotPlayerSetRollMode,
-    ShipOotPlayerSetGoronBody,
+    ShipOotPlayerSetBody,
+    ShipOotPlayerGetBody,
     ShipOotPlayerSetHeldItemModel,
     ShipOotSpawnDog,
     ShipLogDebug,
@@ -305,10 +306,14 @@ inline constexpr std::array<FieldBinding, 1> kShipOotPlayerSetRollModeArguments{
 }};
 inline constexpr std::array<std::string_view, 0> kShipOotPlayerSetRollModeErrors{{
 }};
-inline constexpr std::array<FieldBinding, 1> kShipOotPlayerSetGoronBodyArguments{{
-    {"enabled", "boolean", true},
+inline constexpr std::array<FieldBinding, 1> kShipOotPlayerSetBodyArguments{{
+    {"spec", "any", true},
 }};
-inline constexpr std::array<std::string_view, 0> kShipOotPlayerSetGoronBodyErrors{{
+inline constexpr std::array<std::string_view, 0> kShipOotPlayerSetBodyErrors{{
+}};
+inline constexpr std::array<FieldBinding, 0> kShipOotPlayerGetBodyArguments{{
+}};
+inline constexpr std::array<std::string_view, 0> kShipOotPlayerGetBodyErrors{{
 }};
 inline constexpr std::array<FieldBinding, 2> kShipOotPlayerSetHeldItemModelArguments{{
     {"slot", "string", true},
@@ -399,7 +404,7 @@ inline constexpr std::array<std::string_view, 1> kShipStorageClearErrors{{
     "unsupported",
 }};
 
-inline constexpr std::array<FunctionBinding, 41> kFunctions{{
+inline constexpr std::array<FunctionBinding, 42> kFunctions{{
     {FunctionId::ShipGameId, "ship.game.id", "0.1.0", "stable", "game_id", "raise", {}, "common", {}, kShipGameIdArguments, kShipGameIdErrors},
     {FunctionId::ShipGameHostVersion, "ship.game.host_version", "0.1.0", "stable", "string", "raise", {}, "common", {}, kShipGameHostVersionArguments, kShipGameHostVersionErrors},
     {FunctionId::ShipRuntimeVersion, "ship.runtime.version", "0.1.0", "stable", "string", "raise", {}, "common", {}, kShipRuntimeVersionArguments, kShipRuntimeVersionErrors},
@@ -427,7 +432,8 @@ inline constexpr std::array<FunctionBinding, 41> kFunctions{{
     {FunctionId::ShipOotPlayerSetDamageImmunity, "ship.oot.player.set_damage_immunity", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.player.immunity", kShipOotPlayerSetDamageImmunityArguments, kShipOotPlayerSetDamageImmunityErrors},
     {FunctionId::ShipOotPlayerSetWeight, "ship.oot.player.set_weight", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.player.weight", kShipOotPlayerSetWeightArguments, kShipOotPlayerSetWeightErrors},
     {FunctionId::ShipOotPlayerSetRollMode, "ship.oot.player.set_roll_mode", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.player.roll", kShipOotPlayerSetRollModeArguments, kShipOotPlayerSetRollModeErrors},
-    {FunctionId::ShipOotPlayerSetGoronBody, "ship.oot.player.set_goron_body", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.player.goron_body", kShipOotPlayerSetGoronBodyArguments, kShipOotPlayerSetGoronBodyErrors},
+    {FunctionId::ShipOotPlayerSetBody, "ship.oot.player.set_body", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.player.custom_body", kShipOotPlayerSetBodyArguments, kShipOotPlayerSetBodyErrors},
+    {FunctionId::ShipOotPlayerGetBody, "ship.oot.player.get_body", "0.4.0", "experimental", "any", "raise", {}, "oot", "oot.player.custom_body", kShipOotPlayerGetBodyArguments, kShipOotPlayerGetBodyErrors},
     {FunctionId::ShipOotPlayerSetHeldItemModel, "ship.oot.player.set_held_item_model", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.player.held_item_model", kShipOotPlayerSetHeldItemModelArguments, kShipOotPlayerSetHeldItemModelErrors},
     {FunctionId::ShipOotSpawnDog, "ship.oot.spawn_dog", "0.3.0", "experimental", "boolean", "raise", {}, "oot", "oot.spawn_dog", kShipOotSpawnDogArguments, kShipOotSpawnDogErrors},
     {FunctionId::ShipLogDebug, "ship.log.debug", "0.1.0", "stable", "nil", "raise", {}, "common", {}, kShipLogDebugArguments, kShipLogDebugErrors},
@@ -512,6 +518,10 @@ inline constexpr std::array<FieldBinding, 2> kHookOotPlayerArrowTypeSelectPayloa
     {"magic_arrow_type", "integer", true},
     {"arrow_type", "integer", true},
 }};
+inline constexpr std::array<FieldBinding, 2> kHookOotPlayerBodyAnimSelectPayload{{
+    {"speed", "number", true},
+    {"on_ground", "boolean", true},
+}};
 inline constexpr std::array<FieldBinding, 1> kHookMmPlayerSpeedWalkPayload{{
     {"speed", "number", true},
 }};
@@ -525,7 +535,7 @@ inline constexpr std::array<FieldBinding, 1> kHookMmItemGivePayload{{
     {"item", "integer", true},
 }};
 
-inline constexpr std::array<EventBinding, 23> kEvents{{
+inline constexpr std::array<EventBinding, 24> kEvents{{
     {"game.ready", EventKind::Observe, "mvp", false, true, true, {}, kGameReadyPayload},
     {"game.frame", EventKind::Observe, "mvp", false, true, true, {}, kGameFramePayload},
     {"game.shutdown", EventKind::Observe, "mvp", false, true, true, {}, kGameShutdownPayload},
@@ -544,6 +554,7 @@ inline constexpr std::array<EventBinding, 23> kEvents{{
     {"hook.oot.player.bonk", EventKind::Observe, "hook_bridge", false, true, false, "hooks.bridge", kHookOotPlayerBonkPayload},
     {"hook.oot.player.first_person_control", EventKind::Observe, "hook_bridge", false, true, false, "hooks.bridge", kHookOotPlayerFirstPersonControlPayload},
     {"hook.oot.player.arrow_type_select", EventKind::Transform, "hook_bridge", false, true, false, "hooks.bridge", kHookOotPlayerArrowTypeSelectPayload},
+    {"hook.oot.player.body_anim_select", EventKind::Transform, "hook_bridge", false, true, false, "oot.player.custom_body", kHookOotPlayerBodyAnimSelectPayload},
     {"hook.mm.player.speed.walk", EventKind::Transform, "hook_bridge", false, false, true, "hooks.bridge", kHookMmPlayerSpeedWalkPayload},
     {"hook.mm.player.goron_roll.consume_magic", EventKind::Transform, "hook_bridge", false, false, true, "hooks.bridge", kHookMmPlayerGoronRollConsumeMagicPayload},
     {"hook.mm.player.goron_roll.disable_spike_mode", EventKind::Transform, "hook_bridge", false, false, true, "hooks.bridge", kHookMmPlayerGoronRollDisableSpikeModePayload},
@@ -591,7 +602,7 @@ inline constexpr std::array<CapabilityBinding, 37> kCapabilities{{
     {"oot.player.immunity", "contract", true, false},
     {"oot.player.weight", "contract", true, false},
     {"oot.player.roll", "contract", true, false},
-    {"oot.player.goron_body", "contract", true, false},
+    {"oot.player.custom_body", "contract", true, false},
     {"oot.player.held_item_model", "contract", true, false},
     {"oot.ocarina", "planned", true, false},
     {"oot.dungeon_keys", "planned", true, false},
