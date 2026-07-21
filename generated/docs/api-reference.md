@@ -85,6 +85,8 @@ Versão da API: `0.4.0`. Versão do schema: `1`.
 | `hook.oot.item.receive` | `observe` | `hook_bridge` | `oot` | não | `hooks.bridge` | `item_id: integer`, `get_item_id: integer` |
 | `hook.oot.player.health_change` | `observe` | `hook_bridge` | `oot` | não | `hooks.bridge` | `amount: integer` |
 | `hook.oot.player.bonk` | `observe` | `hook_bridge` | `oot` | não | `hooks.bridge` | — |
+| `hook.oot.player.first_person_control` | `observe` | `hook_bridge` | `oot` | não | `hooks.bridge` | `held_item_action: integer` |
+| `hook.oot.player.arrow_type_select` | `transform` | `hook_bridge` | `oot` | não | `hooks.bridge` | `magic_arrow_type: integer`, `arrow_type: integer` |
 | `hook.mm.player.speed.walk` | `transform` | `hook_bridge` | `mm` | não | `hooks.bridge` | `speed: number` |
 | `hook.mm.player.goron_roll.consume_magic` | `transform` | `hook_bridge` | `mm` | não | `hooks.bridge` | — |
 | `hook.mm.player.goron_roll.disable_spike_mode` | `transform` | `hook_bridge` | `mm` | não | `hooks.bridge` | — |

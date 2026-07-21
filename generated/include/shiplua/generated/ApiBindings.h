@@ -505,6 +505,13 @@ inline constexpr std::array<FieldBinding, 1> kHookOotPlayerHealthChangePayload{{
 }};
 inline constexpr std::array<FieldBinding, 0> kHookOotPlayerBonkPayload{{
 }};
+inline constexpr std::array<FieldBinding, 1> kHookOotPlayerFirstPersonControlPayload{{
+    {"held_item_action", "integer", true},
+}};
+inline constexpr std::array<FieldBinding, 2> kHookOotPlayerArrowTypeSelectPayload{{
+    {"magic_arrow_type", "integer", true},
+    {"arrow_type", "integer", true},
+}};
 inline constexpr std::array<FieldBinding, 1> kHookMmPlayerSpeedWalkPayload{{
     {"speed", "number", true},
 }};
@@ -518,7 +525,7 @@ inline constexpr std::array<FieldBinding, 1> kHookMmItemGivePayload{{
     {"item", "integer", true},
 }};
 
-inline constexpr std::array<EventBinding, 21> kEvents{{
+inline constexpr std::array<EventBinding, 23> kEvents{{
     {"game.ready", EventKind::Observe, "mvp", false, true, true, {}, kGameReadyPayload},
     {"game.frame", EventKind::Observe, "mvp", false, true, true, {}, kGameFramePayload},
     {"game.shutdown", EventKind::Observe, "mvp", false, true, true, {}, kGameShutdownPayload},
@@ -535,6 +542,8 @@ inline constexpr std::array<EventBinding, 21> kEvents{{
     {"hook.oot.item.receive", EventKind::Observe, "hook_bridge", false, true, false, "hooks.bridge", kHookOotItemReceivePayload},
     {"hook.oot.player.health_change", EventKind::Observe, "hook_bridge", false, true, false, "hooks.bridge", kHookOotPlayerHealthChangePayload},
     {"hook.oot.player.bonk", EventKind::Observe, "hook_bridge", false, true, false, "hooks.bridge", kHookOotPlayerBonkPayload},
+    {"hook.oot.player.first_person_control", EventKind::Observe, "hook_bridge", false, true, false, "hooks.bridge", kHookOotPlayerFirstPersonControlPayload},
+    {"hook.oot.player.arrow_type_select", EventKind::Transform, "hook_bridge", false, true, false, "hooks.bridge", kHookOotPlayerArrowTypeSelectPayload},
     {"hook.mm.player.speed.walk", EventKind::Transform, "hook_bridge", false, false, true, "hooks.bridge", kHookMmPlayerSpeedWalkPayload},
     {"hook.mm.player.goron_roll.consume_magic", EventKind::Transform, "hook_bridge", false, false, true, "hooks.bridge", kHookMmPlayerGoronRollConsumeMagicPayload},
     {"hook.mm.player.goron_roll.disable_spike_mode", EventKind::Transform, "hook_bridge", false, false, true, "hooks.bridge", kHookMmPlayerGoronRollDisableSpikeModePayload},

@@ -106,6 +106,13 @@
 
 ---@class ShipLuaEventHookOotPlayerBonk
 
+---@class ShipLuaEventHookOotPlayerFirstPersonControl
+---@field held_item_action integer
+
+---@class ShipLuaEventHookOotPlayerArrowTypeSelect
+---@field magic_arrow_type integer
+---@field arrow_type integer
+
 ---@class ShipLuaEventHookMmPlayerSpeedWalk
 ---@field speed number
 
@@ -118,7 +125,7 @@
 ---@class ShipLuaEventHookMmItemGive
 ---@field item integer
 
----@alias ShipLuaEventName "game.ready"|"game.frame"|"game.shutdown"|"scene.enter"|"actor.init"|"actor.update"|"actor.destroy"|"save.loaded"|"text.open"|"audio.sequence_started"|"input.hotkey"|"hook.oot.player.speed.run"|"hook.oot.player.fall_damage"|"hook.oot.item.receive"|"hook.oot.player.health_change"|"hook.oot.player.bonk"|"hook.mm.player.speed.walk"|"hook.mm.player.goron_roll.consume_magic"|"hook.mm.player.goron_roll.disable_spike_mode"|"hook.mm.player.goron_roll.increase_spike_level"|"hook.mm.item.give"
+---@alias ShipLuaEventName "game.ready"|"game.frame"|"game.shutdown"|"scene.enter"|"actor.init"|"actor.update"|"actor.destroy"|"save.loaded"|"text.open"|"audio.sequence_started"|"input.hotkey"|"hook.oot.player.speed.run"|"hook.oot.player.fall_damage"|"hook.oot.item.receive"|"hook.oot.player.health_change"|"hook.oot.player.bonk"|"hook.oot.player.first_person_control"|"hook.oot.player.arrow_type_select"|"hook.mm.player.speed.walk"|"hook.mm.player.goron_roll.consume_magic"|"hook.mm.player.goron_roll.disable_spike_mode"|"hook.mm.player.goron_roll.increase_spike_level"|"hook.mm.item.give"
 
 ship = ship or {}
 ship.actor = ship.actor or {}

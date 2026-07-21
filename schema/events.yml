@@ -51,6 +51,13 @@
       {"name": "amount", "type": "integer", "required": true}
     ]},
     {"name": "hook.oot.player.bonk", "kind": "observe", "phase": "hook_bridge", "cancellable": false, "support": ["oot"], "capability": "hooks.bridge", "payload": []},
+    {"name": "hook.oot.player.first_person_control", "kind": "observe", "phase": "hook_bridge", "cancellable": false, "support": ["oot"], "capability": "hooks.bridge", "payload": [
+      {"name": "held_item_action", "type": "integer", "required": true}
+    ]},
+    {"name": "hook.oot.player.arrow_type_select", "kind": "transform", "phase": "hook_bridge", "cancellable": false, "support": ["oot"], "capability": "hooks.bridge", "payload": [
+      {"name": "magic_arrow_type", "type": "integer", "required": true},
+      {"name": "arrow_type", "type": "integer", "required": true}
+    ]},
 
     {"name": "hook.mm.player.speed.walk", "kind": "transform", "phase": "hook_bridge", "cancellable": false, "support": ["mm"], "capability": "hooks.bridge", "payload": [
       {"name": "speed", "type": "number", "required": true}
