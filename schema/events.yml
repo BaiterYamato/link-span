@@ -58,6 +58,10 @@
       {"name": "magic_arrow_type", "type": "integer", "required": true},
       {"name": "arrow_type", "type": "integer", "required": true}
     ]},
+    {"name": "hook.oot.player.body_anim_select", "kind": "transform", "phase": "hook_bridge", "cancellable": false, "support": ["oot"], "capability": "oot.player.custom_body", "payload": [
+      {"name": "speed", "type": "number", "required": true},
+      {"name": "on_ground", "type": "boolean", "required": true}
+    ]},
 
     {"name": "hook.mm.player.speed.walk", "kind": "transform", "phase": "hook_bridge", "cancellable": false, "support": ["mm"], "capability": "hooks.bridge", "payload": [
       {"name": "speed", "type": "number", "required": true}

@@ -9,4 +9,4 @@ games = ["oot"]
 
 [capabilities]
 required = ["oot.player.immunity", "oot.player.weight", "oot.player.roll"]
-optional = ["player.speed", "oot.player.mask", "oot.player.attach_model"]
+optional = ["player.speed", "oot.player.mask", "oot.player.attach_model", "oot.player.custom_body"]
