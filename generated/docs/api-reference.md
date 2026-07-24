@@ -68,6 +68,10 @@ Versão da API: `0.4.0`. Versão do schema: `1`.
 | `ship.storage.set` | `key: string`, `value: any` | `boolean` | `common` | `experimental` | `0.3.0` | `core.storage` | `invalid_argument`, `resource_limit`, `unsupported` |
 | `ship.storage.delete` | `key: string` | `boolean` | `common` | `experimental` | `0.3.0` | `core.storage` | `invalid_argument`, `unsupported` |
 | `ship.storage.clear` | — | `integer` | `common` | `experimental` | `0.3.0` | `core.storage` | `unsupported` |
+| `ship.storage.shared.get` | `key: string`, `default: any?` | `any` | `common` | `experimental` | `0.4.0` | `core.storage.shared` | `invalid_argument`, `unsupported` |
+| `ship.storage.shared.set` | `key: string`, `value: any` | `boolean` | `common` | `experimental` | `0.4.0` | `core.storage.shared` | `invalid_argument`, `resource_limit`, `unsupported` |
+| `ship.storage.shared.delete` | `key: string` | `boolean` | `common` | `experimental` | `0.4.0` | `core.storage.shared` | `invalid_argument`, `unsupported` |
+| `ship.storage.shared.clear` | — | `integer` | `common` | `experimental` | `0.4.0` | `core.storage.shared` | `unsupported` |
 
 ## Eventos
 
@@ -89,6 +93,8 @@ Versão da API: `0.4.0`. Versão do schema: `1`.
 | `hook.oot.item.receive` | `observe` | `hook_bridge` | `oot` | não | `hooks.bridge` | `item_id: integer`, `get_item_id: integer` |
 | `hook.oot.player.health_change` | `observe` | `hook_bridge` | `oot` | não | `hooks.bridge` | `amount: integer` |
 | `hook.oot.player.bonk` | `observe` | `hook_bridge` | `oot` | não | `hooks.bridge` | — |
+| `hook.oot.enemy.defeat` | `observe` | `hook_bridge` | `oot` | não | `hooks.bridge` | `actor_id: integer`, `category: integer`, `pos_x: number`, `pos_y: number`, `pos_z: number` |
+| `hook.oot.item.give` | `transform` | `hook_bridge` | `oot` | não | `hooks.bridge` | `item_id: integer`, `get_item_id: integer` |
 | `hook.oot.player.first_person_control` | `observe` | `hook_bridge` | `oot` | não | `hooks.bridge` | `held_item_action: integer` |
 | `hook.oot.player.arrow_type_select` | `transform` | `hook_bridge` | `oot` | não | `hooks.bridge` | `magic_arrow_type: integer`, `arrow_type: integer` |
 | `hook.oot.player.body_anim_select` | `transform` | `hook_bridge` | `oot` | não | `oot.player.custom_body` | `speed: number`, `on_ground: boolean`, `rolling: boolean`, `roll_charge: integer`, `roll_phase: string`, `falling: boolean`, `landing: boolean`, `climbing: boolean`, `climb_direction: string`, `climb_step: integer`, `climb_starting: boolean`, `door_opening: boolean`, `door_direction: string`, `chest_opening: boolean`, `instrument: boolean`, `attacking: boolean`, `attack_animation: integer` |
@@ -97,6 +103,8 @@ Versão da API: `0.4.0`. Versão do schema: `1`.
 | `hook.mm.player.goron_roll.disable_spike_mode` | `transform` | `hook_bridge` | `mm` | não | `hooks.bridge` | — |
 | `hook.mm.player.goron_roll.increase_spike_level` | `transform` | `hook_bridge` | `mm` | não | `hooks.bridge` | — |
 | `hook.mm.item.give` | `observe` | `hook_bridge` | `mm` | não | `hooks.bridge` | `item: integer` |
+| `hook.mm.enemy.defeat` | `observe` | `hook_bridge` | `mm` | não | `hooks.bridge` | `actor_id: integer`, `category: integer`, `pos_x: number`, `pos_y: number`, `pos_z: number` |
+| `hook.mm.item.should_give` | `transform` | `hook_bridge` | `mm` | não | `hooks.bridge` | `item: integer` |
 
 ## Capabilities
 
@@ -106,7 +114,8 @@ Versão da API: `0.4.0`. Versão do schema: `1`.
 | `hooks.bridge` | `contract` | `oot`, `mm` | Ponte genérica para os pontos de instrumentação nativos (VB_*/On* do GameInteractor) — eventos hook.* assináveis com ship.events.on e decididos com ship.hooks.result, sem precisar de função nativa dedicada por habilidade. |
 | `core.timers` | `contract` | `oot`, `mm` | Timers por frame com ownership por mod. |
 | `core.input` | `contract` | `oot`, `mm` | Registro de hotkeys e eventos de input. |
-| `core.storage` | `contract` | `oot`, `mm` | Armazenamento chave-valor com namespace por mod. |
+| `core.storage` | `contract` | `oot`, `mm` | Armazenamento chave-valor com namespace por mod, persistente em disco entre sessões. |
+| `core.storage.shared` | `contract` | `oot`, `mm` | Armazenamento chave-valor COMPARTILHADO entre os dois jogos (mesmo arquivo no diretório de sessão do launcher). Namespaced por mod, mas o mesmo mod vê o mesmo estado em OoT e MM — base para progresso de randomizer cross-game e stats que atravessam o world-travel. |
 | `scene.events` | `contract` | `oot`, `mm` | Eventos comuns de cena. |
 | `actor.events` | `contract` | `oot`, `mm` | Eventos comuns de ator com handles e snapshots. |
 | `actor.spawn` | `contract` | `oot`, `mm` | Cria um ator allowlisted com ownership e handle seguro. |

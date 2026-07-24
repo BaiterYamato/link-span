@@ -106,6 +106,17 @@
 
 ---@class ShipLuaEventHookOotPlayerBonk
 
+---@class ShipLuaEventHookOotEnemyDefeat
+---@field actor_id integer
+---@field category integer
+---@field pos_x number
+---@field pos_y number
+---@field pos_z number
+
+---@class ShipLuaEventHookOotItemGive
+---@field item_id integer
+---@field get_item_id integer
+
 ---@class ShipLuaEventHookOotPlayerFirstPersonControl
 ---@field held_item_action integer
 
@@ -144,7 +155,17 @@
 ---@class ShipLuaEventHookMmItemGive
 ---@field item integer
 
----@alias ShipLuaEventName "game.ready"|"game.frame"|"game.shutdown"|"scene.enter"|"actor.init"|"actor.update"|"actor.destroy"|"save.loaded"|"text.open"|"audio.sequence_started"|"input.hotkey"|"hook.oot.player.speed.run"|"hook.oot.player.fall_damage"|"hook.oot.item.receive"|"hook.oot.player.health_change"|"hook.oot.player.bonk"|"hook.oot.player.first_person_control"|"hook.oot.player.arrow_type_select"|"hook.oot.player.body_anim_select"|"hook.mm.player.speed.walk"|"hook.mm.player.goron_roll.consume_magic"|"hook.mm.player.goron_roll.disable_spike_mode"|"hook.mm.player.goron_roll.increase_spike_level"|"hook.mm.item.give"
+---@class ShipLuaEventHookMmEnemyDefeat
+---@field actor_id integer
+---@field category integer
+---@field pos_x number
+---@field pos_y number
+---@field pos_z number
+
+---@class ShipLuaEventHookMmItemShouldGive
+---@field item integer
+
+---@alias ShipLuaEventName "game.ready"|"game.frame"|"game.shutdown"|"scene.enter"|"actor.init"|"actor.update"|"actor.destroy"|"save.loaded"|"text.open"|"audio.sequence_started"|"input.hotkey"|"hook.oot.player.speed.run"|"hook.oot.player.fall_damage"|"hook.oot.item.receive"|"hook.oot.player.health_change"|"hook.oot.player.bonk"|"hook.oot.enemy.defeat"|"hook.oot.item.give"|"hook.oot.player.first_person_control"|"hook.oot.player.arrow_type_select"|"hook.oot.player.body_anim_select"|"hook.mm.player.speed.walk"|"hook.mm.player.goron_roll.consume_magic"|"hook.mm.player.goron_roll.disable_spike_mode"|"hook.mm.player.goron_roll.increase_spike_level"|"hook.mm.item.give"|"hook.mm.enemy.defeat"|"hook.mm.item.should_give"
 
 ship = ship or {}
 ship.actor = ship.actor or {}
@@ -164,6 +185,7 @@ ship.timer = ship.timer or {}
 ship.world = ship.world or {}
 ship.mm.player = ship.mm.player or {}
 ship.oot.player = ship.oot.player or {}
+ship.storage.shared = ship.storage.shared or {}
 
 --- API common; estabilidade: stable; desde: 0.1.0; capability: comum; erros: nenhum.
 ---@return ShipLuaGameId
@@ -397,3 +419,24 @@ function ship.storage.delete(key) end
 --- API common; estabilidade: experimental; desde: 0.3.0; capability: core.storage; erros: unsupported.
 ---@return integer
 function ship.storage.clear() end
+
+--- API common; estabilidade: experimental; desde: 0.4.0; capability: core.storage.shared; erros: invalid_argument, unsupported.
+---@param key string
+---@param default? any
+---@return any
+function ship.storage.shared.get(key, default) end
+
+--- API common; estabilidade: experimental; desde: 0.4.0; capability: core.storage.shared; erros: invalid_argument, resource_limit, unsupported.
+---@param key string
+---@param value any
+---@return boolean
+function ship.storage.shared.set(key, value) end
+
+--- API common; estabilidade: experimental; desde: 0.4.0; capability: core.storage.shared; erros: invalid_argument, unsupported.
+---@param key string
+---@return boolean
+function ship.storage.shared.delete(key) end
+
+--- API common; estabilidade: experimental; desde: 0.4.0; capability: core.storage.shared; erros: unsupported.
+---@return integer
+function ship.storage.shared.clear() end

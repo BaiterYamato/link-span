@@ -51,6 +51,17 @@
       {"name": "amount", "type": "integer", "required": true}
     ]},
     {"name": "hook.oot.player.bonk", "kind": "observe", "phase": "hook_bridge", "cancellable": false, "support": ["oot"], "capability": "hooks.bridge", "payload": []},
+    {"name": "hook.oot.enemy.defeat", "kind": "observe", "phase": "hook_bridge", "cancellable": false, "support": ["oot"], "capability": "hooks.bridge", "payload": [
+      {"name": "actor_id", "type": "integer", "required": true},
+      {"name": "category", "type": "integer", "required": true},
+      {"name": "pos_x", "type": "number", "required": true},
+      {"name": "pos_y", "type": "number", "required": true},
+      {"name": "pos_z", "type": "number", "required": true}
+    ]},
+    {"name": "hook.oot.item.give", "kind": "transform", "phase": "hook_bridge", "cancellable": false, "support": ["oot"], "capability": "hooks.bridge", "payload": [
+      {"name": "item_id", "type": "integer", "required": true},
+      {"name": "get_item_id", "type": "integer", "required": true}
+    ]},
     {"name": "hook.oot.player.first_person_control", "kind": "observe", "phase": "hook_bridge", "cancellable": false, "support": ["oot"], "capability": "hooks.bridge", "payload": [
       {"name": "held_item_action", "type": "integer", "required": true}
     ]},
@@ -85,6 +96,16 @@
     {"name": "hook.mm.player.goron_roll.disable_spike_mode", "kind": "transform", "phase": "hook_bridge", "cancellable": false, "support": ["mm"], "capability": "hooks.bridge", "payload": []},
     {"name": "hook.mm.player.goron_roll.increase_spike_level", "kind": "transform", "phase": "hook_bridge", "cancellable": false, "support": ["mm"], "capability": "hooks.bridge", "payload": []},
     {"name": "hook.mm.item.give", "kind": "observe", "phase": "hook_bridge", "cancellable": false, "support": ["mm"], "capability": "hooks.bridge", "payload": [
+      {"name": "item", "type": "integer", "required": true}
+    ]},
+    {"name": "hook.mm.enemy.defeat", "kind": "observe", "phase": "hook_bridge", "cancellable": false, "support": ["mm"], "capability": "hooks.bridge", "payload": [
+      {"name": "actor_id", "type": "integer", "required": true},
+      {"name": "category", "type": "integer", "required": true},
+      {"name": "pos_x", "type": "number", "required": true},
+      {"name": "pos_y", "type": "number", "required": true},
+      {"name": "pos_z", "type": "number", "required": true}
+    ]},
+    {"name": "hook.mm.item.should_give", "kind": "transform", "phase": "hook_bridge", "cancellable": false, "support": ["mm"], "capability": "hooks.bridge", "payload": [
       {"name": "item", "type": "integer", "required": true}
     ]}
   ]

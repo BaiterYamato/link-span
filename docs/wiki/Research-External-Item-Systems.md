@@ -213,3 +213,64 @@ Esta é uma direção de design, não uma API implementada.
 - Fazer uma capability nativa de prova para `goron.roll` sem item/save.
 - Criar uma tabela de compatibilidade de animações: forma, esqueleto, header, blob de keyframes, display list e texturas.
 - Só então avaliar item registrável no menu, mantendo o ID lógico do mod diferente de qualquer enum interno de OoT/MM.
+
+## 7. leveled (RPG) e ComboShip (randomizer cross-game) — 2026-07-24
+
+Duas novas fontes mineradas, com o mesmo princípio de sempre: não copiar a
+feature, e sim abrir a primitiva genérica que deixa qualquer modder construí-la
+em Lua.
+
+### leveled (Arrenton/Shipwright, branch `leveled-blair`, PR #11)
+
+Sistema RPG nativo completo (29 arquivos): XP em `SaveContext.experience`, level
+1–99, stats Power/Courage (`Actor.power`/`Actor.courage`) que escalam dano e
+defesa via `Leveled_DamageModify`, números flutuantes de dano/XP, animação de
+level-up e dificuldade por cena (`Leveled_GetSceneLevel`). XP vem do abate de
+inimigos; level sobe por `Player_GainExperience` contra a `sExpTable`.
+
+Mapeamento para primitivas — o que um modder precisa, e nada disso é "de RPG":
+
+| Necessidade do leveled | Primitiva Link-Span | Estado |
+|---|---|---|
+| XP ao derrotar inimigo | `hook.oot.enemy.defeat` / `hook.mm.enemy.defeat` (observe) | **Feito** |
+| Nível/XP persistem entre sessões | `ship.storage` persistente em disco | **Feito** |
+| Ler/escrever vida, magia, rupees | `ship.player.get/set` (13 campos) | Já existia |
+| Modificação de dano por Power/Courage | hook de dano no ponto de golpe | Documentado (Fase C) |
+| Números flutuantes + barra de level | primitiva de HUD/overlay draw | Documentado (Fase C) |
+| Dificuldade por cena | `scene.enter` + tabela no próprio mod | Já dava (nada novo) |
+
+### ComboShip (Varuuna) — randomizer cross-game OoT↔MM
+
+**Arquitetura oposta à do Link-Span**: executável ÚNICO (os dois jogos compilados
+juntos), estado compartilhado em memória em runtime. O Link-Span são dois
+processos (`soh.exe`/`2ship.exe`) que trocam de mundo por handoff que ENCERRA o
+processo (exit 73) e relança o outro. Logo o sharing em memória do ComboShip não
+transfere — o equivalente é um **arquivo persistente que os dois jogos leem/
+escrevem**, recarregado a cada relançamento. Isso motivou `ship.storage.shared`.
+
+O que randomiza: itens (uma seed distribui entre os dois jogos), progressive
+items, souls de boss/inimigo, entrances e spawn points. Estado compartilhado:
+inventário, flags de progressão, mapping de entrada/spawn, save unificado.
+
+| Necessidade do ComboShip | Primitiva Link-Span | Estado |
+|---|---|---|
+| Trocar o item de uma check | `hook.oot.item.give` (transform, troca completa via funil `GiveItemEntryFromActor`) | **Feito** |
+| Idem no MM | `hook.mm.item.should_give` (transform-VETO; MM só expõe `ShouldItemGive`, não troca livre) | **Feito (parcial)** |
+| Estado compartilhado entre os jogos | `ship.storage.shared` (mesmo arquivo no diretório de sessão do launcher) | **Feito** |
+| Renderizar modelo de item do outro jogo | assets cross-world `mm/` | Já existia |
+
+### Assimetria honesta OoT × MM no item override
+
+O OoT tem um funil central (`GiveItemEntryFromActor`, `z_actor.c`) onde uma
+inserção de uma linha permite reconstruir o `GetItemEntry` inteiro — troca
+completa do item. O MM só expõe `ShouldItemGive(u8 item, bool* should)`, um
+gate: dá para VETAR a entrega, não para trocar livremente sem mais trabalho.
+Por isso os nomes diferem de propósito (`item.give` vs `item.should_give`) — é
+mais honesto que fingir simetria. Troca completa em MM fica para outra rodada.
+
+### O que foi descoberto sobre o próprio Link-Span
+
+Ao wirar isto, verificou-se que o host REAL nunca conectava um `KeyValueStorage`
+nem um `FrameTimerScheduler` — `ship.storage` e `ship.timer` só funcionavam no
+mock de testes. O storage foi conectado agora (com persistência); os timers
+ficam como gap pendente (mesma natureza, tarefa separada).

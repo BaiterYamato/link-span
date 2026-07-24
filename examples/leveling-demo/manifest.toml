@@ -1,0 +1,11 @@
+id = "baiteryamato.leveling_demo"
+name = "Leveling (demo)"
+version = "0.1.0"
+api = ">=0.4 <0.5"
+entrypoint = "main.lua"
+description = "Prova que um sistema de RPG/leveling cabe 100% em Lua: XP ao derrotar inimigos (hook.oot.enemy.defeat) e nível persistido em disco (ship.storage). Inspirado no fork 'leveled' — nenhuma função nativa de RPG no host."
+authors = ["BaiterYamato"]
+games = ["oot"]
+
+[capabilities]
+required = ["hooks.bridge", "core.storage"]
