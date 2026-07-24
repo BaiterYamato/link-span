@@ -17,6 +17,7 @@
 | [ComboShip](https://github.com/Varuuna/ComboShip) ([v0.1.1](https://github.com/Varuuna/ComboShip/releases/tag/v0.1.1)) | Randomizer cross-game: uma seed distribui itens entre OoT e MM, com inventário e progressão unificados. | Override do item de uma check e estado compartilhado entre os jogos. | Executável único com estado em memória — o Link-Span são dois processos. |
 | [SoH — Mod Development](https://harbour.proxysaw.dev/docs/ship-of-harkinian/mod-development/) | Documentação oficial: mods são substituição de assets via `.o2r`; **código não é suportado** ("Code however, is not stored in the o2rs"). | Justificativa do projeto e divisão de papéis: `.o2r` para arte/som, `.shipmod` para lógica. | Supor que o `.o2r` carregue comportamento — ele não carrega. |
 | [Harbour Master 64 DB](https://purplehato.github.io/HM64-DB/) ([OoT](https://purplehato.github.io/HM64-DB/oot) · [MM](https://purplehato.github.io/HM64-DB/mm)) | Catálogo pesquisável de display lists, skeletons, segment calls, animações, sons e instrumentos dos dois ports. | Coluna `SoH Name (For Export)` = caminho de recurso pronto para `set_body`/`attach_model`. | Não cobre animações do Player (`gPlayerAnim_*` → 0 resultados); é SPA, fetch simples dá 404. |
+| [Aegiker/OoTMM `mm-hammer2`](https://github.com/Aegiker/OoTMM/tree/mm-hammer2) | Megaton Hammer do MM como arma melee no OoTMM (**não** é sobre máscaras). | Nada diretamente — serve de contraste. | Remapear slots de animação existentes: é restrição de patcher de ROM, não nossa (lemos do `mm.o2r` por caminho). |
 
 ## 1. OoTMM: adaptação por jogo, forma e asset
 
@@ -349,3 +350,68 @@ defesa) — confirmação independente de que os caminhos do exemplo estão cert
 
 Créditos listados pelo próprio site: Citrus, Dany, DanaTheElf, Jameriquiah,
 Malon Rose, Peyton, PurpleHato, wisefries e outros.
+
+## 9. Transformação por máscara: OoTMM como referência — 2026-07-24
+
+Segunda passada no [OoTMM](https://github.com/OoTMM/OoTMM), agora focada só na
+SEQUÊNCIA de transformação, mais o branch
+[Aegiker/OoTMM `mm-hammer2`](https://github.com/Aegiker/OoTMM/tree/mm-hammer2).
+
+### `mm-hammer2` NÃO é sobre máscaras
+
+52 commits (último em out/2024) implementando o **Megaton Hammer do MM como arma
+melee** no OoTMM: animações de golpe, dano (`DMG_GORON_PUNCH`), shockwave e
+switches do Snowhead Temple. O hammer é item equipável, não forma transformável.
+Arquivos centrais: `packages/core/src/mm/actors/Player.c` e o novo
+`Player_hammer_anims.S`.
+
+O detalhe mais instrutivo é **pela ausência**: `Player_hammer_anims.S` canibaliza
+slots de animação não usados do Ganondorf (`gPlayerAnim_Link_otituku_w`,
+`ue_wait`, `muku`, `miageru`, `m_wait`) para caber as animações do martelo,
+porque um patcher de ROM não pode simplesmente adicionar assets. **O Link-Span
+não tem essa restrição** — lê animações direto do `mm.o2r` por caminho
+(`mm/objects/...`). É uma técnica que seria errado copiar daqui.
+
+### A sequência de transformação do OoTMM
+
+Ponto de entrada: `Player_ToggleForm(PlayState*, Player*, int form)` em
+`packages/generator/src/mm/actors/Player.c`.
+
+1. **Valida antes de começar**: exige draw function, exige NÃO estar em cutscene
+   (`Player_InCsMode`) e checa máscaras de `stateFlags1`/`stateFlags3`.
+2. **Sequestra o update do ator**: `link->actor.update = Player_UpdateForm`. A
+   transformação vira o *único* update do Player enquanto dura.
+3. **Fixa a posição**: guarda x/y/z em `sTransformPos` e restaura a cada frame.
+4. `Player_FormChangeResetState`: zera `actor.speed` e `velocity.x/y/z`, restaura
+   a posição salva, e chama `Player_FormChangeDeleteEffects()` para limpar
+   efeitos pendentes.
+5. `Player_UpdateForm` roda frame a frame (som, efeito, troca de modelo) e,
+   ao terminar, devolve `actor.update` ao normal.
+6. Estado persistido em `gSave.playerForm`; `CFG_MM_FAST_MASKS` /
+   D-Pad permitem pular a cutscene de equipar.
+
+**Limite desta investigação (não presumir o resto):** o corpo de
+`Player_UpdateForm` — que contém a lógica frame-a-frame de efeito visual, SFX e
+o instante exato da troca de modelo — está num overlay que não foi acessível
+via raw do GitHub. Número de frames, id do SFX de transformação e a natureza do
+efeito visual **não foram verificados**; o que consta acima é só o que se leu.
+
+### Comparação com o nosso `custom_body` + `goron-form`
+
+O que a nossa implementação **já faz igual**: desabilita input, zera
+`linearVelocity` e `velocity.y` todo frame durante a transição, ergue um flash
+branco nos frames finais e tem timeout de segurança para não deixar o jogador
+travado se o mod falhar (`MaskTransitionUpdate` em `ShipLuaBootstrap.cpp`).
+
+Diferenças que sobram, em ordem de valor:
+
+| # | OoTMM | Nós | Risco |
+|---|---|---|---|
+| 1 | Recusa transformar em cutscene (`Player_InCsMode`) e com flags de estado bloqueantes | Sem guarda equivalente no host | **Real**: apertar G numa cutscene/diálogo pode deixar estado inconsistente |
+| 2 | Fixa a posição (`sTransformPos` restaurada por frame) | Só zera velocidade | Menor: força externa (esteira, empurrão, rampa) ainda desloca durante a troca |
+| 3 | `Player_FormChangeDeleteEffects()` antes de trocar | Não limpa efeitos pendentes | Menor: efeito da forma antiga pode sobreviver um instante |
+| 4 | Assume o `actor.update` inteiro | Roda ao lado do update normal, via flags | Arquitetural: o nosso é menos invasivo mas menos hermético |
+
+O item 1 é o único que vale tratar como bug em potencial; os outros são
+refinamentos. Nenhum deles explica invisibilidade ou animação errada — esses
+foram `core.timers` desconectado e `ground_offset` fora de escala (ver §7).
