@@ -13,6 +13,10 @@
 | [PR #10 — custom items](https://github.com/xoascf/Shipwright/pull/10) | Item novo exige ID, inventário, menu, modelo, ator e ação do Player. | Checklist de integração de item nativo. | IDs e alterações de inventário daquele fork. |
 | [NEI / PR #1](https://github.com/skijer/Shipwright/pull/1) | Máquina de estados por item, inventário estendido, desenho separado e sincronização visual. | Arquitetura de handlers, limpeza e bloqueios. | Build monolítico, estado global e acesso direto a `Player*`. |
 | [CloudModding MM Wiki](https://wiki.cloudmodding.com/mm/Main_Page) | Catálogo de objetos, atores, animações e Get Item de MM. | Pesquisa e nomenclatura de assets MM. | Valores/endereço como contrato de runtime do host. |
+| [leveled](https://github.com/Arrenton/Shipwright/tree/leveled-blair) ([PR #11](https://github.com/Arrenton/Shipwright/pull/11)) | RPG nativo: XP/level 1-99, Power/Courage escalam dano, HUD de dano/XP, dificuldade por cena. | Ganchos genéricos: abate de inimigo, storage persistente, modificação de dano, HUD. | Campos novos em `Actor`/`SaveContext` e a tabela de XP daquele fork. |
+| [ComboShip](https://github.com/Varuuna/ComboShip) ([v0.1.1](https://github.com/Varuuna/ComboShip/releases/tag/v0.1.1)) | Randomizer cross-game: uma seed distribui itens entre OoT e MM, com inventário e progressão unificados. | Override do item de uma check e estado compartilhado entre os jogos. | Executável único com estado em memória — o Link-Span são dois processos. |
+| [SoH — Mod Development](https://harbour.proxysaw.dev/docs/ship-of-harkinian/mod-development/) | Documentação oficial: mods são substituição de assets via `.o2r`; **código não é suportado** ("Code however, is not stored in the o2rs"). | Justificativa do projeto e divisão de papéis: `.o2r` para arte/som, `.shipmod` para lógica. | Supor que o `.o2r` carregue comportamento — ele não carrega. |
+| [Harbour Master 64 DB](https://purplehato.github.io/HM64-DB/) ([OoT](https://purplehato.github.io/HM64-DB/oot) · [MM](https://purplehato.github.io/HM64-DB/mm)) | Catálogo pesquisável de display lists, skeletons, segment calls, animações, sons e instrumentos dos dois ports. | Coluna `SoH Name (For Export)` = caminho de recurso pronto para `set_body`/`attach_model`. | Não cobre animações do Player (`gPlayerAnim_*` → 0 resultados); é SPA, fetch simples dá 404. |
 
 ## 1. OoTMM: adaptação por jogo, forma e asset
 
@@ -220,7 +224,7 @@ Duas novas fontes mineradas, com o mesmo princípio de sempre: não copiar a
 feature, e sim abrir a primitiva genérica que deixa qualquer modder construí-la
 em Lua.
 
-### leveled (Arrenton/Shipwright, branch `leveled-blair`, PR #11)
+### leveled — [Arrenton/Shipwright](https://github.com/Arrenton/Shipwright), branch [`leveled-blair`](https://github.com/Arrenton/Shipwright/tree/leveled-blair), [PR #11](https://github.com/Arrenton/Shipwright/pull/11)
 
 Sistema RPG nativo completo (29 arquivos): XP em `SaveContext.experience`, level
 1–99, stats Power/Courage (`Actor.power`/`Actor.courage`) que escalam dano e
@@ -239,7 +243,7 @@ Mapeamento para primitivas — o que um modder precisa, e nada disso é "de RPG"
 | Números flutuantes + barra de level | primitiva de HUD/overlay draw | Documentado (Fase C) |
 | Dificuldade por cena | `scene.enter` + tabela no próprio mod | Já dava (nada novo) |
 
-### ComboShip (Varuuna) — randomizer cross-game OoT↔MM
+### ComboShip — [Varuuna/ComboShip](https://github.com/Varuuna/ComboShip) ([release v0.1.1](https://github.com/Varuuna/ComboShip/releases/tag/v0.1.1)) — randomizer cross-game OoT↔MM
 
 **Arquitetura oposta à do Link-Span**: executável ÚNICO (os dois jogos compilados
 juntos), estado compartilhado em memória em runtime. O Link-Span são dois
@@ -272,5 +276,76 @@ mais honesto que fingir simetria. Troca completa em MM fica para outra rodada.
 
 Ao wirar isto, verificou-se que o host REAL nunca conectava um `KeyValueStorage`
 nem um `FrameTimerScheduler` — `ship.storage` e `ship.timer` só funcionavam no
-mock de testes. O storage foi conectado agora (com persistência); os timers
-ficam como gap pendente (mesma natureza, tarefa separada).
+mock de testes, embora o schema declarasse `core.storage` e `core.timers`. Os
+dois foram conectados agora.
+
+O gap dos timers tinha consequência visível: o `goron-form` esconde toda a
+sequência de máscara atrás de `ship.capabilities.has("core.timers")` (tocar
+`cl_setmask` → esperar N frames → trocar o corpo). Sem timers a condição era
+falsa, o mod caía no ramo degradado e a transformação virava um toggle
+instantâneo, sem animação de máscara. **Uma capability declarada mas não
+fornecida degrada em silêncio** — nenhum erro, só comportamento faltando. Vale
+auditar periodicamente `context.*` do host contra a lista de `capabilities`.
+
+## 8. Documentação oficial de mods do SoH e Harbour Master 64 — 2026-07-24
+
+### [Ship of Harkinian — Mod Development](https://harbour.proxysaw.dev/docs/ship-of-harkinian/mod-development/)
+
+Documentação oficial de modding do SoH. Seções: Texture Modding, Model
+Replacement, Animation Modding, Audio Modding, Text Replacement, Code Modding,
+Common Mistakes, Known Issues, Modding Tips, Tools and Resources, Tutorials.
+
+O modelo suportado é **substituição de assets via `.o2r`**: o jogo extrai os
+assets da ROM para `oot.o2r` e o mod sobrescreve entradas desse arquivo.
+
+O ponto mais relevante para este projeto é uma afirmação explícita da própria
+documentação: *"Code however, is not stored in the o2rs, so we do not have the
+ability to support code mods."* Ou seja, **oficialmente o SoH não suporta mods
+com lógica** — só troca de assets; qualquer comportamento novo exige um fork do
+executável (é exatamente o que os forks das seções 3, 4 e 7 fazem).
+
+É a justificativa mais direta para a existência do Link-Span: ele preenche essa
+lacuna sem exigir um fork por mod — o host expõe hooks/capabilities e o
+comportamento vive num `.shipmod` em Lua. As duas abordagens se complementam:
+o `.o2r` continua sendo o caminho certo para trocar arte/som, e o `.shipmod`
+cobre a lógica que o `.o2r` não carrega.
+
+### [Harbour Master 64 — Asset Database](https://purplehato.github.io/HM64-DB/) ([OoT](https://purplehato.github.io/HM64-DB/oot) · [MM](https://purplehato.github.io/HM64-DB/mm))
+
+Base de dados de assets para **os dois** ports (SoH e 2S2H). Cinco categorias
+por jogo: Display Lists, Segment Calls, Animations, Sounds, Instruments. Display
+Lists tem subcategorias: Objects, Scenes, **Skeletons**, Skeletons Alt, Skeleton
+Bones, Customs 2S2H, Others. Cada tabela tem busca em todos os campos.
+
+O que a torna diretamente útil aqui: as colunas são
+`Decomp Directory | Decomp File Name (For Import) | Descrição | SoH Directory |
+SoH Name (For Export)`. A dupla **SoH Directory + SoH Name** é exatamente o
+formato de caminho de recurso que `set_body`, `set_body_segment`,
+`attach_model` e `set_held_item_model` consomem — ou seja, dá para copiar o
+caminho pronto do DB para a spec Lua, sem adivinhar nome de símbolo.
+
+Verificação feita nesta sessão (busca `link_goron` em MM → Display Lists →
+Skeletons, 2 de 214 entradas):
+
+| Decomp/SoH Directory | SoH Name (For Export) | Descrição |
+|---|---|---|
+| `objects/object_link_goron` | `gLinkGoronSkel` | Goron Link |
+| `objects/object_link_goron` | `gLinkGoronShieldingSkel` | Goron Link |
+
+São exatamente os dois esqueletos que o `goron-form` usa (corpo e postura de
+defesa) — confirmação independente de que os caminhos do exemplo estão certos.
+
+**Limitações verificadas (não presumidas):**
+
+- A tabela de Animations do MM tem 1746 entradas, mas cobre atores/NPCs, **não o
+  Player**: buscar `gPlayerAnim` ou `pg_wait` retorna 0 resultados. Buscar
+  `Goron` retorna 71 entradas, todas de Gorons NPC (`object_gk`, `object_jg`,
+  `object_oF1d_map`, `object_hakugin_demo`). Logo o DB **não** teria evitado os
+  erros de animação do corpo Goron (`_Data` vs header, símbolo errado) — para o
+  conjunto `gPlayerAnim_pg_*` continua valendo inspecionar o `.o2r` montado.
+- O site é uma SPA com roteamento no cliente: `curl`/fetch simples em
+  `/HM64-DB/oot` ou `/HM64-DB/mm` devolve **404**. É preciso um navegador (ou
+  ler o JSON de dados por trás) para consultar as tabelas.
+
+Créditos listados pelo próprio site: Citrus, Dany, DanaTheElf, Jameriquiah,
+Malon Rose, Peyton, PurpleHato, wisefries e outros.

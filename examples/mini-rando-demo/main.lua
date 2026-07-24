@@ -11,11 +11,11 @@ local ship = require("ship")
 -- deliberadamente conservador: só embaralha entre alguns get_item_ids seguros
 -- e o host valida o id de volta, então um mapeamento errado vira no-op.
 
--- get_item_ids vanilla das rupias (primeiras entradas da tabela vanilla).
+-- get_item_ids vanilla das rupias (z64item.h: GI_RUPEE_GREEN = 0x4C etc.).
 -- Trocar entre elas é visível e inofensivo — ideal para provar o mecanismo.
-local GI_RUPEE_GREEN = 1
-local GI_RUPEE_BLUE = 2
-local GI_RUPEE_RED = 3
+local GI_RUPEE_GREEN = 0x4C
+local GI_RUPEE_BLUE = 0x4D
+local GI_RUPEE_RED = 0x4E
 
 -- Embaralhamento determinístico simples a partir de uma seed: rotaciona a lista.
 local function shuffled_map(seed)
