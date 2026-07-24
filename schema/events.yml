@@ -60,7 +60,22 @@
     ]},
     {"name": "hook.oot.player.body_anim_select", "kind": "transform", "phase": "hook_bridge", "cancellable": false, "support": ["oot"], "capability": "oot.player.custom_body", "payload": [
       {"name": "speed", "type": "number", "required": true},
-      {"name": "on_ground", "type": "boolean", "required": true}
+      {"name": "on_ground", "type": "boolean", "required": true},
+      {"name": "rolling", "type": "boolean", "required": true},
+      {"name": "roll_charge", "type": "integer", "required": true},
+      {"name": "roll_phase", "type": "string", "required": true},
+      {"name": "falling", "type": "boolean", "required": true},
+      {"name": "landing", "type": "boolean", "required": true},
+      {"name": "climbing", "type": "boolean", "required": true},
+      {"name": "climb_direction", "type": "string", "required": true},
+      {"name": "climb_step", "type": "integer", "required": true},
+      {"name": "climb_starting", "type": "boolean", "required": true},
+      {"name": "door_opening", "type": "boolean", "required": true},
+      {"name": "door_direction", "type": "string", "required": true},
+      {"name": "chest_opening", "type": "boolean", "required": true},
+      {"name": "instrument", "type": "boolean", "required": true},
+      {"name": "attacking", "type": "boolean", "required": true},
+      {"name": "attack_animation", "type": "integer", "required": true}
     ]},
 
     {"name": "hook.mm.player.speed.walk", "kind": "transform", "phase": "hook_bridge", "cancellable": false, "support": ["mm"], "capability": "hooks.bridge", "payload": [

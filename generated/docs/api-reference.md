@@ -43,6 +43,7 @@ Versão da API: `0.4.0`. Versão do schema: `1`.
 | `ship.oot.player.jump` | — | `boolean` | `oot` | `experimental` | `0.3.0` | `oot.player.jump` | — |
 | `ship.oot.player.set_bunny_hood` | `equipped: boolean` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.player.bunny_hood` | — |
 | `ship.oot.player.set_mask` | `mask: string` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.player.mask` | — |
+| `ship.oot.player.play_mask_on_animation` | — | `integer` | `oot` | `experimental` | `0.4.0` | `oot.player.mask` | — |
 | `ship.player.set_speed_multiplier` | `factor: number` | `boolean` | `common` | `experimental` | `0.4.0` | `player.speed` | — |
 | `ship.player.get` | `field: string` | `any` | `oot` | `experimental` | `0.4.0` | `player.fields` | — |
 | `ship.player.set` | `field: string`, `value: number` | `boolean` | `oot` | `experimental` | `0.4.0` | `player.fields` | — |
@@ -52,6 +53,8 @@ Versão da API: `0.4.0`. Versão do schema: `1`.
 | `ship.oot.player.set_roll_mode` | `mode: string` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.player.roll` | — |
 | `ship.oot.player.set_body` | `spec: any` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.player.custom_body` | — |
 | `ship.oot.player.get_body` | — | `any` | `oot` | `experimental` | `0.4.0` | `oot.player.custom_body` | — |
+| `ship.oot.player.play_body_animation` | `name: string`, `mode: string?`, `speed: number?` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.player.custom_body` | — |
+| `ship.oot.player.set_body_segment` | `segment: integer`, `path: string` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.player.custom_body` | — |
 | `ship.oot.player.set_held_item_model` | `slot: string`, `path: string` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.player.held_item_model` | — |
 | `ship.oot.spawn_dog` | — | `boolean` | `oot` | `experimental` | `0.3.0` | `oot.spawn_dog` | — |
 | `ship.log.debug` | `message: string` | `nil` | `common` | `stable` | `0.1.0` | — | `invalid_argument` |
@@ -88,7 +91,7 @@ Versão da API: `0.4.0`. Versão do schema: `1`.
 | `hook.oot.player.bonk` | `observe` | `hook_bridge` | `oot` | não | `hooks.bridge` | — |
 | `hook.oot.player.first_person_control` | `observe` | `hook_bridge` | `oot` | não | `hooks.bridge` | `held_item_action: integer` |
 | `hook.oot.player.arrow_type_select` | `transform` | `hook_bridge` | `oot` | não | `hooks.bridge` | `magic_arrow_type: integer`, `arrow_type: integer` |
-| `hook.oot.player.body_anim_select` | `transform` | `hook_bridge` | `oot` | não | `oot.player.custom_body` | `speed: number`, `on_ground: boolean` |
+| `hook.oot.player.body_anim_select` | `transform` | `hook_bridge` | `oot` | não | `oot.player.custom_body` | `speed: number`, `on_ground: boolean`, `rolling: boolean`, `roll_charge: integer`, `roll_phase: string`, `falling: boolean`, `landing: boolean`, `climbing: boolean`, `climb_direction: string`, `climb_step: integer`, `climb_starting: boolean`, `door_opening: boolean`, `door_direction: string`, `chest_opening: boolean`, `instrument: boolean`, `attacking: boolean`, `attack_animation: integer` |
 | `hook.mm.player.speed.walk` | `transform` | `hook_bridge` | `mm` | não | `hooks.bridge` | `speed: number` |
 | `hook.mm.player.goron_roll.consume_magic` | `transform` | `hook_bridge` | `mm` | não | `hooks.bridge` | — |
 | `hook.mm.player.goron_roll.disable_spike_mode` | `transform` | `hook_bridge` | `mm` | não | `hooks.bridge` | — |

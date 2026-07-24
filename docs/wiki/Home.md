@@ -24,6 +24,7 @@ across worlds: MM assets inside OoT and OoT assets inside MM, live.
 - [Cross-World Assets](Cross-World-Assets) — the `mm/` / `oot/` namespaces.
 - [Example Mods](Example-Mods) — the 8 shipped examples and their keys.
 - [Troubleshooting](Troubleshooting) — rejections, keys, crashes, logs.
+- [Pesquisa externa: itens e extensões OoT/MM](Research-External-Item-Systems) — padrões de OoTMM, custom items, NEI, stamina e CloudModding.
 
 Full docs live in the repository:
 [docs/](https://github.com/BaiterYamato/link-span/tree/main/docs) ·

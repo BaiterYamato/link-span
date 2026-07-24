@@ -8,8 +8,8 @@ local validate = require("shiplua_validate")
 local M = {}
 
 M.contract_capabilities = {
-  oot = { "core.events", "core.timers", "core.input", "core.storage", "scene.events", "actor.events", "actor.spawn", "actor.destroy", "actor.exists", "save.events", "text.events", "audio.sequence.events", "world.travel", "oot.player.jump", "oot.spawn_dog" },
-  mm = { "core.events", "core.timers", "core.input", "core.storage", "scene.events", "actor.events", "actor.spawn", "actor.destroy", "actor.exists", "save.events", "text.events", "audio.sequence.events", "world.travel", "mm.player.jump", "mm.spawn_dog", "mm.player.sword_skin" },
+  oot = { "core.events", "hooks.bridge", "core.timers", "core.input", "core.storage", "scene.events", "actor.events", "actor.spawn", "actor.destroy", "actor.exists", "save.events", "text.events", "audio.sequence.events", "world.travel", "oot.player.jump", "oot.spawn_dog", "oot.player.bunny_hood", "oot.player.mask", "player.speed", "player.fields", "oot.player.attach_model", "mod.assets", "oot.player.immunity", "oot.player.weight", "oot.player.roll", "oot.player.custom_body", "oot.player.held_item_model" },
+  mm = { "core.events", "hooks.bridge", "core.timers", "core.input", "core.storage", "scene.events", "actor.events", "actor.spawn", "actor.destroy", "actor.exists", "save.events", "text.events", "audio.sequence.events", "world.travel", "mm.player.jump", "mm.spawn_dog", "mm.player.sword_skin", "player.speed" },
 }
 
 M.host = {

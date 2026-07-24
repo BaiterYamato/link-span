@@ -116,6 +116,21 @@
 ---@class ShipLuaEventHookOotPlayerBodyAnimSelect
 ---@field speed number
 ---@field on_ground boolean
+---@field rolling boolean
+---@field roll_charge integer
+---@field roll_phase string
+---@field falling boolean
+---@field landing boolean
+---@field climbing boolean
+---@field climb_direction string
+---@field climb_step integer
+---@field climb_starting boolean
+---@field door_opening boolean
+---@field door_direction string
+---@field chest_opening boolean
+---@field instrument boolean
+---@field attacking boolean
+---@field attack_animation integer
 
 ---@class ShipLuaEventHookMmPlayerSpeedWalk
 ---@field speed number
@@ -251,6 +266,10 @@ function ship.oot.player.set_bunny_hood(equipped) end
 ---@return boolean
 function ship.oot.player.set_mask(mask) end
 
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: oot.player.mask; erros: nenhum.
+---@return integer
+function ship.oot.player.play_mask_on_animation() end
+
 --- API common; estabilidade: experimental; desde: 0.4.0; capability: player.speed; erros: nenhum.
 ---@param factor number
 ---@return boolean
@@ -297,6 +316,19 @@ function ship.oot.player.set_body(spec) end
 --- API oot; estabilidade: experimental; desde: 0.4.0; capability: oot.player.custom_body; erros: nenhum.
 ---@return any
 function ship.oot.player.get_body() end
+
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: oot.player.custom_body; erros: nenhum.
+---@param name string
+---@param mode? string
+---@param speed? number
+---@return boolean
+function ship.oot.player.play_body_animation(name, mode, speed) end
+
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: oot.player.custom_body; erros: nenhum.
+---@param segment integer
+---@param path string
+---@return boolean
+function ship.oot.player.set_body_segment(segment, path) end
 
 --- API oot; estabilidade: experimental; desde: 0.4.0; capability: oot.player.held_item_model; erros: nenhum.
 ---@param slot string

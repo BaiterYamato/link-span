@@ -106,6 +106,7 @@ enum class FunctionId {
     ShipOotPlayerJump,
     ShipOotPlayerSetBunnyHood,
     ShipOotPlayerSetMask,
+    ShipOotPlayerPlayMaskOnAnimation,
     ShipPlayerSetSpeedMultiplier,
     ShipPlayerGet,
     ShipPlayerSet,
@@ -115,6 +116,8 @@ enum class FunctionId {
     ShipOotPlayerSetRollMode,
     ShipOotPlayerSetBody,
     ShipOotPlayerGetBody,
+    ShipOotPlayerPlayBodyAnimation,
+    ShipOotPlayerSetBodySegment,
     ShipOotPlayerSetHeldItemModel,
     ShipOotSpawnDog,
     ShipLogDebug,
@@ -268,6 +271,10 @@ inline constexpr std::array<FieldBinding, 1> kShipOotPlayerSetMaskArguments{{
 }};
 inline constexpr std::array<std::string_view, 0> kShipOotPlayerSetMaskErrors{{
 }};
+inline constexpr std::array<FieldBinding, 0> kShipOotPlayerPlayMaskOnAnimationArguments{{
+}};
+inline constexpr std::array<std::string_view, 0> kShipOotPlayerPlayMaskOnAnimationErrors{{
+}};
 inline constexpr std::array<FieldBinding, 1> kShipPlayerSetSpeedMultiplierArguments{{
     {"factor", "number", true},
 }};
@@ -314,6 +321,19 @@ inline constexpr std::array<std::string_view, 0> kShipOotPlayerSetBodyErrors{{
 inline constexpr std::array<FieldBinding, 0> kShipOotPlayerGetBodyArguments{{
 }};
 inline constexpr std::array<std::string_view, 0> kShipOotPlayerGetBodyErrors{{
+}};
+inline constexpr std::array<FieldBinding, 3> kShipOotPlayerPlayBodyAnimationArguments{{
+    {"name", "string", true},
+    {"mode", "string", false},
+    {"speed", "number", false},
+}};
+inline constexpr std::array<std::string_view, 0> kShipOotPlayerPlayBodyAnimationErrors{{
+}};
+inline constexpr std::array<FieldBinding, 2> kShipOotPlayerSetBodySegmentArguments{{
+    {"segment", "integer", true},
+    {"path", "string", true},
+}};
+inline constexpr std::array<std::string_view, 0> kShipOotPlayerSetBodySegmentErrors{{
 }};
 inline constexpr std::array<FieldBinding, 2> kShipOotPlayerSetHeldItemModelArguments{{
     {"slot", "string", true},
@@ -404,7 +424,7 @@ inline constexpr std::array<std::string_view, 1> kShipStorageClearErrors{{
     "unsupported",
 }};
 
-inline constexpr std::array<FunctionBinding, 42> kFunctions{{
+inline constexpr std::array<FunctionBinding, 45> kFunctions{{
     {FunctionId::ShipGameId, "ship.game.id", "0.1.0", "stable", "game_id", "raise", {}, "common", {}, kShipGameIdArguments, kShipGameIdErrors},
     {FunctionId::ShipGameHostVersion, "ship.game.host_version", "0.1.0", "stable", "string", "raise", {}, "common", {}, kShipGameHostVersionArguments, kShipGameHostVersionErrors},
     {FunctionId::ShipRuntimeVersion, "ship.runtime.version", "0.1.0", "stable", "string", "raise", {}, "common", {}, kShipRuntimeVersionArguments, kShipRuntimeVersionErrors},
@@ -425,6 +445,7 @@ inline constexpr std::array<FunctionBinding, 42> kFunctions{{
     {FunctionId::ShipOotPlayerJump, "ship.oot.player.jump", "0.3.0", "experimental", "boolean", "raise", {}, "oot", "oot.player.jump", kShipOotPlayerJumpArguments, kShipOotPlayerJumpErrors},
     {FunctionId::ShipOotPlayerSetBunnyHood, "ship.oot.player.set_bunny_hood", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.player.bunny_hood", kShipOotPlayerSetBunnyHoodArguments, kShipOotPlayerSetBunnyHoodErrors},
     {FunctionId::ShipOotPlayerSetMask, "ship.oot.player.set_mask", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.player.mask", kShipOotPlayerSetMaskArguments, kShipOotPlayerSetMaskErrors},
+    {FunctionId::ShipOotPlayerPlayMaskOnAnimation, "ship.oot.player.play_mask_on_animation", "0.4.0", "experimental", "integer", "raise", {}, "oot", "oot.player.mask", kShipOotPlayerPlayMaskOnAnimationArguments, kShipOotPlayerPlayMaskOnAnimationErrors},
     {FunctionId::ShipPlayerSetSpeedMultiplier, "ship.player.set_speed_multiplier", "0.4.0", "experimental", "boolean", "raise", {}, "common", "player.speed", kShipPlayerSetSpeedMultiplierArguments, kShipPlayerSetSpeedMultiplierErrors},
     {FunctionId::ShipPlayerGet, "ship.player.get", "0.4.0", "experimental", "any", "raise", {}, "oot", "player.fields", kShipPlayerGetArguments, kShipPlayerGetErrors},
     {FunctionId::ShipPlayerSet, "ship.player.set", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "player.fields", kShipPlayerSetArguments, kShipPlayerSetErrors},
@@ -434,6 +455,8 @@ inline constexpr std::array<FunctionBinding, 42> kFunctions{{
     {FunctionId::ShipOotPlayerSetRollMode, "ship.oot.player.set_roll_mode", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.player.roll", kShipOotPlayerSetRollModeArguments, kShipOotPlayerSetRollModeErrors},
     {FunctionId::ShipOotPlayerSetBody, "ship.oot.player.set_body", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.player.custom_body", kShipOotPlayerSetBodyArguments, kShipOotPlayerSetBodyErrors},
     {FunctionId::ShipOotPlayerGetBody, "ship.oot.player.get_body", "0.4.0", "experimental", "any", "raise", {}, "oot", "oot.player.custom_body", kShipOotPlayerGetBodyArguments, kShipOotPlayerGetBodyErrors},
+    {FunctionId::ShipOotPlayerPlayBodyAnimation, "ship.oot.player.play_body_animation", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.player.custom_body", kShipOotPlayerPlayBodyAnimationArguments, kShipOotPlayerPlayBodyAnimationErrors},
+    {FunctionId::ShipOotPlayerSetBodySegment, "ship.oot.player.set_body_segment", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.player.custom_body", kShipOotPlayerSetBodySegmentArguments, kShipOotPlayerSetBodySegmentErrors},
     {FunctionId::ShipOotPlayerSetHeldItemModel, "ship.oot.player.set_held_item_model", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.player.held_item_model", kShipOotPlayerSetHeldItemModelArguments, kShipOotPlayerSetHeldItemModelErrors},
     {FunctionId::ShipOotSpawnDog, "ship.oot.spawn_dog", "0.3.0", "experimental", "boolean", "raise", {}, "oot", "oot.spawn_dog", kShipOotSpawnDogArguments, kShipOotSpawnDogErrors},
     {FunctionId::ShipLogDebug, "ship.log.debug", "0.1.0", "stable", "nil", "raise", {}, "common", {}, kShipLogDebugArguments, kShipLogDebugErrors},
@@ -518,9 +541,24 @@ inline constexpr std::array<FieldBinding, 2> kHookOotPlayerArrowTypeSelectPayloa
     {"magic_arrow_type", "integer", true},
     {"arrow_type", "integer", true},
 }};
-inline constexpr std::array<FieldBinding, 2> kHookOotPlayerBodyAnimSelectPayload{{
+inline constexpr std::array<FieldBinding, 17> kHookOotPlayerBodyAnimSelectPayload{{
     {"speed", "number", true},
     {"on_ground", "boolean", true},
+    {"rolling", "boolean", true},
+    {"roll_charge", "integer", true},
+    {"roll_phase", "string", true},
+    {"falling", "boolean", true},
+    {"landing", "boolean", true},
+    {"climbing", "boolean", true},
+    {"climb_direction", "string", true},
+    {"climb_step", "integer", true},
+    {"climb_starting", "boolean", true},
+    {"door_opening", "boolean", true},
+    {"door_direction", "string", true},
+    {"chest_opening", "boolean", true},
+    {"instrument", "boolean", true},
+    {"attacking", "boolean", true},
+    {"attack_animation", "integer", true},
 }};
 inline constexpr std::array<FieldBinding, 1> kHookMmPlayerSpeedWalkPayload{{
     {"speed", "number", true},
