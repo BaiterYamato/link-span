@@ -120,13 +120,17 @@ local GORON_BODY = {
         skeleton = "mm/objects/object_link_goron/gLinkGoronShieldingSkel",
         animation = "mm/objects/object_link_goron/gLinkGoronShieldingAnim",
     },
-    -- A origem de colisão do Link adulto fica aproximadamente 150 unidades
-    -- acima da sola do skeleton Goron convertido. O offset é aplicado pelo
-    -- ator hospedeiro já em unidades de mundo (não em unidades do model).
-    -- A calibração anterior (-150) ainda deixava as solas cerca de 60 unidades
-    -- suspensas no actor host do OoT. -210 alinha a base das botas ao piso
-    -- físico do Player, sem alterar colisão, gravidade ou altura de salto.
-    ground_offset = -210.0,
+    -- Deslocamento vertical do corpo, EM UNIDADES DE MUNDO (o host divide pela
+    -- escala antes de gravar em shape.yOffset, e Actor_Draw multiplica de volta
+    -- — ver ShipLuaBootstrap.cpp, CustomBodyActorUpdate).
+    --
+    -- CUIDADO ao calibrar: o skeleton Goron tem cerca de 60 unidades de altura,
+    -- então valores muito negativos enterram o corpo inteiro sob o piso e ele
+    -- some da tela — indistinguível de "não desenhou". Uma calibração anterior
+    -- chegou a -210 às cegas e deixou a forma invisível. O comentário do próprio
+    -- host aponta o alvo real: sem compensação o corpo ereto fica ~30 unidades
+    -- acima do solo, logo o ajuste correto é dessa ordem.
+    ground_offset = -30.0,
     roll_offset = 12.0,
     -- Goron nao nada: em agua funda, enrola, afunda e volta pelo void-out
     -- nativo. A regra e opt-in da spec para nao afetar outros corpos.
