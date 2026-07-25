@@ -192,13 +192,13 @@ end
 -- Fome e sede continuam sempre em barra, no canto superior esquerdo.
 local STAMINA_STYLE = "wheel"
 
--- Termômetro: gauge vertical no canto inferior direito, perto do minimapa,
--- como o de BotW. Um marcador desliza por uma escala fria->quente em vez de
--- uma barra que enche — temperatura não tem "cheio", tem posição.
--- Coordenadas no espaço de HUD do OoT (320x240); ajuste se quiser mover.
-local GAUGE_X, GAUGE_Y = 292, 138   -- canto superior esquerdo da escala
-local GAUGE_W, GAUGE_H = 7, 58      -- largura e altura da escala
-local GAUGE_MARKER_W, GAUGE_MARKER_H = 13, 3
+-- Termômetro: mostrador semicircular com ponteiro, no canto inferior direito
+-- perto do minimapa. Esquerda = frio (azul), direita = quente (vermelho).
+-- Coordenadas no espaço de HUD do OoT (320x240); ajuste para mover.
+local GAUGE_CX, GAUGE_CY = 288, 158  -- centro do mostrador (o ponteiro nasce aqui)
+local GAUGE_RADIUS = 21              -- raio do arco colorido
+local GAUGE_BAND = 5                 -- espessura da faixa colorida
+local GAUGE_NEEDLE_LEN = 15          -- comprimento do ponteiro
 
 -- Roda: deslocamento em relação ao personagem, na tela. Negativo em x é à
 -- esquerda; negativo em y é acima.
@@ -221,28 +221,60 @@ local function temp_color_at(t)
     return 255, math.floor(240 - 180 * k), math.floor(210 - 190 * k)
 end
 
--- Termômetro vertical: escala com gradiente frio->quente (quente em cima) e um
--- marcador que desliza. Composto só de retângulos — a escala é desenhada em
--- fatias de 1px de altura, cada uma com a cor daquele ponto.
+-- Mostrador semicircular com ponteiro, no estilo de um termômetro analógico.
+-- O arco vai da esquerda (frio) à direita (quente) passando pelo topo, e o
+-- ponteiro nasce no centro apontando para a temperatura atual.
+--
+-- Tudo composto de retângulos pequenos posicionados por seno/cosseno: as
+-- primitivas do host desenham retângulos alinhados aos eixos, então curva e
+-- ponteiro são aproximados por pontos ao longo do traçado. Com este raio o
+-- resultado lê como um mostrador contínuo.
 local function temperature_gauge()
-    local range = MAX * 2                        -- 0..200, com 100 = neutro
+    local range = MAX * 2                     -- 0..200, com 100 = neutro
     local t = clamp(S.temperature / range, 0, 1)
+    local PI = math.pi
 
-    -- Moldura escura, um pouco maior que a escala.
-    ship.hud.draw_rect(GAUGE_X - 1, GAUGE_Y - 1, GAUGE_W + 2, GAUGE_H + 2, 0, 0, 0, 170)
-
-    -- Gradiente: topo = quente. A fatia i de cima corresponde a (1 - i/H).
-    for i = 0, GAUGE_H - 1 do
-        local pos = 1 - (i / (GAUGE_H - 1))
-        local r, g, b = temp_color_at(pos)
-        ship.hud.draw_rect(GAUGE_X, GAUGE_Y + i, GAUGE_W, 1, r, g, b, 205)
+    -- Ângulo: t=0 (frio) à esquerda (180 graus), t=1 (quente) à direita (0).
+    -- Em coordenadas de tela o y cresce para baixo, daí o sinal negativo.
+    local function point(angle, radius)
+        return GAUGE_CX + math.cos(angle) * radius,
+               GAUGE_CY - math.sin(angle) * radius
     end
 
-    -- Marcador na posição atual (invertido: t=1 fica no topo).
-    local my = GAUGE_Y + math.floor((1 - t) * (GAUGE_H - 1)) - math.floor(GAUGE_MARKER_H / 2)
-    local mx = GAUGE_X - math.floor((GAUGE_MARKER_W - GAUGE_W) / 2)
-    ship.hud.draw_rect(mx - 1, my - 1, GAUGE_MARKER_W + 2, GAUGE_MARKER_H + 2, 0, 0, 0, 220)
-    ship.hud.draw_rect(mx, my, GAUGE_MARKER_W, GAUGE_MARKER_H, 255, 255, 255, 255)
+    -- Faixa colorida do arco. Passos suficientes para não deixar falhas.
+    local steps = 46
+    for i = 0, steps do
+        local pos = i / steps                 -- 0 = frio, 1 = quente
+        local ang = PI * (1 - pos)
+        local r, g, b = temp_color_at(pos)
+        for layer = 0, GAUGE_BAND - 1 do
+            local px, py = point(ang, GAUGE_RADIUS - layer)
+            ship.hud.draw_rect(math.floor(px), math.floor(py), 2, 2, r, g, b, 225)
+        end
+    end
+
+    -- Marcas nas pontas e no centro, para dar leitura de escala.
+    for _, pos in ipairs({ 0, 0.5, 1 }) do
+        local ang = PI * (1 - pos)
+        local px, py = point(ang, GAUGE_RADIUS + 3)
+        ship.hud.draw_rect(math.floor(px), math.floor(py), 2, 2, 255, 255, 255, 200)
+    end
+
+    -- Ponteiro: pontos do centro até o comprimento, com contorno escuro para
+    -- destacar sobre qualquer cor da faixa.
+    local ang = PI * (1 - t)
+    for i = 2, GAUGE_NEEDLE_LEN do
+        local px, py = point(ang, i)
+        ship.hud.draw_rect(math.floor(px) - 1, math.floor(py) - 1, 4, 4, 0, 0, 0, 190)
+    end
+    for i = 2, GAUGE_NEEDLE_LEN do
+        local px, py = point(ang, i)
+        ship.hud.draw_rect(math.floor(px), math.floor(py), 2, 2, 255, 255, 255, 245)
+    end
+
+    -- Eixo central.
+    ship.hud.draw_rect(GAUGE_CX - 3, GAUGE_CY - 3, 6, 6, 0, 0, 0, 210)
+    ship.hud.draw_rect(GAUGE_CX - 2, GAUGE_CY - 2, 4, 4, 235, 235, 235, 255)
 end
 
 local function bar(index, label, value, maxValue, r, g, b)
