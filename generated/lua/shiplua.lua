@@ -187,6 +187,7 @@ ship.storage = ship.storage or {}
 ship.timer = ship.timer or {}
 ship.world = ship.world or {}
 ship.mm.player = ship.mm.player or {}
+ship.oot.env = ship.oot.env or {}
 ship.oot.player = ship.oot.player or {}
 ship.storage.shared = ship.storage.shared or {}
 
@@ -365,6 +366,11 @@ function ship.oot.player.set_body_segment(segment, path) end
 ---@param path string
 ---@return boolean
 function ship.oot.player.set_held_item_model(slot, path) end
+
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: oot.env; erros: nenhum.
+---@param field string
+---@return any
+function ship.oot.env.get(field) end
 
 --- API oot; estabilidade: experimental; desde: 0.3.0; capability: oot.spawn_dog; erros: nenhum.
 ---@return boolean

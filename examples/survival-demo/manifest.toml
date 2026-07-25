@@ -9,4 +9,4 @@ games = ["oot"]
 
 [capabilities]
 required = ["hud.draw", "core.storage", "core.timers", "player.fields"]
-optional = ["player.speed", "hooks.bridge"]
+optional = ["player.speed", "hooks.bridge", "oot.env", "oot.player.roll"]

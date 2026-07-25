@@ -40,16 +40,32 @@ local STAMINA_REGEN = 9.0
 -- escalada é medido por variação de altura entre ticks, não por velocidade.
 local CLIMB_MOVE_EPSILON = 0.4
 
--- Temperatura: 50 = neutro. Cada cena puxa para um alvo.
-local TEMP_NEUTRAL = 50.0
-local TEMP_RATE = 2.0
--- Cenas frias/quentes conhecidas do OoT (scene_id -> alvo de temperatura).
+-- Temperatura: escala 0..200, 100 = neutro (o gauge usa MAX*2 como faixa).
+local TEMP_NEUTRAL = 100.0
+local TEMP_RATE = 3.0
+
+-- Alvo por cena. O que não estiver aqui usa NEUTRO e ainda assim sofre o
+-- efeito de dia/noite abaixo — por isso o deserto esquenta de dia mesmo sem
+-- estar listado com valor extremo.
 local SCENE_TEMP = {
-    [82] = 12.0,  -- Ice Cavern
-    [88] = 18.0,  -- Zora's Fountain
-    [4]  = 88.0,  -- Fire Temple
-    [92] = 84.0,  -- Death Mountain Crater
+    -- Frio
+    [9]   = 25.0,   -- Ice Cavern
+    [88]  = 60.0,   -- Zora's Fountain
+    -- Quente
+    [4]   = 175.0,  -- Fire Temple
+    [97]  = 170.0,  -- Death Mountain Crater
+    [96]  = 130.0,  -- Death Mountain Trail
+    [93]  = 150.0,  -- Haunted Wasteland (deserto)
+    [94]  = 145.0,  -- Desert Colossus
+    [90]  = 130.0,  -- Gerudo Valley
+    [95]  = 130.0,  -- Gerudo's Fortress
 }
+
+-- Quanto a noite esfria e o meio-dia esquenta, somado ao alvo da cena.
+-- Uma caverna de gelo continua gelada de dia; o deserto vira frio à noite,
+-- que é o comportamento clássico de deserto.
+local DAY_NIGHT_SWING = 45.0
+
 local sceneTempTarget = TEMP_NEUTRAL
 
 -- Consequências: abaixo deste ponto, começa a doer.
@@ -139,11 +155,31 @@ local function update()
         ship.log.info("sem força — você escorregou!")
     end
 
-    -- Temperatura tende ao alvo da cena atual.
-    if S.temperature < sceneTempTarget then
-        S.temperature = clamp(S.temperature + TEMP_RATE, 0, MAX * 2)
-    elseif S.temperature > sceneTempTarget then
-        S.temperature = clamp(S.temperature - TEMP_RATE, 0, MAX * 2)
+    -- Alvo de temperatura = cena + ciclo dia/noite. Lido a cada tick (não só
+    -- na troca de cena) porque o tempo passa dentro da mesma cena.
+    local target = sceneTempTarget
+    if ship.capabilities.has("oot.env") then
+        -- Cena é reconsultada aqui também: entrar por um caminho que não
+        -- dispara scene.enter (carregar save, void-out) deixaria o alvo velho.
+        local sid = ship.oot.env.get("scene_id")
+        if sid then
+            target = SCENE_TEMP[sid] or TEMP_NEUTRAL
+            sceneTempTarget = target
+        end
+        local tod = ship.oot.env.get("time_of_day")
+        if tod then
+            -- 0 = meia-noite (mais frio), 0.5 = meio-dia (mais quente).
+            -- math.cos dá a curva suave: -1 na meia-noite, +1 ao meio-dia.
+            local warmth = -math.cos(tod * 2 * math.pi)
+            target = target + warmth * (DAY_NIGHT_SWING / 2)
+        end
+    end
+    target = clamp(target, 0, MAX * 2)
+
+    if S.temperature < target then
+        S.temperature = clamp(math.min(S.temperature + TEMP_RATE, target), 0, MAX * 2)
+    elseif S.temperature > target then
+        S.temperature = clamp(math.max(S.temperature - TEMP_RATE, target), 0, MAX * 2)
     end
 
     -- Consequência 1: sem stamina, não dá para rolar. Só drenar o medidor não
