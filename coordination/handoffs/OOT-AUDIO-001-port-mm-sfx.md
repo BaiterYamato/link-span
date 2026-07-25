@@ -96,7 +96,21 @@ os dois jogos são N64, o motor de áudio nativo roda a 32 kHz nos dois.
 **Isso elimina a peça mais chata de um port de áudio.** Sem resampler, sem
 conversão de formato, sem drift de clock.
 
-### ⚠️ [V] A mina real: o caminho das amostras não sobrevive ao prefixo `mm/`
+### ✅ [V] RESOLVIDO EM JOGO — a mina das amostras, e o que ela ensinou
+
+> **Fase 1 passou o portão em 2026-07-25.** Medido no jogo rodando:
+> `503` resoluções de amostra pelo caminho prefixado, **`0` falhas**.
+> O `Soundfont_0` do MM saiu de `14/816` para `627/832` — e as 205 restantes
+> não são falhas, são slots que o próprio font declara vazios (instrumento sem
+> variante grave ou aguda). Controle sem prefixo: `5/463`.
+>
+> Também verificado em jogo, e é o achado que sustenta o projeto inteiro:
+> ```
+> direto 'mm/audio/samples/AdultLinkAttack1_META' -> OK size=4698B codec=0 medium=0
+> ```
+> **As amostras VADPCM do MM carregam pelo ResourceMgr do OoT, sem conversão.**
+
+**A armadilha que quase passou batido** (mantida aqui porque a lição vale):
 
 Este é o risco que **não** estava mapeado e que teria custado horas.
 
@@ -128,23 +142,49 @@ mm.o2r's..."*).
 de caminho já foram descartadas — sobrou só o ponteiro errado. O conserto tem
 que acontecer *durante* o load.
 
-**Solução escolhida** — prefixo com escopo, no nosso próprio factory:
+**Solução implementada** — o prefixo é **derivado do caminho do próprio
+recurso**, dentro do factory:
 
 ```cpp
 // soh/soh/resource/importer/AudioSoundFontFactory.cpp
-// Prefixo aplicado aos caminhos de amostra durante o load de um soundfont
-// cross-world. Vazio no caminho normal do OoT.
-extern std::string gAudioSamplePathPrefix;
-...
-auto res = ...->LoadResourceProcess((gAudioSamplePathPrefix + sampleFileName).c_str());
+//   "mm/audio/fonts/Soundfont_0" -> "mm/"
+//   "audio/fonts/Soundfont_0"    -> ""
+static std::string NamespacePrefixOf(const std::shared_ptr<Ship::ResourceInitData>& initData) {
+    const std::size_t root = initData->Path.find("audio/");
+    return root == std::string::npos ? std::string() : initData->Path.substr(0, root);
+}
 ```
 
-com um RAII que seta/limpa em volta do load do font do MM. ~10 linhas, e o
-caminho do OoT continua byte a byte o mesmo (prefixo vazio).
+e cada resolução tenta primeiro `prefix + path`, caindo no literal. O caminho do
+OoT fica byte a byte igual (prefixo vazio), e archives `mod/<id>/` ganham o
+mesmo tratamento de graça.
 
-> **Alternativa rejeitada:** reparsear o `Soundfont_0` cru por fora para extrair
-> os nomes. Duplica o parser do factory e quebra em silêncio quando o formato
-> do recurso mudar.
+#### ⚠️ A lição que custou três builds: **o factory roda em worker thread**
+
+A primeira tentativa usou um global com um RAII em volta do load. Funcionava.
+Aí eu troquei o global por `thread_local` "por segurança", raciocinando que
+`LoadResourceProcess` é síncrono — o que é verdade — e concluindo daí que o
+factory roda na thread que pediu — o que é **falso**. Resultado: `14/816`,
+e um dia inteiro poderia ter ido embora achando que o formato do MM era
+incompatível.
+
+O log que fechou a questão:
+
+```
+[thread 13150] carregando 'mm/audio/fonts/Soundfont_0' com prefixo 'mm/'
+[thread 63696] amostra 'audio/samples/TamboDrum_META' -> prefixado 'mm/...' OK
+```
+
+**Threads diferentes.** O SoH carrega recursos num pool. Qualquer estado que
+precise atravessar de "quem pediu o recurso" para "quem parseia o recurso"
+**não pode** ser `thread_local` — e um global simples também não serve, porque
+dois soundfonts em paralelo veriam o prefixo um do outro. Por isso a solução
+final deriva o prefixo do parâmetro, sem estado nenhum.
+
+> **Alternativas rejeitadas:** (a) reparsear o `Soundfont_0` cru por fora para
+> extrair os nomes — duplica o parser e quebra em silêncio quando o formato
+> mudar; (b) global + RAII — funciona por sorte, corre risco real com loads
+> concorrentes.
 
 ---
 
@@ -246,33 +286,112 @@ padrão "compila e carrega" já provou não pegar os bugs desta área.
 O objetivo é provar o caminho INTEIRO com o mínimo de código. Nada de trilha,
 nada de voz, nada de Goron.
 
-1. `soh/soh/mmaudio/` com o loader: carregar `mm/audio/fonts/Soundfont_0` via
-   `ResourceMgr_LoadAudioSoundFontByName` e **conferir que
-   `numInstruments`/`numDrums`/`numSfx` são plausíveis** (log).
-2. Implementar o prefixo com escopo no `AudioSoundFontFactory` (seção 1.4) e
-   confirmar por log que os `Sample*` resolvidos apontam para dados do `mm.o2r`
-   e não do OoT — compare `size`/`sampleAddr` de um mesmo nome nos dois.
-3. Portar o mínimo de `synthesis.c` para decodificar **uma** amostra VADPCM e
-   somá-la no buffer em `AudioPlayer_Play`, disparada por uma hotkey.
+1. ✅ **FEITO** — `soh/soh/mmaudio/` carrega `mm/audio/fonts/Soundfont_0` via
+   `ResourceMgr_LoadAudioSoundFontByName`: `inst=122 drums=16 sfx=453`.
+2. ✅ **FEITO** — prefixo de namespace derivado no `AudioSoundFontFactory`
+   (seção 1.4): `503` resoluções, `0` falhas, `627/832` slots preenchidos.
+   Confirmado também o load direto de uma amostra do MM inexistente no OoT.
+3. ⬜ **FALTA** — portar o mínimo de `synthesis.c` para decodificar **uma**
+   amostra VADPCM e somá-la no buffer em `AudioPlayer_Play`, por hotkey.
 
 **Pronto quando:** o usuário aperta a tecla no jogo e ouve um som do MM.
-Sem isso, nada abaixo faz sentido. **Tamanho: ~400 linhas.**
+**Tamanho restante: ~250 linhas.**
 
 > Ponto de desistência honesto: se a Fase 1 não fechar, o problema é estrutural
 > e o plano inteiro precisa ser revisto. Diga isso ao usuário em vez de
 > empurrar para a Fase 2.
+>
+> Os passos 1 e 2 já derrubaram o risco maior: os dados do MM chegam íntegros.
+> O que resta é síntese, que é trabalho conhecido e não tem incógnita de
+> arquitetura.
 
 ### Fase 2 — Interpretador de sequência
 
-Portar de `MM-MODSDK-001/mm/src/audio/lib/`: `seqplayer.c`, `playback.c`,
-`effects.c`, mais os subconjuntos de `data.c` e `synthesis.c`. Tudo dentro de um
-namespace próprio (`mmsfx`) com contexto próprio (o equivalente do `gMmSfx` do
-fork), **sem tocar em nada do áudio do OoT**.
+> **Escopo medido em 2026-07-25.** Todos os números abaixo são **[V]**,
+> obtidos por varredura direta nos dois decomps desta máquina.
 
-Carregar `mm/audio/sequences/Sequence_0` e dar start.
+#### O maior risco caiu: `heap.c` e `load.c` NÃO precisam ser portados
+
+Contagem de chamadas nos arquivos candidatos:
+
+| Arquivo | `AudioHeap_*` | `AudioLoad_*` |
+|---|---|---|
+| `seqplayer.c` | 5 | 14 |
+| `playback.c` | 2 | 4 |
+| `effects.c` | 0 | 0 |
+| `synthesis.c` | 0 | 0 |
+
+São só **12 símbolos distintos**, todos rasos — nenhum exige o gerenciador de
+heap do N64 nem o DMA de ROM:
+
+| Símbolo | Usos | Substituto |
+|---|---|---|
+| `AudioLoad_IsFontLoadComplete` | 6 | sempre "pronto": carregamos via ResourceMgr |
+| `AudioLoad_IsSeqLoadComplete` | 4 | idem |
+| `AudioHeap_SearchCaches` | 3 | resolução pelo ResourceMgr |
+| `AudioLoad_SetSeqLoadStatus` / `SetFontLoadStatus` | 4 | no-op |
+| `AudioHeap_AllocDmaMemory` / `AllocZeroed` | 3 | `malloc` / `calloc` |
+| `AudioLoad_SlowLoadSample` / `SlowLoadSeq` / `ScriptLoad` | 4 | stub (streaming não é usado no caminho de SFX) |
+| `AudioLoad_SyncInitSeqPlayer` | 1 | init próprio |
+| `AudioHeap_LoadFilter` | 1 | tabela estática |
+
+**Economia: `heap.c` (1.711 linhas) + `load.c` (2.264) + `thread.c` (950)
+ficam de fora — ~4.900 linhas — trocadas por ~150 de shim.** Confirma o que a
+ausência de arquivo equivalente no fork skijer sugeria.
+
+#### Colisão de símbolo é pequena e concentrada
+
+| Arquivo | Colisões com `soh/src/code/audio_*.c` |
+|---|---|
+| `seqplayer.c`, `playback.c`, `effects.c` | **0** |
+| `data.c` | 9 globais (tabelas: `gDefaultEnvelope`, `gWaveSamples`, `gStereoPanVolume`, `gHeadsetPanVolume`, `gBendPitch*`, `gDefaultShortNote*`, `gDefaultPanVolume`) |
+| `synthesis.c` | 19 funções `AudioSynth_*` |
+| Contexto global | **0** — MM usa `gAudioCtx`, OoT usa `gAudioContext` |
+
+Os dois decomps nomearam as coisas de forma diferente, e isso nos salva: o
+interpretador em si não colide com nada. As 19 colisões estão todas em
+`synthesis.c`, que é justamente o arquivo a cortar — o SoH já decodifica VADPCM
+por software em `soh/soh/mixer.c:183` e não precisamos do caminho do RSP.
+
+**Ressalva [V]:** o *tipo* `AudioContext` tem o mesmo nome nos dois. Um
+`namespace` C++ resolve, desde que o header de áudio do MM **não entre na mesma
+unidade de tradução** que o do OoT.
+
+#### A fricção real: os includes
+
+Os arquivos do MM incluem `global.h`, que arrasta as headers do jogo inteiro:
+
+```c
+// effects.c            // seqplayer.c
+#include "global.h"     #include "global.h"
+#include "audio/effects.h"   #include "BenPort.h"
+                             #include "2s2h/Enhancements/Audio/AudioEditor.h"
+```
+
+Não dá para copiar e compilar. Cada arquivo precisa ter os includes trocados por
+um header curado com só os tipos de áudio — que é exatamente o que o fork faz
+com `mm_sfx_synth_types.h` / `mm_sfx_synth_ctx.h`. Os headers de áudio do MM
+somam 591 linhas (`mm/include/audio/{effects,heap,load,reverb,soundfont}.h`),
+mais o `AudioContext` de `z64audio.h`.
+
+#### Ordem de porte (cada passo verificável)
+
+1. **`mmaudio/mmseq/types.h`** — structs de áudio do MM copiadas para dentro de
+   `namespace mmsfx`. *Pronto quando compila incluído junto do resto do host
+   sem colidir.* É o passo que prova a estratégia inteira; se falhar aqui, o
+   desenho está errado e nada abaixo importa.
+2. **`effects.cpp`** — 369 linhas, zero dependências externas, zero colisões.
+   *Pronto quando linka.*
+3. **`playback.cpp`** + os 6 shims que ele usa. *Pronto quando linka.*
+4. **`seqplayer.cpp`** + os shims restantes. *Pronto quando linka.*
+5. **`data.cpp`** — só as tabelas do caminho de SFX. *Pronto quando linka.*
+6. **Render de nota → PCM**, reaproveitando o decodificador que a Fase 1 já
+   escreveu em vez de portar `synthesis.c`.
+7. **Carregar `mm/audio/sequences/Sequence_0` e dar start.**
 
 **Pronto quando:** um `sfxId` do MM escrito nas portas de channel IO produz o
-som certo. **Tamanho: ~5.500 linhas portadas + ~200 de contexto.**
+som certo. **Tamanho revisado: ~4.700 linhas portadas + ~350 de cola e shim**
+(era ~5.500 + 200 antes de medir).
 
 ### Fase 3 — Fila de dispatch e posicionamento 3D
 
