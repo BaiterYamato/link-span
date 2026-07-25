@@ -1,101 +1,85 @@
 local ship = require("ship")
 
--- Sistema de sobrevivência COMPLETO em Lua puro: fome, sede, temperatura e
--- stamina, com HUD próprio, persistência entre sessões e consequências reais.
---
--- O host não sabe o que é "fome". Ele só oferece peças genéricas:
---   ship.hud.draw_rect/draw_text  -> desenhar qualquer coisa na tela
---   ship.storage                  -> estado que sobrevive a fechar o jogo
---   ship.timer.every              -> tempo passando
---   ship.player.get/set           -> ler/escrever vida, posição, velocidade
---   ship.player.set_speed_multiplier -> consequência física
---
--- Trocar as regras abaixo (velocidade de drenagem, efeitos, cores, posição das
--- barras) é editar este arquivo — nada de recompilar o jogo.
-
---------------------------------------------------------------------------------
--- Regras (mexa à vontade)
---------------------------------------------------------------------------------
-
 local MAX = 100.0
-
--- Quanto cada medidor perde por segundo (o tick roda a cada 20 frames = ~1s).
-local DRAIN = {
-    hunger = 0.35,
-    thirst = 0.55, -- sede cai mais rápido que fome
-    stamina = 0.0, -- stamina só cai correndo; ver update()
-}
-
--- Stamina: só ESFORÇO gasta. Correr NÃO conta — é o movimento padrão do OoT,
--- o jogo não tem andar/sprint separados, então cobrar por correr seria cobrar
--- por simplesmente se locomover. Sobram rolamento e escalada. E só enquanto há
--- movimento de fato: pendurado parado numa escada não consome nada.
-local STAMINA_COST = {
-    rolling = 22.0,  -- rolamento é explosivo, custa caro
-    climbing = 15.0, -- escalar cansa
-}
-local STAMINA_REGEN = 9.0
--- Numa escada o Link é movido pela ANIMAÇÃO, não por linearVelocity: a
--- velocidade fica ~0 mesmo subindo. Por isso "está se movendo" durante a
--- escalada é medido por variação de altura entre ticks, não por velocidade.
-local CLIMB_MOVE_EPSILON = 0.4
-
--- Temperatura: escala 0..200, 100 = neutro (o gauge usa MAX*2 como faixa).
-local TEMP_NEUTRAL = 100.0
-local TEMP_RATE = 3.0
-
--- Alvo por cena. O que não estiver aqui usa NEUTRO e ainda assim sofre o
--- efeito de dia/noite abaixo — por isso o deserto esquenta de dia mesmo sem
--- estar listado com valor extremo.
-local SCENE_TEMP = {
-    -- Frio
-    [9]   = 25.0,   -- Ice Cavern
-    [88]  = 60.0,   -- Zora's Fountain
-    -- Quente
-    [4]   = 175.0,  -- Fire Temple
-    [97]  = 170.0,  -- Death Mountain Crater
-    [96]  = 130.0,  -- Death Mountain Trail
-    [93]  = 150.0,  -- Haunted Wasteland (deserto)
-    [94]  = 145.0,  -- Desert Colossus
-    [90]  = 130.0,  -- Gerudo Valley
-    [95]  = 130.0,  -- Gerudo's Fortress
-}
-
--- Quanto a noite esfria e o meio-dia esquenta, somado ao alvo da cena.
--- Uma caverna de gelo continua gelada de dia; o deserto vira frio à noite,
--- que é o comportamento clássico de deserto.
-local DAY_NIGHT_SWING = 45.0
-
-local sceneTempTarget = TEMP_NEUTRAL
-
--- Consequências: abaixo deste ponto, começa a doer.
-local STARVING_AT = 0.0
-local DAMAGE_EVERY_TICKS = 5 -- a cada ~5s de fome/sede zerada
-local DAMAGE_AMOUNT = 16     -- 16 = um coração
-
---------------------------------------------------------------------------------
--- Estado
---------------------------------------------------------------------------------
-
-local S = { hunger = MAX, thirst = MAX, stamina = MAX, temperature = TEMP_NEUTRAL }
-local damageTimer = 0
+local SCHEMA_VERSION = 1
+local enabled = true
+local currentSlot = nil
+local storagePrefix = nil
+local dirty = false
+local flushTicks = 0
+local hudFrame = 0
+local revealFrames = 0
 local slowed = false
-local lastY = nil       -- altura no tick anterior, para detectar escalada real
 local rollBlocked = false
+local lastY = nil
+local damageTicks = 0
 
-local function load()
-    S.hunger = ship.storage.get("hunger", MAX)
-    S.thirst = ship.storage.get("thirst", MAX)
-    S.stamina = ship.storage.get("stamina", MAX)
-    S.temperature = ship.storage.get("temperature", TEMP_NEUTRAL)
-end
+local S = {
+    hunger = MAX,
+    thirst = MAX,
+    stamina = MAX,
+    temperature = MAX,
+    elapsed = 0,
+    bag = { water = 3, ration = 3, fruit = 2, cooked_fish = 1 },
+}
 
-local function save()
-    ship.storage.set("hunger", S.hunger)
-    ship.storage.set("thirst", S.thirst)
-    ship.storage.set("stamina", S.stamina)
-    ship.storage.set("temperature", S.temperature)
-end
+local display = {
+    hunger = MAX,
+    thirst = MAX,
+    stamina = MAX,
+    temperature = MAX,
+}
+
+local ITEMS = {
+    water = {
+        label = "AGUA",
+        icon = "textures/icon_item_static/gItemIconBottlePotionBlueTex",
+        hunger = 0,
+        thirst = 35,
+    },
+    ration = {
+        label = "RACAO",
+        icon = "textures/icon_item_static/gItemIconBottleMilkFullTex",
+        hunger = 45,
+        thirst = 10,
+    },
+    fruit = {
+        label = "FRUTA",
+        icon = "textures/icon_item_static/gItemIconOddMushroomTex",
+        hunger = 12,
+        thirst = 2,
+    },
+    cooked_fish = {
+        label = "PEIXE",
+        icon = "textures/icon_item_static/gItemIconBottleFishTex",
+        hunger = 35,
+        thirst = 0,
+    },
+}
+
+local QUICKSLOTS = {
+    dpad_up = "water",
+    dpad_down = "ration",
+    dpad_left = "fruit",
+    dpad_right = "cooked_fish",
+}
+
+-- Losango de quickslots, espelhando o D-pad. Fica na parte inferior central:
+-- o canto inferior DIREITO é do mostrador de temperatura e o esquerdo é dos
+-- rupees do jogo. A versão anterior punha o losango em x 239-296 / y 95-155,
+-- que atravessava o mostrador.
+local SLOT_HUD = {
+    dpad_up = { x = 150, y = 177 },
+    dpad_down = { x = 150, y = 213 },
+    dpad_left = { x = 132, y = 195 },
+    dpad_right = { x = 168, y = 195 },
+}
+
+local SCENE_TEMP = {
+    [9] = 25, [88] = 60,
+    [4] = 175, [97] = 170, [96] = 130,
+    [93] = 150, [94] = 145, [90] = 130, [95] = 130,
+}
 
 local function clamp(v, lo, hi)
     if v < lo then return lo end
@@ -103,197 +87,230 @@ local function clamp(v, lo, hi)
     return v
 end
 
---------------------------------------------------------------------------------
--- Simulação (1 tick ≈ 1 segundo)
---------------------------------------------------------------------------------
+local function approach(current, target, rate)
+    if math.abs(target - current) < 0.05 then return target end
+    return current + (target - current) * rate
+end
+
+local function key(name)
+    return storagePrefix .. name
+end
+
+local function save()
+    if not storagePrefix or not enabled then return end
+    ship.storage.set(key("schema_version"), SCHEMA_VERSION)
+    ship.storage.set(key("hunger"), S.hunger)
+    ship.storage.set(key("thirst"), S.thirst)
+    ship.storage.set(key("stamina"), S.stamina)
+    ship.storage.set(key("temperature"), S.temperature)
+    ship.storage.set(key("elapsed"), S.elapsed)
+    for itemId, quantity in pairs(S.bag) do
+        ship.storage.set(key("bag." .. itemId), quantity)
+    end
+    dirty = false
+end
+
+local function load_slot(slot)
+    if storagePrefix and dirty then save() end
+    currentSlot = slot
+    storagePrefix = "save." .. tostring(slot) .. "."
+    local version = ship.storage.get(key("schema_version"), 0)
+    if version ~= 0 and version ~= SCHEMA_VERSION then
+        enabled = false
+        ship.log.error("survival: schema de save não suportado: " .. tostring(version))
+        return
+    end
+    S.hunger = clamp(ship.storage.get(key("hunger"), MAX), 0, MAX)
+    S.thirst = clamp(ship.storage.get(key("thirst"), MAX), 0, MAX)
+    S.stamina = clamp(ship.storage.get(key("stamina"), MAX), 0, MAX)
+    S.temperature = clamp(ship.storage.get(key("temperature"), MAX), 0, MAX * 2)
+    S.elapsed = math.max(0, ship.storage.get(key("elapsed"), 0))
+    for itemId, initial in pairs({ water = 3, ration = 3, fruit = 2, cooked_fish = 1 }) do
+        S.bag[itemId] = math.max(0, math.floor(ship.storage.get(key("bag." .. itemId), initial)))
+    end
+    enabled = true
+    dirty = version == 0
+    display.hunger, display.thirst = S.hunger, S.thirst
+    display.stamina, display.temperature = S.stamina, S.temperature
+end
+
+local function sync_slot()
+    local state = ship.game.state()
+    if not state or state.mode ~= "gameplay" then
+        return nil
+    end
+    local slot = state.save_slot == nil and "debug" or state.save_slot
+    if currentSlot ~= slot then load_slot(slot) end
+    return state
+end
+
+local function use_item(itemId)
+    local item = ITEMS[itemId]
+    local quantity = S.bag[itemId] or 0
+    if not enabled or not item or quantity <= 0 then return false end
+    local helpsHunger = item.hunger > 0 and S.hunger < MAX
+    local helpsThirst = item.thirst > 0 and S.thirst < MAX
+    if not helpsHunger and not helpsThirst then return false end
+
+    S.bag[itemId] = quantity - 1
+    S.hunger = clamp(S.hunger + item.hunger, 0, MAX)
+    S.thirst = clamp(S.thirst + item.thirst, 0, MAX)
+    revealFrames = 100
+    dirty = true
+    save()
+    ship.log.info(("usou %s — restante %d"):format(item.label, S.bag[itemId]))
+    return true
+end
 
 local function update()
-    S.hunger = clamp(S.hunger - DRAIN.hunger, 0, MAX)
-    S.thirst = clamp(S.thirst - DRAIN.thirst, 0, MAX)
+    local state = sync_slot()
+    if not state or not enabled then return end
 
-    -- Stamina reage ao ESFORÇO atual: gasta rolando e escalando em movimento.
-    -- Parar no meio da escada NÃO recupera — segurar o próprio peso agarrado
-    -- já é esforço; o medidor apenas congela. Recuperação só com os pés no
-    -- chão, fora da escalada.
+    S.elapsed = S.elapsed + 1
+    S.hunger = clamp(S.hunger - 0.022, 0, MAX)
+    local heat = S.temperature >= 150 and 1.6 or 1.0
+    S.thirst = clamp(S.thirst - 0.037 * heat, 0, MAX)
+
     local rolling = (ship.player.get("rolling") or 0) == 1
     local climbing = (ship.player.get("climbing") or 0) == 1
-
-    -- Escalando de verdade = altura mudou desde o último tick. Usar velocidade
-    -- aqui não funciona: na escada o movimento vem da animação e linearVelocity
-    -- fica ~0, então o custo nunca era cobrado.
     local y = ship.player.get("pos_y")
-    local climbMoving = false
-    if climbing and y and lastY then
-        local dy = y - lastY
-        if dy < 0 then dy = -dy end
-        climbMoving = dy > CLIMB_MOVE_EPSILON
-    end
+    local climbMoving = climbing and y and lastY and math.abs(y - lastY) > 0.4
     lastY = y
-
-    local cost = 0
     if rolling then
-        cost = STAMINA_COST.rolling
+        S.stamina = clamp(S.stamina - 22, 0, MAX)
     elseif climbMoving then
-        cost = STAMINA_COST.climbing
+        S.stamina = clamp(S.stamina - 15, 0, MAX)
+    elseif not climbing then
+        S.stamina = clamp(S.stamina + 9, 0, MAX)
     end
+    if climbing and S.stamina <= 0 then ship.player.set("climbing", 0) end
 
-    if cost > 0 then
-        S.stamina = clamp(S.stamina - cost, 0, MAX)
-    elseif climbing then
-        -- Pendurado sem subir: nem gasta nem recupera. Fica travado até sair
-        -- da escalada.
-    else
-        S.stamina = clamp(S.stamina + STAMINA_REGEN, 0, MAX)
-    end
-
-    -- Sem força no meio da subida: solta a escada e cai. Escrever 0 em
-    -- "climbing" usa o mesmo caminho do engine para largar a escada — não
-    -- basta mexer na velocidade, porque escalando é o jogo que manda na
-    -- posição do Link.
-    if climbing and S.stamina <= 0 then
-        ship.player.set("climbing", 0)
-        ship.log.info("sem força — você escorregou!")
-    end
-
-    -- Alvo de temperatura = cena + ciclo dia/noite. Lido a cada tick (não só
-    -- na troca de cena) porque o tempo passa dentro da mesma cena.
-    local target = sceneTempTarget
+    local target = MAX
     if ship.capabilities.has("oot.env") then
-        -- Cena é reconsultada aqui também: entrar por um caminho que não
-        -- dispara scene.enter (carregar save, void-out) deixaria o alvo velho.
-        local sid = ship.oot.env.get("scene_id")
-        if sid then
-            target = SCENE_TEMP[sid] or TEMP_NEUTRAL
-            sceneTempTarget = target
-        end
+        local scene = ship.oot.env.get("scene_id")
+        target = SCENE_TEMP[scene] or MAX
         local tod = ship.oot.env.get("time_of_day")
-        if tod then
-            -- 0 = meia-noite (mais frio), 0.5 = meio-dia (mais quente).
-            -- math.cos dá a curva suave: -1 na meia-noite, +1 ao meio-dia.
-            local warmth = -math.cos(tod * 2 * math.pi)
-            target = target + warmth * (DAY_NIGHT_SWING / 2)
-        end
+        if tod then target = target - math.cos(tod * 2 * math.pi) * 22.5 end
     end
-    target = clamp(target, 0, MAX * 2)
+    S.temperature = approach(S.temperature, clamp(target, 0, MAX * 2), 0.03)
 
-    if S.temperature < target then
-        S.temperature = clamp(math.min(S.temperature + TEMP_RATE, target), 0, MAX * 2)
-    elseif S.temperature > target then
-        S.temperature = clamp(math.max(S.temperature - TEMP_RATE, target), 0, MAX * 2)
-    end
-
-    -- Consequência 1: sem stamina, não dá para rolar. Só drenar o medidor não
-    -- impede a ação — o bloqueio acontece no portão nativo do rolamento.
     if ship.capabilities.has("oot.player.roll") then
-        local shouldBlock = S.stamina <= 0
-        if shouldBlock ~= rollBlocked then
-            rollBlocked = shouldBlock
-            ship.oot.player.set_roll_blocked(rollBlocked)
+        local block = S.stamina <= 0
+        if block ~= rollBlocked then
+            rollBlocked = block
+            ship.oot.player.set_roll_blocked(block)
         end
     end
 
-    -- Consequência 2: sem stamina, o jogador fica lento.
     if ship.capabilities.has("player.speed") then
-        local shouldSlow = S.stamina <= 0
-        if shouldSlow ~= slowed then
-            slowed = shouldSlow
-            ship.player.set_speed_multiplier(slowed and 0.5 or 1.0)
+        local slow = S.hunger < 15 or S.thirst < 15 or S.stamina <= 0
+        if slow ~= slowed then
+            slowed = slow
+            ship.player.set_speed_multiplier(slow and 0.9 or 1.0)
         end
     end
 
-    -- Consequência 3: fome ou sede zeradas machucam de tempos em tempos.
-    if S.hunger <= STARVING_AT or S.thirst <= STARVING_AT then
-        damageTimer = damageTimer + 1
-        if damageTimer >= DAMAGE_EVERY_TICKS then
-            damageTimer = 0
+    if S.hunger <= 0 or S.thirst <= 0 then
+        damageTicks = damageTicks + 1
+        if damageTicks >= 30 then
+            damageTicks = 0
             local hp = ship.player.get("health")
-            if hp and hp > DAMAGE_AMOUNT then
-                ship.player.set("health", hp - DAMAGE_AMOUNT)
-                ship.log.info("você está definhando...")
-            end
+            if hp and hp > 4 then ship.player.set("health", math.max(4, hp - 4)) end
         end
     else
-        damageTimer = 0
+        damageTicks = 0
     end
 
-    save() -- write-through: fechar o jogo agora não perde progresso
+    dirty = true
+    flushTicks = flushTicks + 1
+    if flushTicks >= 10 then
+        flushTicks = 0
+        save()
+    end
 end
 
---------------------------------------------------------------------------------
--- HUD
---------------------------------------------------------------------------------
+local HUD_X, HUD_Y = 24, 72
+local HUD_BAR_W, HUD_BAR_H = 72, 7
 
--- Estilo da stamina: "wheel" desenha uma roda flutuando ao lado do
--- personagem (como BotW/Skyward Sword); "bar" usa a barra fixa no canto.
--- Fome e sede continuam sempre em barra, no canto superior esquerdo.
-local STAMINA_STYLE = "wheel"
+-- ---------------------------------------------------------------------------
+-- Posicionamento do HUD. Estes números foram calibrados em jogo com o usuário
+-- e uma reescrita anterior os perdeu — fome e sede ficam em barra no painel,
+-- mas stamina e temperatura têm forma e lugar próprios de propósito.
+-- ---------------------------------------------------------------------------
 
--- Termômetro: mostrador semicircular com ponteiro, no canto inferior direito
+-- Termômetro: mostrador semicircular com ponteiro, canto inferior direito,
 -- perto do minimapa. Esquerda = frio (azul), direita = quente (vermelho).
--- Coordenadas no espaço de HUD do OoT (320x240); ajuste para mover.
-local GAUGE_CX, GAUGE_CY = 288, 158  -- centro do mostrador (o ponteiro nasce aqui)
-local GAUGE_RADIUS = 21              -- raio do arco colorido
-local GAUGE_BAND = 5                 -- espessura da faixa colorida
-local GAUGE_NEEDLE_LEN = 15          -- comprimento do ponteiro
+-- Coordenadas no espaço de HUD do OoT (320x240).
+local GAUGE_CX, GAUGE_CY = 288, 158 -- centro; o ponteiro nasce aqui
+local GAUGE_RADIUS = 21             -- raio do arco colorido
+local GAUGE_BAND = 5                -- espessura da faixa
+local GAUGE_NEEDLE_LEN = 15         -- comprimento do ponteiro
 
--- Roda: deslocamento em relação ao personagem, na tela. Negativo em x é à
--- esquerda; negativo em y é acima.
+-- Roda de stamina flutuando ao lado do personagem, como BotW/Skyward Sword,
+-- em vez de presa num canto. Offset negativo em x é à esquerda, em y é acima.
 local WHEEL_OFFSET_X, WHEEL_OFFSET_Y = -26, -18
 local WHEEL_RADIUS, WHEEL_THICKNESS = 13, 3
--- Some quando cheia e parada, como nos jogos de referência.
+-- Some quando cheia, como nos jogos de referência: só aparece quando importa.
 local WHEEL_HIDE_WHEN_FULL = true
 
-local BAR_X, BAR_Y = 26, 60
-local BAR_W, BAR_H, BAR_GAP = 62, 6, 11
-
--- Cor para uma posição 0..1 da escala: 0 = frio (azul), 0.5 = neutro
--- (cinza claro), 1 = quente (vermelho).
-local function temp_color_at(t)
-    if t < 0.5 then
-        local k = t / 0.5                       -- 0 no frio extremo, 1 no neutro
-        return math.floor(70 + 140 * k), math.floor(150 + 90 * k), 255
-    end
-    local k = (t - 0.5) / 0.5                   -- 0 no neutro, 1 no calor extremo
-    return 255, math.floor(240 - 180 * k), math.floor(210 - 190 * k)
+local function draw_label(text, x, y, scale)
+    ship.hud.draw_text(text, x + 1, y + 1, 0, 0, 0, 210, scale)
+    ship.hud.draw_text(text, x, y, 255, 246, 216, 255, scale)
 end
 
--- Mostrador semicircular com ponteiro, no estilo de um termômetro analógico.
--- O arco vai da esquerda (frio) à direita (quente) passando pelo topo, e o
--- ponteiro nasce no centro apontando para a temperatura atual.
+local function draw_bar(label, y, value, color)
+    local x = HUD_X + 31
+    local fill = math.floor((HUD_BAR_W - 4) * clamp(value / MAX, 0, 1) + 0.5)
+    draw_label(label, HUD_X, y - 1, 0.52)
+    ship.hud.draw_rect(x + 2, y + 2, HUD_BAR_W, HUD_BAR_H, 0, 0, 0, 95)
+    ship.hud.draw_rect(x, y, HUD_BAR_W, HUD_BAR_H, 12, 10, 8, 220)
+    ship.hud.draw_rect(x, y, HUD_BAR_W, 1, value < 15 and 238 or 178, value < 15 and 74 or 145, 54, 220)
+    ship.hud.draw_rect(x + 2, y + 2, HUD_BAR_W - 4, HUD_BAR_H - 4, 24, 24, 22, 220)
+    if fill > 0 then
+        ship.hud.draw_rect(x + 2, y + 2, fill, HUD_BAR_H - 4, color[1], color[2], color[3], 240)
+    end
+end
+
+local function temp_color(t)
+    if t < 0.5 then
+        local k = t * 2
+        return math.floor(38 + 36 * k), math.floor(118 + 92 * k), math.floor(238 - 108 * k)
+    end
+    local k = (t - 0.5) * 2
+    return math.floor(74 + 170 * k), math.floor(210 - 150 * k), math.floor(130 - 82 * k)
+end
+
+-- Mostrador semicircular com ponteiro: frio à esquerda, quente à direita.
 --
--- Tudo composto de retângulos pequenos posicionados por seno/cosseno: as
--- primitivas do host desenham retângulos alinhados aos eixos, então curva e
--- ponteiro são aproximados por pontos ao longo do traçado. Com este raio o
--- resultado lê como um mostrador contínuo.
-local function temperature_gauge()
-    local range = MAX * 2                     -- 0..200, com 100 = neutro
-    local t = clamp(S.temperature / range, 0, 1)
+-- Composto de retângulos pequenos posicionados por seno/cosseno, porque as
+-- primitivas do host desenham retângulos alinhados aos eixos — curva e ponteiro
+-- são aproximados por pontos ao longo do traçado.
+--
+-- O custo importa: cada retângulo ocupa espaço na display list do jogo, que é
+-- um buffer FIXO. Uma versão inicial deste mostrador desenhava ~270 retângulos
+-- por frame, estourava o pool gráfico e derrubava o jogo. Daí os 22 passos com
+-- um retângulo mais largo cada, cobrindo a mesma faixa com uma fração das
+-- chamadas.
+local function draw_temperature()
+    local t = clamp(display.temperature / 200, 0, 1) -- 0..200, 100 = neutro
     local PI = math.pi
 
-    -- Ângulo: t=0 (frio) à esquerda (180 graus), t=1 (quente) à direita (0).
     -- Em coordenadas de tela o y cresce para baixo, daí o sinal negativo.
     local function point(angle, radius)
-        return GAUGE_CX + math.cos(angle) * radius,
-               GAUGE_CY - math.sin(angle) * radius
+        return GAUGE_CX + math.cos(angle) * radius, GAUGE_CY - math.sin(angle) * radius
     end
 
-    -- Faixa colorida do arco. O custo aqui importa: cada retângulo ocupa espaço
-    -- na display list do jogo, que é um buffer FIXO. Uma versão anterior deste
-    -- gauge desenhava ~270 retângulos por frame e estourava o pool gráfico,
-    -- derrubando o jogo. Um retângulo mais largo por passo cobre a mesma faixa
-    -- com uma fração das chamadas.
     local steps = 22
     for i = 0, steps do
-        local pos = i / steps                 -- 0 = frio, 1 = quente
+        local pos = i / steps -- 0 = frio (esquerda), 1 = quente (direita)
         local ang = PI * (1 - pos)
-        local r, g, b = temp_color_at(pos)
-        -- Um único retângulo cobrindo a espessura da faixa, em vez de uma
-        -- pilha de camadas.
+        local r, g, b = temp_color(pos)
         local px, py = point(ang, GAUGE_RADIUS - GAUGE_BAND / 2)
         ship.hud.draw_rect(math.floor(px) - 1, math.floor(py) - 1, GAUGE_BAND, GAUGE_BAND, r, g, b, 230)
     end
 
-    -- Ponteiro: poucos pontos, mais grossos.
+    -- Ponteiro: contorno escuro primeiro, núcleo claro por cima, para ler sobre
+    -- qualquer cor da faixa.
     local ang = PI * (1 - t)
     for i = 3, GAUGE_NEEDLE_LEN, 3 do
         local px, py = point(ang, i)
@@ -304,110 +321,117 @@ local function temperature_gauge()
         ship.hud.draw_rect(math.floor(px) - 1, math.floor(py) - 1, 3, 3, 255, 255, 255, 250)
     end
 
-    -- Eixo central.
     ship.hud.draw_rect(GAUGE_CX - 3, GAUGE_CY - 3, 6, 6, 0, 0, 0, 210)
     ship.hud.draw_rect(GAUGE_CX - 2, GAUGE_CY - 2, 4, 4, 235, 235, 235, 255)
 end
 
-local function bar(index, label, value, maxValue, r, g, b)
-    local y = BAR_Y + index * BAR_GAP
-    -- fundo escuro
-    ship.hud.draw_rect(BAR_X, y, BAR_W, BAR_H, 0, 0, 0, 150)
-    -- preenchimento
-    local w = math.floor(BAR_W * clamp(value / maxValue, 0, 1))
-    if w > 0 then
-        ship.hud.draw_rect(BAR_X, y, w, BAR_H, r, g, b, 235)
-    end
-    ship.hud.draw_text(label, BAR_X - 14, y - 1, 255, 255, 255, 220, 0.55)
-end
-
--- Roda de stamina ancorada ao personagem. screen_x/screen_y projetam a cabeça
--- do Link; o offset a coloca acima e à esquerda dele.
-local function stamina_wheel()
-    local full = S.stamina >= MAX - 0.01
-    if WHEEL_HIDE_WHEN_FULL and full then
+-- Roda de stamina ancorada ao personagem: screen_x/screen_y projetam o Link na
+-- tela e o offset a coloca acima e à esquerda dele. Prender num canto fixo
+-- perde a leitura periférica — o ponto do formato de roda é ficar onde o olho
+-- já está, no personagem.
+local function draw_stamina()
+    if WHEEL_HIDE_WHEN_FULL and S.stamina >= MAX - 0.01 then
         return
     end
+
     local sx = ship.player.get("screen_x")
     local sy = ship.player.get("screen_y")
     if not sx or not sy then
         return
     end
-    -- Fora da tela (câmera não enquadra o Link): não desenha.
+    -- Câmera não enquadra o Link: desenhar aqui grudaria a roda na borda.
     if sx < -80 or sx > 400 or sy < -80 or sy > 320 then
         return
     end
-    local cx = sx + WHEEL_OFFSET_X
-    local cy = sy + WHEEL_OFFSET_Y
 
-    -- Trilho escuro completo, depois o preenchimento por cima.
+    local cx, cy = sx + WHEEL_OFFSET_X, sy + WHEEL_OFFSET_Y
+
+    -- Trilho escuro completo, preenchimento por cima.
     ship.hud.draw_ring(cx, cy, WHEEL_RADIUS, WHEEL_THICKNESS, 1.0, 0, 0, 0, 120)
-    local frac = clamp(S.stamina / MAX, 0, 1)
-    -- Verde normal; vermelho quando esgotada, para o esgotamento ser óbvio.
+
+    -- Verde normal, vermelho quando esgotada — o esgotamento bloqueia rolamento
+    -- e derruba da escada, então precisa ser inconfundível.
     local r, g, b = 90, 220, 90
     if S.stamina <= 0 then
         r, g, b = 230, 70, 70
+    elseif S.stamina <= 20 then
+        r, g, b = 240, 190, 60
     end
-    ship.hud.draw_ring(cx, cy, WHEEL_RADIUS, WHEEL_THICKNESS, frac, r, g, b, 240)
+    ship.hud.draw_ring(cx, cy, WHEEL_RADIUS, WHEEL_THICKNESS,
+        clamp(display.stamina / MAX, 0, 1), r, g, b, 235)
 end
 
+local function draw_quickslots()
+    for action, itemId in pairs(QUICKSLOTS) do
+        local item, pos = ITEMS[itemId], SLOT_HUD[action]
+        local count = S.bag[itemId] or 0
+        local alpha = count > 0 and 255 or 85
+        ship.hud.draw_rect(pos.x - 3, pos.y - 3, 24, 24, 8, 8, 7, 195)
+        ship.hud.draw_rect(pos.x - 2, pos.y - 2, 22, 22, 175, 142, 72, 130)
+        ship.hud.draw_rect(pos.x - 1, pos.y - 1, 20, 20, 18, 16, 13, 225)
+        ship.hud.draw_icon(item.icon, pos.x, pos.y, 18, 18, { alpha = alpha })
+        ship.hud.draw_rect(pos.x + 12, pos.y + 12, 8, 8, 0, 0, 0, 210)
+        draw_label(tostring(count), pos.x + 14, pos.y + 13, 0.38)
+    end
+end
+
+ship.events.on("input.action", { priority = 100 }, function(event)
+    local itemId = QUICKSLOTS[event.action]
+    if itemId and event.pressed and sync_slot() and use_item(itemId) then
+        ship.hooks.result(true)
+    end
+end)
+
 ship.events.on("hook.oot.hud.draw", function()
-    bar(0, "F", S.hunger, MAX, 210, 150, 60)          -- fome: marrom/laranja
-    bar(1, "S", S.thirst, MAX, 70, 150, 240)          -- sede: azul
-    if STAMINA_STYLE == "wheel" then
-        stamina_wheel()
-    else
-        bar(2, "E", S.stamina, MAX, 90, 220, 90)      -- stamina: verde
-    end
-    temperature_gauge()                               -- termômetro, canto inferior direito
+    if not sync_slot() or not enabled then return end
+    hudFrame = hudFrame + 1
+    if revealFrames > 0 then revealFrames = revealFrames - 1 end
+    display.hunger = approach(display.hunger, S.hunger, 0.16)
+    display.thirst = approach(display.thirst, S.thirst, 0.16)
+    display.stamina = approach(display.stamina, S.stamina, 0.16)
+    display.temperature = approach(display.temperature, S.temperature, 0.16)
+    -- Painel só de fome e sede. Stamina e temperatura saíram dele de propósito:
+    -- a roda segue o personagem e o mostrador fica no canto inferior direito,
+    -- então a moldura encolheu de 198x61 para caber só as duas barras.
+    ship.hud.draw_rect(HUD_X - 7, HUD_Y - 7, 117, 35, 8, 8, 7, 150)
+    ship.hud.draw_rect(HUD_X - 7, HUD_Y - 7, 117, 1, 194, 150, 72, 180)
+    draw_bar("FOME", HUD_Y, display.hunger, { 210, 145, 54 })
+    draw_bar("SEDE", HUD_Y + 14, display.thirst, { 55, 145, 230 })
+    draw_stamina()
+    draw_temperature()
+    draw_quickslots()
 end)
 
---------------------------------------------------------------------------------
--- Ligação com o jogo
---------------------------------------------------------------------------------
-
-ship.events.on("scene.enter", function(payload)
-    sceneTempTarget = SCENE_TEMP[payload.scene_id] or TEMP_NEUTRAL
-end)
-
--- Pegar item comestível repõe fome/sede. Os ids são de itens vanilla do OoT.
-local FOOD = {
-    [0x4C] = { hunger = 8 },   -- rupia verde (placeholder: só para provar o gancho)
-    [0x0F] = { thirst = 45 },  -- garrafa com leite
-    [0x1B] = { hunger = 35 },  -- peixe
-}
-
-ship.events.on("hook.oot.item.receive", function(payload)
-    local food = FOOD[payload.get_item_id]
-    if food then
-        if food.hunger then S.hunger = clamp(S.hunger + food.hunger, 0, MAX) end
-        if food.thirst then S.thirst = clamp(S.thirst + food.thirst, 0, MAX) end
-        save()
-        ship.log.info("consumiu algo — fome/sede repostas")
-    end
+ship.events.on("game.shutdown", function()
+    if dirty then save() end
+    if slowed and ship.capabilities.has("player.speed") then ship.player.set_speed_multiplier(1.0) end
+    if rollBlocked and ship.capabilities.has("oot.player.roll") then ship.oot.player.set_roll_blocked(false) end
 end)
 
 ship.events.on("game.ready", function()
-    if ship.game.id() ~= "oot" then
-        return
-    end
-    for _, cap in ipairs({ "hud.draw", "core.storage", "core.timers", "player.fields" }) do
-        if not ship.capabilities.has(cap) then
-            ship.log.warn("host sem " .. cap .. " — sobrevivência indisponível")
+    if ship.game.id() ~= "oot" then return end
+    for _, capability in ipairs({
+        "hud.draw", "hud.icons", "core.storage", "core.timers",
+        "player.fields", "game.state", "input.actions",
+    }) do
+        if not ship.capabilities.has(capability) then
+            enabled = false
+            ship.log.error("survival indisponível: host sem " .. capability)
             return
         end
     end
-
-    load()
-    ship.timer.every(20, update) -- ~1 tick por segundo a 20fps de lógica
-    ship.log.info(("Sobrevivência ativa — fome %.0f, sede %.0f, stamina %.0f")
-        :format(S.hunger, S.thirst, S.stamina))
-
-    -- Reabastecer para teste rápido: tecla H.
-    ship.hotkeys.register("survival_refill", { default = "H", label = "Sobrevivência: reabastecer" }, function()
-        S.hunger, S.thirst, S.stamina = MAX, MAX, MAX
-        S.temperature = TEMP_NEUTRAL
+    ship.timer.every(20, update)
+    ship.hotkeys.register("survival_supplies", {
+        default = "H", label = "Survival: coletar suprimentos de teste",
+    }, function()
+        if not sync_slot() then return end
+        S.bag.water = math.min(9, S.bag.water + 2)
+        S.bag.ration = math.min(9, S.bag.ration + 1)
+        S.bag.fruit = math.min(9, S.bag.fruit + 2)
+        S.bag.cooked_fish = math.min(9, S.bag.cooked_fish + 1)
+        dirty, revealFrames = true, 100
         save()
-        ship.log.info("medidores reabastecidos")
+        ship.log.info("suprimentos de teste coletados")
     end)
+    ship.log.info("survival v0.3 ativo: D-pad usa água, ração, fruta e peixe")
 end)
