@@ -74,6 +74,7 @@ Versão da API: `0.4.0`. Versão do schema: `1`.
 | `ship.storage.shared.clear` | — | `integer` | `common` | `experimental` | `0.4.0` | `core.storage.shared` | `unsupported` |
 | `ship.hud.draw_rect` | `x: integer`, `y: integer`, `w: integer`, `h: integer`, `r: integer?`, `g: integer?`, `b: integer?`, `a: integer?` | `boolean` | `oot` | `experimental` | `0.4.0` | `hud.draw` | `invalid_argument`, `invalid_state` |
 | `ship.hud.draw_text` | `text: string`, `x: integer`, `y: integer`, `r: integer?`, `g: integer?`, `b: integer?`, `a: integer?`, `scale: number?` | `boolean` | `oot` | `experimental` | `0.4.0` | `hud.draw` | `invalid_argument`, `invalid_state` |
+| `ship.hud.draw_ring` | `cx: number`, `cy: number`, `radius: number`, `thickness: number?`, `fraction: number?`, `r: integer?`, `g: integer?`, `b: integer?`, `a: integer?` | `boolean` | `oot` | `experimental` | `0.4.0` | `hud.draw` | `invalid_argument`, `invalid_state` |
 
 ## Eventos
 
@@ -141,7 +142,7 @@ Versão da API: `0.4.0`. Versão do schema: `1`.
 | `oot.player.bunny_hood` | `contract` | `oot` | Veste a Bunny Hood em OoT com o comportamento de Majora's Mask (corrida mais rápida e pulo maior). |
 | `oot.player.mask` | `contract` | `oot` | Equipa qualquer máscara de OoT pelo nome lógico, sem ocupar um botão C. |
 | `player.speed` | `contract` | `oot`, `mm` | Multiplica a velocidade de movimento do jogador por um fator validado (0.1–5.0); 1.0 restaura. |
-| `player.fields` | `contract` | `oot` | Lê e escreve campos nomeados do jogador (vida, magia, rupees, posição, velocidade) com validação de faixa. |
+| `player.fields` | `contract` | `oot` | Lê e escreve campos nomeados do jogador com validação de faixa: health, health_capacity, magic, rupees, pos_x/y/z, rot_y, speed, vel_x/y/z (leitura e escrita); on_ground, rolling, swimming (só leitura); climbing (leitura; escrever 0 solta o jogador da escada e o faz cair). Chaves fora desta lista viram armazenamento livre por sessão. |
 | `oot.player.attach_model` | `contract` | `oot` | Desenha uma display list arbitrária no jogador por caminho de resource, incluindo assets de mod e do jogo vizinho. |
 | `mod.assets` | `contract` | `oot` | Archives (.o2r/.otr) na pasta de mods ficam endereçáveis sob mod/<nome>/, permitindo que um mod traga conteúdo próprio. |
 | `oot.player.immunity` | `contract` | `oot` | Concede imunidade a um tipo de dano (hoje: fogo). |

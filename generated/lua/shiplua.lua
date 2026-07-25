@@ -467,3 +467,16 @@ function ship.hud.draw_rect(x, y, w, h, r, g, b, a) end
 ---@param scale? number
 ---@return boolean
 function ship.hud.draw_text(text, x, y, r, g, b, a, scale) end
+
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: hud.draw; erros: invalid_argument, invalid_state.
+---@param cx number
+---@param cy number
+---@param radius number
+---@param thickness? number
+---@param fraction? number
+---@param r? integer
+---@param g? integer
+---@param b? integer
+---@param a? integer
+---@return boolean
+function ship.hud.draw_ring(cx, cy, radius, thickness, fraction, r, g, b, a) end

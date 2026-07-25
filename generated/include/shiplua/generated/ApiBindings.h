@@ -137,6 +137,7 @@ enum class FunctionId {
     ShipStorageSharedClear,
     ShipHudDrawRect,
     ShipHudDrawText,
+    ShipHudDrawRing,
 };
 
 struct FunctionBinding {
@@ -486,8 +487,23 @@ inline constexpr std::array<std::string_view, 2> kShipHudDrawTextErrors{{
     "invalid_argument",
     "invalid_state",
 }};
+inline constexpr std::array<FieldBinding, 9> kShipHudDrawRingArguments{{
+    {"cx", "number", true},
+    {"cy", "number", true},
+    {"radius", "number", true},
+    {"thickness", "number", false},
+    {"fraction", "number", false},
+    {"r", "integer", false},
+    {"g", "integer", false},
+    {"b", "integer", false},
+    {"a", "integer", false},
+}};
+inline constexpr std::array<std::string_view, 2> kShipHudDrawRingErrors{{
+    "invalid_argument",
+    "invalid_state",
+}};
 
-inline constexpr std::array<FunctionBinding, 51> kFunctions{{
+inline constexpr std::array<FunctionBinding, 52> kFunctions{{
     {FunctionId::ShipGameId, "ship.game.id", "0.1.0", "stable", "game_id", "raise", {}, "common", {}, kShipGameIdArguments, kShipGameIdErrors},
     {FunctionId::ShipGameHostVersion, "ship.game.host_version", "0.1.0", "stable", "string", "raise", {}, "common", {}, kShipGameHostVersionArguments, kShipGameHostVersionErrors},
     {FunctionId::ShipRuntimeVersion, "ship.runtime.version", "0.1.0", "stable", "string", "raise", {}, "common", {}, kShipRuntimeVersionArguments, kShipRuntimeVersionErrors},
@@ -539,6 +555,7 @@ inline constexpr std::array<FunctionBinding, 51> kFunctions{{
     {FunctionId::ShipStorageSharedClear, "ship.storage.shared.clear", "0.4.0", "experimental", "integer", "raise", {}, "common", "core.storage.shared", kShipStorageSharedClearArguments, kShipStorageSharedClearErrors},
     {FunctionId::ShipHudDrawRect, "ship.hud.draw_rect", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "hud.draw", kShipHudDrawRectArguments, kShipHudDrawRectErrors},
     {FunctionId::ShipHudDrawText, "ship.hud.draw_text", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "hud.draw", kShipHudDrawTextArguments, kShipHudDrawTextErrors},
+    {FunctionId::ShipHudDrawRing, "ship.hud.draw_ring", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "hud.draw", kShipHudDrawRingArguments, kShipHudDrawRingErrors},
 }};
 
 struct EventBinding {

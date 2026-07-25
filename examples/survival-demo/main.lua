@@ -26,10 +26,16 @@ local DRAIN = {
     stamina = 0.0, -- stamina só cai correndo; ver update()
 }
 
--- Stamina: custo por segundo correndo, e recuperação parado.
-local STAMINA_RUN_COST = 12.0
-local STAMINA_REGEN = 8.0
-local RUN_SPEED_THRESHOLD = 4.0 -- acima disso é "correndo" (linearVelocity)
+-- Stamina: só ESFORÇO gasta — rolar, correr e escalar. E só enquanto há
+-- movimento de fato: pendurado parado numa escada não consome nada.
+local STAMINA_COST = {
+    rolling = 22.0,  -- rolamento é explosivo, custa caro
+    running = 11.0,  -- corrida sustentada
+    climbing = 15.0, -- escalar cansa mais que correr
+}
+local STAMINA_REGEN = 9.0
+local RUN_SPEED_THRESHOLD = 4.0 -- acima disso é corrida (linearVelocity)
+local MOVING_THRESHOLD = 0.5    -- abaixo disso está parado (vale para escalada)
 
 -- Temperatura: 50 = neutro. Cada cena puxa para um alvo.
 local TEMP_NEUTRAL = 50.0
@@ -84,13 +90,37 @@ local function update()
     S.hunger = clamp(S.hunger - DRAIN.hunger, 0, MAX)
     S.thirst = clamp(S.thirst - DRAIN.thirst, 0, MAX)
 
-    -- Stamina reage ao que o jogador está fazendo AGORA.
+    -- Stamina reage ao ESFORÇO atual. Só gasta rolando, correndo ou escalando,
+    -- e apenas enquanto há movimento — parado (inclusive pendurado numa
+    -- escada) o medidor recupera.
     local speed = ship.player.get("speed") or 0
     if speed < 0 then speed = -speed end
-    if speed > RUN_SPEED_THRESHOLD then
-        S.stamina = clamp(S.stamina - STAMINA_RUN_COST, 0, MAX)
+    local moving = speed > MOVING_THRESHOLD
+    local rolling = (ship.player.get("rolling") or 0) == 1
+    local climbing = (ship.player.get("climbing") or 0) == 1
+
+    local cost = 0
+    if rolling then
+        cost = STAMINA_COST.rolling
+    elseif climbing and moving then
+        cost = STAMINA_COST.climbing
+    elseif moving and speed > RUN_SPEED_THRESHOLD then
+        cost = STAMINA_COST.running
+    end
+
+    if cost > 0 then
+        S.stamina = clamp(S.stamina - cost, 0, MAX)
     else
         S.stamina = clamp(S.stamina + STAMINA_REGEN, 0, MAX)
+    end
+
+    -- Sem força no meio da subida: solta a escada e cai. Escrever 0 em
+    -- "climbing" usa o mesmo caminho do engine para largar a escada — não
+    -- basta mexer na velocidade, porque escalando é o jogo que manda na
+    -- posição do Link.
+    if climbing and S.stamina <= 0 then
+        ship.player.set("climbing", 0)
+        ship.log.info("sem força — você escorregou!")
     end
 
     -- Temperatura tende ao alvo da cena atual.
@@ -131,6 +161,18 @@ end
 -- HUD
 --------------------------------------------------------------------------------
 
+-- Estilo da stamina: "wheel" desenha uma roda flutuando ao lado do
+-- personagem (como BotW/Skyward Sword); "bar" usa a barra fixa no canto.
+-- As demais (fome/sede/temperatura) continuam sempre em barra.
+local STAMINA_STYLE = "wheel"
+
+-- Roda: deslocamento em relação ao personagem, na tela. Negativo em x é à
+-- esquerda; negativo em y é acima.
+local WHEEL_OFFSET_X, WHEEL_OFFSET_Y = -26, -18
+local WHEEL_RADIUS, WHEEL_THICKNESS = 13, 3
+-- Some quando cheia e parada, como nos jogos de referência.
+local WHEEL_HIDE_WHEN_FULL = true
+
 local BAR_X, BAR_Y = 26, 60
 local BAR_W, BAR_H, BAR_GAP = 62, 6, 11
 
@@ -156,10 +198,44 @@ local function bar(index, label, value, maxValue, r, g, b)
     ship.hud.draw_text(label, BAR_X - 14, y - 1, 255, 255, 255, 220, 0.55)
 end
 
+-- Roda de stamina ancorada ao personagem. screen_x/screen_y projetam a cabeça
+-- do Link; o offset a coloca acima e à esquerda dele.
+local function stamina_wheel()
+    local full = S.stamina >= MAX - 0.01
+    if WHEEL_HIDE_WHEN_FULL and full then
+        return
+    end
+    local sx = ship.player.get("screen_x")
+    local sy = ship.player.get("screen_y")
+    if not sx or not sy then
+        return
+    end
+    -- Fora da tela (câmera não enquadra o Link): não desenha.
+    if sx < -80 or sx > 400 or sy < -80 or sy > 320 then
+        return
+    end
+    local cx = sx + WHEEL_OFFSET_X
+    local cy = sy + WHEEL_OFFSET_Y
+
+    -- Trilho escuro completo, depois o preenchimento por cima.
+    ship.hud.draw_ring(cx, cy, WHEEL_RADIUS, WHEEL_THICKNESS, 1.0, 0, 0, 0, 120)
+    local frac = clamp(S.stamina / MAX, 0, 1)
+    -- Verde normal; vermelho quando esgotada, para o esgotamento ser óbvio.
+    local r, g, b = 90, 220, 90
+    if S.stamina <= 0 then
+        r, g, b = 230, 70, 70
+    end
+    ship.hud.draw_ring(cx, cy, WHEEL_RADIUS, WHEEL_THICKNESS, frac, r, g, b, 240)
+end
+
 ship.events.on("hook.oot.hud.draw", function()
     bar(0, "F", S.hunger, MAX, 210, 150, 60)          -- fome: marrom/laranja
     bar(1, "S", S.thirst, MAX, 70, 150, 240)          -- sede: azul
-    bar(2, "E", S.stamina, MAX, 90, 220, 90)          -- stamina: verde
+    if STAMINA_STYLE == "wheel" then
+        stamina_wheel()
+    else
+        bar(2, "E", S.stamina, MAX, 90, 220, 90)      -- stamina: verde
+    end
     local r, g, b = temp_color(S.temperature)
     bar(3, "T", S.temperature, MAX * 2, r, g, b)      -- temperatura
 end)
