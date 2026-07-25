@@ -95,9 +95,10 @@ local function update()
     S.hunger = clamp(S.hunger - DRAIN.hunger, 0, MAX)
     S.thirst = clamp(S.thirst - DRAIN.thirst, 0, MAX)
 
-    -- Stamina reage ao ESFORÇO atual. Só gasta rolando, correndo ou escalando,
-    -- e apenas enquanto há movimento — parado (inclusive pendurado numa
-    -- escada) o medidor recupera.
+    -- Stamina reage ao ESFORÇO atual: gasta rolando e escalando em movimento.
+    -- Parar no meio da escada NÃO recupera — segurar o próprio peso agarrado
+    -- já é esforço; o medidor apenas congela. Recuperação só com os pés no
+    -- chão, fora da escalada.
     local rolling = (ship.player.get("rolling") or 0) == 1
     local climbing = (ship.player.get("climbing") or 0) == 1
 
@@ -122,6 +123,9 @@ local function update()
 
     if cost > 0 then
         S.stamina = clamp(S.stamina - cost, 0, MAX)
+    elseif climbing then
+        -- Pendurado sem subir: nem gasta nem recupera. Fica travado até sair
+        -- da escalada.
     else
         S.stamina = clamp(S.stamina + STAMINA_REGEN, 0, MAX)
     end
