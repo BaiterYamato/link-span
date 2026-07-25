@@ -35,7 +35,10 @@ local STAMINA_COST = {
     climbing = 15.0, -- escalar cansa
 }
 local STAMINA_REGEN = 9.0
-local MOVING_THRESHOLD = 0.5 -- abaixo disso está parado (vale para escalada)
+-- Numa escada o Link é movido pela ANIMAÇÃO, não por linearVelocity: a
+-- velocidade fica ~0 mesmo subindo. Por isso "está se movendo" durante a
+-- escalada é medido por variação de altura entre ticks, não por velocidade.
+local CLIMB_MOVE_EPSILON = 0.4
 
 -- Temperatura: 50 = neutro. Cada cena puxa para um alvo.
 local TEMP_NEUTRAL = 50.0
@@ -61,6 +64,8 @@ local DAMAGE_AMOUNT = 16     -- 16 = um coração
 local S = { hunger = MAX, thirst = MAX, stamina = MAX, temperature = TEMP_NEUTRAL }
 local damageTimer = 0
 local slowed = false
+local lastY = nil       -- altura no tick anterior, para detectar escalada real
+local rollBlocked = false
 
 local function load()
     S.hunger = ship.storage.get("hunger", MAX)
@@ -93,16 +98,25 @@ local function update()
     -- Stamina reage ao ESFORÇO atual. Só gasta rolando, correndo ou escalando,
     -- e apenas enquanto há movimento — parado (inclusive pendurado numa
     -- escada) o medidor recupera.
-    local speed = ship.player.get("speed") or 0
-    if speed < 0 then speed = -speed end
-    local moving = speed > MOVING_THRESHOLD
     local rolling = (ship.player.get("rolling") or 0) == 1
     local climbing = (ship.player.get("climbing") or 0) == 1
+
+    -- Escalando de verdade = altura mudou desde o último tick. Usar velocidade
+    -- aqui não funciona: na escada o movimento vem da animação e linearVelocity
+    -- fica ~0, então o custo nunca era cobrado.
+    local y = ship.player.get("pos_y")
+    local climbMoving = false
+    if climbing and y and lastY then
+        local dy = y - lastY
+        if dy < 0 then dy = -dy end
+        climbMoving = dy > CLIMB_MOVE_EPSILON
+    end
+    lastY = y
 
     local cost = 0
     if rolling then
         cost = STAMINA_COST.rolling
-    elseif climbing and moving then
+    elseif climbMoving then
         cost = STAMINA_COST.climbing
     end
 
@@ -128,7 +142,17 @@ local function update()
         S.temperature = clamp(S.temperature - TEMP_RATE, 0, MAX * 2)
     end
 
-    -- Consequência 1: sem stamina, o jogador fica lento.
+    -- Consequência 1: sem stamina, não dá para rolar. Só drenar o medidor não
+    -- impede a ação — o bloqueio acontece no portão nativo do rolamento.
+    if ship.capabilities.has("oot.player.roll") then
+        local shouldBlock = S.stamina <= 0
+        if shouldBlock ~= rollBlocked then
+            rollBlocked = shouldBlock
+            ship.oot.player.set_roll_blocked(rollBlocked)
+        end
+    end
+
+    -- Consequência 2: sem stamina, o jogador fica lento.
     if ship.capabilities.has("player.speed") then
         local shouldSlow = S.stamina <= 0
         if shouldSlow ~= slowed then
@@ -137,7 +161,7 @@ local function update()
         end
     end
 
-    -- Consequência 2: fome ou sede zeradas machucam de tempos em tempos.
+    -- Consequência 3: fome ou sede zeradas machucam de tempos em tempos.
     if S.hunger <= STARVING_AT or S.thirst <= STARVING_AT then
         damageTimer = damageTimer + 1
         if damageTimer >= DAMAGE_EVERY_TICKS then

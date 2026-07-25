@@ -51,6 +51,7 @@ Versão da API: `0.4.0`. Versão do schema: `1`.
 | `ship.oot.player.set_damage_immunity` | `kind: string`, `enabled: boolean` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.player.immunity` | — |
 | `ship.oot.player.set_weight` | `weight: string` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.player.weight` | — |
 | `ship.oot.player.set_roll_mode` | `mode: string` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.player.roll` | — |
+| `ship.oot.player.set_roll_blocked` | `blocked: boolean` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.player.roll` | — |
 | `ship.oot.player.set_body` | `spec: any` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.player.custom_body` | — |
 | `ship.oot.player.get_body` | — | `any` | `oot` | `experimental` | `0.4.0` | `oot.player.custom_body` | — |
 | `ship.oot.player.play_body_animation` | `name: string`, `mode: string?`, `speed: number?` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.player.custom_body` | — |

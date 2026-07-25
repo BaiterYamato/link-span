@@ -333,6 +333,11 @@ function ship.oot.player.set_weight(weight) end
 ---@return boolean
 function ship.oot.player.set_roll_mode(mode) end
 
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: oot.player.roll; erros: nenhum.
+---@param blocked boolean
+---@return boolean
+function ship.oot.player.set_roll_blocked(blocked) end
+
 --- API oot; estabilidade: experimental; desde: 0.4.0; capability: oot.player.custom_body; erros: nenhum.
 ---@param spec any
 ---@return boolean
