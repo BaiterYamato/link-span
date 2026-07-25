@@ -129,11 +129,12 @@ local GORON_BODY = {
     -- some da tela — indistinguível de "não desenhou". Uma calibração anterior
     -- chegou a -210 às cegas e deixou a forma invisível.
     --
-    -- Valor calibrado VISUALMENTE em jogo: 0. O comentário do host afirma que o
-    -- corpo ereto flutuaria ~30 unidades sem compensação, mas na prática -30 já
-    -- deixa o Goron afundado no piso — ou seja, o root do skeleton convertido já
-    -- pousa alinhado. Confie no teste em jogo, não nesta suposição.
-    ground_offset = 0.0,
+    -- Valor calibrado VISUALMENTE em jogo: -10. O comentário do host afirma que
+    -- o corpo ereto flutuaria ~30 unidades sem compensação, mas na prática -30
+    -- já deixava o Goron afundado no piso — ou seja, o root do skeleton
+    -- convertido já pousa quase alinhado e só precisa de um ajuste fino. Confie
+    -- no teste em jogo, não naquela suposição.
+    ground_offset = -10.0,
     roll_offset = 12.0,
     -- Goron nao nada: em agua funda, enrola, afunda e volta pelo void-out
     -- nativo. A regra e opt-in da spec para nao afetar outros corpos.
