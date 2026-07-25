@@ -757,13 +757,14 @@ struct CapabilityBinding {
     bool supportsMm;
 };
 
-inline constexpr std::array<CapabilityBinding, 41> kCapabilities{{
+inline constexpr std::array<CapabilityBinding, 42> kCapabilities{{
     {"core.events", "contract", true, true},
     {"hooks.bridge", "contract", true, true},
     {"core.timers", "contract", true, true},
     {"core.input", "contract", true, true},
     {"core.storage", "contract", true, true},
     {"core.storage.shared", "contract", true, true},
+    {"oot.audio", "planned", true, false},
     {"oot.cutscene", "contract", true, false},
     {"oot.env", "contract", true, false},
     {"hud.draw", "contract", true, false},

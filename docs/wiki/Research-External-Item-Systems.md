@@ -415,3 +415,96 @@ Diferenças que sobram, em ordem de valor:
 O item 1 é o único que vale tratar como bug em potencial; os outros são
 refinamentos. Nenhum deles explica invisibilidade ou animação errada — esses
 foram `core.timers` desconectado e `ground_offset` fora de escala (ver §7).
+
+## 10. Áudio do MM dentro do OoT — a correção — 2026-07-25
+
+> **Esta seção corrige uma afirmação errada** que estava na §9, no handoff
+> `OOT-GORON-002` e na descrição da capability `oot.audio`.
+
+### O que se afirmava (errado)
+
+> *"Áudio NÃO é cross-world. `mm.o2r` dá modelos, texturas e animações. Sfx não:
+> vivem nos bancos de áudio/soundfont, que são outro sistema e não estão
+> montados."*
+
+### O que é verdade
+
+O `mm.o2r` que o Link-Span já empacota contém os dados de áudio, e o host já os
+monta. Verificado abrindo o arquivo:
+
+```
+link-span/x64/packages/oot/Release/mm.o2r — 50.496 entradas
+  audio/fonts/       41   (inclui audio/fonts/Soundfont_0)
+  audio/sequences/  128   (inclui audio/sequences/Sequence_0)
+  audio/samples/    682   (as amostras VADPCM)
+```
+
+O `MmCrossWorldArchive` expõe **100% do arquivo** sob o prefixo `mm/`
+(`ShipLuaBootstrap.cpp:3759`), logo `mm/audio/fonts/Soundfont_0` já é
+endereçável hoje. E as duas funções necessárias para lê-los já existem no host:
+`ResourceMgr_LoadAudioSoundFontByName` e `ResourceMgr_LoadSeqPtrByName`
+(`ResourceManagerHelpers.cpp:576,567`).
+
+A afirmação correta é mais fraca: **os dados estão acessíveis; o motor de áudio
+do OoT é que não os interpreta**, porque soundfont e sequência são binários no
+formato de MM. A saída não é "não dá" — é "rodar um segundo player de sequência
+ao lado do nativo".
+
+### Quem já fez isso: skijer/Shipwright @ `Not-Enough-Items`
+
+`soh/mods/sound_translator/` (20 arquivos) é um motor de SFX do MM isolado,
+dentro do `soh.exe`. Do cabeçalho real de `mm_sfx_synth.h`:
+
+> *"public C API for the isolated MM SFX synth [...] boot/init + asset load
+> (Sequence_0 + Soundfont_0/1 from mm.o2r), per-SFX channel-IO dispatch
+> (mirrors MM AUDIOCMD_CHANNEL_SET_IO), the audio-thread render/mix entry."*
+
+Toda a superfície pública são 6 funções (`Init`, `IsReady`,
+`Write/ReadChannelIO`, `SetChannelState`, `RenderInto` em 32 kHz estéreo s16).
+O `Init` carrega os dois soundfonts, repatcha os ponteiros de amostra para
+dentro do `mm.o2r`, `reinterpret_cast`-a a struct (as duas são
+binário-compatíveis) e dá start na sequência de SFX.
+
+**Voz por forma** (`transformation_masks/transformation_masks.c:157-215`) é uma
+soma de offset sobre a base de voz do OoT (`0x6800`):
+
+| Forma | Offset de voz | Offset de passo |
+|---|---|---|
+| Fierce Deity | `0x00` | `0x80` |
+| Garo | `0x60` | — |
+| Deku | `0x80` | `0xF0` |
+| Zora | `0xA0` | `0x120` |
+| **Goron** | **`0xC0`** | **`0x150`** |
+| Gerudo | sem amostras no MM | — |
+
+`mmSfxId = 0x6800 + offsetDaForma + action`. Se a amostra não existir, falha em
+silêncio, sem crash.
+
+### Consequência para o Link-Span
+
+A primitiva certa não é "tocar som de transformação". É, em ordem de custo:
+
+1. `ship.oot.audio.play_sfx(id)` — precisa do motor acima para ids do MM.
+2. `ship.oot.audio.set_voice_map(base, offset)` — instrumentar
+   `Player_PlayVoiceSfx` e deixar o mod escolher o offset. Genérica: quem for
+   fazer Zora ou Deku muda **um número**.
+
+O plano detalhado, com a trilha de SFX frame a frame extraída do decomp de MM,
+está em `coordination/handoffs/OOT-GORON-002-port-mm.md`.
+
+### ComboShip não ajuda aqui
+
+Verificado em `docs/ARCHITECTURE.md` e `combo/ComboShip.cpp`: o launcher não
+tem código de áudio; cada jogo usa o próprio ResourceManager e o de OoT é
+desativado ao entrar em MM. Formas de transformação não são sincronizadas entre
+os jogos (nenhum arquivo do randomizer menciona `mask`/`transformation`). E as
+máscaras já têm bugs de pitch no próprio 2S2H (issues #410 e #490) que seriam
+herdados.
+
+### OoTMM também não
+
+`Player_ToggleForm` (em `packages/generator/src/mm/actors/Player.c`) só
+sequestra `actor.update` e delega para `Player_UpdateForm`, que é **função
+nativa do MM** — o OoTMM roda dentro de MM, então não precisa portar nada.
+A fonte real da transformação é o decomp de MM, que já está nesta máquina em
+`MM-MODSDK-001/mm/src/overlays/actors/ovl_player_actor/z_player.c`.
