@@ -241,35 +241,31 @@ local function temperature_gauge()
                GAUGE_CY - math.sin(angle) * radius
     end
 
-    -- Faixa colorida do arco. Passos suficientes para não deixar falhas.
-    local steps = 46
+    -- Faixa colorida do arco. O custo aqui importa: cada retângulo ocupa espaço
+    -- na display list do jogo, que é um buffer FIXO. Uma versão anterior deste
+    -- gauge desenhava ~270 retângulos por frame e estourava o pool gráfico,
+    -- derrubando o jogo. Um retângulo mais largo por passo cobre a mesma faixa
+    -- com uma fração das chamadas.
+    local steps = 22
     for i = 0, steps do
         local pos = i / steps                 -- 0 = frio, 1 = quente
         local ang = PI * (1 - pos)
         local r, g, b = temp_color_at(pos)
-        for layer = 0, GAUGE_BAND - 1 do
-            local px, py = point(ang, GAUGE_RADIUS - layer)
-            ship.hud.draw_rect(math.floor(px), math.floor(py), 2, 2, r, g, b, 225)
-        end
+        -- Um único retângulo cobrindo a espessura da faixa, em vez de uma
+        -- pilha de camadas.
+        local px, py = point(ang, GAUGE_RADIUS - GAUGE_BAND / 2)
+        ship.hud.draw_rect(math.floor(px) - 1, math.floor(py) - 1, GAUGE_BAND, GAUGE_BAND, r, g, b, 230)
     end
 
-    -- Marcas nas pontas e no centro, para dar leitura de escala.
-    for _, pos in ipairs({ 0, 0.5, 1 }) do
-        local ang = PI * (1 - pos)
-        local px, py = point(ang, GAUGE_RADIUS + 3)
-        ship.hud.draw_rect(math.floor(px), math.floor(py), 2, 2, 255, 255, 255, 200)
-    end
-
-    -- Ponteiro: pontos do centro até o comprimento, com contorno escuro para
-    -- destacar sobre qualquer cor da faixa.
+    -- Ponteiro: poucos pontos, mais grossos.
     local ang = PI * (1 - t)
-    for i = 2, GAUGE_NEEDLE_LEN do
+    for i = 3, GAUGE_NEEDLE_LEN, 3 do
         local px, py = point(ang, i)
-        ship.hud.draw_rect(math.floor(px) - 1, math.floor(py) - 1, 4, 4, 0, 0, 0, 190)
+        ship.hud.draw_rect(math.floor(px) - 2, math.floor(py) - 2, 5, 5, 0, 0, 0, 200)
     end
-    for i = 2, GAUGE_NEEDLE_LEN do
+    for i = 3, GAUGE_NEEDLE_LEN, 3 do
         local px, py = point(ang, i)
-        ship.hud.draw_rect(math.floor(px), math.floor(py), 2, 2, 255, 255, 255, 245)
+        ship.hud.draw_rect(math.floor(px) - 1, math.floor(py) - 1, 3, 3, 255, 255, 255, 250)
     end
 
     -- Eixo central.
