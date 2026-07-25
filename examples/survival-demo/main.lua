@@ -26,16 +26,16 @@ local DRAIN = {
     stamina = 0.0, -- stamina só cai correndo; ver update()
 }
 
--- Stamina: só ESFORÇO gasta — rolar, correr e escalar. E só enquanto há
+-- Stamina: só ESFORÇO gasta. Correr NÃO conta — é o movimento padrão do OoT,
+-- o jogo não tem andar/sprint separados, então cobrar por correr seria cobrar
+-- por simplesmente se locomover. Sobram rolamento e escalada. E só enquanto há
 -- movimento de fato: pendurado parado numa escada não consome nada.
 local STAMINA_COST = {
     rolling = 22.0,  -- rolamento é explosivo, custa caro
-    running = 11.0,  -- corrida sustentada
-    climbing = 15.0, -- escalar cansa mais que correr
+    climbing = 15.0, -- escalar cansa
 }
 local STAMINA_REGEN = 9.0
-local RUN_SPEED_THRESHOLD = 4.0 -- acima disso é corrida (linearVelocity)
-local MOVING_THRESHOLD = 0.5    -- abaixo disso está parado (vale para escalada)
+local MOVING_THRESHOLD = 0.5 -- abaixo disso está parado (vale para escalada)
 
 -- Temperatura: 50 = neutro. Cada cena puxa para um alvo.
 local TEMP_NEUTRAL = 50.0
@@ -104,8 +104,6 @@ local function update()
         cost = STAMINA_COST.rolling
     elseif climbing and moving then
         cost = STAMINA_COST.climbing
-    elseif moving and speed > RUN_SPEED_THRESHOLD then
-        cost = STAMINA_COST.running
     end
 
     if cost > 0 then
