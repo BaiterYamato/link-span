@@ -79,6 +79,43 @@ typedef double f64;
 typedef volatile u8 vu8;
 typedef volatile s32 vs32;
 
+// Ponteiro genérico do nó de lista encadeada do áudio. No decomp é um `void*`
+// que recebe e devolve Note* ou SequenceLayer* livremente — legal em C, erro em
+// C++. Este proxy converte nos dois sentidos, é trivialmente copiável (logo cabe
+// numa union) e tem o mesmo tamanho de um ponteiro, preservando o layout.
+struct AnyPtr {
+    void* raw;
+
+    // `= default` mantém o tipo trivialmente construtível, que é o que permite
+    // usá-lo dentro de uma union sem apagar os membros especiais dela.
+    AnyPtr() = default;
+    AnyPtr(decltype(nullptr)) : raw(nullptr) {
+    }
+    template <typename T> AnyPtr(T* p) : raw(static_cast<void*>(p)) {
+    }
+
+    template <typename T> operator T*() const {
+        return static_cast<T*>(raw);
+    }
+    template <typename T> AnyPtr& operator=(T* p) {
+        raw = static_cast<void*>(p);
+        return *this;
+    }
+    AnyPtr& operator=(decltype(nullptr)) {
+        raw = nullptr;
+        return *this;
+    }
+    bool operator==(const void* p) const {
+        return raw == p;
+    }
+    bool operator!=(const void* p) const {
+        return raw != p;
+    }
+    explicit operator bool() const {
+        return raw != nullptr;
+    }
+};
+
 // Macros de unk.h do MM. O decomp as usa em campos ainda não identificados;
 // sem elas as structs de DMA não compilam.
 #define UNK_TYPE s32
@@ -157,6 +194,13 @@ def clean(path):
                     break
             break
 
+    # heap.h e load.h entram só pelos TIPOS. As declarações de função que vêm
+    # junto colidem com os nossos shims — o AudioHeap_SearchCaches de lá é
+    # `void*`, o nosso devolve AutoPtr, e o compilador vê sobrecarga que difere
+    # só no retorno.
+    strip_protos = path in ('audio/heap.h', 'audio/load.h')
+    proto = re.compile(r'^[A-Za-z_][A-Za-z0-9_ \*]*\b[A-Za-z_][A-Za-z0-9_]*\s*\([^;{]*\)\s*;')
+
     out = []
     for i, line in enumerate(lines):
         if i in drop:
@@ -167,6 +211,8 @@ def clean(path):
         if stripped.startswith('#include'):
             continue
         if stripped.startswith('#pragma once'):
+            continue
+        if strip_protos and proto.match(stripped):
             continue
         out.append(line)
     return '\n'.join(out)
@@ -180,6 +226,10 @@ def main():
     parts.append('\n} // namespace mmsfx\n')
 
     body = '\n'.join(parts)
+
+    # O `void* value` do nó de lista vira AnyPtr: é o único campo do decomp que
+    # recebe e devolve ponteiros de tipos diferentes, e em C++ isso não compila.
+    body = body.replace('/* 0x08 */ void* value;', '/* 0x08 */ AnyPtr value;')
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, 'w', encoding='utf-8', newline='\n') as fh:
         fh.write(body)
