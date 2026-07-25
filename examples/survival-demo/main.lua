@@ -189,8 +189,16 @@ end
 
 -- Estilo da stamina: "wheel" desenha uma roda flutuando ao lado do
 -- personagem (como BotW/Skyward Sword); "bar" usa a barra fixa no canto.
--- As demais (fome/sede/temperatura) continuam sempre em barra.
+-- Fome e sede continuam sempre em barra, no canto superior esquerdo.
 local STAMINA_STYLE = "wheel"
+
+-- Termômetro: gauge vertical no canto inferior direito, perto do minimapa,
+-- como o de BotW. Um marcador desliza por uma escala fria->quente em vez de
+-- uma barra que enche — temperatura não tem "cheio", tem posição.
+-- Coordenadas no espaço de HUD do OoT (320x240); ajuste se quiser mover.
+local GAUGE_X, GAUGE_Y = 292, 138   -- canto superior esquerdo da escala
+local GAUGE_W, GAUGE_H = 7, 58      -- largura e altura da escala
+local GAUGE_MARKER_W, GAUGE_MARKER_H = 13, 3
 
 -- Roda: deslocamento em relação ao personagem, na tela. Negativo em x é à
 -- esquerda; negativo em y é acima.
@@ -202,14 +210,39 @@ local WHEEL_HIDE_WHEN_FULL = true
 local BAR_X, BAR_Y = 26, 60
 local BAR_W, BAR_H, BAR_GAP = 62, 6, 11
 
--- Cor da barra de temperatura muda com o valor: azul (frio) -> branco -> vermelho.
-local function temp_color(v)
-    if v < TEMP_NEUTRAL then
-        local t = v / TEMP_NEUTRAL
-        return math.floor(90 * t), math.floor(140 * t + 60), 255
+-- Cor para uma posição 0..1 da escala: 0 = frio (azul), 0.5 = neutro
+-- (cinza claro), 1 = quente (vermelho).
+local function temp_color_at(t)
+    if t < 0.5 then
+        local k = t / 0.5                       -- 0 no frio extremo, 1 no neutro
+        return math.floor(70 + 140 * k), math.floor(150 + 90 * k), 255
     end
-    local t = (v - TEMP_NEUTRAL) / TEMP_NEUTRAL
-    return 255, math.floor(200 * (1 - t)), math.floor(120 * (1 - t))
+    local k = (t - 0.5) / 0.5                   -- 0 no neutro, 1 no calor extremo
+    return 255, math.floor(240 - 180 * k), math.floor(210 - 190 * k)
+end
+
+-- Termômetro vertical: escala com gradiente frio->quente (quente em cima) e um
+-- marcador que desliza. Composto só de retângulos — a escala é desenhada em
+-- fatias de 1px de altura, cada uma com a cor daquele ponto.
+local function temperature_gauge()
+    local range = MAX * 2                        -- 0..200, com 100 = neutro
+    local t = clamp(S.temperature / range, 0, 1)
+
+    -- Moldura escura, um pouco maior que a escala.
+    ship.hud.draw_rect(GAUGE_X - 1, GAUGE_Y - 1, GAUGE_W + 2, GAUGE_H + 2, 0, 0, 0, 170)
+
+    -- Gradiente: topo = quente. A fatia i de cima corresponde a (1 - i/H).
+    for i = 0, GAUGE_H - 1 do
+        local pos = 1 - (i / (GAUGE_H - 1))
+        local r, g, b = temp_color_at(pos)
+        ship.hud.draw_rect(GAUGE_X, GAUGE_Y + i, GAUGE_W, 1, r, g, b, 205)
+    end
+
+    -- Marcador na posição atual (invertido: t=1 fica no topo).
+    local my = GAUGE_Y + math.floor((1 - t) * (GAUGE_H - 1)) - math.floor(GAUGE_MARKER_H / 2)
+    local mx = GAUGE_X - math.floor((GAUGE_MARKER_W - GAUGE_W) / 2)
+    ship.hud.draw_rect(mx - 1, my - 1, GAUGE_MARKER_W + 2, GAUGE_MARKER_H + 2, 0, 0, 0, 220)
+    ship.hud.draw_rect(mx, my, GAUGE_MARKER_W, GAUGE_MARKER_H, 255, 255, 255, 255)
 end
 
 local function bar(index, label, value, maxValue, r, g, b)
@@ -262,8 +295,7 @@ ship.events.on("hook.oot.hud.draw", function()
     else
         bar(2, "E", S.stamina, MAX, 90, 220, 90)      -- stamina: verde
     end
-    local r, g, b = temp_color(S.temperature)
-    bar(3, "T", S.temperature, MAX * 2, r, g, b)      -- temperatura
+    temperature_gauge()                               -- termômetro, canto inferior direito
 end)
 
 --------------------------------------------------------------------------------
