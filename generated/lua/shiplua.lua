@@ -117,6 +117,8 @@
 ---@field item_id integer
 ---@field get_item_id integer
 
+---@class ShipLuaEventHookOotHudDraw
+
 ---@class ShipLuaEventHookOotPlayerFirstPersonControl
 ---@field held_item_action integer
 
@@ -165,7 +167,7 @@
 ---@class ShipLuaEventHookMmItemShouldGive
 ---@field item integer
 
----@alias ShipLuaEventName "game.ready"|"game.frame"|"game.shutdown"|"scene.enter"|"actor.init"|"actor.update"|"actor.destroy"|"save.loaded"|"text.open"|"audio.sequence_started"|"input.hotkey"|"hook.oot.player.speed.run"|"hook.oot.player.fall_damage"|"hook.oot.item.receive"|"hook.oot.player.health_change"|"hook.oot.player.bonk"|"hook.oot.enemy.defeat"|"hook.oot.item.give"|"hook.oot.player.first_person_control"|"hook.oot.player.arrow_type_select"|"hook.oot.player.body_anim_select"|"hook.mm.player.speed.walk"|"hook.mm.player.goron_roll.consume_magic"|"hook.mm.player.goron_roll.disable_spike_mode"|"hook.mm.player.goron_roll.increase_spike_level"|"hook.mm.item.give"|"hook.mm.enemy.defeat"|"hook.mm.item.should_give"
+---@alias ShipLuaEventName "game.ready"|"game.frame"|"game.shutdown"|"scene.enter"|"actor.init"|"actor.update"|"actor.destroy"|"save.loaded"|"text.open"|"audio.sequence_started"|"input.hotkey"|"hook.oot.player.speed.run"|"hook.oot.player.fall_damage"|"hook.oot.item.receive"|"hook.oot.player.health_change"|"hook.oot.player.bonk"|"hook.oot.enemy.defeat"|"hook.oot.item.give"|"hook.oot.hud.draw"|"hook.oot.player.first_person_control"|"hook.oot.player.arrow_type_select"|"hook.oot.player.body_anim_select"|"hook.mm.player.speed.walk"|"hook.mm.player.goron_roll.consume_magic"|"hook.mm.player.goron_roll.disable_spike_mode"|"hook.mm.player.goron_roll.increase_spike_level"|"hook.mm.item.give"|"hook.mm.enemy.defeat"|"hook.mm.item.should_give"
 
 ship = ship or {}
 ship.actor = ship.actor or {}
@@ -175,6 +177,7 @@ ship.events = ship.events or {}
 ship.game = ship.game or {}
 ship.hooks = ship.hooks or {}
 ship.hotkeys = ship.hotkeys or {}
+ship.hud = ship.hud or {}
 ship.log = ship.log or {}
 ship.mm = ship.mm or {}
 ship.oot = ship.oot or {}
@@ -440,3 +443,27 @@ function ship.storage.shared.delete(key) end
 --- API common; estabilidade: experimental; desde: 0.4.0; capability: core.storage.shared; erros: unsupported.
 ---@return integer
 function ship.storage.shared.clear() end
+
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: hud.draw; erros: invalid_argument, invalid_state.
+---@param x integer
+---@param y integer
+---@param w integer
+---@param h integer
+---@param r? integer
+---@param g? integer
+---@param b? integer
+---@param a? integer
+---@return boolean
+function ship.hud.draw_rect(x, y, w, h, r, g, b, a) end
+
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: hud.draw; erros: invalid_argument, invalid_state.
+---@param text string
+---@param x integer
+---@param y integer
+---@param r? integer
+---@param g? integer
+---@param b? integer
+---@param a? integer
+---@param scale? number
+---@return boolean
+function ship.hud.draw_text(text, x, y, r, g, b, a, scale) end

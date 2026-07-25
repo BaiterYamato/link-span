@@ -135,6 +135,8 @@ enum class FunctionId {
     ShipStorageSharedSet,
     ShipStorageSharedDelete,
     ShipStorageSharedClear,
+    ShipHudDrawRect,
+    ShipHudDrawText,
 };
 
 struct FunctionBinding {
@@ -456,8 +458,36 @@ inline constexpr std::array<FieldBinding, 0> kShipStorageSharedClearArguments{{
 inline constexpr std::array<std::string_view, 1> kShipStorageSharedClearErrors{{
     "unsupported",
 }};
+inline constexpr std::array<FieldBinding, 8> kShipHudDrawRectArguments{{
+    {"x", "integer", true},
+    {"y", "integer", true},
+    {"w", "integer", true},
+    {"h", "integer", true},
+    {"r", "integer", false},
+    {"g", "integer", false},
+    {"b", "integer", false},
+    {"a", "integer", false},
+}};
+inline constexpr std::array<std::string_view, 2> kShipHudDrawRectErrors{{
+    "invalid_argument",
+    "invalid_state",
+}};
+inline constexpr std::array<FieldBinding, 8> kShipHudDrawTextArguments{{
+    {"text", "string", true},
+    {"x", "integer", true},
+    {"y", "integer", true},
+    {"r", "integer", false},
+    {"g", "integer", false},
+    {"b", "integer", false},
+    {"a", "integer", false},
+    {"scale", "number", false},
+}};
+inline constexpr std::array<std::string_view, 2> kShipHudDrawTextErrors{{
+    "invalid_argument",
+    "invalid_state",
+}};
 
-inline constexpr std::array<FunctionBinding, 49> kFunctions{{
+inline constexpr std::array<FunctionBinding, 51> kFunctions{{
     {FunctionId::ShipGameId, "ship.game.id", "0.1.0", "stable", "game_id", "raise", {}, "common", {}, kShipGameIdArguments, kShipGameIdErrors},
     {FunctionId::ShipGameHostVersion, "ship.game.host_version", "0.1.0", "stable", "string", "raise", {}, "common", {}, kShipGameHostVersionArguments, kShipGameHostVersionErrors},
     {FunctionId::ShipRuntimeVersion, "ship.runtime.version", "0.1.0", "stable", "string", "raise", {}, "common", {}, kShipRuntimeVersionArguments, kShipRuntimeVersionErrors},
@@ -507,6 +537,8 @@ inline constexpr std::array<FunctionBinding, 49> kFunctions{{
     {FunctionId::ShipStorageSharedSet, "ship.storage.shared.set", "0.4.0", "experimental", "boolean", "raise", {}, "common", "core.storage.shared", kShipStorageSharedSetArguments, kShipStorageSharedSetErrors},
     {FunctionId::ShipStorageSharedDelete, "ship.storage.shared.delete", "0.4.0", "experimental", "boolean", "raise", {}, "common", "core.storage.shared", kShipStorageSharedDeleteArguments, kShipStorageSharedDeleteErrors},
     {FunctionId::ShipStorageSharedClear, "ship.storage.shared.clear", "0.4.0", "experimental", "integer", "raise", {}, "common", "core.storage.shared", kShipStorageSharedClearArguments, kShipStorageSharedClearErrors},
+    {FunctionId::ShipHudDrawRect, "ship.hud.draw_rect", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "hud.draw", kShipHudDrawRectArguments, kShipHudDrawRectErrors},
+    {FunctionId::ShipHudDrawText, "ship.hud.draw_text", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "hud.draw", kShipHudDrawTextArguments, kShipHudDrawTextErrors},
 }};
 
 struct EventBinding {
@@ -582,6 +614,8 @@ inline constexpr std::array<FieldBinding, 2> kHookOotItemGivePayload{{
     {"item_id", "integer", true},
     {"get_item_id", "integer", true},
 }};
+inline constexpr std::array<FieldBinding, 0> kHookOotHudDrawPayload{{
+}};
 inline constexpr std::array<FieldBinding, 1> kHookOotPlayerFirstPersonControlPayload{{
     {"held_item_action", "integer", true},
 }};
@@ -631,7 +665,7 @@ inline constexpr std::array<FieldBinding, 1> kHookMmItemShouldGivePayload{{
     {"item", "integer", true},
 }};
 
-inline constexpr std::array<EventBinding, 28> kEvents{{
+inline constexpr std::array<EventBinding, 29> kEvents{{
     {"game.ready", EventKind::Observe, "mvp", false, true, true, {}, kGameReadyPayload},
     {"game.frame", EventKind::Observe, "mvp", false, true, true, {}, kGameFramePayload},
     {"game.shutdown", EventKind::Observe, "mvp", false, true, true, {}, kGameShutdownPayload},
@@ -650,6 +684,7 @@ inline constexpr std::array<EventBinding, 28> kEvents{{
     {"hook.oot.player.bonk", EventKind::Observe, "hook_bridge", false, true, false, "hooks.bridge", kHookOotPlayerBonkPayload},
     {"hook.oot.enemy.defeat", EventKind::Observe, "hook_bridge", false, true, false, "hooks.bridge", kHookOotEnemyDefeatPayload},
     {"hook.oot.item.give", EventKind::Transform, "hook_bridge", false, true, false, "hooks.bridge", kHookOotItemGivePayload},
+    {"hook.oot.hud.draw", EventKind::Observe, "hook_bridge", false, true, false, "hud.draw", kHookOotHudDrawPayload},
     {"hook.oot.player.first_person_control", EventKind::Observe, "hook_bridge", false, true, false, "hooks.bridge", kHookOotPlayerFirstPersonControlPayload},
     {"hook.oot.player.arrow_type_select", EventKind::Transform, "hook_bridge", false, true, false, "hooks.bridge", kHookOotPlayerArrowTypeSelectPayload},
     {"hook.oot.player.body_anim_select", EventKind::Transform, "hook_bridge", false, true, false, "oot.player.custom_body", kHookOotPlayerBodyAnimSelectPayload},
@@ -669,13 +704,14 @@ struct CapabilityBinding {
     bool supportsMm;
 };
 
-inline constexpr std::array<CapabilityBinding, 38> kCapabilities{{
+inline constexpr std::array<CapabilityBinding, 39> kCapabilities{{
     {"core.events", "contract", true, true},
     {"hooks.bridge", "contract", true, true},
     {"core.timers", "contract", true, true},
     {"core.input", "contract", true, true},
     {"core.storage", "contract", true, true},
     {"core.storage.shared", "contract", true, true},
+    {"hud.draw", "contract", true, false},
     {"scene.events", "contract", true, true},
     {"actor.events", "contract", true, true},
     {"actor.spawn", "contract", true, true},

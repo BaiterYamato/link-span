@@ -8,6 +8,7 @@
     {"name": "core.input", "status": "contract", "hosts": ["oot", "mm"], "description": "Registro de hotkeys e eventos de input."},
     {"name": "core.storage", "status": "contract", "hosts": ["oot", "mm"], "description": "Armazenamento chave-valor com namespace por mod, persistente em disco entre sessões."},
     {"name": "core.storage.shared", "status": "contract", "hosts": ["oot", "mm"], "description": "Armazenamento chave-valor COMPARTILHADO entre os dois jogos (mesmo arquivo no diretório de sessão do launcher). Namespaced por mod, mas o mesmo mod vê o mesmo estado em OoT e MM — base para progresso de randomizer cross-game e stats que atravessam o world-travel."},
+    {"name": "hud.draw", "status": "contract", "hosts": ["oot"], "description": "Desenha retângulos e texto sobre o HUD do jogo, a partir do evento hook.<jogo>.hud.draw. Primitiva genérica: o host não conhece 'barra de vida' nem 'medidor de fome' — o mod compõe o que quiser com retângulos e texto."},
     {"name": "scene.events", "status": "contract", "hosts": ["oot", "mm"], "description": "Eventos comuns de cena."},
     {"name": "actor.events", "status": "contract", "hosts": ["oot", "mm"], "description": "Eventos comuns de ator com handles e snapshots."},
     {"name": "actor.spawn", "status": "contract", "hosts": ["oot", "mm"], "description": "Cria um ator allowlisted com ownership e handle seguro."},

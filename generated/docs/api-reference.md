@@ -72,6 +72,8 @@ Versão da API: `0.4.0`. Versão do schema: `1`.
 | `ship.storage.shared.set` | `key: string`, `value: any` | `boolean` | `common` | `experimental` | `0.4.0` | `core.storage.shared` | `invalid_argument`, `resource_limit`, `unsupported` |
 | `ship.storage.shared.delete` | `key: string` | `boolean` | `common` | `experimental` | `0.4.0` | `core.storage.shared` | `invalid_argument`, `unsupported` |
 | `ship.storage.shared.clear` | — | `integer` | `common` | `experimental` | `0.4.0` | `core.storage.shared` | `unsupported` |
+| `ship.hud.draw_rect` | `x: integer`, `y: integer`, `w: integer`, `h: integer`, `r: integer?`, `g: integer?`, `b: integer?`, `a: integer?` | `boolean` | `oot` | `experimental` | `0.4.0` | `hud.draw` | `invalid_argument`, `invalid_state` |
+| `ship.hud.draw_text` | `text: string`, `x: integer`, `y: integer`, `r: integer?`, `g: integer?`, `b: integer?`, `a: integer?`, `scale: number?` | `boolean` | `oot` | `experimental` | `0.4.0` | `hud.draw` | `invalid_argument`, `invalid_state` |
 
 ## Eventos
 
@@ -95,6 +97,7 @@ Versão da API: `0.4.0`. Versão do schema: `1`.
 | `hook.oot.player.bonk` | `observe` | `hook_bridge` | `oot` | não | `hooks.bridge` | — |
 | `hook.oot.enemy.defeat` | `observe` | `hook_bridge` | `oot` | não | `hooks.bridge` | `actor_id: integer`, `category: integer`, `pos_x: number`, `pos_y: number`, `pos_z: number` |
 | `hook.oot.item.give` | `transform` | `hook_bridge` | `oot` | não | `hooks.bridge` | `item_id: integer`, `get_item_id: integer` |
+| `hook.oot.hud.draw` | `observe` | `hook_bridge` | `oot` | não | `hud.draw` | — |
 | `hook.oot.player.first_person_control` | `observe` | `hook_bridge` | `oot` | não | `hooks.bridge` | `held_item_action: integer` |
 | `hook.oot.player.arrow_type_select` | `transform` | `hook_bridge` | `oot` | não | `hooks.bridge` | `magic_arrow_type: integer`, `arrow_type: integer` |
 | `hook.oot.player.body_anim_select` | `transform` | `hook_bridge` | `oot` | não | `oot.player.custom_body` | `speed: number`, `on_ground: boolean`, `rolling: boolean`, `roll_charge: integer`, `roll_phase: string`, `falling: boolean`, `landing: boolean`, `climbing: boolean`, `climb_direction: string`, `climb_step: integer`, `climb_starting: boolean`, `door_opening: boolean`, `door_direction: string`, `chest_opening: boolean`, `instrument: boolean`, `attacking: boolean`, `attack_animation: integer` |
@@ -116,6 +119,7 @@ Versão da API: `0.4.0`. Versão do schema: `1`.
 | `core.input` | `contract` | `oot`, `mm` | Registro de hotkeys e eventos de input. |
 | `core.storage` | `contract` | `oot`, `mm` | Armazenamento chave-valor com namespace por mod, persistente em disco entre sessões. |
 | `core.storage.shared` | `contract` | `oot`, `mm` | Armazenamento chave-valor COMPARTILHADO entre os dois jogos (mesmo arquivo no diretório de sessão do launcher). Namespaced por mod, mas o mesmo mod vê o mesmo estado em OoT e MM — base para progresso de randomizer cross-game e stats que atravessam o world-travel. |
+| `hud.draw` | `contract` | `oot` | Desenha retângulos e texto sobre o HUD do jogo, a partir do evento hook.<jogo>.hud.draw. Primitiva genérica: o host não conhece 'barra de vida' nem 'medidor de fome' — o mod compõe o que quiser com retângulos e texto. |
 | `scene.events` | `contract` | `oot`, `mm` | Eventos comuns de cena. |
 | `actor.events` | `contract` | `oot`, `mm` | Eventos comuns de ator com handles e snapshots. |
 | `actor.spawn` | `contract` | `oot`, `mm` | Cria um ator allowlisted com ownership e handle seguro. |

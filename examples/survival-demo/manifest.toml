@@ -1,0 +1,12 @@
+id = "baiteryamato.survival_demo"
+name = "Sobrevivência (demo)"
+version = "0.1.0"
+api = ">=0.4 <0.5"
+entrypoint = "main.lua"
+description = "Sistema de sobrevivência completo em Lua puro: fome, sede, temperatura e stamina, com HUD próprio, persistência entre sessões e consequências no jogo. Nenhuma função nativa de sobrevivência existe no host."
+authors = ["BaiterYamato"]
+games = ["oot"]
+
+[capabilities]
+required = ["hud.draw", "core.storage", "core.timers", "player.fields"]
+optional = ["player.speed", "hooks.bridge"]

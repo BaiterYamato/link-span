@@ -62,6 +62,7 @@
       {"name": "item_id", "type": "integer", "required": true},
       {"name": "get_item_id", "type": "integer", "required": true}
     ]},
+    {"name": "hook.oot.hud.draw", "kind": "observe", "phase": "hook_bridge", "cancellable": false, "support": ["oot"], "capability": "hud.draw", "payload": []},
     {"name": "hook.oot.player.first_person_control", "kind": "observe", "phase": "hook_bridge", "cancellable": false, "support": ["oot"], "capability": "hooks.bridge", "payload": [
       {"name": "held_item_action", "type": "integer", "required": true}
     ]},
