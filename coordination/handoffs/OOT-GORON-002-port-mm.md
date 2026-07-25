@@ -485,9 +485,18 @@ não do agente. Levantar o custo real de cada uma **antes** de escrever código:
 - **Rota B — sem áudio do MM.** A transformação fica visualmente completa e
   muda. Honesto, entregável hoje, e **não fecha a porta** para a Rota A depois.
 
-> **NÃO escolha sozinho, e não entregue um som do OoT no lugar do som do MM.**
-> Foi exatamente isso que o usuário reprovou. Apresente as duas rotas com o
-> custo medido e pergunte.
+> ✅ **DECIDIDO (2026-07-25): Rota A.** O usuário escolheu portar o
+> sintetizador. O levantamento verificado e o plano de execução estão em
+> [`OOT-AUDIO-001-port-mm-sfx.md`](OOT-AUDIO-001-port-mm-sfx.md). Resumo do que
+> mudou com a verificação:
+> - as structs de áudio são **binário-compatíveis** entre nosso SoH e nosso 2S2H;
+> - o formato bate exatamente (32 kHz estéreo s16) — **sem resample**;
+> - o ponto de injeção é `AudioPlayer_Play` em `soh/soh/OTRGlobals.cpp:2275`,
+>   na nossa árvore, sem tocar o `libultraship`;
+> - o motor do skijer **é o `src/audio/lib/` do MM renomeado** — ~5.500 das
+>   7.200 linhas já estão nesta máquina, no nosso decomp;
+> - a mina de verdade é o caminho das amostras, que não sobrevive ao prefixo
+>   `mm/` (`AudioSoundFontFactory.cpp:62-70`).
 
 Se a Rota A for escolhida, a ordem é: (1) provar que `Soundfont_0` carrega e
 que os ponteiros de amostra repatcham; (2) tocar **um** sfx qualquer do MM;
