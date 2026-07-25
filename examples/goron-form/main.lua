@@ -348,6 +348,11 @@ ship.events.on("game.ready", function()
         if transforming then
             -- G também permite desistir antes de a troca visual acontecer.
             transforming = false
+            -- Devolve a câmera junto: sem isto o jogador ficaria preso no
+            -- enquadramento até o timer acabar.
+            if ship.capabilities.has("oot.cutscene") then
+                ship.oot.cutscene.stop()
+            end
             if ship.capabilities.has("oot.player.mask") then
                 ship.oot.player.set_mask("none")
             end
@@ -368,9 +373,7 @@ ship.events.on("game.ready", function()
             doorActive = false
             chestActive = false
             -- O Player humano fica visível durante gPlayerAnim_cl_setmask;
-            -- somente no frame final o corpo externo toma seu lugar. OoTMM
-            -- acrescenta uma cutscene/câmera inteira aqui; deliberadamente
-            -- não sequestramos esses estados no mod externo.
+            -- somente no frame final o corpo externo toma seu lugar.
             local transitionFrames = 0
             if ship.capabilities.has("core.timers")
                 and ship.capabilities.has("oot.player.mask")
@@ -379,6 +382,18 @@ ship.events.on("game.ready", function()
                 transitionFrames = ship.oot.player.play_mask_on_animation()
             end
             if type(transitionFrames) == "number" and transitionFrames > 0 then
+                -- Câmera dramática, como a troca de máscara de MM: aproxima do
+                -- Link enquanto a animação corre e devolve o controle ao fim.
+                -- Alguns frames a mais que a animação para o corpo novo
+                -- aparecer ainda sob o enquadramento fechado.
+                if ship.capabilities.has("oot.cutscene") then
+                    ship.oot.cutscene.start(transitionFrames + 20, {
+                        start_distance = 170.0,
+                        end_distance = 58.0,
+                        height = 26.0,
+                        spin = 0.35,   -- meia-volta parcial em torno do Link
+                    })
+                end
                 transforming = true
                 ship.timer.after(transitionFrames, function()
                     if transforming then

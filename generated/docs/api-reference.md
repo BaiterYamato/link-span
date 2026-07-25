@@ -57,6 +57,9 @@ Versão da API: `0.4.0`. Versão do schema: `1`.
 | `ship.oot.player.play_body_animation` | `name: string`, `mode: string?`, `speed: number?` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.player.custom_body` | — |
 | `ship.oot.player.set_body_segment` | `segment: integer`, `path: string` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.player.custom_body` | — |
 | `ship.oot.player.set_held_item_model` | `slot: string`, `path: string` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.player.held_item_model` | — |
+| `ship.oot.cutscene.start` | `frames: integer`, `options: any?` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.cutscene` | `invalid_argument`, `invalid_state` |
+| `ship.oot.cutscene.stop` | — | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.cutscene` | — |
+| `ship.oot.cutscene.is_active` | — | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.cutscene` | — |
 | `ship.oot.env.get` | `field: string` | `any` | `oot` | `experimental` | `0.4.0` | `oot.env` | — |
 | `ship.oot.spawn_dog` | — | `boolean` | `oot` | `experimental` | `0.3.0` | `oot.spawn_dog` | — |
 | `ship.log.debug` | `message: string` | `nil` | `common` | `stable` | `0.1.0` | — | `invalid_argument` |
@@ -122,6 +125,7 @@ Versão da API: `0.4.0`. Versão do schema: `1`.
 | `core.input` | `contract` | `oot`, `mm` | Registro de hotkeys e eventos de input. |
 | `core.storage` | `contract` | `oot`, `mm` | Armazenamento chave-valor com namespace por mod, persistente em disco entre sessões. |
 | `core.storage.shared` | `contract` | `oot`, `mm` | Armazenamento chave-valor COMPARTILHADO entre os dois jogos (mesmo arquivo no diretório de sessão do launcher). Namespaced por mod, mas o mesmo mod vê o mesmo estado em OoT e MM — base para progresso de randomizer cross-game e stats que atravessam o world-travel. |
+| `oot.cutscene` | `contract` | `oot` | Assume a câmera por um número de frames com uma subcâmera dedicada, congelando atores e entrando em modo cutscene — o enquadramento dramático que a troca de máscara de MM tem. Genérica: serve para transformação, item, revelação. |
 | `oot.env` | `contract` | `oot` | Lê estado do AMBIENTE (separado do jogador): time_of_day (0..1), is_night (0/1) e scene_id. Base para mecânicas que reagem a hora do dia e local. |
 | `hud.draw` | `contract` | `oot` | Desenha retângulos e texto sobre o HUD do jogo, a partir do evento hook.<jogo>.hud.draw. Primitiva genérica: o host não conhece 'barra de vida' nem 'medidor de fome' — o mod compõe o que quiser com retângulos e texto. |
 | `scene.events` | `contract` | `oot`, `mm` | Eventos comuns de cena. |

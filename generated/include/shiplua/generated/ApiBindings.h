@@ -120,6 +120,9 @@ enum class FunctionId {
     ShipOotPlayerPlayBodyAnimation,
     ShipOotPlayerSetBodySegment,
     ShipOotPlayerSetHeldItemModel,
+    ShipOotCutsceneStart,
+    ShipOotCutsceneStop,
+    ShipOotCutsceneIsActive,
     ShipOotEnvGet,
     ShipOotSpawnDog,
     ShipLogDebug,
@@ -355,6 +358,22 @@ inline constexpr std::array<FieldBinding, 2> kShipOotPlayerSetHeldItemModelArgum
 }};
 inline constexpr std::array<std::string_view, 0> kShipOotPlayerSetHeldItemModelErrors{{
 }};
+inline constexpr std::array<FieldBinding, 2> kShipOotCutsceneStartArguments{{
+    {"frames", "integer", true},
+    {"options", "any", false},
+}};
+inline constexpr std::array<std::string_view, 2> kShipOotCutsceneStartErrors{{
+    "invalid_argument",
+    "invalid_state",
+}};
+inline constexpr std::array<FieldBinding, 0> kShipOotCutsceneStopArguments{{
+}};
+inline constexpr std::array<std::string_view, 0> kShipOotCutsceneStopErrors{{
+}};
+inline constexpr std::array<FieldBinding, 0> kShipOotCutsceneIsActiveArguments{{
+}};
+inline constexpr std::array<std::string_view, 0> kShipOotCutsceneIsActiveErrors{{
+}};
 inline constexpr std::array<FieldBinding, 1> kShipOotEnvGetArguments{{
     {"field", "string", true},
 }};
@@ -515,7 +534,7 @@ inline constexpr std::array<std::string_view, 2> kShipHudDrawRingErrors{{
     "invalid_state",
 }};
 
-inline constexpr std::array<FunctionBinding, 54> kFunctions{{
+inline constexpr std::array<FunctionBinding, 57> kFunctions{{
     {FunctionId::ShipGameId, "ship.game.id", "0.1.0", "stable", "game_id", "raise", {}, "common", {}, kShipGameIdArguments, kShipGameIdErrors},
     {FunctionId::ShipGameHostVersion, "ship.game.host_version", "0.1.0", "stable", "string", "raise", {}, "common", {}, kShipGameHostVersionArguments, kShipGameHostVersionErrors},
     {FunctionId::ShipRuntimeVersion, "ship.runtime.version", "0.1.0", "stable", "string", "raise", {}, "common", {}, kShipRuntimeVersionArguments, kShipRuntimeVersionErrors},
@@ -550,6 +569,9 @@ inline constexpr std::array<FunctionBinding, 54> kFunctions{{
     {FunctionId::ShipOotPlayerPlayBodyAnimation, "ship.oot.player.play_body_animation", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.player.custom_body", kShipOotPlayerPlayBodyAnimationArguments, kShipOotPlayerPlayBodyAnimationErrors},
     {FunctionId::ShipOotPlayerSetBodySegment, "ship.oot.player.set_body_segment", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.player.custom_body", kShipOotPlayerSetBodySegmentArguments, kShipOotPlayerSetBodySegmentErrors},
     {FunctionId::ShipOotPlayerSetHeldItemModel, "ship.oot.player.set_held_item_model", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.player.held_item_model", kShipOotPlayerSetHeldItemModelArguments, kShipOotPlayerSetHeldItemModelErrors},
+    {FunctionId::ShipOotCutsceneStart, "ship.oot.cutscene.start", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.cutscene", kShipOotCutsceneStartArguments, kShipOotCutsceneStartErrors},
+    {FunctionId::ShipOotCutsceneStop, "ship.oot.cutscene.stop", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.cutscene", kShipOotCutsceneStopArguments, kShipOotCutsceneStopErrors},
+    {FunctionId::ShipOotCutsceneIsActive, "ship.oot.cutscene.is_active", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.cutscene", kShipOotCutsceneIsActiveArguments, kShipOotCutsceneIsActiveErrors},
     {FunctionId::ShipOotEnvGet, "ship.oot.env.get", "0.4.0", "experimental", "any", "raise", {}, "oot", "oot.env", kShipOotEnvGetArguments, kShipOotEnvGetErrors},
     {FunctionId::ShipOotSpawnDog, "ship.oot.spawn_dog", "0.3.0", "experimental", "boolean", "raise", {}, "oot", "oot.spawn_dog", kShipOotSpawnDogArguments, kShipOotSpawnDogErrors},
     {FunctionId::ShipLogDebug, "ship.log.debug", "0.1.0", "stable", "nil", "raise", {}, "common", {}, kShipLogDebugArguments, kShipLogDebugErrors},
@@ -735,13 +757,14 @@ struct CapabilityBinding {
     bool supportsMm;
 };
 
-inline constexpr std::array<CapabilityBinding, 40> kCapabilities{{
+inline constexpr std::array<CapabilityBinding, 41> kCapabilities{{
     {"core.events", "contract", true, true},
     {"hooks.bridge", "contract", true, true},
     {"core.timers", "contract", true, true},
     {"core.input", "contract", true, true},
     {"core.storage", "contract", true, true},
     {"core.storage.shared", "contract", true, true},
+    {"oot.cutscene", "contract", true, false},
     {"oot.env", "contract", true, false},
     {"hud.draw", "contract", true, false},
     {"scene.events", "contract", true, true},
