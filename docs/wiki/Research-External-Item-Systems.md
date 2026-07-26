@@ -676,3 +676,68 @@ de **semântica de estado**, não de arquitetura, e valem igual:
 
 O item 4 (limpar estado enfileirado) não se aplica hoje, porque nossos processos
 são separados — mas se algum dia unificarmos, é o primeiro lugar a olhar.
+
+## 13. Renderizar asset do outro jogo — o padrão e o limite conhecido
+
+De `docs/deviations/rando.md` (develop). É a parte mais próxima de "o Goron do
+OoT acessando o MM, e o do MM acessando o OoT".
+
+### O padrão: exportação simétrica com ABI em C
+
+Cada DLL exporta uma função que **descreve** como desenhar um item seu, e o
+outro jogo a resolve por `GetProcAddress`:
+
+```
+soh.dll    exporta  OOT_GetItemDrawInfo / OOT_GetItemAnimDrawInfo
+2ship.dll  exporta  o equivalente (ComboItemDrawMM.h)
+2ship.dll  consome  MM_DrawComboForeign  -> rota "__OTR__@oot:" -> submete OPA/XLU
+```
+
+A função `GetItem_GetDrawTableEntry` decodifica **uma linha da tabela de
+desenho** em: caminhos de display list na ordem de submissão, divisão OPA/XLU, e
+escala uniforme opcional. Nada de estado — só descrição.
+
+O rastro no código do jogo é mínimo e cercado por `#ifdef COMBO_BUILD`: uma
+função nova e um `case`. É o princípio HM64 que eles seguem, e é o mesmo que
+adotamos.
+
+### O limite que eles documentam — e que vale para o Goron
+
+Textual: as funções de desenho que precisam de **estado extra de runtime**
+retornam 0 e o jogo cai no sentinela. A lista do que NÃO atravessa:
+
+- scroll de textura no segmento 8
+- billboard
+- grayscale
+- globais de prim/env por instância
+- matrizes especiais
+
+E o mais relevante para nós: *"The anim export always returns 0 (OOT has no
+skeletal-animated foreign class)"*. Ou seja, **o ComboShip só suporta o
+atravessamento de forma animada por esqueleto numa direção** — do MM para o OoT.
+
+### Por que isso importa para a nossa direção
+
+O Goron é exatamente o caso difícil: esqueleto de 25 limbs, 31 animações,
+material animado nos espinhos do rolamento, e display lists translúcidas em
+passe separado. Não é um item estático numa mesa.
+
+O que já resolvemos e eles não precisaram: carregamos esqueleto e animações do
+`mm.o2r` direto pelo ResourceManager do OoT, com `set_body` genérico. Funciona
+porque o Link-Span monta um SkelAnime próprio dimensionado pelo host, em vez de
+tentar caber nos buffers fixos do Player.
+
+O que ainda **não** resolvemos e eles já mapearam: os efeitos que dependem de
+estado do jogo dono. Nossos `roll_energy_1/2` e `punch_effect` já são passes
+translúcidos com `TwoTexScroll` no segmento 8 — exatamente a categoria que o
+ComboShip declara não atravessar. Hoje funciona porque o host instala o scroll
+antes de desenhar; se um dia isso for pedido de dentro do MM, é o primeiro lugar
+a quebrar.
+
+### Direção inversa (Goron do MM acessando o OoT)
+
+O ComboShip fez a direção OoT→MM depois (`commit 164460dce` é a espelhada), e
+descreve como "the mirror". A lição de método é a mesma da §11: **eles
+descobriram que faltava a metade simétrica**. Nosso host MM hoje tem menos
+primitivas que o do OoT — sem HUD, sem env, sem cutscene, sem custom_body. A
+paridade não é polimento, é pré-requisito para a direção inversa existir.
