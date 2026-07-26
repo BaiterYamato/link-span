@@ -508,3 +508,103 @@ sequestra `actor.update` e delega para `Player_UpdateForm`, que é **função
 nativa do MM** — o OoTMM roda dentro de MM, então não precisa portar nada.
 A fonte real da transformação é o decomp de MM, que já está nesta máquina em
 `MM-MODSDK-001/mm/src/overlays/actors/ovl_player_actor/z_player.c`.
+
+## 11. ComboShip `develop` — a referência de cross-world que faltava — 2026-07-25
+
+> **Corrige a §9 e parte da §10.** O que eu havia registrado sobre o ComboShip
+> veio da branch `main` e de relatório de agente. A branch **`develop`** está em
+> desenvolvimento ativo (commits do mesmo dia) e implementa justamente o que eu
+> tinha dado como ausente.
+
+Do `docs/ARCHITECTURE.md` da `develop`, textualmente:
+
+> *"The headline cross-game features — a shared **cross-world randomizer**,
+> immediate **cross-game item delivery**, **Anchor** online co-op, and
+> **cross-game hints** — are implemented"*
+
+E há `docs/deviations/`, com um registro de decisão por feature — `rando.md`
+(62 KB), `boot-shutdown.md` (30 KB), `anchor.md` (20 KB), `resource-mgmt.md`,
+`tracker.md`, `ui-menu.md`. É documentação de engenharia real, não README.
+
+### O mecanismo que nos interessa: `CrossRMRegistry`
+
+Cada jogo tem seu ResourceManager. O ComboShip endereça o asset do outro jogo
+por um caminho **roteado**:
+
+```
+__OTR__@oot:objects/...      // um asset de OoT pedido de dentro do MM
+```
+
+O `@<game>:` é resolvido pelo `CrossRMRegistry`, no interpretador Fast3D
+(`gfx_dl_otr_filepath_handler_custom`), que já trata rota inválida.
+
+**Comparação com o nosso:** o `MmCrossWorldArchive` monta o `mm.o2r` inteiro sob
+o prefixo `mm/` e resolve pelo ResourceManager único do host. Mais simples, e
+funciona porque só temos **um** jogo por processo — o Link-Span são dois
+executáveis separados, o ComboShip é um processo com dois DLLs. As duas
+abordagens resolvem o mesmo problema em arquiteturas diferentes.
+
+### As armadilhas de desenho cross-game que eles já pagaram
+
+Estas valem ouro porque vamos bater nas mesmas quando o Goron do OoT acessar
+assets do MM de forma mais ambiciosa, e quando o inverso acontecer:
+
+1. **Não resolver display list estrangeira com ansiedade.** O stub
+   `gSPDisplayList` do MM resolvia qualquer `__OTR__` pelo RM *dele*; um caminho
+   `@oot:` não está nos archives do MM, devolvia DisplayList com vetor vazio, e
+   `&Instructions[0]` derrubava. Conserto: emitir `G_DL_OTR_FILEPATH` e deixar o
+   interpretador rotear. Eles notam que é a causa provável dos relatos de "save
+   do MM corrompido" — crash no meio deixa save pela metade.
+
+2. **Nunca ramificar para segmento N64 não vinculado.** Um item estrangeiro pode
+   submeter um `G_DL` que referencia um segmento que o jogo anfitrião nunca
+   vinculou (ex.: segmento 8 de material animado de um item do MM dentro do
+   OoT). `SegAddr` devolve o endereço cru, o interpretador ramificava para lá e
+   executava lixo como GBI. Conserto: `ComboIsUnresolvedSegmentTarget` rejeita
+   alvo ainda na faixa de segmento não resolvido.
+
+   **Já nos mordeu de forma parecida:** o nosso `SanitizeMmDisplayList` neutraliza
+   `G_DL_INDEX` (0x3D) e `G_LOAD_SHADER` (0x43) do dialeto do 2ship porque o
+   salto cairia em lixo. Mesmo problema, conserto mais grosseiro.
+
+3. **Material animado não atravessa sozinho.** O Moon's Tear do MM desenha
+   two-tex-scroll no segmento 8 mais billboard; a exportação cross-game não
+   levava nenhum dos dois e o item saía errado. Eles generalizaram num
+   `ComboForeignAnim` que carrega o `TextureAnimation` do jogo dono pelo
+   `CrossRMRegistry` e restaura depois.
+
+### O que isso significa para o Link-Span
+
+Nossa direção é a mesma do usuário: **o Goron do OoT vai acessar o MM, e o do MM
+vai acessar o OoT.** O ComboShip já mapeou o terreno:
+
+- o problema não é achar o asset, é **desenhá-lo** sem que o dialeto de display
+  list e os segmentos do jogo dono derrubem o anfitrião;
+- material animado, billboard e scroll de textura são **estado do jogo dono** que
+  precisa ser replicado, não só o DL;
+- a simetria importa: eles descobriram que o OoT já tinha a guarda e o MM não —
+  "MM was simply missing the symmetric half". Nós temos o `mm/` no OoT e o
+  espelho no host MM ainda é mais fraco.
+
+### Ainda por ler (alto valor, não coberto nesta rodada)
+
+- `deviations/rando.md` (62 KB) — entrega de item cross-game imediata
+- `deviations/boot-shutdown.md` (30 KB) — a máquina de transição entre jogos,
+  `lastGame`, retomada de slot, distinguir "saiu" de "voltou pelo portal"
+- `deviations/anchor.md` (20 KB) — estado compartilhado online
+
+Os commits de 2026-07-25 na `develop` são quase todos sobre transição:
+`Derive lastGame from transitions only`, `Fix owl save hanging: end the
+transition, not MM's gamestate`, `Distinguish why MM returned, so a quit doesn't
+look like a portal return`. São exatamente as perguntas que o nosso
+`ship.world.travel` vai ter que responder.
+
+### Repositórios catalogados nesta rodada
+
+| Repo | Branch | Estado | Para quê |
+|---|---|---|---|
+| Varuuna/ComboShip | `develop` | **ativo** (2026-07-25) | referência de cross-world |
+| Aegiker/OoTMM | `master` | parado (2024-10) | fork sem novidade sobre o upstream |
+| Jepvid/Shipwright | `develop` | ativo | stats de RPG — ver §7 |
+| ill-ego/Shipwright | `texture-inspector` | — | inspetor de textura, útil para depurar cross-world |
+| roborich/Shipwright | — | — | cel-shading; guardado para mod futuro |
