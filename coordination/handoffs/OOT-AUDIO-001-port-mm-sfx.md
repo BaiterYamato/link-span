@@ -517,3 +517,70 @@ Lidas nesta máquina:
 
 Externas (raw GitHub):
 - `skijer/Shipwright@Not-Enough-Items` — `soh/mods/sound_translator/*`
+
+---
+
+## Estado real em 2026-07-25, fim da sessão
+
+### Fase 2: o interpretador RODA. Falta produzir nota.
+
+Verificado em jogo, com o motor ligado por `SHIPLUA_MM_SEQ=1`:
+
+```
+sequência 'mm/audio/sequences/Sequence_0' -> size=50848 numFonts=2 font0=1
+1os bytes: d3 60 d5 00 db 7f dd 78          <- opcodes de sequência de verdade
+interpretador de sequência do MM pronto
+sfx por id 0x4826 -> enfileirado
+frame 240 — canal=0 notas(pico)=0 amostras misturadas=0
+25 s de execução, escape de pc: 0, sem crash
+```
+
+**O que isso prova:** header em namespace, 4.797 linhas portadas, 12 shims e a
+ponte de duas camadas — tudo funcionando. O script executa sem se perder.
+
+**O que falta:** o script não gera nota. Como `amostras misturadas = 0` E
+`notas = 0`, o renderizador está descartado — ele não teve o que tocar.
+
+### A pista mais forte para quem continuar
+
+Os 12 shims cobriram as **funções** de `heap.c`/`load.c`. Mas `AudioHeap_Init`
+também **inicializa campos de configuração** do `AudioContext`, e esses não
+aparecem como símbolo faltante no linker — aparecem como comportamento errado.
+
+Já encontrado assim: `gAudioCtx.maxTempo`, que governa o avanço do script
+(`seqplayer.c:1899`). Estava zerado pelo memset. Corrigido com a fórmula de
+`heap.c:982`, e **não foi suficiente**.
+
+**Próximo passo recomendado:** ler `AudioHeap_Init` inteiro em
+`MM-MODSDK-001/mm/src/audio/lib/heap.c` e listar TODO campo de `gAudioCtx` que
+ele escreve, replicando os que não são ponteiro de heap. É mais rápido que
+descobrir um por vez, que foi o que fiz e custou várias rodadas.
+
+Candidatos prováveis, além do maxTempo: `unk_2960`, `refreshRate`,
+`sequenceChannelNone` (o sentinel que `IS_SEQUENCE_CHANNEL_VALID` compara),
+`noteSubEuOffset`, e o que mais o processamento de canal consultar.
+
+### Armadilhas já pagas — não repetir
+
+1. **Tabela de caminhos com `static` dentro da função geradora.** As duas
+   chamadas compartilhavam vetores; `gSequenceMap[0]` apontava para
+   `audio/fonts/Soundfont_0` e o interpretador executava um soundfont como
+   script. Era a causa do crash em `AudioScript_ScriptReadU8`.
+2. **`c_str()` colhido durante o preenchimento** de um `std::vector<std::string>`:
+   `push_back` realoca e deixa os ponteiros pendurados.
+3. **Porta de IO livre é `SEQ_IO_VAL_NONE` (-1), não 0.** Testar contra 0
+   descartava todos os 16 canais.
+4. **Guarda de ponteiro com aritmética que estoura:** com `seqDataSize` lixo,
+   `início + tamanho` passava do fim do espaço de endereços e a comparação dava
+   falso mesmo com o `pc` legítimo.
+
+Três dos quatro estavam no código de cola, não no decomp portado. O código do
+MM se comportou como esperado o tempo todo.
+
+### Método que funcionou
+
+Toda vez que teorizei, errei. Duas vezes dei explicação confiante ao usuário
+que estava invertida (cadência de tick; "o pc sai do bloco"). O que resolveu,
+sempre, foi instrumentar e ler o valor real — em especial logar do **lado do
+OoT**, antes de qualquer cast, o que separou "recurso veio errado" de "cast
+errado" e revelou uma terceira coisa que nenhuma das duas hipóteses cobria.
