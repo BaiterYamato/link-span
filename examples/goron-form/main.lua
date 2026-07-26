@@ -344,6 +344,89 @@ ship.events.on("game.ready", function()
         return
     end
 
+
+-- ---------------------------------------------------------------------------
+-- Rampa de luz e fog da transformação.
+--
+-- O que se costuma chamar de "efeito de partículas" na troca de máscara de MM
+-- é, no decomp, esta rampa mais uma luz pontual no Link (func_808550D0 de
+-- z_player.c). Não há partícula nenhuma.
+--
+-- Números tirados de D_8085D848 e D_8085D910 (mm/src/audio/../z_player.c):
+--   início no frame 16, avanço 0.10/frame até o estágio 1
+--   estouro de luz no frame 59 (onde o MM toca NA_SE_EV_LIGHTNING_HARD)
+--   três estágios de {fogNear, fogColor, ambientColor}
+-- ---------------------------------------------------------------------------
+
+local LIGHT_STAGES = {
+    { fog_near = 650, fog = {   0,   0,   0 }, ambient = { 10,  0, 30 } },
+    { fog_near = 300, fog = { 200, 200, 255 }, ambient = {  0,  0,  0 } },
+    { fog_near = 600, fog = {   0,   0,   0 }, ambient = {  0,  0, 200 } },
+}
+
+-- Para não-humano o MM usa a mesma luz nos três estágios: ciano forte, raio 100.
+local LIGHT_COLOR = { r = 155, g = 255, b = 255 }
+local LIGHT_RADIUS_MAX = 100
+
+local RAMP_START = 16   -- frame em que a rampa começa
+local RAMP_BURST = 59   -- estouro de luz
+
+local function lerp(a, b, t)
+    return math.floor(a + (b - a) * t + 0.5)
+end
+
+-- Interpola entre os três estágios conforme a fração 0..1 do trecho.
+local function stage_at(t)
+    local scaled = t * 2                      -- 0..2 sobre três pontos
+    local i = math.min(math.floor(scaled), 1) -- 0 ou 1
+    local k = scaled - i
+    local a, b = LIGHT_STAGES[i + 1], LIGHT_STAGES[i + 2]
+    return {
+        fog_near = lerp(a.fog_near, b.fog_near, k),
+        fog_color = { lerp(a.fog[1], b.fog[1], k), lerp(a.fog[2], b.fog[2], k), lerp(a.fog[3], b.fog[3], k) },
+        ambient_color = { lerp(a.ambient[1], b.ambient[1], k), lerp(a.ambient[2], b.ambient[2], k),
+                          lerp(a.ambient[3], b.ambient[3], k) },
+    }
+end
+
+local function start_transform_lighting(totalFrames)
+    if not ship.capabilities.has("oot.env") or not ship.capabilities.has("core.timers") then
+        return
+    end
+
+    local frame = 0
+    local function step()
+        frame = frame + 1
+        if frame > totalFrames then
+            ship.oot.env.clear_light_override()
+            if ship.capabilities.has("player.fields") then
+                ship.oot.player.set_point_light({ radius = 0 })
+            end
+            return
+        end
+
+        if frame >= RAMP_START then
+            local span = math.max(totalFrames - RAMP_START, 1)
+            local t = math.min((frame - RAMP_START) / span, 1)
+            ship.oot.env.set_light_override(stage_at(t))
+
+            -- A luz pontual cresce junto e dá um pico no estouro, para o
+            -- instante da troca ter peso.
+            local radius = math.floor(LIGHT_RADIUS_MAX * t)
+            if frame >= RAMP_BURST then
+                radius = LIGHT_RADIUS_MAX
+            end
+            ship.oot.player.set_point_light({
+                r = LIGHT_COLOR.r, g = LIGHT_COLOR.g, b = LIGHT_COLOR.b,
+                radius = radius, offset_y = 20,
+            })
+        end
+
+        ship.timer.after(1, step)
+    end
+    ship.timer.after(1, step)
+end
+
     ship.hotkeys.register("goron_form", { default = "G", label = "Forma Goron" }, function()
         if transforming then
             -- G também permite desistir antes de a troca visual acontecer.
@@ -387,13 +470,13 @@ ship.events.on("game.ready", function()
                 -- Alguns frames a mais que a animação para o corpo novo
                 -- aparecer ainda sob o enquadramento fechado.
                 if ship.capabilities.has("oot.cutscene") then
-                    ship.oot.cutscene.start(transitionFrames + 20, {
-                        start_distance = 170.0,
-                        end_distance = 58.0,
-                        height = 26.0,
-                        spin = 0.35,   -- meia-volta parcial em torno do Link
-                    })
+                    -- style="jump" replica Player_Action_86 do MM: em vez de
+                    -- orbitar o Link com uma subcâmera, troca o MODO da câmera
+                    -- ativa e gira o Link para encará-la. O enquadramento passa
+                    -- a ser o nativo do jogo — a órbita destoava do resto.
+                    ship.oot.cutscene.start(transitionFrames + 20, { style = "jump" })
                 end
+                start_transform_lighting(transitionFrames + 20)
                 transforming = true
                 ship.timer.after(transitionFrames, function()
                     if transforming then
