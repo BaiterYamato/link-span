@@ -402,6 +402,19 @@ function ship.oot.cutscene.stop() end
 function ship.oot.cutscene.is_active() end
 
 --- API oot; estabilidade: experimental; desde: 0.4.0; capability: oot.audio; erros: invalid_argument.
+---@param index integer
+---@param font? integer
+---@return boolean
+function ship.oot.audio.play_sfx(index, font) end
+
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: oot.audio; erros: invalid_argument.
+---@param first? integer
+---@param count? integer
+---@param font? integer
+---@return boolean
+function ship.oot.audio.dump_sfx_table(first, count, font) end
+
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: oot.audio; erros: invalid_argument.
 ---@param base? integer
 ---@param offset? integer
 ---@return boolean

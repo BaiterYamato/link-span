@@ -427,6 +427,48 @@ local function start_transform_lighting(totalFrames)
     ship.timer.after(1, step)
 end
 
+
+-- ---------------------------------------------------------------------------
+-- Trilha sonora da transformação.
+--
+-- Os tempos vêm do decomp de MM, tabela D_8085D8F0 de z_player.c — não são
+-- estimativa. Cada entrada é (frame, id do sfx):
+--
+--    2  NA_SE_PL_PUT_OUT_ITEM          Link saca a máscara
+--    4  NA_SE_IT_SET_TRANSFORM_MASK    a máscara encosta no rosto
+--   11  NA_SE_PL_FREEZE_S              o corpo trava
+--   20  NA_SE_IT_TRANSFORM_MASK_BROKEN a máscara "quebra" no rosto
+--   30  NA_SE_PL_TRANSFORM_VOICE       o grito
+--   59  NA_SE_EV_LIGHTNING_HARD        estouro de luz
+--
+-- ATENÇÃO — índices ainda NÃO mapeados. Os ids acima são constantes do decomp;
+-- o índice dentro do soundfont é outra coisa. Use
+-- ship.oot.audio.dump_sfx_table() para listar tamanho e duração de cada
+-- entrada e identificar quais são. Enquanto TRANSFORM_TRACK estiver vazia,
+-- a transformação roda em silêncio, sem erro.
+local TRANSFORM_TRACK = {
+    -- { frame = 2,  sfx = ??? },
+    -- { frame = 4,  sfx = ??? },
+    -- { frame = 11, sfx = ??? },
+    -- { frame = 20, sfx = ??? },
+    -- { frame = 30, sfx = ??? },
+    -- { frame = 59, sfx = ??? },
+}
+
+local function start_transform_audio()
+    if #TRANSFORM_TRACK == 0 then
+        return -- ainda não mapeado; silêncio é melhor que som errado
+    end
+    if not ship.capabilities.has("oot.audio") or not ship.capabilities.has("core.timers") then
+        return
+    end
+    for _, step in ipairs(TRANSFORM_TRACK) do
+        ship.timer.after(step.frame, function()
+            ship.oot.audio.play_sfx(step.sfx)
+        end)
+    end
+end
+
     ship.hotkeys.register("goron_form", { default = "G", label = "Forma Goron" }, function()
         if transforming then
             -- G também permite desistir antes de a troca visual acontecer.
@@ -480,6 +522,7 @@ end
                     ship.oot.cutscene.start(transitionFrames + 20, { style = "jump" })
                 end
                 start_transform_lighting(transitionFrames + 20)
+                start_transform_audio()
                 transforming = true
                 ship.timer.after(transitionFrames, function()
                     if transforming then

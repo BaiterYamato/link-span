@@ -63,6 +63,8 @@ Versão da API: `0.4.0`. Versão do schema: `1`.
 | `ship.oot.cutscene.start` | `frames: integer`, `options: any?` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.cutscene` | `invalid_argument`, `invalid_state` |
 | `ship.oot.cutscene.stop` | — | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.cutscene` | — |
 | `ship.oot.cutscene.is_active` | — | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.cutscene` | — |
+| `ship.oot.audio.play_sfx` | `index: integer`, `font: integer?` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.audio` | `invalid_argument` |
+| `ship.oot.audio.dump_sfx_table` | `first: integer?`, `count: integer?`, `font: integer?` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.audio` | `invalid_argument` |
 | `ship.oot.audio.set_voice_map` | `base: integer?`, `offset: integer?` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.audio` | `invalid_argument` |
 | `ship.oot.env.get` | `field: string` | `any` | `oot` | `experimental` | `0.4.0` | `oot.env` | — |
 | `ship.oot.spawn_dog` | — | `boolean` | `oot` | `experimental` | `0.3.0` | `oot.spawn_dog` | — |

@@ -133,6 +133,8 @@ enum class FunctionId {
     ShipOotCutsceneStart,
     ShipOotCutsceneStop,
     ShipOotCutsceneIsActive,
+    ShipOotAudioPlaySfx,
+    ShipOotAudioDumpSfxTable,
     ShipOotAudioSetVoiceMap,
     ShipOotEnvGet,
     ShipOotSpawnDog,
@@ -391,6 +393,21 @@ inline constexpr std::array<FieldBinding, 0> kShipOotCutsceneIsActiveArguments{{
 }};
 inline constexpr std::array<std::string_view, 0> kShipOotCutsceneIsActiveErrors{{
 }};
+inline constexpr std::array<FieldBinding, 2> kShipOotAudioPlaySfxArguments{{
+    {"index", "integer", true},
+    {"font", "integer", false},
+}};
+inline constexpr std::array<std::string_view, 1> kShipOotAudioPlaySfxErrors{{
+    "invalid_argument",
+}};
+inline constexpr std::array<FieldBinding, 3> kShipOotAudioDumpSfxTableArguments{{
+    {"first", "integer", false},
+    {"count", "integer", false},
+    {"font", "integer", false},
+}};
+inline constexpr std::array<std::string_view, 1> kShipOotAudioDumpSfxTableErrors{{
+    "invalid_argument",
+}};
 inline constexpr std::array<FieldBinding, 2> kShipOotAudioSetVoiceMapArguments{{
     {"base", "integer", false},
     {"offset", "integer", false},
@@ -571,7 +588,7 @@ inline constexpr std::array<std::string_view, 3> kShipHudDrawIconErrors{{
     "unsupported",
 }};
 
-inline constexpr std::array<FunctionBinding, 60> kFunctions{{
+inline constexpr std::array<FunctionBinding, 62> kFunctions{{
     {FunctionId::ShipGameId, "ship.game.id", "0.1.0", "stable", "game_id", "raise", {}, "common", {}, kShipGameIdArguments, kShipGameIdErrors},
     {FunctionId::ShipGameHostVersion, "ship.game.host_version", "0.1.0", "stable", "string", "raise", {}, "common", {}, kShipGameHostVersionArguments, kShipGameHostVersionErrors},
     {FunctionId::ShipGameState, "ship.game.state", "0.4.0", "experimental", "game_state", "raise", {}, "oot", "game.state", kShipGameStateArguments, kShipGameStateErrors},
@@ -610,6 +627,8 @@ inline constexpr std::array<FunctionBinding, 60> kFunctions{{
     {FunctionId::ShipOotCutsceneStart, "ship.oot.cutscene.start", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.cutscene", kShipOotCutsceneStartArguments, kShipOotCutsceneStartErrors},
     {FunctionId::ShipOotCutsceneStop, "ship.oot.cutscene.stop", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.cutscene", kShipOotCutsceneStopArguments, kShipOotCutsceneStopErrors},
     {FunctionId::ShipOotCutsceneIsActive, "ship.oot.cutscene.is_active", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.cutscene", kShipOotCutsceneIsActiveArguments, kShipOotCutsceneIsActiveErrors},
+    {FunctionId::ShipOotAudioPlaySfx, "ship.oot.audio.play_sfx", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.audio", kShipOotAudioPlaySfxArguments, kShipOotAudioPlaySfxErrors},
+    {FunctionId::ShipOotAudioDumpSfxTable, "ship.oot.audio.dump_sfx_table", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.audio", kShipOotAudioDumpSfxTableArguments, kShipOotAudioDumpSfxTableErrors},
     {FunctionId::ShipOotAudioSetVoiceMap, "ship.oot.audio.set_voice_map", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.audio", kShipOotAudioSetVoiceMapArguments, kShipOotAudioSetVoiceMapErrors},
     {FunctionId::ShipOotEnvGet, "ship.oot.env.get", "0.4.0", "experimental", "any", "raise", {}, "oot", "oot.env", kShipOotEnvGetArguments, kShipOotEnvGetErrors},
     {FunctionId::ShipOotSpawnDog, "ship.oot.spawn_dog", "0.3.0", "experimental", "boolean", "raise", {}, "oot", "oot.spawn_dog", kShipOotSpawnDogArguments, kShipOotSpawnDogErrors},
