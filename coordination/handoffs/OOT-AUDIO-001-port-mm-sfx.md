@@ -722,3 +722,24 @@ foi na direção certa mas não bastou.
    errado indexa font errado.
 3. Um guard de limite em `waveId` converte o crash em silêncio e permite
    continuar testando o resto.
+
+
+### Verificado: `channel->fontId` também não era a causa
+
+Instalado e testado — mesmo crash, mesma pilha
+(`AudioScript_SeqLayerProcessScript` → `SeqLayerNoteDecay`). Era uma linha
+genuinamente ausente do loader de referência, mas não o bloqueio.
+
+**Oito tentativas nesta última milha**, todas fundamentadas no decomp e nenhuma
+suficiente: `maxTempo`, `adsrDecayTable`, porta 2 de volume, `sfxState`,
+`customSeqFunctions[0]`, `soundFontList` como array, banco-como-canal,
+`channel->fontId`.
+
+Todas eram necessárias. O problema é que o caminho de criação de nota depende de
+um conjunto de pré-condições que só o `AudioHeap_Init` + `AudioLoad_*`
+estabelecem por completo, e descobri-las uma a uma tem retorno decrescente.
+
+**Recomendação forte para quem continuar: pare de adivinhar campo.** Rode o
+2S2H com breakpoint em `AudioScript_SeqLayerProcessScript` disparando um SFX, e
+compare o `AudioContext` inteiro contra o nosso no mesmo ponto. Uma comparação
+de estado resolve em uma sessão o que oito tentativas dirigidas não fecharam.
