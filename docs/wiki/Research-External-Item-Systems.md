@@ -608,3 +608,71 @@ look like a portal return`. São exatamente as perguntas que o nosso
 | Jepvid/Shipwright | `develop` | ativo | stats de RPG — ver §7 |
 | ill-ego/Shipwright | `texture-inspector` | — | inspetor de textura, útil para depurar cross-world |
 | roborich/Shipwright | — | — | cel-shading; guardado para mod futuro |
+
+## 12. A máquina de transição do ComboShip — lições diretas para `world.travel`
+
+De `docs/deviations/boot-shutdown.md` (develop). São problemas que eles
+resolveram depois de três issues abertas (#89/#87/#83), e o nosso
+`ship.world.travel` vai bater em todos.
+
+### 1. "Qual jogo estava ativo" NÃO pode vir de escrita de save
+
+A conclusão deles é contraintuitiva e custou caro. O campo `lastGame` é gravado
+**só nas duas transições** — entrar no MM e voltar pelo portal — nunca ao salvar.
+
+Motivo, textual: há duas classes de escrita que tornam isso inviável. Escritas de
+fundo na seção do jogo **dormente** (concessão de item cross-game, pacotes de
+co-op) e — a que de fato quebrou — as escritas de **load-time** do próprio OoT.
+Carregar um save do OoT persiste seções pelos handlers de `OnLoadGame`, que
+rodam *antes* do callback do launcher, então um carimbo filtrado marcava
+`lastGame = OoT` microssegundos antes da decisão de retomada ler o campo, e o
+slot nunca retomava o MM.
+
+**Para nós:** o handoff do Link-Span é por arquivo. Se algum dia derivarmos
+"onde o jogador estava" de qualquer coisa que não seja a transição explícita,
+cairemos no mesmo laço.
+
+### 2. Ausência do campo tem que significar algo
+
+Campo ausente = OoT, para save antigo se comportar como antes. Reset e saída por
+owl save deliberadamente **não** mexem no campo — assim quem saiu do MM por owl
+save ainda retoma no MM.
+
+### 3. O ponto de intercepção é estreito
+
+`Combo_OnOOTSaveLoad` dispara depois que o save reconstruiu o contexto e depois
+que o launcher carregou o save dormente, **mas antes de o OoT executar um único
+frame de Play**. Decidir ali evita editar o file-select do decomp.
+
+E precisa de **guarda**: o mesmo `OnLoadGame` também dispara do `TitleSetup` no
+retorno MM→OoT e de recarga em jogo. Sem a guarda, *"sair do MM depois de um owl
+save jogaria o jogador de volta para o MM para sempre"*.
+
+### 4. Sair do loop do jogo exige limpar o que está **enfileirado**
+
+`SOH_ParkForComboMMResume` zera `gGameState->init` **e** `running`. Só `running`
+não basta: o `FileChoose_LoadGame` já enfileirou `Play_Init`, então sem limpar o
+`init` o OoT construiria Play e continuaria rodando — o handoff nunca aconteceria.
+
+Eles anotam que a troca pela Mask Shop escapa com só `running = false` porque ali
+o `GameState_Init` já anulou o `init`. Ou seja: **o mesmo "sair do jogo" tem duas
+formas certas dependendo de quem enfileirou o quê.**
+
+### 5. Não salvar ao sair da transição
+
+Deliberadamente não salvam o arquivo ao parquear o OoT: salvar carimbaria
+`lastGame` de volta para OoT e *"faria a retomada funcionar exatamente uma vez"*.
+
+### Aplicação ao Link-Span
+
+Nosso `world.travel` faz handoff autenticado por arquivo entre dois processos —
+mais simples que o loop de dois DLLs deles. Mas as quatro primeiras lições são
+de **semântica de estado**, não de arquitetura, e valem igual:
+
+- carimbar origem só na transição, nunca em escrita de save;
+- ausência do campo precisa ter significado definido;
+- o ponto de decisão tem que ser antes do primeiro frame do jogo de destino;
+- toda entrada no ponto de decisão precisa saber **de onde veio**, senão vira laço.
+
+O item 4 (limpar estado enfileirado) não se aplica hoje, porque nossos processos
+são separados — mas se algum dia unificarmos, é o primeiro lugar a olhar.
