@@ -40,11 +40,19 @@
     {"name": "hotkey_options", "kind": "object", "fields": [
       {"name": "default", "type": "string", "required": false},
       {"name": "label", "type": "string", "required": false}
-    ], "description": "Opções de registro de hotkey (tecla default e rótulo)."}
+    ], "description": "Opções de registro de hotkey (tecla default e rótulo)."},
+    {"name": "game_state", "kind": "object", "fields": [
+      {"name": "mode", "type": "string", "required": true},
+      {"name": "save_slot", "type": "integer", "required": false}
+    ], "description": "Estado estável do gameplay sem expor structs nativas."},
+    {"name": "hud_icon_options", "kind": "object", "fields": [
+      {"name": "alpha", "type": "integer", "required": false}
+    ], "description": "Opções limitadas de apresentação de ícone no HUD."}
   ],
   "functions": [
     {"name": "ship.game.id", "version": "0.1.0", "stability": "stable", "arguments": [], "returns": "game_id", "availability": "common", "capability": null, "errors": []},
     {"name": "ship.game.host_version", "version": "0.1.0", "stability": "stable", "arguments": [], "returns": "string", "availability": "common", "capability": null, "errors": []},
+    {"name": "ship.game.state", "version": "0.4.0", "stability": "experimental", "arguments": [], "returns": "game_state", "availability": "oot", "capability": "game.state", "errors": ["unsupported"]},
     {"name": "ship.runtime.version", "version": "0.1.0", "stability": "stable", "arguments": [], "returns": "string", "availability": "common", "capability": null, "errors": []},
     {"name": "ship.api.version", "version": "0.1.0", "stability": "stable", "arguments": [], "returns": "string", "availability": "common", "capability": null, "errors": []},
     {"name": "ship.capabilities.has", "version": "0.1.0", "stability": "stable", "arguments": [{"name": "name", "type": "string"}], "returns": "boolean", "availability": "common", "capability": null, "errors": ["invalid_argument"]},
@@ -80,6 +88,7 @@
     {"name": "ship.oot.cutscene.start", "version": "0.4.0", "stability": "experimental", "arguments": [{"name": "frames", "type": "integer"}, {"name": "options", "type": "any", "required": false}], "returns": "boolean", "availability": "oot", "capability": "oot.cutscene", "errors": ["invalid_argument", "invalid_state"]},
     {"name": "ship.oot.cutscene.stop", "version": "0.4.0", "stability": "experimental", "arguments": [], "returns": "boolean", "availability": "oot", "capability": "oot.cutscene", "errors": []},
     {"name": "ship.oot.cutscene.is_active", "version": "0.4.0", "stability": "experimental", "arguments": [], "returns": "boolean", "availability": "oot", "capability": "oot.cutscene", "errors": []},
+    {"name": "ship.oot.audio.set_voice_map", "version": "0.4.0", "stability": "experimental", "arguments": [{"name": "base", "type": "integer", "required": false}, {"name": "offset", "type": "integer", "required": false}], "returns": "boolean", "availability": "oot", "capability": "oot.audio", "errors": ["invalid_argument"]},
     {"name": "ship.oot.env.get", "version": "0.4.0", "stability": "experimental", "arguments": [{"name": "field", "type": "string"}], "returns": "any", "availability": "oot", "capability": "oot.env", "errors": []},
     {"name": "ship.oot.spawn_dog", "version": "0.3.0", "stability": "experimental", "arguments": [], "returns": "boolean", "availability": "oot", "capability": "oot.spawn_dog", "errors": []},
     {"name": "ship.log.debug", "version": "0.1.0", "stability": "stable", "arguments": [{"name": "message", "type": "string"}], "returns": "nil", "availability": "common", "capability": null, "errors": ["invalid_argument"]},
@@ -100,6 +109,7 @@
     {"name": "ship.hud.draw_rect", "version": "0.4.0", "stability": "experimental", "arguments": [{"name": "x", "type": "integer"}, {"name": "y", "type": "integer"}, {"name": "w", "type": "integer"}, {"name": "h", "type": "integer"}, {"name": "r", "type": "integer", "required": false}, {"name": "g", "type": "integer", "required": false}, {"name": "b", "type": "integer", "required": false}, {"name": "a", "type": "integer", "required": false}], "returns": "boolean", "availability": "oot", "capability": "hud.draw", "errors": ["invalid_argument", "invalid_state"]},
     {"name": "ship.hud.draw_text", "version": "0.4.0", "stability": "experimental", "arguments": [{"name": "text", "type": "string"}, {"name": "x", "type": "integer"}, {"name": "y", "type": "integer"}, {"name": "r", "type": "integer", "required": false}, {"name": "g", "type": "integer", "required": false}, {"name": "b", "type": "integer", "required": false}, {"name": "a", "type": "integer", "required": false}, {"name": "scale", "type": "number", "required": false}], "returns": "boolean", "availability": "oot", "capability": "hud.draw", "errors": ["invalid_argument", "invalid_state"]},
     {"name": "ship.hud.draw_ring", "version": "0.4.0", "stability": "experimental", "arguments": [{"name": "cx", "type": "number"}, {"name": "cy", "type": "number"}, {"name": "radius", "type": "number"}, {"name": "thickness", "type": "number", "required": false}, {"name": "fraction", "type": "number", "required": false}, {"name": "r", "type": "integer", "required": false}, {"name": "g", "type": "integer", "required": false}, {"name": "b", "type": "integer", "required": false}, {"name": "a", "type": "integer", "required": false}], "returns": "boolean", "availability": "oot", "capability": "hud.draw", "errors": ["invalid_argument", "invalid_state"]}
+    ,{"name": "ship.hud.draw_icon", "version": "0.4.0", "stability": "experimental", "arguments": [{"name": "path", "type": "string"}, {"name": "x", "type": "integer"}, {"name": "y", "type": "integer"}, {"name": "w", "type": "integer"}, {"name": "h", "type": "integer"}, {"name": "options", "type": "hud_icon_options", "required": false}], "returns": "boolean", "availability": "oot", "capability": "hud.icons", "errors": ["invalid_argument", "invalid_state", "unsupported"]}
   ],
   "error_codes": ["unsupported", "invalid_argument", "invalid_handle", "invalid_state", "permission_denied", "resource_limit", "host_failure", "script_failure"]
 }

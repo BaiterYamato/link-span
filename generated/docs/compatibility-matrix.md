@@ -11,6 +11,7 @@ Derivada dos schemas canônicos em `schema/` (IDL); regenere com
 |---|---|---|---|---|---|---|
 | `ship.game.id` | `0.1.0` | `stable` | sim | sim | — | — |
 | `ship.game.host_version` | `0.1.0` | `stable` | sim | sim | — | — |
+| `ship.game.state` | `0.4.0` | `experimental` | sim | — | `game.state` | `unsupported` |
 | `ship.runtime.version` | `0.1.0` | `stable` | sim | sim | — | — |
 | `ship.api.version` | `0.1.0` | `stable` | sim | sim | — | — |
 | `ship.capabilities.has` | `0.1.0` | `stable` | sim | sim | — | `invalid_argument` |
@@ -37,11 +38,16 @@ Derivada dos schemas canônicos em `schema/` (IDL); regenere com
 | `ship.oot.player.set_damage_immunity` | `0.4.0` | `experimental` | sim | — | `oot.player.immunity` | — |
 | `ship.oot.player.set_weight` | `0.4.0` | `experimental` | sim | — | `oot.player.weight` | — |
 | `ship.oot.player.set_roll_mode` | `0.4.0` | `experimental` | sim | — | `oot.player.roll` | — |
+| `ship.oot.player.set_roll_blocked` | `0.4.0` | `experimental` | sim | — | `oot.player.roll` | — |
 | `ship.oot.player.set_body` | `0.4.0` | `experimental` | sim | — | `oot.player.custom_body` | — |
 | `ship.oot.player.get_body` | `0.4.0` | `experimental` | sim | — | `oot.player.custom_body` | — |
 | `ship.oot.player.play_body_animation` | `0.4.0` | `experimental` | sim | — | `oot.player.custom_body` | — |
 | `ship.oot.player.set_body_segment` | `0.4.0` | `experimental` | sim | — | `oot.player.custom_body` | — |
 | `ship.oot.player.set_held_item_model` | `0.4.0` | `experimental` | sim | — | `oot.player.held_item_model` | — |
+| `ship.oot.cutscene.start` | `0.4.0` | `experimental` | sim | — | `oot.cutscene` | `invalid_argument`, `invalid_state` |
+| `ship.oot.cutscene.stop` | `0.4.0` | `experimental` | sim | — | `oot.cutscene` | — |
+| `ship.oot.cutscene.is_active` | `0.4.0` | `experimental` | sim | — | `oot.cutscene` | — |
+| `ship.oot.env.get` | `0.4.0` | `experimental` | sim | — | `oot.env` | — |
 | `ship.oot.spawn_dog` | `0.3.0` | `experimental` | sim | — | `oot.spawn_dog` | — |
 | `ship.log.debug` | `0.1.0` | `stable` | sim | sim | — | `invalid_argument` |
 | `ship.log.info` | `0.1.0` | `stable` | sim | sim | — | `invalid_argument` |
@@ -54,6 +60,14 @@ Derivada dos schemas canônicos em `schema/` (IDL); regenere com
 | `ship.storage.set` | `0.3.0` | `experimental` | sim | sim | `core.storage` | `invalid_argument`, `resource_limit`, `unsupported` |
 | `ship.storage.delete` | `0.3.0` | `experimental` | sim | sim | `core.storage` | `invalid_argument`, `unsupported` |
 | `ship.storage.clear` | `0.3.0` | `experimental` | sim | sim | `core.storage` | `unsupported` |
+| `ship.storage.shared.get` | `0.4.0` | `experimental` | sim | sim | `core.storage.shared` | `invalid_argument`, `unsupported` |
+| `ship.storage.shared.set` | `0.4.0` | `experimental` | sim | sim | `core.storage.shared` | `invalid_argument`, `resource_limit`, `unsupported` |
+| `ship.storage.shared.delete` | `0.4.0` | `experimental` | sim | sim | `core.storage.shared` | `invalid_argument`, `unsupported` |
+| `ship.storage.shared.clear` | `0.4.0` | `experimental` | sim | sim | `core.storage.shared` | `unsupported` |
+| `ship.hud.draw_rect` | `0.4.0` | `experimental` | sim | — | `hud.draw` | `invalid_argument`, `invalid_state` |
+| `ship.hud.draw_text` | `0.4.0` | `experimental` | sim | — | `hud.draw` | `invalid_argument`, `invalid_state` |
+| `ship.hud.draw_ring` | `0.4.0` | `experimental` | sim | — | `hud.draw` | `invalid_argument`, `invalid_state` |
+| `ship.hud.draw_icon` | `0.4.0` | `experimental` | sim | — | `hud.icons` | `invalid_argument`, `invalid_state`, `unsupported` |
 
 Funções com disponibilidade específica (`oot`/`mm`) são instaladas pelo
 adaptador do host quando a capability correspondente é anunciada; o núcleo
@@ -74,11 +88,15 @@ nunca registra `ship.oot.*` ou `ship.mm.*` (RFC 0001).
 | `text.open` | `host_bridge` | não | sim | sim | `text.events` |
 | `audio.sequence_started` | `host_bridge` | não | sim | sim | `audio.sequence.events` |
 | `input.hotkey` | `host_bridge` | não | sim | sim | — |
+| `input.action` | `host_bridge` | não | sim | — | `input.actions` |
 | `hook.oot.player.speed.run` | `hook_bridge` | não | sim | — | `hooks.bridge` |
 | `hook.oot.player.fall_damage` | `hook_bridge` | não | sim | — | `hooks.bridge` |
 | `hook.oot.item.receive` | `hook_bridge` | não | sim | — | `hooks.bridge` |
 | `hook.oot.player.health_change` | `hook_bridge` | não | sim | — | `hooks.bridge` |
 | `hook.oot.player.bonk` | `hook_bridge` | não | sim | — | `hooks.bridge` |
+| `hook.oot.enemy.defeat` | `hook_bridge` | não | sim | — | `hooks.bridge` |
+| `hook.oot.item.give` | `hook_bridge` | não | sim | — | `hooks.bridge` |
+| `hook.oot.hud.draw` | `hook_bridge` | não | sim | — | `hud.draw` |
 | `hook.oot.player.first_person_control` | `hook_bridge` | não | sim | — | `hooks.bridge` |
 | `hook.oot.player.arrow_type_select` | `hook_bridge` | não | sim | — | `hooks.bridge` |
 | `hook.oot.player.body_anim_select` | `hook_bridge` | não | sim | — | `oot.player.custom_body` |
@@ -87,6 +105,8 @@ nunca registra `ship.oot.*` ou `ship.mm.*` (RFC 0001).
 | `hook.mm.player.goron_roll.disable_spike_mode` | `hook_bridge` | não | — | sim | `hooks.bridge` |
 | `hook.mm.player.goron_roll.increase_spike_level` | `hook_bridge` | não | — | sim | `hooks.bridge` |
 | `hook.mm.item.give` | `hook_bridge` | não | — | sim | `hooks.bridge` |
+| `hook.mm.enemy.defeat` | `hook_bridge` | não | — | sim | `hooks.bridge` |
+| `hook.mm.item.should_give` | `hook_bridge` | não | — | sim | `hooks.bridge` |
 
 ## Capabilities
 
@@ -96,7 +116,15 @@ nunca registra `ship.oot.*` ou `ship.mm.*` (RFC 0001).
 | `hooks.bridge` | `contract` | sim | sim |
 | `core.timers` | `contract` | sim | sim |
 | `core.input` | `contract` | sim | sim |
+| `input.actions` | `contract` | sim | — |
+| `game.state` | `contract` | sim | — |
 | `core.storage` | `contract` | sim | sim |
+| `core.storage.shared` | `contract` | sim | sim |
+| `oot.audio` | `planned` | sim | — |
+| `oot.cutscene` | `contract` | sim | — |
+| `oot.env` | `contract` | sim | — |
+| `hud.draw` | `contract` | sim | — |
+| `hud.icons` | `contract` | sim | — |
 | `scene.events` | `contract` | sim | sim |
 | `actor.events` | `contract` | sim | sim |
 | `actor.spawn` | `contract` | sim | sim |
@@ -136,5 +164,5 @@ nunca registra `ship.oot.*` ou `ship.mm.*` (RFC 0001).
 |---|---:|
 | `stable` | 12 |
 | `preview` | 1 |
-| `experimental` | 32 |
+| `experimental` | 46 |
 

@@ -38,6 +38,11 @@
       {"name": "action", "type": "string", "required": true},
       {"name": "key", "type": "string", "required": true}
     ]},
+    {"name": "input.action", "kind": "transform", "phase": "host_bridge", "cancellable": false, "support": ["oot"], "capability": "input.actions", "payload": [
+      {"name": "action", "type": "string", "required": true},
+      {"name": "pressed", "type": "boolean", "required": true},
+      {"name": "source", "type": "string", "required": true}
+    ]},
 
     {"name": "hook.oot.player.speed.run", "kind": "transform", "phase": "hook_bridge", "cancellable": false, "support": ["oot"], "capability": "hooks.bridge", "payload": [
       {"name": "speed", "type": "number", "required": true}

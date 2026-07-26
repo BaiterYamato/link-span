@@ -66,6 +66,15 @@ struct HotkeyOptions {
     std::optional<std::string> label;
 };
 
+struct GameState {
+    std::string mode;
+    std::optional<std::int64_t> save_slot;
+};
+
+struct HudIconOptions {
+    std::optional<std::int64_t> alpha;
+};
+
 enum class ApiError {
     Unsupported,
     InvalidArgument,
@@ -88,6 +97,7 @@ struct FieldBinding {
 enum class FunctionId {
     ShipGameId,
     ShipGameHostVersion,
+    ShipGameState,
     ShipRuntimeVersion,
     ShipApiVersion,
     ShipCapabilitiesHas,
@@ -123,6 +133,7 @@ enum class FunctionId {
     ShipOotCutsceneStart,
     ShipOotCutsceneStop,
     ShipOotCutsceneIsActive,
+    ShipOotAudioSetVoiceMap,
     ShipOotEnvGet,
     ShipOotSpawnDog,
     ShipLogDebug,
@@ -143,6 +154,7 @@ enum class FunctionId {
     ShipHudDrawRect,
     ShipHudDrawText,
     ShipHudDrawRing,
+    ShipHudDrawIcon,
 };
 
 struct FunctionBinding {
@@ -166,6 +178,11 @@ inline constexpr std::array<std::string_view, 0> kShipGameIdErrors{{
 inline constexpr std::array<FieldBinding, 0> kShipGameHostVersionArguments{{
 }};
 inline constexpr std::array<std::string_view, 0> kShipGameHostVersionErrors{{
+}};
+inline constexpr std::array<FieldBinding, 0> kShipGameStateArguments{{
+}};
+inline constexpr std::array<std::string_view, 1> kShipGameStateErrors{{
+    "unsupported",
 }};
 inline constexpr std::array<FieldBinding, 0> kShipRuntimeVersionArguments{{
 }};
@@ -374,6 +391,13 @@ inline constexpr std::array<FieldBinding, 0> kShipOotCutsceneIsActiveArguments{{
 }};
 inline constexpr std::array<std::string_view, 0> kShipOotCutsceneIsActiveErrors{{
 }};
+inline constexpr std::array<FieldBinding, 2> kShipOotAudioSetVoiceMapArguments{{
+    {"base", "integer", false},
+    {"offset", "integer", false},
+}};
+inline constexpr std::array<std::string_view, 1> kShipOotAudioSetVoiceMapErrors{{
+    "invalid_argument",
+}};
 inline constexpr std::array<FieldBinding, 1> kShipOotEnvGetArguments{{
     {"field", "string", true},
 }};
@@ -533,10 +557,24 @@ inline constexpr std::array<std::string_view, 2> kShipHudDrawRingErrors{{
     "invalid_argument",
     "invalid_state",
 }};
+inline constexpr std::array<FieldBinding, 6> kShipHudDrawIconArguments{{
+    {"path", "string", true},
+    {"x", "integer", true},
+    {"y", "integer", true},
+    {"w", "integer", true},
+    {"h", "integer", true},
+    {"options", "hud_icon_options", false},
+}};
+inline constexpr std::array<std::string_view, 3> kShipHudDrawIconErrors{{
+    "invalid_argument",
+    "invalid_state",
+    "unsupported",
+}};
 
-inline constexpr std::array<FunctionBinding, 57> kFunctions{{
+inline constexpr std::array<FunctionBinding, 60> kFunctions{{
     {FunctionId::ShipGameId, "ship.game.id", "0.1.0", "stable", "game_id", "raise", {}, "common", {}, kShipGameIdArguments, kShipGameIdErrors},
     {FunctionId::ShipGameHostVersion, "ship.game.host_version", "0.1.0", "stable", "string", "raise", {}, "common", {}, kShipGameHostVersionArguments, kShipGameHostVersionErrors},
+    {FunctionId::ShipGameState, "ship.game.state", "0.4.0", "experimental", "game_state", "raise", {}, "oot", "game.state", kShipGameStateArguments, kShipGameStateErrors},
     {FunctionId::ShipRuntimeVersion, "ship.runtime.version", "0.1.0", "stable", "string", "raise", {}, "common", {}, kShipRuntimeVersionArguments, kShipRuntimeVersionErrors},
     {FunctionId::ShipApiVersion, "ship.api.version", "0.1.0", "stable", "string", "raise", {}, "common", {}, kShipApiVersionArguments, kShipApiVersionErrors},
     {FunctionId::ShipCapabilitiesHas, "ship.capabilities.has", "0.1.0", "stable", "boolean", "raise", {}, "common", {}, kShipCapabilitiesHasArguments, kShipCapabilitiesHasErrors},
@@ -572,6 +610,7 @@ inline constexpr std::array<FunctionBinding, 57> kFunctions{{
     {FunctionId::ShipOotCutsceneStart, "ship.oot.cutscene.start", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.cutscene", kShipOotCutsceneStartArguments, kShipOotCutsceneStartErrors},
     {FunctionId::ShipOotCutsceneStop, "ship.oot.cutscene.stop", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.cutscene", kShipOotCutsceneStopArguments, kShipOotCutsceneStopErrors},
     {FunctionId::ShipOotCutsceneIsActive, "ship.oot.cutscene.is_active", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.cutscene", kShipOotCutsceneIsActiveArguments, kShipOotCutsceneIsActiveErrors},
+    {FunctionId::ShipOotAudioSetVoiceMap, "ship.oot.audio.set_voice_map", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.audio", kShipOotAudioSetVoiceMapArguments, kShipOotAudioSetVoiceMapErrors},
     {FunctionId::ShipOotEnvGet, "ship.oot.env.get", "0.4.0", "experimental", "any", "raise", {}, "oot", "oot.env", kShipOotEnvGetArguments, kShipOotEnvGetErrors},
     {FunctionId::ShipOotSpawnDog, "ship.oot.spawn_dog", "0.3.0", "experimental", "boolean", "raise", {}, "oot", "oot.spawn_dog", kShipOotSpawnDogArguments, kShipOotSpawnDogErrors},
     {FunctionId::ShipLogDebug, "ship.log.debug", "0.1.0", "stable", "nil", "raise", {}, "common", {}, kShipLogDebugArguments, kShipLogDebugErrors},
@@ -592,6 +631,7 @@ inline constexpr std::array<FunctionBinding, 57> kFunctions{{
     {FunctionId::ShipHudDrawRect, "ship.hud.draw_rect", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "hud.draw", kShipHudDrawRectArguments, kShipHudDrawRectErrors},
     {FunctionId::ShipHudDrawText, "ship.hud.draw_text", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "hud.draw", kShipHudDrawTextArguments, kShipHudDrawTextErrors},
     {FunctionId::ShipHudDrawRing, "ship.hud.draw_ring", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "hud.draw", kShipHudDrawRingArguments, kShipHudDrawRingErrors},
+    {FunctionId::ShipHudDrawIcon, "ship.hud.draw_icon", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "hud.icons", kShipHudDrawIconArguments, kShipHudDrawIconErrors},
 }};
 
 struct EventBinding {
@@ -641,6 +681,11 @@ inline constexpr std::array<FieldBinding, 2> kAudioSequenceStartedPayload{{
 inline constexpr std::array<FieldBinding, 2> kInputHotkeyPayload{{
     {"action", "string", true},
     {"key", "string", true},
+}};
+inline constexpr std::array<FieldBinding, 3> kInputActionPayload{{
+    {"action", "string", true},
+    {"pressed", "boolean", true},
+    {"source", "string", true},
 }};
 inline constexpr std::array<FieldBinding, 1> kHookOotPlayerSpeedRunPayload{{
     {"speed", "number", true},
@@ -718,7 +763,7 @@ inline constexpr std::array<FieldBinding, 1> kHookMmItemShouldGivePayload{{
     {"item", "integer", true},
 }};
 
-inline constexpr std::array<EventBinding, 29> kEvents{{
+inline constexpr std::array<EventBinding, 30> kEvents{{
     {"game.ready", EventKind::Observe, "mvp", false, true, true, {}, kGameReadyPayload},
     {"game.frame", EventKind::Observe, "mvp", false, true, true, {}, kGameFramePayload},
     {"game.shutdown", EventKind::Observe, "mvp", false, true, true, {}, kGameShutdownPayload},
@@ -730,6 +775,7 @@ inline constexpr std::array<EventBinding, 29> kEvents{{
     {"text.open", EventKind::Observe, "host_bridge", false, true, true, "text.events", kTextOpenPayload},
     {"audio.sequence_started", EventKind::Observe, "host_bridge", false, true, true, "audio.sequence.events", kAudioSequenceStartedPayload},
     {"input.hotkey", EventKind::Observe, "host_bridge", false, true, true, {}, kInputHotkeyPayload},
+    {"input.action", EventKind::Transform, "host_bridge", false, true, false, "input.actions", kInputActionPayload},
     {"hook.oot.player.speed.run", EventKind::Transform, "hook_bridge", false, true, false, "hooks.bridge", kHookOotPlayerSpeedRunPayload},
     {"hook.oot.player.fall_damage", EventKind::Transform, "hook_bridge", false, true, false, "hooks.bridge", kHookOotPlayerFallDamagePayload},
     {"hook.oot.item.receive", EventKind::Observe, "hook_bridge", false, true, false, "hooks.bridge", kHookOotItemReceivePayload},
@@ -757,17 +803,20 @@ struct CapabilityBinding {
     bool supportsMm;
 };
 
-inline constexpr std::array<CapabilityBinding, 42> kCapabilities{{
+inline constexpr std::array<CapabilityBinding, 45> kCapabilities{{
     {"core.events", "contract", true, true},
     {"hooks.bridge", "contract", true, true},
     {"core.timers", "contract", true, true},
     {"core.input", "contract", true, true},
+    {"input.actions", "contract", true, false},
+    {"game.state", "contract", true, false},
     {"core.storage", "contract", true, true},
     {"core.storage.shared", "contract", true, true},
-    {"oot.audio", "planned", true, false},
+    {"oot.audio", "contract", true, false},
     {"oot.cutscene", "contract", true, false},
     {"oot.env", "contract", true, false},
     {"hud.draw", "contract", true, false},
+    {"hud.icons", "contract", true, false},
     {"scene.events", "contract", true, true},
     {"actor.events", "contract", true, true},
     {"actor.spawn", "contract", true, true},

@@ -18,6 +18,8 @@ Versão da API: `0.4.0`. Versão do schema: `1`.
 | `operation_error` | `object` | `code: string`, `message: string` | Erro estruturado retornado sem lançar lua_error. |
 | `actor_snapshot` | `object` | `handle: actor_handle`, `actor_id: integer`, `category: integer` | Snapshot mínimo e estável de ator. |
 | `hotkey_options` | `object` | `default: string?`, `label: string?` | Opções de registro de hotkey (tecla default e rótulo). |
+| `game_state` | `object` | `mode: string`, `save_slot: integer?` | Estado estável do gameplay sem expor structs nativas. |
+| `hud_icon_options` | `object` | `alpha: integer?` | Opções limitadas de apresentação de ícone no HUD. |
 
 ## Funções
 
@@ -25,6 +27,7 @@ Versão da API: `0.4.0`. Versão do schema: `1`.
 |---|---|---|---|---|---|---|---|
 | `ship.game.id` | — | `game_id` | `common` | `stable` | `0.1.0` | — | — |
 | `ship.game.host_version` | — | `string` | `common` | `stable` | `0.1.0` | — | — |
+| `ship.game.state` | — | `game_state` | `oot` | `experimental` | `0.4.0` | `game.state` | `unsupported` |
 | `ship.runtime.version` | — | `string` | `common` | `stable` | `0.1.0` | — | — |
 | `ship.api.version` | — | `string` | `common` | `stable` | `0.1.0` | — | — |
 | `ship.capabilities.has` | `name: string` | `boolean` | `common` | `stable` | `0.1.0` | — | `invalid_argument` |
@@ -60,6 +63,7 @@ Versão da API: `0.4.0`. Versão do schema: `1`.
 | `ship.oot.cutscene.start` | `frames: integer`, `options: any?` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.cutscene` | `invalid_argument`, `invalid_state` |
 | `ship.oot.cutscene.stop` | — | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.cutscene` | — |
 | `ship.oot.cutscene.is_active` | — | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.cutscene` | — |
+| `ship.oot.audio.set_voice_map` | `base: integer?`, `offset: integer?` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.audio` | `invalid_argument` |
 | `ship.oot.env.get` | `field: string` | `any` | `oot` | `experimental` | `0.4.0` | `oot.env` | — |
 | `ship.oot.spawn_dog` | — | `boolean` | `oot` | `experimental` | `0.3.0` | `oot.spawn_dog` | — |
 | `ship.log.debug` | `message: string` | `nil` | `common` | `stable` | `0.1.0` | — | `invalid_argument` |
@@ -80,6 +84,7 @@ Versão da API: `0.4.0`. Versão do schema: `1`.
 | `ship.hud.draw_rect` | `x: integer`, `y: integer`, `w: integer`, `h: integer`, `r: integer?`, `g: integer?`, `b: integer?`, `a: integer?` | `boolean` | `oot` | `experimental` | `0.4.0` | `hud.draw` | `invalid_argument`, `invalid_state` |
 | `ship.hud.draw_text` | `text: string`, `x: integer`, `y: integer`, `r: integer?`, `g: integer?`, `b: integer?`, `a: integer?`, `scale: number?` | `boolean` | `oot` | `experimental` | `0.4.0` | `hud.draw` | `invalid_argument`, `invalid_state` |
 | `ship.hud.draw_ring` | `cx: number`, `cy: number`, `radius: number`, `thickness: number?`, `fraction: number?`, `r: integer?`, `g: integer?`, `b: integer?`, `a: integer?` | `boolean` | `oot` | `experimental` | `0.4.0` | `hud.draw` | `invalid_argument`, `invalid_state` |
+| `ship.hud.draw_icon` | `path: string`, `x: integer`, `y: integer`, `w: integer`, `h: integer`, `options: hud_icon_options?` | `boolean` | `oot` | `experimental` | `0.4.0` | `hud.icons` | `invalid_argument`, `invalid_state`, `unsupported` |
 
 ## Eventos
 
@@ -96,6 +101,7 @@ Versão da API: `0.4.0`. Versão do schema: `1`.
 | `text.open` | `observe` | `host_bridge` | `oot`, `mm` | não | `text.events` | `text_id: integer` |
 | `audio.sequence_started` | `observe` | `host_bridge` | `oot`, `mm` | não | `audio.sequence.events` | `player_index: integer`, `sequence_id: integer` |
 | `input.hotkey` | `observe` | `host_bridge` | `oot`, `mm` | não | — | `action: string`, `key: string` |
+| `input.action` | `transform` | `host_bridge` | `oot` | não | `input.actions` | `action: string`, `pressed: boolean`, `source: string` |
 | `hook.oot.player.speed.run` | `transform` | `hook_bridge` | `oot` | não | `hooks.bridge` | `speed: number` |
 | `hook.oot.player.fall_damage` | `transform` | `hook_bridge` | `oot` | não | `hooks.bridge` | — |
 | `hook.oot.item.receive` | `observe` | `hook_bridge` | `oot` | não | `hooks.bridge` | `item_id: integer`, `get_item_id: integer` |
@@ -123,12 +129,15 @@ Versão da API: `0.4.0`. Versão do schema: `1`.
 | `hooks.bridge` | `contract` | `oot`, `mm` | Ponte genérica para os pontos de instrumentação nativos (VB_*/On* do GameInteractor) — eventos hook.* assináveis com ship.events.on e decididos com ship.hooks.result, sem precisar de função nativa dedicada por habilidade. |
 | `core.timers` | `contract` | `oot`, `mm` | Timers por frame com ownership por mod. |
 | `core.input` | `contract` | `oot`, `mm` | Registro de hotkeys e eventos de input. |
+| `input.actions` | `contract` | `oot` | Emite ações direcionais consumíveis do controle; input vanilla só é bloqueado quando um callback aceita a ação. |
+| `game.state` | `contract` | `oot` | Expõe modo estável de gameplay, pausa, diálogo, cutscene, transição, morte, loading ou indisponível. |
 | `core.storage` | `contract` | `oot`, `mm` | Armazenamento chave-valor com namespace por mod, persistente em disco entre sessões. |
 | `core.storage.shared` | `contract` | `oot`, `mm` | Armazenamento chave-valor COMPARTILHADO entre os dois jogos (mesmo arquivo no diretório de sessão do launcher). Namespaced por mod, mas o mesmo mod vê o mesmo estado em OoT e MM — base para progresso de randomizer cross-game e stats que atravessam o world-travel. |
-| `oot.audio` | `planned` | `oot` | PLANEJADA — declarada no schema, mas NENHUM host a anuncia hoje (a implementação chegou a ser escrita e foi revertida por não estar testada). Toca um efeito sonoro e permite silenciar ou substituir o sfx de voz do jogador — necessário para uma forma customizada não continuar com a voz do Link. Limita-se a ids de sfx do PRÓPRIO OoT: os dados de áudio do MM estão sim no mm.o2r (audio/fonts, audio/sequences, audio/samples) e são endereçáveis sob mm/, mas o motor de áudio do OoT não interpreta o formato de MM — tocá-los exigiria um segundo player de sequência no host (ver docs/wiki/Research-External-Item-Systems.md §10). |
+| `oot.audio` | `contract` | `oot` | Redireciona o sfx de voz do jogador para outro bloco de vozes — necessário para uma forma customizada não continuar soando como o Link. set_voice_map(base, offset) desloca o bloco inteiro: o Link tem suas vozes a partir de 0x6800 e cada forma do MM tem a sua no mesmo formato (Goron 0xC0, Zora 0xA0, Deku 0x80, Fierce Deity 0x00), então trocar a voz é somar um offset e não mapear som por som. As amostras vêm do soundfont do MM montado sob mm/; se a amostra faltar, cai na voz nativa em vez de ficar mudo. |
 | `oot.cutscene` | `contract` | `oot` | Assume a câmera por um número de frames com uma subcâmera dedicada, congelando atores e entrando em modo cutscene — o enquadramento dramático que a troca de máscara de MM tem. Genérica: serve para transformação, item, revelação. |
 | `oot.env` | `contract` | `oot` | Lê estado do AMBIENTE (separado do jogador): time_of_day (0..1), is_night (0/1) e scene_id. Base para mecânicas que reagem a hora do dia e local. |
 | `hud.draw` | `contract` | `oot` | Desenha retângulos e texto sobre o HUD do jogo, a partir do evento hook.<jogo>.hud.draw. Primitiva genérica: o host não conhece 'barra de vida' nem 'medidor de fome' — o mod compõe o que quiser com retângulos e texto. |
+| `hud.icons` | `contract` | `oot` | Desenha uma textura registrada no resource manager como ícone de HUD, com dimensões e alpha limitados. |
 | `scene.events` | `contract` | `oot`, `mm` | Eventos comuns de cena. |
 | `actor.events` | `contract` | `oot`, `mm` | Eventos comuns de ator com handles e snapshots. |
 | `actor.spawn` | `contract` | `oot`, `mm` | Cria um ator allowlisted com ownership e handle seguro. |
@@ -150,7 +159,7 @@ Versão da API: `0.4.0`. Versão do schema: `1`.
 | `oot.player.bunny_hood` | `contract` | `oot` | Veste a Bunny Hood em OoT com o comportamento de Majora's Mask (corrida mais rápida e pulo maior). |
 | `oot.player.mask` | `contract` | `oot` | Equipa qualquer máscara de OoT pelo nome lógico, sem ocupar um botão C. |
 | `player.speed` | `contract` | `oot`, `mm` | Multiplica a velocidade de movimento do jogador por um fator validado (0.1–5.0); 1.0 restaura. |
-| `player.fields` | `contract` | `oot` | Lê e escreve campos nomeados do jogador com validação de faixa: health, health_capacity, magic, rupees, pos_x/y/z, rot_y, speed, vel_x/y/z (leitura e escrita); on_ground, rolling, swimming (só leitura); climbing (leitura; escrever 0 solta o jogador da escada e o faz cair). Chaves fora desta lista viram armazenamento livre por sessão. |
+| `player.fields` | `contract` | `oot` | Lê e escreve campos nomeados do jogador com validação de faixa: health, health_capacity, magic, rupees, pos_x/y/z, rot_y, speed, vel_x/y/z (leitura e escrita); on_ground, rolling, swimming (só leitura); climbing (leitura; escrever 0 solta o jogador da escada e o faz cair); screen_x, screen_y (só leitura — projeção do jogador na tela, para ancorar HUD ao personagem em vez de a um canto fixo). Chaves fora desta lista viram armazenamento livre por sessão. |
 | `oot.player.attach_model` | `contract` | `oot` | Desenha uma display list arbitrária no jogador por caminho de resource, incluindo assets de mod e do jogo vizinho. |
 | `mod.assets` | `contract` | `oot` | Archives (.o2r/.otr) na pasta de mods ficam endereçáveis sob mod/<nome>/, permitindo que um mod traga conteúdo próprio. |
 | `oot.player.immunity` | `contract` | `oot` | Concede imunidade a um tipo de dano (hoje: fogo). |

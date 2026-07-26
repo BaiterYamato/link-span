@@ -431,6 +431,9 @@ end
         if transforming then
             -- G também permite desistir antes de a troca visual acontecer.
             transforming = false
+            if ship.capabilities.has("oot.audio") then
+                ship.oot.audio.set_voice_map(nil)
+            end
             -- Devolve a câmera junto: sem isto o jogador ficaria preso no
             -- enquadramento até o timer acabar.
             if ship.capabilities.has("oot.cutscene") then
@@ -483,6 +486,14 @@ end
                         transforming = false
                         transformed = true
                         apply(true)
+                        -- Voz do Goron: o Link tem um bloco de sfx de voz a
+                        -- partir de 0x6800 e cada forma do MM tem o seu no mesmo
+                        -- formato, deslocado. Goron = 0xC0. Trocar a voz inteira
+                        -- e somar um offset — nao e preciso mapear som por som.
+                        -- Zora seria 0xA0, Deku 0x80, Fierce Deity 0x00.
+                        if ship.capabilities.has("oot.audio") then
+                            ship.oot.audio.set_voice_map(0x6800, 0xC0)
+                        end
                     end
                 end)
                 ship.log.info("colocando máscara Goron")
