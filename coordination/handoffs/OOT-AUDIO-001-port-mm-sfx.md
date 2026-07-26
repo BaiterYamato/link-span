@@ -584,3 +584,84 @@ que estava invertida (cadência de tick; "o pc sai do bloco"). O que resolveu,
 sempre, foi instrumentar e ler o valor real — em especial logar do **lado do
 OoT**, antes de qualquer cast, o que separou "recurso veio errado" de "cast
 errado" e revelou uma terceira coisa que nenhuma das duas hipóteses cobria.
+
+
+---
+
+## Diagnóstico final da sessão de 2026-07-25 — leia isto antes de continuar
+
+### O motor portado FUNCIONA. O que falta é o protocolo de pedido do canal.
+
+Medido em jogo, motor ligado por `SHIPLUA_MM_SEQ=1`:
+
+```
+canal=0  canaisOn=16  playerVivo=1  pc=62  notas(pico)=0  amostras=0
+```
+
+Como ler cada número:
+
+| Medida | Valor | Significado |
+|---|---|---|
+| `canaisOn` | **16** | o script do player rodou e habilitou TODOS os canais |
+| `playerVivo` | **1** | o player não se desabilitou |
+| `pc` | **62**, estável | estacionou — comportamento CORRETO de uma sequência de SFX, que configura e espera pedidos |
+| `notas` | 0 | nenhuma nota foi montada |
+| `amostras` | 0 | o renderizador está descartado: não teve o que tocar |
+
+Isso valida a cadeia inteira: header em namespace, 4.797 linhas portadas, 12
+shims, ponte de duas camadas, carregamento de font e sequência. Nada disso é o
+problema.
+
+### Quatro peças instaladas nesta sessão, nenhuma suficiente
+
+Todas necessárias — teriam quebrado adiante — mas nenhuma destravou a nota:
+
+1. `gAudioCtx.maxTempo` (fórmula de `heap.c:982`)
+2. `gAudioCtx.adsrDecayTable` (reprodução de `AudioHeap_InitAdsrDecayTable`)
+3. Porta de IO **2 = volume**, que eu não escrevia
+4. `channel->sfxState` + `gAudioCtx.customSeqFunctions[0]`
+
+As duas últimas são exatamente o par que o loader do fork skijer instala.
+
+### O que eu faria a seguir, em ordem
+
+1. **Logar o `pc` de CADA canal**, não só o do player. Se os canais também
+   estacionam num offset fixo, esse offset aponta o opcode exato onde o script
+   espera algo que não fornecemos. É a informação que falta e é barata.
+
+2. **Comparar o comportamento com o 2S2H rodando.** O mesmo `Sequence_0` roda
+   lá; um breakpoint em `AudioScript_SequenceChannelProcessScript` mostrando a
+   ordem real de escrita nas portas resolveria em minutos o que aqui virou
+   tentativa e erro.
+
+3. **Revisar o resto dos 41 campos de `AudioHeap_Init`.** Achei dois; a lista
+   completa está no commit `311e636e0`. Candidatos ainda não tratados:
+   `numSynthesisReverbs`, `preloadSampleStackTop`, `unk_4`, `unk_2`, `unk_2870`.
+
+### Método — o que funcionou e o que não
+
+**Não funcionou:** teorizar. Errei quatro vezes seguidas nesta última milha, e
+duas vezes dei ao usuário explicação confiante que estava invertida (a cadência
+de tick era 12x lenta, não rápida; o `pc` não "saía do bloco", a guarda é que
+estourava a aritmética).
+
+**Funcionou, sempre:** instrumentar e ler o valor real. Em especial:
+- logar do **lado do OoT**, antes de qualquer cast, separou "recurso veio
+  errado" de "cast errado" e revelou uma terceira coisa — eu pedia o arquivo
+  errado (`gSequenceMap[0]` apontava para o soundfont);
+- medir **duas coisas independentes** (notas E amostras) tornou o silêncio
+  diagnosticável em vez de ambíguo;
+- descer um nível (canais, não notas) eliminou tudo que estava certo e deixou
+  só o protocolo em pé.
+
+### Quatro armadilhas já pagas — três delas no código de cola, não no decomp
+
+1. Tabela de caminhos com `static` **dentro** da função geradora: as duas
+   chamadas compartilhavam vetores, `gSequenceMap[0]` apontava para
+   `audio/fonts/Soundfont_0`, e o interpretador executava um soundfont como
+   script. Era a causa do crash em `AudioScript_ScriptReadU8`.
+2. `c_str()` colhido durante o preenchimento de um `vector<string>`: `push_back`
+   realoca e deixa os ponteiros pendurados.
+3. Porta de IO livre é `SEQ_IO_VAL_NONE` (**-1**), não 0.
+4. Guarda de ponteiro com aritmética que estoura: `início + tamanho` com
+   tamanho lixo passa do fim do espaço de endereços.
