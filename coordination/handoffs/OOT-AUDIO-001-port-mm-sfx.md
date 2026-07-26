@@ -665,3 +665,60 @@ estourava a aritmética).
 3. Porta de IO livre é `SEQ_IO_VAL_NONE` (**-1**), não 0.
 4. Guarda de ponteiro com aritmética que estoura: `início + tamanho` com
    tamanho lixo passa do fim do espaço de endereços.
+
+
+---
+
+## Atualização final: o script chega a montar nota
+
+Depois de corrigir o protocolo de pedido, o interpretador avançou de "consome o
+pedido e nada acontece" para **montar nota**. A pilha do crash prova:
+
+```
+AudioPlayback_SeqLayerNoteDecay          playback.cpp:617
+AudioScript_SeqLayerProcessScriptStep1   seqplayer.cpp:620
+AudioScript_SeqLayerProcessScript        seqplayer.cpp:590
+AudioScript_SequenceChannelProcessScript seqplayer.cpp:1870
+```
+
+### As duas correções que destravaram
+
+1. **`soundFontList` é ARRAY indexado por fontId**, não ponteiro para um font.
+   A `Sequence_0` declara `numFonts=2 fonts[0]=1` — usa o **Soundfont_1**.
+   Carregava-se só o 0. Agora carrega os 41 num array de structs, como o
+   `sFontTable` do fork, e `defaultFont` vem de `seqData.fonts[]`.
+
+2. **O `sfxId` carrega o BANCO nos bits 12-14 e o índice nos bits 0-9.** Na
+   sequência de SFX cada banco tem seu próprio canal — o banco é **endereço**,
+   não dado. Escrevia-se o id inteiro no primeiro canal livre, então o script
+   recebia lixo como índice.
+
+### Onde parou
+
+Crash em `playback.cpp:617`, no caminho de onda sintética:
+
+```c
+if (waveId < 128) { waveId = 128; }   // clampa só por BAIXO
+...
+note->sampleState.waveSampleAddr = &gWaveSamples[waveId - 128][...];
+```
+
+`gWaveSamples` tem **9 entradas** e todas as 8 tabelas de onda estão definidas
+em `data.cpp` — não é ponteiro nulo. O decomp **não clampa por cima**, então um
+`waveId > 136` lê fora do array.
+
+**Conclusão:** `layer->instOrWave` está vindo com valor inválido, o que traça de
+volta à resolução de instrumento no soundfont. A correção do `soundFontList`
+foi na direção certa mas não bastou.
+
+### Próximo passo concreto
+
+1. Logar `layer->instOrWave` e `channel->fontId` no momento do crash. Se
+   `instOrWave` for absurdo, o problema é o lookup de instrumento; se for
+   plausível mas > 136, o script escolheu onda sintética de propósito e falta
+   algo no caminho de wave.
+2. Conferir se `channel->fontId` está sendo setado — o canal herda do player ou
+   recebe por comando de script. Com `soundFontList` agora array, um `fontId`
+   errado indexa font errado.
+3. Um guard de limite em `waveId` converte o crash em silêncio e permite
+   continuar testando o resto.
