@@ -2,6 +2,12 @@
 
 ## Estado
 
+**Referência rápida de caminhos, assets e funções:**
+[`OOT-GORON-003-quick-reference.md`](OOT-GORON-003-quick-reference.md) — assets
+do `mm.o2r` com contagem de frames, as funções do decomp com linha exata, e os
+fatos do host que já custaram ciclo. Consulte antes de procurar qualquer coisa
+no código.
+
 **Leia a seção `AUDITORIA DE 01/08/2026` logo abaixo antes de qualquer coisa.**
 Ela corrige treze afirmações deste handoff que se provaram falsas quando o port
 foi conferido contra o decomp do MM, e estabelece qual fonte usar daqui pra
