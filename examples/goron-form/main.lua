@@ -77,10 +77,11 @@ local GORON_BODY = {
         gakki_play_u = "mm/objects/gameplay_keep/gPlayerAnim_pg_gakkiplayU",
         gakki_play_r = "mm/objects/gameplay_keep/gPlayerAnim_pg_gakkiplayR",
     },
-    reverse_anims = {
-        climb_down_l = true,
-        climb_down_r = true,
-    },
+    -- Descer NÃO usa mais `reverse_anims`. O OoT já desce a escada tocando a
+    -- mesma animação com playSpeed negativa (z_player.c:13218), e o host passou
+    -- a espelhar essa velocidade no corpo externo — inverter aqui por cima
+    -- cancelaria o sinal e a descida voltaria a subir.
+    reverse_anims = {},
     -- A cabeça Goron lê o segmento N64 0x08; sem ele o corpo inteiro aparece,
     -- mas os olhos ficam transparentes. O host carrega este resource antes do
     -- skeleton e o preserva para qualquer mod que troque a forma.
@@ -148,12 +149,12 @@ local GORON_BODY = {
 local transformed = false
 local removeAfterMaskOff = false
 local transforming = false
+local transformGeneration = 0
+local maskResetPending = false
 local blinkStep = 0
 local blinkTimer = 0
 local surprisedTimer = 0
-local attackActive = false
-local landingActive = false
-local instrumentActive = false
+local eyesResetPending = false
 local doorActive = false
 local chestActive = false
 local EYES = {
@@ -163,13 +164,22 @@ local EYES = {
     "mm/objects/object_link_goron/gLinkGoronEyesHalfTex",
 }
 local SURPRISED_EYES = "mm/objects/object_link_goron/gLinkGoronEyesSurprisedTex"
-local GAKKI_NOTE_ANIMS = {
-    a = "gakki_play_a",
-    l = "gakki_play_l",
-    d = "gakki_play_d",
-    u = "gakki_play_u",
-    r = "gakki_play_r",
-}
+
+-- A troca de cena derruba temporariamente o corpo externo, mas preserva a
+-- spec para restaurá-lo no Player novo. Se o timer terminar nesse intervalo,
+-- set_body_segment ainda não pode aplicar a textura. Mantenha a restauração
+-- pendente e tente de novo nos frames seguintes, já com o corpo reativado.
+local function reset_eyes()
+    blinkStep = 0
+    blinkTimer = 0
+    surprisedTimer = 0
+    if not ship.capabilities.has("oot.player.custom_body") then
+        eyesResetPending = false
+        return true
+    end
+    eyesResetPending = not ship.oot.player.set_body_segment(8, EYES[1])
+    return not eyesResetPending
+end
 
 local function apply(on)
     ship.oot.player.set_damage_immunity("fire", on)
@@ -183,8 +193,16 @@ local function apply(on)
     -- Corpo visual: tenta o skeleton real primeiro (precisa do mm.o2r
     -- montado); se faltar, cai para a máscara Goron como marcador.
     if ship.capabilities.has("oot.player.custom_body") then
+        -- Restaura o segmento antes de liberar o corpo; depois de set_body(nil)
+        -- a API não pode mais alterar a spec ativa.
+        if not on then
+            reset_eyes()
+        end
         local okBody = ship.oot.player.set_body(on and GORON_BODY or nil)
         if okBody then
+            if on then
+                reset_eyes()
+            end
             -- The mask is visible only during the human mask-on animation.
             -- Clear it before Link resumes drawing after a body teardown.
             if not on and ship.capabilities.has("oot.player.mask") then
@@ -243,49 +261,18 @@ ship.events.on("hook.oot.player.body_anim_select", function(payload)
         return
     end
 
-    if transformed and payload.instrument and not payload.rolling then
-        if not instrumentActive then
-            instrumentActive = true
-            ship.oot.player.play_body_animation("gakki_start", "once", 1.0)
-        end
-        -- A nota chega apenas no frame de pressão. Tocá-la como one-shot
-        -- preserva toda a pose antes de voltar a `gakkiwait`; escolhê-la só
-        -- pelo seletor a trocaria no frame seguinte e cortaria a animação.
-        local noteAnimation = GAKKI_NOTE_ANIMS[payload.instrument_note]
-        if noteAnimation then
-            ship.oot.player.play_body_animation(noteAnimation, "once", 1.0)
-        end
-        ship.hooks.result("gakki_wait")
-        return
-    end
-    if transformed and instrumentActive then
-        instrumentActive = false
-        -- `gakkistart` é a mesma sequência usada pelo Player de MM na saída,
-        -- só que tocada de trás para frente.
-        ship.oot.player.play_body_animation("gakki_start", "reverse_once", 1.0)
-        return
-    end
-
-    -- Todo ataque começa em A. O bridge replica o buffer nativo de MM: um
-    -- novo B durante A/B agenda B/C sem reiniciar a animação em curso. Nos
-    -- frames de impacto, a espada invisível vira o quad pesado do punho.
-    if transformed and payload.attacking then
-        if not attackActive then
-            ship.oot.player.play_body_animation("punch_a", "once", 1.0)
-        end
-        attackActive = true
-        return
-    end
-    attackActive = false
-
-    if transformed and payload.landing and not payload.rolling then
-        if not landingActive then
-            ship.oot.player.play_body_animation("land", "once", 1.0)
-        end
-        landingActive = true
-        return
-    end
-    landingActive = false
+    -- Instrumento (tambores) e soco NÃO são mais dirigidos daqui.
+    --
+    -- Eram, e não funcionavam: uma ação com estado — abrir os tambores, tocar
+    -- em loop, recolher; encadear A/B/C — não sobrevive a um round-trip de um
+    -- frame no qual o resultado é descartado enquanto um one-shot anterior
+    -- ainda corre. O host passou a possuir as duas ações, como faz o Player de
+    -- MM (e como a referência skijer/Not-Enough-Items resolve no OoT).
+    --
+    -- O mod continua declarando os assets (`anims`/`models` acima): o host não
+    -- sabe o que é um Goron, só toca o que a spec nomeou. Para observar o
+    -- estado, `payload.instrument`, `payload.attacking` e `payload.punch_step`
+    -- continuam disponíveis — agora como leitura, não como comando.
 
     if transformed and payload.falling and not payload.rolling then
         ship.hooks.result("fall")
@@ -297,16 +284,35 @@ ship.events.on("hook.oot.player.body_anim_select", function(payload)
     end
 end)
 
+-- A máscara forçada vive no SaveContext do OoT. Se uma execução anterior
+-- terminou enquanto a forma estava ativa, o próximo load pode restaurá-la no
+-- Link humano antes de qualquer hotkey. O host publica save.loaded somente
+-- quando o Player novo já existe, então esta limpeza não corre cedo demais.
+if ship.capabilities.has("save.events") then
+    ship.events.on("save.loaded", function()
+        if not transformed and not transforming and not removeAfterMaskOff
+            and ship.capabilities.has("oot.player.mask") then
+            maskResetPending = true
+        end
+    end)
+end
+
 ship.events.on("game.frame", function()
+    if maskResetPending and ship.oot.player.set_mask("none") then
+        maskResetPending = false
+        ship.log.info("máscara residual da forma Goron removida após carregar o save")
+    end
     if not transformed or not ship.capabilities.has("oot.player.custom_body") then
         return
     end
     if surprisedTimer > 0 then
         surprisedTimer = surprisedTimer - 1
         if surprisedTimer == 0 then
-            blinkStep = 0
-            ship.oot.player.set_body_segment(8, EYES[1])
+            reset_eyes()
         end
+        return
+    end
+    if eyesResetPending and not reset_eyes() then
         return
     end
     blinkTimer = blinkTimer + 1
@@ -330,8 +336,7 @@ ship.events.on("hook.oot.player.health_change", function(payload)
     if transformed and payload.amount < 0 and ship.capabilities.has("oot.player.custom_body") then
         surprisedTimer = 20
         blinkTimer = 0
-        ship.oot.player.set_body_segment(8, SURPRISED_EYES)
-        ship.oot.player.play_body_animation("damage", "once", 1.0)
+        eyesResetPending = not ship.oot.player.set_body_segment(8, SURPRISED_EYES)
     end
 end)
 
@@ -358,74 +363,9 @@ ship.events.on("game.ready", function()
 --   três estágios de {fogNear, fogColor, ambientColor}
 -- ---------------------------------------------------------------------------
 
-local LIGHT_STAGES = {
-    { fog_near = 650, fog = {   0,   0,   0 }, ambient = { 10,  0, 30 } },
-    { fog_near = 300, fog = { 200, 200, 255 }, ambient = {  0,  0,  0 } },
-    { fog_near = 600, fog = {   0,   0,   0 }, ambient = {  0,  0, 200 } },
-}
-
--- Para não-humano o MM usa a mesma luz nos três estágios: ciano forte, raio 100.
-local LIGHT_COLOR = { r = 155, g = 255, b = 255 }
-local LIGHT_RADIUS_MAX = 100
-
-local RAMP_START = 16   -- frame em que a rampa começa
-local RAMP_BURST = 59   -- estouro de luz
-
-local function lerp(a, b, t)
-    return math.floor(a + (b - a) * t + 0.5)
-end
-
--- Interpola entre os três estágios conforme a fração 0..1 do trecho.
-local function stage_at(t)
-    local scaled = t * 2                      -- 0..2 sobre três pontos
-    local i = math.min(math.floor(scaled), 1) -- 0 ou 1
-    local k = scaled - i
-    local a, b = LIGHT_STAGES[i + 1], LIGHT_STAGES[i + 2]
-    return {
-        fog_near = lerp(a.fog_near, b.fog_near, k),
-        fog_color = { lerp(a.fog[1], b.fog[1], k), lerp(a.fog[2], b.fog[2], k), lerp(a.fog[3], b.fog[3], k) },
-        ambient_color = { lerp(a.ambient[1], b.ambient[1], k), lerp(a.ambient[2], b.ambient[2], k),
-                          lerp(a.ambient[3], b.ambient[3], k) },
-    }
-end
-
-local function start_transform_lighting(totalFrames)
-    if not ship.capabilities.has("oot.env") or not ship.capabilities.has("core.timers") then
-        return
-    end
-
-    local frame = 0
-    local function step()
-        frame = frame + 1
-        if frame > totalFrames then
-            ship.oot.env.clear_light_override()
-            if ship.capabilities.has("player.fields") then
-                ship.oot.player.set_point_light({ radius = 0 })
-            end
-            return
-        end
-
-        if frame >= RAMP_START then
-            local span = math.max(totalFrames - RAMP_START, 1)
-            local t = math.min((frame - RAMP_START) / span, 1)
-            ship.oot.env.set_light_override(stage_at(t))
-
-            -- A luz pontual cresce junto e dá um pico no estouro, para o
-            -- instante da troca ter peso.
-            local radius = math.floor(LIGHT_RADIUS_MAX * t)
-            if frame >= RAMP_BURST then
-                radius = LIGHT_RADIUS_MAX
-            end
-            ship.oot.player.set_point_light({
-                r = LIGHT_COLOR.r, g = LIGHT_COLOR.g, b = LIGHT_COLOR.b,
-                radius = radius, offset_y = 20,
-            })
-        end
-
-        ship.timer.after(1, step)
-    end
-    ship.timer.after(1, step)
-end
+-- Camera, fog, luz pontual e flash agora pertencem a uma unica maquina no
+-- host. Isso garante cleanup atomico em cancelamento, morte, agua, troca de
+-- cena e unload; o Lua conserva apenas o callback que troca o corpo no pico.
 
 
 -- ---------------------------------------------------------------------------
@@ -441,37 +381,15 @@ end
 --   30  NA_SE_PL_TRANSFORM_VOICE       o grito
 --   59  NA_SE_EV_LIGHTNING_HARD        estouro de luz
 --
--- ATENÇÃO — índices ainda NÃO mapeados. Os ids acima são constantes do decomp;
--- o índice dentro do soundfont é outra coisa. Use
--- ship.oot.audio.dump_sfx_table() para listar tamanho e duração de cada
--- entrada e identificar quais são. Enquanto TRANSFORM_TRACK estiver vazia,
--- a transformação roda em silêncio, sem erro.
-local TRANSFORM_TRACK = {
-    -- { frame = 2,  sfx = ??? },
-    -- { frame = 4,  sfx = ??? },
-    -- { frame = 11, sfx = ??? },
-    -- { frame = 20, sfx = ??? },
-    -- { frame = 30, sfx = ??? },
-    -- { frame = 59, sfx = ??? },
-}
-
-local function start_transform_audio()
-    if #TRANSFORM_TRACK == 0 then
-        return -- ainda não mapeado; silêncio é melhor que som errado
-    end
-    if not ship.capabilities.has("oot.audio") or not ship.capabilities.has("core.timers") then
-        return
-    end
-    for _, step in ipairs(TRANSFORM_TRACK) do
-        ship.timer.after(step.frame, function()
-            ship.oot.audio.play_sfx(step.sfx)
-        end)
-    end
-end
+-- O host dispara estes IDs diretamente do Soundfont_0 do mm.o2r. Os bits
+-- baixos do próprio NA_SE_* são o índice real; não existe mais uma tabela Lua
+-- vazia nem um caminho silencioso:
+-- 2/4/11/20/30 = máscara, freeze, quebra e grito; 59 = raio.
 
     ship.hotkeys.register("goron_form", { default = "G", label = "Forma Goron" }, function()
         if transforming then
             -- G também permite desistir antes de a troca visual acontecer.
+            transformGeneration = transformGeneration + 1
             transforming = false
             if ship.capabilities.has("oot.audio") then
                 ship.oot.audio.set_voice_map(nil)
@@ -495,51 +413,62 @@ end
             blinkStep = 0
             blinkTimer = 0
             surprisedTimer = 0
-            attackActive = false
-            landingActive = false
-            instrumentActive = false
+            eyesResetPending = false
             doorActive = false
             chestActive = false
             -- O Player humano fica visível durante gPlayerAnim_cl_setmask;
             -- somente no frame final o corpo externo toma seu lugar.
             local transitionFrames = 0
-            if ship.capabilities.has("core.timers")
+            local canRunCutscene = ship.capabilities.has("core.timers")
                 and ship.capabilities.has("oot.player.mask")
                 and ship.capabilities.has("oot.player.custom_body")
-                and ship.oot.player.set_mask("goron") then
+            if canRunCutscene then
+                -- A entrada sempre parte do Link humano sem máscara. Além do
+                -- save.loaded, esta defesa cobre reload do mod e sessões que
+                -- foram interrompidas antes do cleanup normal.
+                ship.oot.player.set_mask("none")
+                maskResetPending = false
+            end
+            if canRunCutscene and ship.oot.player.set_mask("goron") then
                 transitionFrames = ship.oot.player.play_mask_on_animation()
             end
             if type(transitionFrames) == "number" and transitionFrames > 0 then
-                -- Câmera dramática, como a troca de máscara de MM: aproxima do
-                -- Link enquanto a animação corre e devolve o controle ao fim.
-                -- Alguns frames a mais que a animação para o corpo novo
-                -- aparecer ainda sob o enquadramento fechado.
-                if ship.capabilities.has("oot.cutscene") then
-                    -- style="jump" replica Player_Action_86 do MM: em vez de
-                    -- orbitar o Link com uma subcâmera, troca o MODO da câmera
-                    -- ativa e gira o Link para encará-la. O enquadramento passa
-                    -- a ser o nativo do jogo — a órbita destoava do resto.
-                    ship.oot.cutscene.start(transitionFrames + 20, { style = "jump" })
-                end
-                start_transform_lighting(transitionFrames + 20)
-                start_transform_audio()
+                transformGeneration = transformGeneration + 1
+                local generation = transformGeneration
                 transforming = true
                 ship.timer.after(transitionFrames, function()
-                    if transforming then
+                    if generation ~= transformGeneration or not transforming then
+                        return
+                    end
+                    -- Morte, água, troca de cena e unload cancelam a máquina
+                    -- nativa e devolvem a câmera. Um timer antigo nunca pode
+                    -- aplicar o corpo numa cena nova.
+                    if ship.capabilities.has("oot.cutscene") and not ship.oot.cutscene.is_active() then
                         transforming = false
-                        transformed = true
-                        apply(true)
-                        -- Voz do Goron: o Link tem um bloco de sfx de voz a
-                        -- partir de 0x6800 e cada forma do MM tem o seu no mesmo
-                        -- formato, deslocado. Goron = 0xC0. Trocar a voz inteira
-                        -- e somar um offset — nao e preciso mapear som por som.
-                        -- Zora seria 0xA0, Deku 0x80, Fierce Deity 0x00.
-                        if ship.capabilities.has("oot.audio") then
-                            ship.oot.audio.set_voice_map(0x6800, 0xC0)
+                        if ship.capabilities.has("oot.player.mask") then
+                            ship.oot.player.set_mask("none")
                         end
+                        ship.log.warn("transformação Goron cancelada pelo estado do jogo")
+                        return
+                    end
+                    transforming = false
+                    transformed = true
+                    apply(true)
+                    -- Voz do Goron: o Link tem um bloco de sfx de voz a
+                    -- partir de 0x6800 e cada forma do MM tem o seu no mesmo
+                    -- formato, deslocado. Goron = 0xC0.
+                    if ship.capabilities.has("oot.audio") then
+                        ship.oot.audio.set_voice_map(0x6800, 0xC0)
                     end
                 end)
-                ship.log.info("colocando máscara Goron")
+                ship.log.info("cutscene da máscara Goron iniciada")
+                return
+            end
+            if canRunCutscene then
+                if ship.capabilities.has("oot.player.mask") then
+                    ship.oot.player.set_mask("none")
+                end
+                ship.log.warn("cutscene da máscara recusada pelo estado atual")
                 return
             end
             transformed = true
@@ -550,7 +479,6 @@ end
                 and ship.capabilities.has("oot.player.custom_body")
                 and ship.oot.player.play_body_animation("mask_off", "once", 1.0) then
                 transformed = false
-                instrumentActive = false
                 removeAfterMaskOff = true
                 ship.timer.after(15, function()
                     if removeAfterMaskOff then
@@ -560,9 +488,6 @@ end
                 end)
             else
                 transformed = false
-                attackActive = false
-                landingActive = false
-                instrumentActive = false
                 doorActive = false
                 chestActive = false
                 apply(false)

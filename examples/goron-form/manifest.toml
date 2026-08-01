@@ -1,6 +1,6 @@
 id = "baiteryamato.goron_form"
 name = "Forma Goron"
-version = "0.1.33"
+version = "0.1.41"
 api = ">=0.4 <0.5"
 entrypoint = "main.lua"
 description = "Aperte G para virar Goron: imunidade a fogo, peso pesado e rolamento contínuo dirigível. Composto inteiramente de primitivas — nenhuma delas é específica do Goron."
@@ -9,4 +9,4 @@ games = ["oot"]
 
 [capabilities]
 required = ["oot.player.immunity", "oot.player.weight", "oot.player.roll"]
-optional = ["player.speed", "oot.player.mask", "oot.player.attach_model", "oot.player.custom_body", "core.timers", "oot.audio"]
+optional = ["player.speed", "oot.player.mask", "oot.player.attach_model", "oot.player.custom_body", "core.timers", "save.events", "oot.cutscene", "oot.audio"]
