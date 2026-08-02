@@ -47,6 +47,9 @@ Derivada dos schemas canônicos em `schema/` (IDL); regenere com
 | `ship.oot.cutscene.start` | `0.4.0` | `experimental` | sim | — | `oot.cutscene` | `invalid_argument`, `invalid_state` |
 | `ship.oot.cutscene.stop` | `0.4.0` | `experimental` | sim | — | `oot.cutscene` | — |
 | `ship.oot.cutscene.is_active` | `0.4.0` | `experimental` | sim | — | `oot.cutscene` | — |
+| `ship.oot.audio.play_sfx` | `0.4.0` | `experimental` | sim | — | `oot.audio` | `invalid_argument` |
+| `ship.oot.audio.dump_sfx_table` | `0.4.0` | `experimental` | sim | — | `oot.audio` | `invalid_argument` |
+| `ship.oot.audio.set_voice_map` | `0.4.0` | `experimental` | sim | — | `oot.audio` | `invalid_argument` |
 | `ship.oot.env.get` | `0.4.0` | `experimental` | sim | — | `oot.env` | — |
 | `ship.oot.spawn_dog` | `0.3.0` | `experimental` | sim | — | `oot.spawn_dog` | — |
 | `ship.log.debug` | `0.1.0` | `stable` | sim | sim | — | `invalid_argument` |
@@ -120,7 +123,7 @@ nunca registra `ship.oot.*` ou `ship.mm.*` (RFC 0001).
 | `game.state` | `contract` | sim | — |
 | `core.storage` | `contract` | sim | sim |
 | `core.storage.shared` | `contract` | sim | sim |
-| `oot.audio` | `planned` | sim | — |
+| `oot.audio` | `contract` | sim | — |
 | `oot.cutscene` | `contract` | sim | — |
 | `oot.env` | `contract` | sim | — |
 | `hud.draw` | `contract` | sim | — |
@@ -164,5 +167,5 @@ nunca registra `ship.oot.*` ou `ship.mm.*` (RFC 0001).
 |---|---:|
 | `stable` | 12 |
 | `preview` | 1 |
-| `experimental` | 46 |
+| `experimental` | 49 |
 
