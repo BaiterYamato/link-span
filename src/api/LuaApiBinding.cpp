@@ -600,6 +600,14 @@ void LuaApiBinding::BuildModule(lua_State* state) {
     SetFunction(state, -1, "set", &LuaApiBinding::StorageSet, this);
     SetFunction(state, -1, "delete", &LuaApiBinding::StorageDelete, this);
     SetFunction(state, -1, "clear", &LuaApiBinding::StorageClear, this);
+    // ship.storage.shared.* — mesmo backend, namespace comum. Declarada no
+    // schema desde a 0.4 e nunca montada aqui; o contrato indexava nil.
+    lua_newtable(state);
+    SetFunction(state, -1, "get", &LuaApiBinding::StorageSharedGet, this);
+    SetFunction(state, -1, "set", &LuaApiBinding::StorageSharedSet, this);
+    SetFunction(state, -1, "delete", &LuaApiBinding::StorageSharedDelete, this);
+    SetFunction(state, -1, "clear", &LuaApiBinding::StorageSharedClear, this);
+    lua_setfield(state, -2, "shared");
     lua_setfield(state, ship, "storage");
 
     lua_newtable(state);
@@ -1466,6 +1474,89 @@ int LuaApiBinding::CancelTimer(lua_State* state, const char*& error) {
 // ship.storage — namespace automático por mod (plan-sdk.md §8.18)
 // ---------------------------------------------------------------------------
 
+// Escopo passado ao KeyValueStorage. O compartilhado usa um nome que nenhum mod
+// pode ter: ids de mod sao identificadores pontuados e nao aceitam cifrao, entao
+// `$shared` nunca colide com o namespace de ninguem.
+std::string LuaApiBinding::StorageScope(bool shared) const {
+    return shared ? std::string("$shared") : mRuntime.ModId();
+}
+
+int LuaApiBinding::StorageSharedGet(lua_State* state) noexcept {
+    LuaApiBinding* binding = FromUpvalue(state);
+    const char* error = nullptr;
+    int result = 0;
+    try {
+        if (binding == nullptr) {
+            error = "contexto da API ship indisponível";
+        } else {
+            result = binding->GetStorage(state, error, /*shared=*/true);
+        }
+    } catch (...) {
+        error = ErrorMessage(ErrorCode::HostFailure);
+    }
+    if (error != nullptr) {
+        return luaL_error(state, "%s", error);
+    }
+    return result;
+}
+
+int LuaApiBinding::StorageSharedSet(lua_State* state) noexcept {
+    LuaApiBinding* binding = FromUpvalue(state);
+    const char* error = nullptr;
+    int result = 0;
+    try {
+        if (binding == nullptr) {
+            error = "contexto da API ship indisponível";
+        } else {
+            result = binding->SetStorage(state, error, /*shared=*/true);
+        }
+    } catch (...) {
+        error = ErrorMessage(ErrorCode::HostFailure);
+    }
+    if (error != nullptr) {
+        return luaL_error(state, "%s", error);
+    }
+    return result;
+}
+
+int LuaApiBinding::StorageSharedDelete(lua_State* state) noexcept {
+    LuaApiBinding* binding = FromUpvalue(state);
+    const char* error = nullptr;
+    int result = 0;
+    try {
+        if (binding == nullptr) {
+            error = "contexto da API ship indisponível";
+        } else {
+            result = binding->DeleteStorage(state, error, /*shared=*/true);
+        }
+    } catch (...) {
+        error = ErrorMessage(ErrorCode::HostFailure);
+    }
+    if (error != nullptr) {
+        return luaL_error(state, "%s", error);
+    }
+    return result;
+}
+
+int LuaApiBinding::StorageSharedClear(lua_State* state) noexcept {
+    LuaApiBinding* binding = FromUpvalue(state);
+    const char* error = nullptr;
+    int result = 0;
+    try {
+        if (binding == nullptr) {
+            error = "contexto da API ship indisponível";
+        } else {
+            result = binding->ClearStorage(state, error, /*shared=*/true);
+        }
+    } catch (...) {
+        error = ErrorMessage(ErrorCode::HostFailure);
+    }
+    if (error != nullptr) {
+        return luaL_error(state, "%s", error);
+    }
+    return result;
+}
+
 int LuaApiBinding::StorageGet(lua_State* state) noexcept {
     LuaApiBinding* binding = FromUpvalue(state);
     const char* error = nullptr;
@@ -1482,7 +1573,7 @@ int LuaApiBinding::StorageGet(lua_State* state) noexcept {
     return error != nullptr ? Fail(state, error) : result;
 }
 
-int LuaApiBinding::GetStorage(lua_State* state, const char*& error) {
+int LuaApiBinding::GetStorage(lua_State* state, const char*& error, bool shared) {
     if (mStorage == nullptr) {
         error = ErrorMessage(ErrorCode::Unsupported);
         return 0;
@@ -1497,7 +1588,7 @@ int LuaApiBinding::GetStorage(lua_State* state, const char*& error) {
         error = "ship.storage.get exige uma chave textual";
         return 0;
     }
-    auto result = mStorage->Get(mRuntime.ModId(), std::string(key, length));
+    auto result = mStorage->Get(StorageScope(shared), std::string(key, length));
     if (!result.isOk()) {
         error = ErrorMessage(result.code);
         return 0;
@@ -1530,7 +1621,7 @@ int LuaApiBinding::StorageSet(lua_State* state) noexcept {
     return error != nullptr ? Fail(state, error) : result;
 }
 
-int LuaApiBinding::SetStorage(lua_State* state, const char*& error) {
+int LuaApiBinding::SetStorage(lua_State* state, const char*& error, bool shared) {
     if (mStorage == nullptr) {
         error = ErrorMessage(ErrorCode::Unsupported);
         return 0;
@@ -1568,7 +1659,7 @@ int LuaApiBinding::SetStorage(lua_State* state, const char*& error) {
             return 0;
     }
     const auto stored =
-        mStorage->Set(mRuntime.ModId(), std::string(key, length), std::move(value));
+        mStorage->Set(StorageScope(shared), std::string(key, length), std::move(value));
     if (!stored.isOk()) {
         error = ErrorMessage(stored.code);
         return 0;
@@ -1593,7 +1684,7 @@ int LuaApiBinding::StorageDelete(lua_State* state) noexcept {
     return error != nullptr ? Fail(state, error) : result;
 }
 
-int LuaApiBinding::DeleteStorage(lua_State* state, const char*& error) {
+int LuaApiBinding::DeleteStorage(lua_State* state, const char*& error, bool shared) {
     if (mStorage == nullptr) {
         error = ErrorMessage(ErrorCode::Unsupported);
         return 0;
@@ -1608,7 +1699,7 @@ int LuaApiBinding::DeleteStorage(lua_State* state, const char*& error) {
         error = "ship.storage.delete exige uma chave textual";
         return 0;
     }
-    auto removed = mStorage->Delete(mRuntime.ModId(), std::string(key, length));
+    auto removed = mStorage->Delete(StorageScope(shared), std::string(key, length));
     if (!removed.isOk()) {
         error = ErrorMessage(removed.code);
         return 0;
@@ -1633,12 +1724,12 @@ int LuaApiBinding::StorageClear(lua_State* state) noexcept {
     return error != nullptr ? Fail(state, error) : result;
 }
 
-int LuaApiBinding::ClearStorage(lua_State* state, const char*& error) {
+int LuaApiBinding::ClearStorage(lua_State* state, const char*& error, bool shared) {
     if (mStorage == nullptr) {
         error = ErrorMessage(ErrorCode::Unsupported);
         return 0;
     }
-    auto cleared = mStorage->Clear(mRuntime.ModId());
+    auto cleared = mStorage->Clear(StorageScope(shared));
     if (!cleared.isOk()) {
         error = ErrorMessage(cleared.code);
         return 0;
