@@ -18,6 +18,8 @@ Versão da API: `0.4.0`. Versão do schema: `1`.
 | `operation_error` | `object` | `code: string`, `message: string` | Erro estruturado retornado sem lançar lua_error. |
 | `actor_snapshot` | `object` | `handle: actor_handle`, `actor_id: integer`, `category: integer` | Snapshot mínimo e estável de ator. |
 | `hotkey_options` | `object` | `default: string?`, `label: string?` | Opções de registro de hotkey (tecla default e rótulo). |
+| `game_state` | `object` | `mode: string`, `save_slot: integer?` | Estado estável do gameplay sem expor structs nativas. |
+| `hud_icon_options` | `object` | `alpha: integer?` | Opções limitadas de apresentação de ícone no HUD. |
 
 ## Funções
 
@@ -25,12 +27,14 @@ Versão da API: `0.4.0`. Versão do schema: `1`.
 |---|---|---|---|---|---|---|---|
 | `ship.game.id` | — | `game_id` | `common` | `stable` | `0.1.0` | — | — |
 | `ship.game.host_version` | — | `string` | `common` | `stable` | `0.1.0` | — | — |
+| `ship.game.state` | — | `game_state` | `oot` | `experimental` | `0.4.0` | `game.state` | `unsupported` |
 | `ship.runtime.version` | — | `string` | `common` | `stable` | `0.1.0` | — | — |
 | `ship.api.version` | — | `string` | `common` | `stable` | `0.1.0` | — | — |
 | `ship.capabilities.has` | `name: string` | `boolean` | `common` | `stable` | `0.1.0` | — | `invalid_argument` |
 | `ship.capabilities.list` | — | `array<string>` | `common` | `stable` | `0.1.0` | — | — |
 | `ship.events.on` | `event: string`, `options_or_callback: any`, `callback: callback?` | `subscription` | `common` | `stable` | `0.1.0` | — | `invalid_argument`, `unsupported` |
 | `ship.events.off` | `subscription: subscription` | `boolean` | `common` | `stable` | `0.1.0` | — | `invalid_handle` |
+| `ship.hooks.result` | `value: any` | `boolean` | `common` | `experimental` | `0.4.0` | — | `invalid_argument` |
 | `ship.hotkeys.register` | `id: string`, `options: hotkey_options?`, `callback: callback` | `boolean` | `common` | `preview` | `0.2.0` | — | `invalid_argument`, `unsupported` |
 | `ship.actor.spawn` | `actor_type: string`, `options: actor_spawn_options` | `actor_handle, operation_error?` | `common` | `experimental` | `0.4.0` | `actor.spawn` | `invalid_argument`, `unsupported`, `permission_denied`, `invalid_state`, `resource_limit`, `host_failure` |
 | `ship.actor.destroy` | `handle: actor_handle` | `boolean, operation_error?` | `common` | `experimental` | `0.4.0` | `actor.destroy` | `invalid_argument`, `unsupported`, `permission_denied`, `invalid_handle`, `host_failure` |
@@ -38,7 +42,31 @@ Versão da API: `0.4.0`. Versão do schema: `1`.
 | `ship.world.travel` | `world: game_id`, `destination: string` | `boolean` | `common` | `experimental` | `0.3.0` | `world.travel` | `invalid_argument`, `unsupported`, `invalid_state`, `host_failure` |
 | `ship.mm.player.jump` | — | `boolean` | `mm` | `experimental` | `0.2.0` | `mm.player.jump` | — |
 | `ship.mm.spawn_dog` | — | `boolean` | `mm` | `experimental` | `0.3.0` | `mm.spawn_dog` | — |
+| `ship.mm.player.set_sword_skin` | `skin: string` | `boolean` | `mm` | `experimental` | `0.4.0` | `mm.player.sword_skin` | — |
 | `ship.oot.player.jump` | — | `boolean` | `oot` | `experimental` | `0.3.0` | `oot.player.jump` | — |
+| `ship.oot.player.set_bunny_hood` | `equipped: boolean` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.player.bunny_hood` | — |
+| `ship.oot.player.set_mask` | `mask: string` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.player.mask` | — |
+| `ship.oot.player.play_mask_on_animation` | — | `integer` | `oot` | `experimental` | `0.4.0` | `oot.player.mask` | — |
+| `ship.player.set_speed_multiplier` | `factor: number` | `boolean` | `common` | `experimental` | `0.4.0` | `player.speed` | — |
+| `ship.player.get` | `field: string` | `any` | `oot` | `experimental` | `0.4.0` | `player.fields` | — |
+| `ship.player.set` | `field: string`, `value: number` | `boolean` | `oot` | `experimental` | `0.4.0` | `player.fields` | — |
+| `ship.oot.player.attach_model` | `slot: string`, `path: string` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.player.attach_model` | — |
+| `ship.oot.player.set_damage_immunity` | `kind: string`, `enabled: boolean` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.player.immunity` | — |
+| `ship.oot.player.set_weight` | `weight: string` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.player.weight` | — |
+| `ship.oot.player.set_roll_mode` | `mode: string` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.player.roll` | — |
+| `ship.oot.player.set_roll_blocked` | `blocked: boolean` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.player.roll` | — |
+| `ship.oot.player.set_body` | `spec: any` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.player.custom_body` | — |
+| `ship.oot.player.get_body` | — | `any` | `oot` | `experimental` | `0.4.0` | `oot.player.custom_body` | — |
+| `ship.oot.player.play_body_animation` | `name: string`, `mode: string?`, `speed: number?` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.player.custom_body` | — |
+| `ship.oot.player.set_body_segment` | `segment: integer`, `path: string` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.player.custom_body` | — |
+| `ship.oot.player.set_held_item_model` | `slot: string`, `path: string` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.player.held_item_model` | — |
+| `ship.oot.cutscene.start` | `frames: integer`, `options: any?` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.cutscene` | `invalid_argument`, `invalid_state` |
+| `ship.oot.cutscene.stop` | — | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.cutscene` | — |
+| `ship.oot.cutscene.is_active` | — | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.cutscene` | — |
+| `ship.oot.audio.play_sfx` | `index: integer`, `font: integer?` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.audio` | `invalid_argument` |
+| `ship.oot.audio.dump_sfx_table` | `first: integer?`, `count: integer?`, `font: integer?` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.audio` | `invalid_argument` |
+| `ship.oot.audio.set_voice_map` | `base: integer?`, `offset: integer?` | `boolean` | `oot` | `experimental` | `0.4.0` | `oot.audio` | `invalid_argument` |
+| `ship.oot.env.get` | `field: string` | `any` | `oot` | `experimental` | `0.4.0` | `oot.env` | — |
 | `ship.oot.spawn_dog` | — | `boolean` | `oot` | `experimental` | `0.3.0` | `oot.spawn_dog` | — |
 | `ship.log.debug` | `message: string` | `nil` | `common` | `stable` | `0.1.0` | — | `invalid_argument` |
 | `ship.log.info` | `message: string` | `nil` | `common` | `stable` | `0.1.0` | — | `invalid_argument` |
@@ -51,6 +79,14 @@ Versão da API: `0.4.0`. Versão do schema: `1`.
 | `ship.storage.set` | `key: string`, `value: any` | `boolean` | `common` | `experimental` | `0.3.0` | `core.storage` | `invalid_argument`, `resource_limit`, `unsupported` |
 | `ship.storage.delete` | `key: string` | `boolean` | `common` | `experimental` | `0.3.0` | `core.storage` | `invalid_argument`, `unsupported` |
 | `ship.storage.clear` | — | `integer` | `common` | `experimental` | `0.3.0` | `core.storage` | `unsupported` |
+| `ship.storage.shared.get` | `key: string`, `default: any?` | `any` | `common` | `experimental` | `0.4.0` | `core.storage.shared` | `invalid_argument`, `unsupported` |
+| `ship.storage.shared.set` | `key: string`, `value: any` | `boolean` | `common` | `experimental` | `0.4.0` | `core.storage.shared` | `invalid_argument`, `resource_limit`, `unsupported` |
+| `ship.storage.shared.delete` | `key: string` | `boolean` | `common` | `experimental` | `0.4.0` | `core.storage.shared` | `invalid_argument`, `unsupported` |
+| `ship.storage.shared.clear` | — | `integer` | `common` | `experimental` | `0.4.0` | `core.storage.shared` | `unsupported` |
+| `ship.hud.draw_rect` | `x: integer`, `y: integer`, `w: integer`, `h: integer`, `r: integer?`, `g: integer?`, `b: integer?`, `a: integer?` | `boolean` | `oot` | `experimental` | `0.4.0` | `hud.draw` | `invalid_argument`, `invalid_state` |
+| `ship.hud.draw_text` | `text: string`, `x: integer`, `y: integer`, `r: integer?`, `g: integer?`, `b: integer?`, `a: integer?`, `scale: number?` | `boolean` | `oot` | `experimental` | `0.4.0` | `hud.draw` | `invalid_argument`, `invalid_state` |
+| `ship.hud.draw_ring` | `cx: number`, `cy: number`, `radius: number`, `thickness: number?`, `fraction: number?`, `r: integer?`, `g: integer?`, `b: integer?`, `a: integer?` | `boolean` | `oot` | `experimental` | `0.4.0` | `hud.draw` | `invalid_argument`, `invalid_state` |
+| `ship.hud.draw_icon` | `path: string`, `x: integer`, `y: integer`, `w: integer`, `h: integer`, `options: hud_icon_options?` | `boolean` | `oot` | `experimental` | `0.4.0` | `hud.icons` | `invalid_argument`, `invalid_state`, `unsupported` |
 
 ## Eventos
 
@@ -67,15 +103,43 @@ Versão da API: `0.4.0`. Versão do schema: `1`.
 | `text.open` | `observe` | `host_bridge` | `oot`, `mm` | não | `text.events` | `text_id: integer` |
 | `audio.sequence_started` | `observe` | `host_bridge` | `oot`, `mm` | não | `audio.sequence.events` | `player_index: integer`, `sequence_id: integer` |
 | `input.hotkey` | `observe` | `host_bridge` | `oot`, `mm` | não | — | `action: string`, `key: string` |
+| `input.action` | `transform` | `host_bridge` | `oot` | não | `input.actions` | `action: string`, `pressed: boolean`, `source: string` |
+| `hook.oot.player.speed.run` | `transform` | `hook_bridge` | `oot` | não | `hooks.bridge` | `speed: number` |
+| `hook.oot.player.fall_damage` | `transform` | `hook_bridge` | `oot` | não | `hooks.bridge` | — |
+| `hook.oot.item.receive` | `observe` | `hook_bridge` | `oot` | não | `hooks.bridge` | `item_id: integer`, `get_item_id: integer` |
+| `hook.oot.player.health_change` | `observe` | `hook_bridge` | `oot` | não | `hooks.bridge` | `amount: integer` |
+| `hook.oot.player.bonk` | `observe` | `hook_bridge` | `oot` | não | `hooks.bridge` | — |
+| `hook.oot.enemy.defeat` | `observe` | `hook_bridge` | `oot` | não | `hooks.bridge` | `actor_id: integer`, `category: integer`, `pos_x: number`, `pos_y: number`, `pos_z: number` |
+| `hook.oot.item.give` | `transform` | `hook_bridge` | `oot` | não | `hooks.bridge` | `item_id: integer`, `get_item_id: integer` |
+| `hook.oot.hud.draw` | `observe` | `hook_bridge` | `oot` | não | `hud.draw` | — |
+| `hook.oot.player.first_person_control` | `observe` | `hook_bridge` | `oot` | não | `hooks.bridge` | `held_item_action: integer` |
+| `hook.oot.player.arrow_type_select` | `transform` | `hook_bridge` | `oot` | não | `hooks.bridge` | `magic_arrow_type: integer`, `arrow_type: integer` |
+| `hook.oot.player.body_anim_select` | `transform` | `hook_bridge` | `oot` | não | `oot.player.custom_body` | `speed: number`, `on_ground: boolean`, `rolling: boolean`, `roll_charge: integer`, `roll_phase: string`, `falling: boolean`, `landing: boolean`, `climbing: boolean`, `climb_direction: string`, `climb_step: integer`, `climb_starting: boolean`, `door_opening: boolean`, `door_direction: string`, `chest_opening: boolean`, `instrument: boolean`, `attacking: boolean`, `attack_animation: integer` |
+| `hook.mm.player.speed.walk` | `transform` | `hook_bridge` | `mm` | não | `hooks.bridge` | `speed: number` |
+| `hook.mm.player.goron_roll.consume_magic` | `transform` | `hook_bridge` | `mm` | não | `hooks.bridge` | — |
+| `hook.mm.player.goron_roll.disable_spike_mode` | `transform` | `hook_bridge` | `mm` | não | `hooks.bridge` | — |
+| `hook.mm.player.goron_roll.increase_spike_level` | `transform` | `hook_bridge` | `mm` | não | `hooks.bridge` | — |
+| `hook.mm.item.give` | `observe` | `hook_bridge` | `mm` | não | `hooks.bridge` | `item: integer` |
+| `hook.mm.enemy.defeat` | `observe` | `hook_bridge` | `mm` | não | `hooks.bridge` | `actor_id: integer`, `category: integer`, `pos_x: number`, `pos_y: number`, `pos_z: number` |
+| `hook.mm.item.should_give` | `transform` | `hook_bridge` | `mm` | não | `hooks.bridge` | `item: integer` |
 
 ## Capabilities
 
 | Capability | Estado | Hosts | Descrição |
 |---|---|---|---|
 | `core.events` | `contract` | `oot`, `mm` | Eventos e lifecycle centrais do host. |
+| `hooks.bridge` | `contract` | `oot`, `mm` | Ponte genérica para os pontos de instrumentação nativos (VB_*/On* do GameInteractor) — eventos hook.* assináveis com ship.events.on e decididos com ship.hooks.result, sem precisar de função nativa dedicada por habilidade. |
 | `core.timers` | `contract` | `oot`, `mm` | Timers por frame com ownership por mod. |
 | `core.input` | `contract` | `oot`, `mm` | Registro de hotkeys e eventos de input. |
-| `core.storage` | `contract` | `oot`, `mm` | Armazenamento chave-valor com namespace por mod. |
+| `input.actions` | `contract` | `oot` | Emite ações direcionais consumíveis do controle; input vanilla só é bloqueado quando um callback aceita a ação. |
+| `game.state` | `contract` | `oot` | Expõe modo estável de gameplay, pausa, diálogo, cutscene, transição, morte, loading ou indisponível. |
+| `core.storage` | `contract` | `oot`, `mm` | Armazenamento chave-valor com namespace por mod, persistente em disco entre sessões. |
+| `core.storage.shared` | `contract` | `oot`, `mm` | Armazenamento chave-valor COMPARTILHADO entre os dois jogos (mesmo arquivo no diretório de sessão do launcher). Namespaced por mod, mas o mesmo mod vê o mesmo estado em OoT e MM — base para progresso de randomizer cross-game e stats que atravessam o world-travel. |
+| `oot.audio` | `contract` | `oot` | Redireciona o sfx de voz do jogador para outro bloco de vozes — necessário para uma forma customizada não continuar soando como o Link. set_voice_map(base, offset) desloca o bloco inteiro: o Link tem suas vozes a partir de 0x6800 e cada forma do MM tem a sua no mesmo formato (Goron 0xC0, Zora 0xA0, Deku 0x80, Fierce Deity 0x00), então trocar a voz é somar um offset e não mapear som por som. As amostras vêm do soundfont do MM montado sob mm/; se a amostra faltar, cai na voz nativa em vez de ficar mudo. |
+| `oot.cutscene` | `contract` | `oot` | Assume a câmera por um número de frames com uma subcâmera dedicada, congelando atores e entrando em modo cutscene — o enquadramento dramático que a troca de máscara de MM tem. Genérica: serve para transformação, item, revelação. |
+| `oot.env` | `contract` | `oot` | Lê estado do AMBIENTE (separado do jogador): time_of_day (0..1), is_night (0/1) e scene_id. Base para mecânicas que reagem a hora do dia e local. |
+| `hud.draw` | `contract` | `oot` | Desenha retângulos e texto sobre o HUD do jogo, a partir do evento hook.<jogo>.hud.draw. Primitiva genérica: o host não conhece 'barra de vida' nem 'medidor de fome' — o mod compõe o que quiser com retângulos e texto. |
+| `hud.icons` | `contract` | `oot` | Desenha uma textura registrada no resource manager como ícone de HUD, com dimensões e alpha limitados. |
 | `scene.events` | `contract` | `oot`, `mm` | Eventos comuns de cena. |
 | `actor.events` | `contract` | `oot`, `mm` | Eventos comuns de ator com handles e snapshots. |
 | `actor.spawn` | `contract` | `oot`, `mm` | Cria um ator allowlisted com ownership e handle seguro. |
@@ -91,8 +155,20 @@ Versão da API: `0.4.0`. Versão do schema: `1`.
 | `mm.clock` | `planned` | `mm` | Leitura estável do relógio de MM. |
 | `mm.player.jump` | `contract` | `mm` | Aplica um impulso vertical validado ao jogador de Majora's Mask quando ele está no chão. |
 | `mm.spawn_dog` | `contract` | `mm` | Spawna o cachorro de Clock Town (En_Dg) perto do jogador de Majora's Mask. |
+| `mm.player.sword_skin` | `contract` | `mm` | Alterna o visual da espada Kokiri empunhada entre o modelo de Majora's Mask e o de Ocarina of Time (lido do oot.o2r vizinho). |
 | `oot.player.jump` | `contract` | `oot` | Aplica um impulso vertical validado ao jogador de OoT quando ele está no chão. |
 | `oot.spawn_dog` | `contract` | `oot` | Spawna um cachorro (En_Dog) perto do jogador de OoT. |
+| `oot.player.bunny_hood` | `contract` | `oot` | Veste a Bunny Hood em OoT com o comportamento de Majora's Mask (corrida mais rápida e pulo maior). |
+| `oot.player.mask` | `contract` | `oot` | Equipa qualquer máscara de OoT pelo nome lógico, sem ocupar um botão C. |
+| `player.speed` | `contract` | `oot`, `mm` | Multiplica a velocidade de movimento do jogador por um fator validado (0.1–5.0); 1.0 restaura. |
+| `player.fields` | `contract` | `oot` | Lê e escreve campos nomeados do jogador com validação de faixa: health, health_capacity, magic, rupees, pos_x/y/z, rot_y, speed, vel_x/y/z (leitura e escrita); on_ground, rolling, swimming (só leitura); climbing (leitura; escrever 0 solta o jogador da escada e o faz cair); screen_x, screen_y (só leitura — projeção do jogador na tela, para ancorar HUD ao personagem em vez de a um canto fixo). Chaves fora desta lista viram armazenamento livre por sessão. |
+| `oot.player.attach_model` | `contract` | `oot` | Desenha uma display list arbitrária no jogador por caminho de resource, incluindo assets de mod e do jogo vizinho. |
+| `mod.assets` | `contract` | `oot` | Archives (.o2r/.otr) na pasta de mods ficam endereçáveis sob mod/<nome>/, permitindo que um mod traga conteúdo próprio. |
+| `oot.player.immunity` | `contract` | `oot` | Concede imunidade a um tipo de dano (hoje: fogo). |
+| `oot.player.weight` | `contract` | `oot` | Alterna o peso do jogador entre normal e pesado (afunda na água, resiste a empurrão). |
+| `oot.player.roll` | `contract` | `oot` | Ativa rolamento contínuo e dirigível, encadeado indefinidamente. |
+| `oot.player.custom_body` | `contract` | `oot` | Substitui o corpo visual do jogador por qualquer esqueleto e animações nomeadas fornecidas pelo mod (Goron, Zora, Deku, lobo — o que o mod trouxer), sobrevivendo a trocas de cena automaticamente. |
+| `oot.player.held_item_model` | `contract` | `oot` | Desenha um DL arbitrário ancorado no osso da mão do jogador, atualizado todo frame — o mecanismo que a maioria dos itens customizados com modelo na mão precisa. |
 | `oot.ocarina` | `planned` | `oot` | Eventos e estado de ocarina de OoT. |
 | `oot.dungeon_keys` | `planned` | `oot` | Estado de chaves de dungeon de OoT. |
 | `oot.equipment` | `planned` | `oot` | Equipamento específico de OoT. |

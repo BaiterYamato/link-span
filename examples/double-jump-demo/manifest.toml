@@ -1,0 +1,11 @@
+id = "baiteryamato.double_jump_demo"
+name = "Pulo duplo (demo)"
+version = "0.1.0"
+api = ">=0.4 <0.5"
+entrypoint = "main.lua"
+description = "Prova que fisica aerea customizada (pulo duplo, planador, air-dash) cabe inteira em Lua com vel_y/on_ground + game.frame, sem hook nativo dedicado."
+authors = ["BaiterYamato"]
+games = ["oot"]
+
+[capabilities]
+required = ["player.fields"]

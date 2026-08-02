@@ -22,9 +22,16 @@ int main() {
     static_assert(std::is_same_v<Subscription, std::uint64_t>);
     static_assert(std::is_same_v<decltype(ActorHandle::kind), std::string>);
     static_assert(std::is_same_v<decltype(ActorHandle::scene_generation), std::int64_t>);
-    static_assert(kFunctions.size() == 28);
-    static_assert(kEvents.size() == 11);
-    static_assert(kCapabilities.size() == 24);
+    // Contagens conferidas contra o header gerado em 01/08/2026, depois de
+    // reexecutar `tools/generate_cpp_api.py` e confirmar que ele nao produzia
+    // diferenca — ou seja, o schema e o binding ja estavam sincronizados e era
+    // ESTE teste que estava para tras (28/11/24).
+    //
+    // A API cresceu por varias tarefas sem que ninguem atualizasse aqui, e o
+    // build quebrou so quando a branch inteira foi para a main.
+    static_assert(kFunctions.size() == 62);
+    static_assert(kEvents.size() == 30);
+    static_assert(kCapabilities.size() == 45);
 
     Check(kApiVersion == "0.4.0", "API version should derive from the schema");
     Check(kFunctions.front().name == "ship.game.id", "first function should preserve schema order");

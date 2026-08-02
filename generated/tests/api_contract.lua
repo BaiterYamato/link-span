@@ -9,12 +9,14 @@ local API_VERSION = "0.4.0"
 local FUNCTIONS = {
   { name = "ship.game.id", availability = "common", required_arguments = 0, error_mode = "raise" },
   { name = "ship.game.host_version", availability = "common", required_arguments = 0, error_mode = "raise" },
+  { name = "ship.game.state", availability = "oot", required_arguments = 0, error_mode = "raise" },
   { name = "ship.runtime.version", availability = "common", required_arguments = 0, error_mode = "raise" },
   { name = "ship.api.version", availability = "common", required_arguments = 0, error_mode = "raise" },
   { name = "ship.capabilities.has", availability = "common", required_arguments = 1, error_mode = "raise" },
   { name = "ship.capabilities.list", availability = "common", required_arguments = 0, error_mode = "raise" },
   { name = "ship.events.on", availability = "common", required_arguments = 2, error_mode = "raise" },
   { name = "ship.events.off", availability = "common", required_arguments = 1, error_mode = "raise" },
+  { name = "ship.hooks.result", availability = "common", required_arguments = 1, error_mode = "raise" },
   { name = "ship.hotkeys.register", availability = "common", required_arguments = 2, error_mode = "raise" },
   { name = "ship.actor.spawn", availability = "common", required_arguments = 2, error_mode = "return" },
   { name = "ship.actor.destroy", availability = "common", required_arguments = 1, error_mode = "return" },
@@ -22,7 +24,31 @@ local FUNCTIONS = {
   { name = "ship.world.travel", availability = "common", required_arguments = 2, error_mode = "raise" },
   { name = "ship.mm.player.jump", availability = "mm", required_arguments = 0, error_mode = "raise" },
   { name = "ship.mm.spawn_dog", availability = "mm", required_arguments = 0, error_mode = "raise" },
+  { name = "ship.mm.player.set_sword_skin", availability = "mm", required_arguments = 1, error_mode = "raise" },
   { name = "ship.oot.player.jump", availability = "oot", required_arguments = 0, error_mode = "raise" },
+  { name = "ship.oot.player.set_bunny_hood", availability = "oot", required_arguments = 1, error_mode = "raise" },
+  { name = "ship.oot.player.set_mask", availability = "oot", required_arguments = 1, error_mode = "raise" },
+  { name = "ship.oot.player.play_mask_on_animation", availability = "oot", required_arguments = 0, error_mode = "raise" },
+  { name = "ship.player.set_speed_multiplier", availability = "common", required_arguments = 1, error_mode = "raise" },
+  { name = "ship.player.get", availability = "oot", required_arguments = 1, error_mode = "raise" },
+  { name = "ship.player.set", availability = "oot", required_arguments = 2, error_mode = "raise" },
+  { name = "ship.oot.player.attach_model", availability = "oot", required_arguments = 2, error_mode = "raise" },
+  { name = "ship.oot.player.set_damage_immunity", availability = "oot", required_arguments = 2, error_mode = "raise" },
+  { name = "ship.oot.player.set_weight", availability = "oot", required_arguments = 1, error_mode = "raise" },
+  { name = "ship.oot.player.set_roll_mode", availability = "oot", required_arguments = 1, error_mode = "raise" },
+  { name = "ship.oot.player.set_roll_blocked", availability = "oot", required_arguments = 1, error_mode = "raise" },
+  { name = "ship.oot.player.set_body", availability = "oot", required_arguments = 1, error_mode = "raise" },
+  { name = "ship.oot.player.get_body", availability = "oot", required_arguments = 0, error_mode = "raise" },
+  { name = "ship.oot.player.play_body_animation", availability = "oot", required_arguments = 1, error_mode = "raise" },
+  { name = "ship.oot.player.set_body_segment", availability = "oot", required_arguments = 2, error_mode = "raise" },
+  { name = "ship.oot.player.set_held_item_model", availability = "oot", required_arguments = 2, error_mode = "raise" },
+  { name = "ship.oot.cutscene.start", availability = "oot", required_arguments = 1, error_mode = "raise" },
+  { name = "ship.oot.cutscene.stop", availability = "oot", required_arguments = 0, error_mode = "raise" },
+  { name = "ship.oot.cutscene.is_active", availability = "oot", required_arguments = 0, error_mode = "raise" },
+  { name = "ship.oot.audio.play_sfx", availability = "oot", required_arguments = 1, error_mode = "raise" },
+  { name = "ship.oot.audio.dump_sfx_table", availability = "oot", required_arguments = 0, error_mode = "raise" },
+  { name = "ship.oot.audio.set_voice_map", availability = "oot", required_arguments = 0, error_mode = "raise" },
+  { name = "ship.oot.env.get", availability = "oot", required_arguments = 1, error_mode = "raise" },
   { name = "ship.oot.spawn_dog", availability = "oot", required_arguments = 0, error_mode = "raise" },
   { name = "ship.log.debug", availability = "common", required_arguments = 1, error_mode = "raise" },
   { name = "ship.log.info", availability = "common", required_arguments = 1, error_mode = "raise" },
@@ -35,17 +61,25 @@ local FUNCTIONS = {
   { name = "ship.storage.set", availability = "common", required_arguments = 2, error_mode = "raise" },
   { name = "ship.storage.delete", availability = "common", required_arguments = 1, error_mode = "raise" },
   { name = "ship.storage.clear", availability = "common", required_arguments = 0, error_mode = "raise" },
+  { name = "ship.storage.shared.get", availability = "common", required_arguments = 1, error_mode = "raise" },
+  { name = "ship.storage.shared.set", availability = "common", required_arguments = 2, error_mode = "raise" },
+  { name = "ship.storage.shared.delete", availability = "common", required_arguments = 1, error_mode = "raise" },
+  { name = "ship.storage.shared.clear", availability = "common", required_arguments = 0, error_mode = "raise" },
+  { name = "ship.hud.draw_rect", availability = "oot", required_arguments = 4, error_mode = "raise" },
+  { name = "ship.hud.draw_text", availability = "oot", required_arguments = 3, error_mode = "raise" },
+  { name = "ship.hud.draw_ring", availability = "oot", required_arguments = 3, error_mode = "raise" },
+  { name = "ship.hud.draw_icon", availability = "oot", required_arguments = 5, error_mode = "raise" },
 }
 
-local EVENTS = { "game.ready", "game.frame", "game.shutdown", "scene.enter", "actor.init", "actor.update", "actor.destroy", "save.loaded", "text.open", "audio.sequence_started", "input.hotkey" }
+local EVENTS = { "game.ready", "game.frame", "game.shutdown", "scene.enter", "actor.init", "actor.update", "actor.destroy", "save.loaded", "text.open", "audio.sequence_started", "input.hotkey", "input.action", "hook.oot.player.speed.run", "hook.oot.player.fall_damage", "hook.oot.item.receive", "hook.oot.player.health_change", "hook.oot.player.bonk", "hook.oot.enemy.defeat", "hook.oot.item.give", "hook.oot.hud.draw", "hook.oot.player.first_person_control", "hook.oot.player.arrow_type_select", "hook.oot.player.body_anim_select", "hook.mm.player.speed.walk", "hook.mm.player.goron_roll.consume_magic", "hook.mm.player.goron_roll.disable_spike_mode", "hook.mm.player.goron_roll.increase_spike_level", "hook.mm.item.give", "hook.mm.enemy.defeat", "hook.mm.item.should_give" }
 
 local ENUM_VALUES = {
   game_id = { "oot", "mm" },
 }
 
 local CONTRACT_CAPABILITIES = {
-  oot = { "core.events", "core.timers", "core.input", "core.storage", "scene.events", "actor.events", "actor.spawn", "actor.destroy", "actor.exists", "save.events", "text.events", "audio.sequence.events", "world.travel", "oot.player.jump", "oot.spawn_dog" },
-  mm = { "core.events", "core.timers", "core.input", "core.storage", "scene.events", "actor.events", "actor.spawn", "actor.destroy", "actor.exists", "save.events", "text.events", "audio.sequence.events", "world.travel", "mm.player.jump", "mm.spawn_dog" },
+  oot = { "core.events", "hooks.bridge", "core.timers", "core.input", "input.actions", "game.state", "core.storage", "core.storage.shared", "oot.audio", "oot.cutscene", "oot.env", "hud.draw", "hud.icons", "scene.events", "actor.events", "actor.spawn", "actor.destroy", "actor.exists", "save.events", "text.events", "audio.sequence.events", "world.travel", "oot.player.jump", "oot.spawn_dog", "oot.player.bunny_hood", "oot.player.mask", "player.speed", "player.fields", "oot.player.attach_model", "mod.assets", "oot.player.immunity", "oot.player.weight", "oot.player.roll", "oot.player.custom_body", "oot.player.held_item_model" },
+  mm = { "core.events", "hooks.bridge", "core.timers", "core.input", "core.storage", "core.storage.shared", "scene.events", "actor.events", "actor.spawn", "actor.destroy", "actor.exists", "save.events", "text.events", "audio.sequence.events", "world.travel", "mm.player.jump", "mm.spawn_dog", "mm.player.sword_skin", "player.speed" },
 }
 
 local failures = {}
@@ -137,6 +171,9 @@ check(pcall(ship.log.error, "contract probe"), "ship.log.error deveria aceitar m
 local ok_value, value = pcall(ship.storage.clear)
 check(ok_value, "ship.storage.clear deveria executar sem argumentos")
 if ok_value then check_return_type("ship.storage.clear", "integer", value) end
+local ok_value, value = pcall(ship.storage.shared.clear)
+check(ok_value, "ship.storage.shared.clear deveria executar sem argumentos")
+if ok_value then check_return_type("ship.storage.shared.clear", "integer", value) end
 
 -- Capabilities: feature detection reflete o contexto anunciado pelo host.
 local granted = CONTRACT_CAPABILITIES[host] or {}

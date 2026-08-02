@@ -102,6 +102,13 @@ class LuaApiBinding {
     static int StorageSet(lua_State* state) noexcept;
     static int StorageDelete(lua_State* state) noexcept;
     static int StorageClear(lua_State* state) noexcept;
+    // `ship.storage.shared.*` — mesmo backend, namespace comum a todos os mods.
+    // O schema declara essas quatro desde a 0.4 e o binding nunca as montou; o
+    // teste de contrato quebrava indexando uma subtabela inexistente.
+    static int StorageSharedGet(lua_State* state) noexcept;
+    static int StorageSharedSet(lua_State* state) noexcept;
+    static int StorageSharedDelete(lua_State* state) noexcept;
+    static int StorageSharedClear(lua_State* state) noexcept;
     static int WorldTravel(lua_State* state) noexcept;
     static int ActorSpawn(lua_State* state) noexcept;
     static int ActorDestroy(lua_State* state) noexcept;
@@ -129,10 +136,16 @@ class LuaApiBinding {
     Result<TimerHandle> DoScheduleTimer(lua_State* state, bool repeating, std::uint64_t frames,
                                         int callbackIndex);
     int CancelTimer(lua_State* state, const char*& error);
-    int GetStorage(lua_State* state, const char*& error);
-    int SetStorage(lua_State* state, const char*& error);
-    int DeleteStorage(lua_State* state, const char*& error);
-    int ClearStorage(lua_State* state, const char*& error);
+    // `shared` troca o namespace do mod pelo comum. O KeyValueStorage ja separa
+    // por namespace (`Get(ModId(), key)`), entao o compartilhado nao precisa de
+    // backend proprio — so de outra chave de escopo.
+    int GetStorage(lua_State* state, const char*& error, bool shared = false);
+    int SetStorage(lua_State* state, const char*& error, bool shared = false);
+    int DeleteStorage(lua_State* state, const char*& error, bool shared = false);
+    int ClearStorage(lua_State* state, const char*& error, bool shared = false);
+    // Namespace usado por `ship.storage.shared`. Nao pode colidir com nenhum id
+    // de mod: ids sao validados como identificadores pontuados, sem cifrao.
+    std::string StorageScope(bool shared) const;
     int WorldTravelFromLua(lua_State* state, const char*& error);
     int ActorSpawnFromLua(lua_State* state);
     int ActorDestroyFromLua(lua_State* state);

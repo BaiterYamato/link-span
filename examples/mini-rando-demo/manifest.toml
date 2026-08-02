@@ -1,0 +1,11 @@
+id = "baiteryamato.mini_rando_demo"
+name = "Mini-rando (demo)"
+version = "0.1.0"
+api = ">=0.4 <0.5"
+entrypoint = "main.lua"
+description = "Prova que um randomizer de item cabe em Lua: troca o item de uma check (hook.oot.item.give) e guarda a seed num store compartilhado entre OoT e MM (ship.storage.shared). Inspirado no ComboShip — nenhuma lógica de rando no host."
+authors = ["BaiterYamato"]
+games = ["oot"]
+
+[capabilities]
+required = ["hooks.bridge", "core.storage.shared"]

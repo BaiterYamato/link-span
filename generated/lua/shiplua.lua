@@ -55,6 +55,15 @@
 ---@field default? string
 ---@field label? string
 
+--- Estado estável do gameplay sem expor structs nativas.
+---@class ShipLuaGameState
+---@field mode string
+---@field save_slot? integer
+
+--- Opções limitadas de apresentação de ícone no HUD.
+---@class ShipLuaHudIconOptions
+---@field alpha? integer
+
 ---@class ShipLuaEventGameReady
 ---@field game_id ShipLuaGameId
 ---@field host_version string
@@ -92,7 +101,87 @@
 ---@field action string
 ---@field key string
 
----@alias ShipLuaEventName "game.ready"|"game.frame"|"game.shutdown"|"scene.enter"|"actor.init"|"actor.update"|"actor.destroy"|"save.loaded"|"text.open"|"audio.sequence_started"|"input.hotkey"
+---@class ShipLuaEventInputAction
+---@field action string
+---@field pressed boolean
+---@field source string
+
+---@class ShipLuaEventHookOotPlayerSpeedRun
+---@field speed number
+
+---@class ShipLuaEventHookOotPlayerFallDamage
+
+---@class ShipLuaEventHookOotItemReceive
+---@field item_id integer
+---@field get_item_id integer
+
+---@class ShipLuaEventHookOotPlayerHealthChange
+---@field amount integer
+
+---@class ShipLuaEventHookOotPlayerBonk
+
+---@class ShipLuaEventHookOotEnemyDefeat
+---@field actor_id integer
+---@field category integer
+---@field pos_x number
+---@field pos_y number
+---@field pos_z number
+
+---@class ShipLuaEventHookOotItemGive
+---@field item_id integer
+---@field get_item_id integer
+
+---@class ShipLuaEventHookOotHudDraw
+
+---@class ShipLuaEventHookOotPlayerFirstPersonControl
+---@field held_item_action integer
+
+---@class ShipLuaEventHookOotPlayerArrowTypeSelect
+---@field magic_arrow_type integer
+---@field arrow_type integer
+
+---@class ShipLuaEventHookOotPlayerBodyAnimSelect
+---@field speed number
+---@field on_ground boolean
+---@field rolling boolean
+---@field roll_charge integer
+---@field roll_phase string
+---@field falling boolean
+---@field landing boolean
+---@field climbing boolean
+---@field climb_direction string
+---@field climb_step integer
+---@field climb_starting boolean
+---@field door_opening boolean
+---@field door_direction string
+---@field chest_opening boolean
+---@field instrument boolean
+---@field attacking boolean
+---@field attack_animation integer
+
+---@class ShipLuaEventHookMmPlayerSpeedWalk
+---@field speed number
+
+---@class ShipLuaEventHookMmPlayerGoronRollConsumeMagic
+
+---@class ShipLuaEventHookMmPlayerGoronRollDisableSpikeMode
+
+---@class ShipLuaEventHookMmPlayerGoronRollIncreaseSpikeLevel
+
+---@class ShipLuaEventHookMmItemGive
+---@field item integer
+
+---@class ShipLuaEventHookMmEnemyDefeat
+---@field actor_id integer
+---@field category integer
+---@field pos_x number
+---@field pos_y number
+---@field pos_z number
+
+---@class ShipLuaEventHookMmItemShouldGive
+---@field item integer
+
+---@alias ShipLuaEventName "game.ready"|"game.frame"|"game.shutdown"|"scene.enter"|"actor.init"|"actor.update"|"actor.destroy"|"save.loaded"|"text.open"|"audio.sequence_started"|"input.hotkey"|"input.action"|"hook.oot.player.speed.run"|"hook.oot.player.fall_damage"|"hook.oot.item.receive"|"hook.oot.player.health_change"|"hook.oot.player.bonk"|"hook.oot.enemy.defeat"|"hook.oot.item.give"|"hook.oot.hud.draw"|"hook.oot.player.first_person_control"|"hook.oot.player.arrow_type_select"|"hook.oot.player.body_anim_select"|"hook.mm.player.speed.walk"|"hook.mm.player.goron_roll.consume_magic"|"hook.mm.player.goron_roll.disable_spike_mode"|"hook.mm.player.goron_roll.increase_spike_level"|"hook.mm.item.give"|"hook.mm.enemy.defeat"|"hook.mm.item.should_give"
 
 ship = ship or {}
 ship.actor = ship.actor or {}
@@ -100,16 +189,23 @@ ship.api = ship.api or {}
 ship.capabilities = ship.capabilities or {}
 ship.events = ship.events or {}
 ship.game = ship.game or {}
+ship.hooks = ship.hooks or {}
 ship.hotkeys = ship.hotkeys or {}
+ship.hud = ship.hud or {}
 ship.log = ship.log or {}
 ship.mm = ship.mm or {}
 ship.oot = ship.oot or {}
+ship.player = ship.player or {}
 ship.runtime = ship.runtime or {}
 ship.storage = ship.storage or {}
 ship.timer = ship.timer or {}
 ship.world = ship.world or {}
 ship.mm.player = ship.mm.player or {}
+ship.oot.audio = ship.oot.audio or {}
+ship.oot.cutscene = ship.oot.cutscene or {}
+ship.oot.env = ship.oot.env or {}
 ship.oot.player = ship.oot.player or {}
+ship.storage.shared = ship.storage.shared or {}
 
 --- API common; estabilidade: stable; desde: 0.1.0; capability: comum; erros: nenhum.
 ---@return ShipLuaGameId
@@ -118,6 +214,10 @@ function ship.game.id() end
 --- API common; estabilidade: stable; desde: 0.1.0; capability: comum; erros: nenhum.
 ---@return string
 function ship.game.host_version() end
+
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: game.state; erros: unsupported.
+---@return ShipLuaGameState
+function ship.game.state() end
 
 --- API common; estabilidade: stable; desde: 0.1.0; capability: comum; erros: nenhum.
 ---@return string
@@ -147,6 +247,11 @@ function ship.events.on(event, options_or_callback, callback) end
 ---@param subscription ShipLuaSubscription
 ---@return boolean
 function ship.events.off(subscription) end
+
+--- API common; estabilidade: experimental; desde: 0.4.0; capability: comum; erros: invalid_argument.
+---@param value any
+---@return boolean
+function ship.hooks.result(value) end
 
 --- API common; estabilidade: preview; desde: 0.2.0; capability: comum; erros: invalid_argument, unsupported.
 ---@param id string
@@ -188,9 +293,137 @@ function ship.mm.player.jump() end
 ---@return boolean
 function ship.mm.spawn_dog() end
 
+--- API mm; estabilidade: experimental; desde: 0.4.0; capability: mm.player.sword_skin; erros: nenhum.
+---@param skin string
+---@return boolean
+function ship.mm.player.set_sword_skin(skin) end
+
 --- API oot; estabilidade: experimental; desde: 0.3.0; capability: oot.player.jump; erros: nenhum.
 ---@return boolean
 function ship.oot.player.jump() end
+
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: oot.player.bunny_hood; erros: nenhum.
+---@param equipped boolean
+---@return boolean
+function ship.oot.player.set_bunny_hood(equipped) end
+
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: oot.player.mask; erros: nenhum.
+---@param mask string
+---@return boolean
+function ship.oot.player.set_mask(mask) end
+
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: oot.player.mask; erros: nenhum.
+---@return integer
+function ship.oot.player.play_mask_on_animation() end
+
+--- API common; estabilidade: experimental; desde: 0.4.0; capability: player.speed; erros: nenhum.
+---@param factor number
+---@return boolean
+function ship.player.set_speed_multiplier(factor) end
+
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: player.fields; erros: nenhum.
+---@param field string
+---@return any
+function ship.player.get(field) end
+
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: player.fields; erros: nenhum.
+---@param field string
+---@param value number
+---@return boolean
+function ship.player.set(field, value) end
+
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: oot.player.attach_model; erros: nenhum.
+---@param slot string
+---@param path string
+---@return boolean
+function ship.oot.player.attach_model(slot, path) end
+
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: oot.player.immunity; erros: nenhum.
+---@param kind string
+---@param enabled boolean
+---@return boolean
+function ship.oot.player.set_damage_immunity(kind, enabled) end
+
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: oot.player.weight; erros: nenhum.
+---@param weight string
+---@return boolean
+function ship.oot.player.set_weight(weight) end
+
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: oot.player.roll; erros: nenhum.
+---@param mode string
+---@return boolean
+function ship.oot.player.set_roll_mode(mode) end
+
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: oot.player.roll; erros: nenhum.
+---@param blocked boolean
+---@return boolean
+function ship.oot.player.set_roll_blocked(blocked) end
+
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: oot.player.custom_body; erros: nenhum.
+---@param spec any
+---@return boolean
+function ship.oot.player.set_body(spec) end
+
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: oot.player.custom_body; erros: nenhum.
+---@return any
+function ship.oot.player.get_body() end
+
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: oot.player.custom_body; erros: nenhum.
+---@param name string
+---@param mode? string
+---@param speed? number
+---@return boolean
+function ship.oot.player.play_body_animation(name, mode, speed) end
+
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: oot.player.custom_body; erros: nenhum.
+---@param segment integer
+---@param path string
+---@return boolean
+function ship.oot.player.set_body_segment(segment, path) end
+
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: oot.player.held_item_model; erros: nenhum.
+---@param slot string
+---@param path string
+---@return boolean
+function ship.oot.player.set_held_item_model(slot, path) end
+
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: oot.cutscene; erros: invalid_argument, invalid_state.
+---@param frames integer
+---@param options? any
+---@return boolean
+function ship.oot.cutscene.start(frames, options) end
+
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: oot.cutscene; erros: nenhum.
+---@return boolean
+function ship.oot.cutscene.stop() end
+
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: oot.cutscene; erros: nenhum.
+---@return boolean
+function ship.oot.cutscene.is_active() end
+
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: oot.audio; erros: invalid_argument.
+---@param index integer
+---@param font? integer
+---@return boolean
+function ship.oot.audio.play_sfx(index, font) end
+
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: oot.audio; erros: invalid_argument.
+---@param first? integer
+---@param count? integer
+---@param font? integer
+---@return boolean
+function ship.oot.audio.dump_sfx_table(first, count, font) end
+
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: oot.audio; erros: invalid_argument.
+---@param base? integer
+---@param offset? integer
+---@return boolean
+function ship.oot.audio.set_voice_map(base, offset) end
+
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: oot.env; erros: nenhum.
+---@param field string
+---@return any
+function ship.oot.env.get(field) end
 
 --- API oot; estabilidade: experimental; desde: 0.3.0; capability: oot.spawn_dog; erros: nenhum.
 ---@return boolean
@@ -253,3 +486,71 @@ function ship.storage.delete(key) end
 --- API common; estabilidade: experimental; desde: 0.3.0; capability: core.storage; erros: unsupported.
 ---@return integer
 function ship.storage.clear() end
+
+--- API common; estabilidade: experimental; desde: 0.4.0; capability: core.storage.shared; erros: invalid_argument, unsupported.
+---@param key string
+---@param default? any
+---@return any
+function ship.storage.shared.get(key, default) end
+
+--- API common; estabilidade: experimental; desde: 0.4.0; capability: core.storage.shared; erros: invalid_argument, resource_limit, unsupported.
+---@param key string
+---@param value any
+---@return boolean
+function ship.storage.shared.set(key, value) end
+
+--- API common; estabilidade: experimental; desde: 0.4.0; capability: core.storage.shared; erros: invalid_argument, unsupported.
+---@param key string
+---@return boolean
+function ship.storage.shared.delete(key) end
+
+--- API common; estabilidade: experimental; desde: 0.4.0; capability: core.storage.shared; erros: unsupported.
+---@return integer
+function ship.storage.shared.clear() end
+
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: hud.draw; erros: invalid_argument, invalid_state.
+---@param x integer
+---@param y integer
+---@param w integer
+---@param h integer
+---@param r? integer
+---@param g? integer
+---@param b? integer
+---@param a? integer
+---@return boolean
+function ship.hud.draw_rect(x, y, w, h, r, g, b, a) end
+
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: hud.draw; erros: invalid_argument, invalid_state.
+---@param text string
+---@param x integer
+---@param y integer
+---@param r? integer
+---@param g? integer
+---@param b? integer
+---@param a? integer
+---@param scale? number
+---@return boolean
+function ship.hud.draw_text(text, x, y, r, g, b, a, scale) end
+
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: hud.draw; erros: invalid_argument, invalid_state.
+---@param cx number
+---@param cy number
+---@param radius number
+---@param thickness? number
+---@param fraction? number
+---@param r? integer
+---@param g? integer
+---@param b? integer
+---@param a? integer
+---@return boolean
+function ship.hud.draw_ring(cx, cy, radius, thickness, fraction, r, g, b, a) end
+
+--- API oot; estabilidade: experimental; desde: 0.4.0; capability: hud.icons; erros: invalid_argument, invalid_state, unsupported.
+---@param path string
+---@param x integer
+---@param y integer
+---@param w integer
+---@param h integer
+---@param options? ShipLuaHudIconOptions
+---@return boolean
+function ship.hud.draw_icon(path, x, y, w, h, options) end
