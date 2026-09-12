@@ -1,6 +1,6 @@
 # LINK-003
 
-- Status: claimed
+- Status: closed
 - Agent: codex-windows-01
 - Platform: Windows 11 / Codex
 - Branch: agent/LINK-003-consolidate
