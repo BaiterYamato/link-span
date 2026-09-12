@@ -5,6 +5,7 @@
 
 #include "shiplua/manifest/ManifestParser.h"
 #include "shiplua/manifest/PackageExtractor.h"
+#include "shiplua/manifest/PackageFormat.h"
 
 namespace {
 
@@ -78,8 +79,12 @@ ShipLua::Result<ShipLua::Manifest> ValidarEntrada(const std::filesystem::path& e
         return ShipLua::Result<ShipLua::Manifest>::err(
             ShipLua::ErrorCode::InvalidArgument, "entrada não é arquivo nem diretório regular");
     }
-    if (entrada.extension() != ".shipmod") {
+    if (!ShipLua::HasModPackageExtension(entrada)) {
         return ShipLua::ParseManifestFile(entrada.string());
+    }
+    if (!ShipLua::HasModPackageManifest(entrada)) {
+        return ShipLua::Result<ShipLua::Manifest>::err(
+            ShipLua::ErrorCode::InvalidArgument, "ZIP inválido ou sem manifest.toml regular na raiz");
     }
 
     const auto stamp = std::chrono::steady_clock::now().time_since_epoch().count();
@@ -97,7 +102,7 @@ ShipLua::Result<ShipLua::Manifest> ValidarEntrada(const std::filesystem::path& e
 
 int main(int argc, char** argv) {
     if (argc < 2) {
-        std::cerr << "Uso: shiplua_manifest_validator <manifesto|diretório|pacote.shipmod> [...]\n";
+        std::cerr << "Uso: shiplua_manifest_validator <manifesto|diretório|pacote.zip|pacote.shipmod> [...]\n";
         return 2;
     }
 

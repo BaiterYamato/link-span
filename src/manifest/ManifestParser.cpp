@@ -10,6 +10,7 @@
 #include <toml++/toml.hpp>
 
 #include "shiplua/manifest/SemVersion.h"
+#include "shiplua/native/NativeProvider.h"
 
 namespace ShipLua {
 
@@ -91,6 +92,66 @@ Result<Manifest> ParseTable(const toml::table& table, const std::string& sourceN
     ReadStringArray(table, "authors", manifest.authors);
     ReadStringArray(table, "games", manifest.games);
     manifest.requiresBothGames = table["requires_both_games"].value_or(false);
+
+    if (table.contains("kind")) {
+        const auto kind = table["kind"].value<std::string>();
+        if (!kind) return Result<Manifest>::err(ErrorCode::InvalidArgument,
+            sourceName + ": kind must be a string");
+        if (*kind == "mod") manifest.kind = ModKind::Mod;
+        else if (*kind == "core_extension") manifest.kind = ModKind::CoreExtension;
+        else return Result<Manifest>::err(ErrorCode::InvalidArgument,
+            sourceName + ": kind must be 'mod' or 'core_extension'");
+    }
+    if (table.contains("load_phase")) {
+        const auto phase = table["load_phase"].value<std::string>();
+        if (!phase) return Result<Manifest>::err(ErrorCode::InvalidArgument,
+            sourceName + ": load_phase must be a string");
+        if (*phase == "runtime") manifest.loadPhase = ModLoadPhase::Runtime;
+        else if (*phase == "pre_game") manifest.loadPhase = ModLoadPhase::PreGame;
+        else return Result<Manifest>::err(ErrorCode::InvalidArgument,
+            sourceName + ": load_phase must be 'runtime' or 'pre_game'");
+    }
+
+    if (table.contains("provider")) {
+        const auto* provider = table["provider"].as_table();
+        if (!provider) return Result<Manifest>::err(ErrorCode::InvalidArgument,
+            sourceName + ": provider must be a table");
+        NativeProviderManifest native;
+        for (const auto& [key, node] : *provider) {
+            const auto value = node.value<std::string>();
+            if (!value || value->empty()) return Result<Manifest>::err(ErrorCode::InvalidArgument,
+                sourceName + ": provider fields must be nonempty strings");
+            if (key.str() == "abi_version") native.abiVersion = *value;
+            else if (key.str() == "win64") native.win64 = *value;
+            else if (key.str() == "linux64") native.linux64 = *value;
+            else if (key.str() == "macos") native.macos = *value;
+            else return Result<Manifest>::err(ErrorCode::InvalidArgument,
+                sourceName + ": unknown provider field: " + std::string(key.str()));
+        }
+        const auto valid = ValidateNativeManifest(native);
+        if (!valid.isOk()) return Result<Manifest>::err(valid.code, sourceName + ": " + valid.message);
+        // Loaders 0.4 ignoram [provider]; não prometer compatibilidade silenciosa.
+        const auto range = VersionRange::Parse(manifest.apiRange);
+        if (!range.value->RequiresAtLeast(*SemVersion::Parse("0.5.0").value)) {
+            return Result<Manifest>::err(ErrorCode::InvalidArgument,
+                sourceName + ": native mods must require API >=0.5.0");
+        }
+        manifest.provider = std::move(native);
+    }
+
+    if (manifest.kind == ModKind::CoreExtension) {
+        if (manifest.loadPhase != ModLoadPhase::PreGame) {
+            return Result<Manifest>::err(ErrorCode::InvalidArgument,
+                sourceName + ": core_extension requires load_phase='pre_game'");
+        }
+        if (!manifest.provider || manifest.provider->abiVersion != "1.1") {
+            return Result<Manifest>::err(ErrorCode::InvalidArgument,
+                sourceName + ": core_extension requires provider ABI 1.1");
+        }
+    } else if (manifest.loadPhase == ModLoadPhase::PreGame) {
+        return Result<Manifest>::err(ErrorCode::InvalidArgument,
+            sourceName + ": load_phase='pre_game' is reserved for core_extension");
+    }
 
     if (const toml::table* host = table["host"].as_table()) {
         if (auto v = (*host)["shipwright"].value<std::string>()) {

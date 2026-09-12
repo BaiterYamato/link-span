@@ -4,7 +4,7 @@
 --   local ok, code, message = validate.validate("ship.events.on", "game.ready", fn)
 local M = {}
 
-M.api_version = "0.4.0"
+M.api_version = "0.5.0"
 
 M.types = {
   ["game_id"] = { kind = "enum",
@@ -834,6 +834,30 @@ M.functions = {
     returns = "boolean",
     error_mode = "raise",
     errors = { "invalid_argument", "invalid_state", "unsupported" },
+  },
+  ["ship.native.has"] = {
+    version = "0.5.0",
+    stability = "experimental",
+    availability = "common",
+    arguments = {
+      { name = "name", type = "string", required = true },
+    },
+    returns = "boolean",
+    error_mode = "raise",
+    errors = { "invalid_argument" },
+  },
+  ["ship.native.call"] = {
+    version = "0.5.0",
+    stability = "experimental",
+    availability = "common",
+    arguments = {
+      { name = "name", type = "string", required = true },
+      { name = "request", type = "string", required = true },
+    },
+    returns = "string",
+    error_mode = "return",
+    error_type = "operation_error",
+    errors = { "unsupported", "invalid_argument", "invalid_handle", "invalid_state", "resource_limit", "host_failure" },
   },
 }
 

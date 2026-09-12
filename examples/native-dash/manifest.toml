@@ -1,0 +1,12 @@
+id = "example.native_dash"
+name = "Dash nativo independente"
+version = "1.0.0"
+api = ">=0.5 <1.0"
+entrypoint = "main.lua"
+games = ["oot", "mm"]
+
+[provider]
+abi_version = "1.0"
+win64 = "provider/native_dash.dll"
+linux64 = "provider/libnative_dash.so"
+macos = "provider/libnative_dash.dylib"

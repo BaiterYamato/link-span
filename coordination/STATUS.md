@@ -1,5 +1,15 @@
 # STATUS.md
 
+## Atualização desta worktree — SDK NATIVE-001 (08/09/2026)
+
+`review`: providers nativos externos implementados no core, API 0.5.0, ABI C 1.0.
+Funções definidas pelo próprio mod; acesso a serviços C publicados pelo host.
+Prova ROM-free com duas versões de dash e mesmo SHA-256 do executável passou.
+Windows Release: 57/58 testes; falha herdada no contrato hooks/speed. Integração
+nos jogos pendente. Ver `coordination/handoffs/NATIVE-001.md`.
+
+O estado abaixo é o registro histórico de integração anterior a este incremento.
+
 ## Projeto
 
 ShipLua

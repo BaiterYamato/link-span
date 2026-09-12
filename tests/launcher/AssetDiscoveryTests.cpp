@@ -122,6 +122,14 @@ int main() {
     Check(dual.size() == 1 && dual.front() == "link-home-to-clock-tower",
           "packaged .shipmod dual-world requirement must be discovered");
 
+    const auto zipMod = packagedMod.parent_path() / "zip-dual.ZIP";
+    std::filesystem::copy_file(packagedMod, zipMod);
+    dual = LinkSpan::Launcher::DiscoverDualWorldMods(root);
+    Check(dual.size() == 2 && dual.back() == "zip-dual",
+          "ZIP dual-world requirement must be discovered, including uppercase extension");
+    std::filesystem::remove(zipMod);
+    WriteFile(root / "mods" / "ordinary.zip");
+
     WriteFile(root / "mods" / "broken.shipmod");
     dual = LinkSpan::Launcher::DiscoverDualWorldMods(root);
     Check(dual.size() == 1 && dual.front() == "link-home-to-clock-tower",

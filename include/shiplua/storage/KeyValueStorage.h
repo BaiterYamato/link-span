@@ -2,9 +2,11 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <map>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <variant>
 #include <vector>
 
@@ -57,13 +59,50 @@ class KeyValueStorage {
     std::size_t KeyCount(const std::string& modId) const;
     std::size_t TotalBytes(const std::string& modId) const;
 
+    // Serializa todo o conteúdo (todos os mods) num blob binário determinístico
+    // e versionado. Length-prefixed little-endian; ver KeyValueStorage.cpp.
+    std::string Serialize() const;
+
+    // Substitui o conteúdo atual pelo do blob. Erro se o blob estiver corrompido.
+    // Entradas que violem os limites do mod são puladas (não derrubam a carga
+    // inteira), preservando o resto — um save antigo/maior nunca trava o mod.
+    Result<void> Deserialize(std::string_view blob);
+
+    // Liga persistência em disco neste store: carrega o arquivo existente (se
+    // houver) e passa a MARCAR mudanças para gravação posterior.
+    // Arquivo ausente NÃO é erro (primeira execução). Chamar uma vez no init,
+    // antes de os mods rodarem.
+    //
+    // A gravação é ADIADA de propósito. Gravar a cada Set custa serializar o
+    // store inteiro mais um write+rename síncronos; um mod que atualize alguns
+    // contadores por segundo trava visivelmente o jogo, e mais ainda quando um
+    // antivírus segura o arquivo (o rename do AtomicFile chega a dormir dezenas
+    // de milissegundos tentando de novo). O host chama Flush() num intervalo
+    // folgado e no shutdown.
+    Result<void> EnablePersistence(std::filesystem::path path);
+
+    // Grava agora, se houver mudança pendente e a persistência estiver ligada.
+    // No-op barato caso contrário — pode ser chamado por frame sem custo.
+    Result<void> Flush();
+
+    // true quando há mudança ainda não gravada.
+    bool IsDirty() const;
+
   private:
     Result<void> ValidateKey(const std::string& modId, const std::string& key) const;
     static std::size_t ValueBytes(const Value& value);
+    // Marca que há mudança a gravar. Chamado ao fim de Set/Delete/Clear.
+    void MarkDirty();
+    // Remove temporários órfãos (<arquivo>.shiplua-tmp-*) ao lado do destino.
+    // Um rename que falhe com o arquivo travado por outro processo pode deixar
+    // o temporário para trás; sem isto eles se acumulam na pasta do jogo.
+    void SweepStaleTemporaries() const;
 
     Limits mLimits;
     std::map<std::string, std::map<std::string, Value>> mMods;
     std::map<std::string, std::size_t> mBytesPerMod;
+    std::optional<std::filesystem::path> mPersistPath;
+    bool mDirty = false;
 };
 
 } // namespace ShipLua

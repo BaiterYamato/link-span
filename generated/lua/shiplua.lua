@@ -1,6 +1,6 @@
 ---@meta ShipLua
 -- Gerado por tools/generate_api_docs.py. Não edite manualmente.
--- API 0.4.0 / schema 1
+-- API 0.5.0 / schema 1
 
 --- Identificador público do jogo host.
 ---@alias ShipLuaGameId "oot"|"mm"
@@ -194,6 +194,7 @@ ship.hotkeys = ship.hotkeys or {}
 ship.hud = ship.hud or {}
 ship.log = ship.log or {}
 ship.mm = ship.mm or {}
+ship.native = ship.native or {}
 ship.oot = ship.oot or {}
 ship.player = ship.player or {}
 ship.runtime = ship.runtime or {}
@@ -554,3 +555,15 @@ function ship.hud.draw_ring(cx, cy, radius, thickness, fraction, r, g, b, a) end
 ---@param options? ShipLuaHudIconOptions
 ---@return boolean
 function ship.hud.draw_icon(path, x, y, w, h, options) end
+
+--- API common; estabilidade: experimental; desde: 0.5.0; capability: comum; erros: invalid_argument.
+---@param name string
+---@return boolean
+function ship.native.has(name) end
+
+--- API common; estabilidade: experimental; desde: 0.5.0; capability: comum; erros: unsupported, invalid_argument, invalid_handle, invalid_state, resource_limit, host_failure.
+---@param name string
+---@param request string
+---@return string? value
+---@return ShipLuaOperationError? error
+function ship.native.call(name, request) end

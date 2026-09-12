@@ -4,7 +4,7 @@
 Subcomandos (plan-sdk.md §16, release v0.1.0-alpha.1 §29):
 
 - ``new``      — cria o scaffold de um mod (manifest.toml, main.lua, README.md, tests/).
-- ``validate`` — valida manifestos (diretório, manifest.toml ou pacote .shipmod).
+- ``validate`` — valida manifestos (diretório, manifest.toml ou pacote .zip/.shipmod).
 - ``test``     — executa os testes do mod no mock runtime via shiplua_mod_test_runner.
 - ``doctor``   — diagnostica o ambiente de desenvolvimento e a saúde do repositório.
 
@@ -83,7 +83,7 @@ MANIFEST_TEMPLATE = """\
 id = {mod_id}
 name = {display_name}
 version = "0.1.0"
-api = ">=0.1 <0.5"
+api = ">=0.1 <0.6"
 entrypoint = "main.lua"
 description = {description}
 authors = [{author}]
@@ -237,7 +237,7 @@ def _validate_basic(path: Path) -> tuple[bool, str]:
         if not manifest.is_file():
             return False, f"{origem}: diretório sem manifest.toml"
         raw = manifest.read_bytes()
-    elif path.is_file() and path.suffix == ".shipmod":
+    elif path.is_file() and path.suffix.lower() in (".zip", ".shipmod"):
         try:
             with zipfile.ZipFile(path) as archive:
                 raw = archive.read("manifest.toml")
@@ -571,7 +571,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_new.set_defaults(func=cmd_new)
 
     p_validate = subparsers.add_parser(
-        "validate", help="valida manifesto de mod (diretório, manifest.toml ou .shipmod)"
+        "validate", help="valida manifesto de mod (diretório, manifest.toml, .zip ou .shipmod)"
     )
     p_validate.add_argument("caminhos", nargs="+", help="caminhos a validar")
     p_validate.set_defaults(func=cmd_validate)
@@ -579,7 +579,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_test = subparsers.add_parser(
         "test", help="executa os testes do mod no mock runtime (MODSDK-004)"
     )
-    p_test.add_argument("caminho", help="diretório do mod ou pacote .shipmod")
+    p_test.add_argument("caminho", help="diretório do mod ou pacote .zip/.shipmod")
     p_test.add_argument("--game", choices=sorted(GAMES), help="jogo simulado pelo mock")
     p_test.add_argument(
         "--capability",

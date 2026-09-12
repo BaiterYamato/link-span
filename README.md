@@ -30,7 +30,7 @@ That same file prints `Hello from mm ...` in 2Ship and `Hello from oot ...` in S
 | Manifest, discovery, SemVer, dependency graph | ✅ |
 | Event dispatcher (observe/filter/transform/consume) + timers | ✅ |
 | `ship.*` API + codegen (C++ bindings + LuaDoc) | ✅ |
-| Root loader (`.shipmod`, compatibility, dep ordering, failure isolation) | ✅ |
+| Root loader (`.zip`/`.shipmod`, compatibility, dep ordering, failure isolation) | ✅ |
 | Green CI on Linux + Windows | ✅ |
 | **2Ship (MM)** adapter loading mods in-game | ✅ |
 | **Shipwright (OoT)** adapter (pure-upstream base) | ✅ |
@@ -72,7 +72,7 @@ your legally obtained Zelda ROM or your own extracted game archive next to
 - If only OoT is present, Link-Span starts OoT automatically.
 - If only MM is present, Link-Span starts MM automatically.
 - If both are present, Link-Span shows an OoT/MM chooser.
-- If an installed folder or `.shipmod` package declares
+- If an installed folder or `.zip`/`.shipmod` package declares
   `requires_both_games = true`, Link-Span explains which mod needs both games
   and does not start an incomplete session.
 
@@ -109,17 +109,24 @@ ship-defined assets. The script prints the exact `ExtractAssets` command to run
 next when you have a ROM. See `build-game.ps1 -Help` for all flags (game
 selection, config, skipping steps).
 
-## Installing a mod in the game
+## Instalando um mod no jogo
 
-Mods live in a `mods/` folder next to the game executable. Each mod is either:
+Em um host integrado a esta versão do SDK, os mods ficam em `mods/`, ao lado
+do executável. Cada mod pode ser:
 
-- a **folder** with `manifest.toml` + `main.lua` (easiest while developing), or
-- a **`.shipmod`** file (a ZIP with the same files).
+- Uma **pasta** com `manifest.toml` e `main.lua`, prática durante o desenvolvimento.
+- Um **`.zip`** comum com `manifest.toml` na raiz, recomendado para distribuição.
+- Um **`.shipmod`**, extensão alternativa mantida por compatibilidade para o mesmo ZIP.
+
+O manifesto identifica o mod e seu entrypoint. Scripts, assets e providers nativos
+ficam no mesmo pacote. ZIPs sem `manifest.toml` na raiz são ignorados na descoberta;
+manifestos presentes mas inválidos geram diagnóstico no carregamento.
+Não coloque uma pasta envolvendo todo o conteúdo dentro do ZIP.
 
 ```text
 <game-folder>/
 └── mods/
-    ├── hello-world.shipmod
+    ├── hello-world.zip
     └── my-mod/
         ├── manifest.toml
         └── main.lua

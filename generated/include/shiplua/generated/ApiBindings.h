@@ -10,7 +10,7 @@
 
 namespace ShipLua::Generated {
 
-inline constexpr std::string_view kApiVersion = "0.4.0";
+inline constexpr std::string_view kApiVersion = "0.5.0";
 inline constexpr std::uint32_t kSchemaVersion = 1;
 
 enum class GameId {
@@ -157,6 +157,8 @@ enum class FunctionId {
     ShipHudDrawText,
     ShipHudDrawRing,
     ShipHudDrawIcon,
+    ShipNativeHas,
+    ShipNativeCall,
 };
 
 struct FunctionBinding {
@@ -587,8 +589,26 @@ inline constexpr std::array<std::string_view, 3> kShipHudDrawIconErrors{{
     "invalid_state",
     "unsupported",
 }};
+inline constexpr std::array<FieldBinding, 1> kShipNativeHasArguments{{
+    {"name", "string", true},
+}};
+inline constexpr std::array<std::string_view, 1> kShipNativeHasErrors{{
+    "invalid_argument",
+}};
+inline constexpr std::array<FieldBinding, 2> kShipNativeCallArguments{{
+    {"name", "string", true},
+    {"request", "string", true},
+}};
+inline constexpr std::array<std::string_view, 6> kShipNativeCallErrors{{
+    "unsupported",
+    "invalid_argument",
+    "invalid_handle",
+    "invalid_state",
+    "resource_limit",
+    "host_failure",
+}};
 
-inline constexpr std::array<FunctionBinding, 62> kFunctions{{
+inline constexpr std::array<FunctionBinding, 64> kFunctions{{
     {FunctionId::ShipGameId, "ship.game.id", "0.1.0", "stable", "game_id", "raise", {}, "common", {}, kShipGameIdArguments, kShipGameIdErrors},
     {FunctionId::ShipGameHostVersion, "ship.game.host_version", "0.1.0", "stable", "string", "raise", {}, "common", {}, kShipGameHostVersionArguments, kShipGameHostVersionErrors},
     {FunctionId::ShipGameState, "ship.game.state", "0.4.0", "experimental", "game_state", "raise", {}, "oot", "game.state", kShipGameStateArguments, kShipGameStateErrors},
@@ -651,6 +671,8 @@ inline constexpr std::array<FunctionBinding, 62> kFunctions{{
     {FunctionId::ShipHudDrawText, "ship.hud.draw_text", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "hud.draw", kShipHudDrawTextArguments, kShipHudDrawTextErrors},
     {FunctionId::ShipHudDrawRing, "ship.hud.draw_ring", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "hud.draw", kShipHudDrawRingArguments, kShipHudDrawRingErrors},
     {FunctionId::ShipHudDrawIcon, "ship.hud.draw_icon", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "hud.icons", kShipHudDrawIconArguments, kShipHudDrawIconErrors},
+    {FunctionId::ShipNativeHas, "ship.native.has", "0.5.0", "experimental", "boolean", "raise", {}, "common", {}, kShipNativeHasArguments, kShipNativeHasErrors},
+    {FunctionId::ShipNativeCall, "ship.native.call", "0.5.0", "experimental", "string", "return", "operation_error", "common", {}, kShipNativeCallArguments, kShipNativeCallErrors},
 }};
 
 struct EventBinding {

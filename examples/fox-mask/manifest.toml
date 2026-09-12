@@ -1,7 +1,7 @@
 id = "baiteryamato.fox_mask"
 name = "Fox Mask"
 version = "0.1.0"
-api = ">=0.4 <0.5"
+api = ">=0.4 <0.6"
 entrypoint = "main.lua"
 description = "Aperte M para vestir a Fox Mask — um item NOVO, com modelo próprio empacotado em fox_mask.o2r, que não existe em nenhum dos dois jogos."
 authors = ["BaiterYamato"]

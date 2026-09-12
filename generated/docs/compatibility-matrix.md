@@ -1,7 +1,7 @@
 <!-- Gerado por tools/generate_api_contracts.py. Não edite manualmente. -->
 # Matriz de compatibilidade — ShipLua Runtime API
 
-Versão da API: `0.4.0` (schema `1`).
+Versão da API: `0.5.0` (schema `1`).
 Derivada dos schemas canônicos em `schema/` (IDL); regenere com
 `tools/generate_api_contracts.py`.
 
@@ -71,6 +71,8 @@ Derivada dos schemas canônicos em `schema/` (IDL); regenere com
 | `ship.hud.draw_text` | `0.4.0` | `experimental` | sim | — | `hud.draw` | `invalid_argument`, `invalid_state` |
 | `ship.hud.draw_ring` | `0.4.0` | `experimental` | sim | — | `hud.draw` | `invalid_argument`, `invalid_state` |
 | `ship.hud.draw_icon` | `0.4.0` | `experimental` | sim | — | `hud.icons` | `invalid_argument`, `invalid_state`, `unsupported` |
+| `ship.native.has` | `0.5.0` | `experimental` | sim | sim | — | `invalid_argument` |
+| `ship.native.call` | `0.5.0` | `experimental` | sim | sim | — | `unsupported`, `invalid_argument`, `invalid_handle`, `invalid_state`, `resource_limit`, `host_failure` |
 
 Funções com disponibilidade específica (`oot`/`mm`) são instaladas pelo
 adaptador do host quando a capability correspondente é anunciada; o núcleo
@@ -167,5 +169,5 @@ nunca registra `ship.oot.*` ou `ship.mm.*` (RFC 0001).
 |---|---:|
 | `stable` | 12 |
 | `preview` | 1 |
-| `experimental` | 49 |
+| `experimental` | 51 |
 

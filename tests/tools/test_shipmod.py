@@ -42,7 +42,7 @@ class NewCommandTests(unittest.TestCase):
             mod_dir = Path(temporary) / "kafei-puppet"
             manifest = (mod_dir / "manifest.toml").read_text(encoding="utf-8")
             self.assertIn('id = "community.kafei_puppet"', manifest)
-            self.assertIn('api = ">=0.1 <0.5"', manifest)
+            self.assertIn('api = ">=0.1 <0.6"', manifest)
             self.assertIn('entrypoint = "main.lua"', manifest)
             self.assertTrue((mod_dir / "main.lua").is_file())
             self.assertTrue((mod_dir / "README.md").is_file())
@@ -139,7 +139,7 @@ class ValidateFallbackTests(unittest.TestCase):
         self.assertEqual(code, shipmod.EXIT_FAILURE)
         self.assertIn("Inválido", err)
 
-    def test_shipmod_package(self) -> None:
+    def test_mod_packages(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             package = Path(temporary) / "pacote.shipmod"
             with zipfile.ZipFile(package, "w") as archive:
@@ -152,6 +152,23 @@ class ValidateFallbackTests(unittest.TestCase):
             code, out, _ = run_cli(["validate", str(package)])
             self.assertEqual(code, shipmod.EXIT_OK)
             self.assertIn("community.teste", out)
+            for extension in (".zip", ".ZIP", ".SHIPMOD"):
+                with self.subTest(extension=extension):
+                    renamed = package.with_suffix(extension)
+                    renamed.write_bytes(package.read_bytes())
+                    code, out, _ = run_cli(["validate", str(renamed)])
+                    self.assertEqual(code, shipmod.EXIT_OK)
+                    self.assertIn("community.teste", out)
+
+    def test_zip_requires_root_manifest(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            package = Path(temporary) / "ordinary.zip"
+            for entry in ("notes.txt", "mod/manifest.toml", "Manifest.toml"):
+                with self.subTest(entry=entry):
+                    with zipfile.ZipFile(package, "w") as archive:
+                        archive.writestr(entry, "some content")
+                    code, _, _ = run_cli(["validate", str(package)])
+                    self.assertEqual(code, shipmod.EXIT_FAILURE)
 
 
 class ValidateDelegationTests(unittest.TestCase):

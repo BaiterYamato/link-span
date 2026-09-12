@@ -1,4 +1,4 @@
-#include <array>
+#include <miniz.h>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -67,10 +67,14 @@ void TestManifestVersionRanges() {
           "empty required field should be rejected");
 }
 
-void WriteZipSignature(const std::filesystem::path& path) {
-    const std::array<unsigned char, 4> signature{0x50, 0x4b, 0x03, 0x04};
-    std::ofstream file(path, std::ios::binary);
-    file.write(reinterpret_cast<const char*>(signature.data()), signature.size());
+void WriteZip(const std::filesystem::path& path, const char* entry) {
+    mz_zip_archive archive{};
+    Check(mz_zip_writer_init_file(&archive, path.string().c_str(), 0) != 0, "create ZIP");
+    const bool directory = std::string(entry).back() == '/';
+    Check(mz_zip_writer_add_mem(&archive, entry, directory ? nullptr : "invalid manifest",
+                                directory ? 0 : 16, 0) != 0, "write ZIP");
+    Check(mz_zip_writer_finalize_archive(&archive) != 0, "finalize ZIP");
+    mz_zip_writer_end(&archive);
 }
 
 void TestDiscovery() {
@@ -84,17 +88,28 @@ void TestDiscovery() {
         std::ofstream fake(root / "fake.shipmod", std::ios::binary);
         fake << "not a zip";
     }
-    WriteZipSignature(root / "a-package.shipmod");
+    WriteZip(root / "a-package.shipmod", "manifest.toml");
+    WriteZip(root / "c-package.zip", "manifest.toml");
+    WriteZip(root / "d-package.ZIP", "manifest.toml");
+    WriteZip(root / "ordinary.zip", "notes.txt");
+    WriteZip(root / "nested.zip", "my-mod/manifest.toml");
+    WriteZip(root / "wrong-case.zip", "Manifest.toml");
+    WriteZip(root / "directory-manifest.zip", "manifest.toml/");
+    WriteZip(root / "wrong-extension.rar", "manifest.toml");
+    { std::ofstream truncated(root / "truncated.zip"); truncated << "PK\003\004"; }
 
     const auto result = ShipLua::DiscoverMods(root);
     Check(result.isOk(), "valid mods root should scan");
     if (result.isOk()) {
-        Check(result.value->size() == 2, "only valid directory and package candidates should appear");
-        if (result.value->size() == 2) {
+        Check(result.value->size() == 4, "only directory and root-manifest ZIPs should appear");
+        if (result.value->size() == 4) {
             Check((*result.value)[0].kind == ShipLua::ModSourceKind::Package,
                   "results should be deterministically path-sorted");
             Check((*result.value)[1].kind == ShipLua::ModSourceKind::Directory,
                   "directory candidate should be identified");
+            Check((*result.value)[2].path.filename() == "c-package.zip" &&
+                  (*result.value)[3].path.filename() == "d-package.ZIP",
+                  "ZIP extension ignores case; manifest content is validated later");
         }
     }
 

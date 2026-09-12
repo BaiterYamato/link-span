@@ -25,7 +25,7 @@ ShipLua::Manifest MakeManifest(std::string id, int priority = 50) {
     manifest.id = std::move(id);
     manifest.name = "Binding test";
     manifest.version = "0.1.0";
-    manifest.apiRange = ">=0.4 <0.5";
+    manifest.apiRange = ">=0.4 <0.6";
     manifest.entrypoint = "main.lua";
     manifest.loadPriority = priority;
     return manifest;
@@ -58,7 +58,7 @@ local ship = require("ship")
 assert(require("ship") == ship)
 local forbidden = pcall(require, "filesystem")
 assert(not forbidden)
-assert(ship.api.version() == "0.4.0")
+assert(ship.api.version() == "0.5.0")
 assert(ship.runtime.version() == "0.1.0")
 
 ship.events.on("game.ready", function(event)
@@ -195,7 +195,7 @@ void TestMissingAndInvalidHostContext() {
     ShipLua::ModHost host{ShipLua::Logger([](auto, const auto&, const auto&) {})};
     const auto loaded = host.LoadModFromManifestAndSource(MakeManifest("test.no_host"), R"lua(
 local ship = require("ship")
-assert(ship.api.version() == "0.4.0")
+assert(ship.api.version() == "0.5.0")
 local game_ok = pcall(ship.game.id)
 local version_ok = pcall(ship.game.host_version)
 assert(not game_ok and not version_ok)
@@ -552,7 +552,7 @@ assert(#all == 2 and all[1] == "actor.events" and all[2] == "scene.events")
 local info = ship.capabilities.info("scene.events")
 assert(info ~= nil)
 assert(info.provider == "legacy-host")
-assert(info.version == "0.4.0")
+assert(info.version == "0.5.0")
 assert(info.provider_version == "9.1.0")
 assert(info.stability == "stable")
 assert(#info.games == 2)
@@ -620,6 +620,84 @@ assert(ship.world.travel("mm", "mm.clock_tower.entrance"))
           "a host must not advertise world.travel without a handler");
 }
 
+void TestSharedStorageAcrossGamesAndModIsolation() {
+    auto shared = std::make_shared<ShipLua::KeyValueStorage>();
+    ShipLua::LuaApiHostContext ootContext;
+    ootContext.gameId = "oot";
+    ootContext.hostVersion = "9.1.0";
+    ootContext.storage = std::make_shared<ShipLua::KeyValueStorage>();
+    ootContext.sharedStorage = shared;
+    auto mmContext = ootContext;
+    mmContext.gameId = "mm";
+    mmContext.storage = std::make_shared<ShipLua::KeyValueStorage>();
+    ShipLua::ModHost oot(ootContext), mm(mmContext);
+
+    const auto written = oot.LoadModFromManifestAndSource(MakeManifest("test.cross_game"), R"lua(
+local s = require("ship").storage
+assert(s.set("progress", "somente oot"))
+assert(s.shared.get("missing", "default") == "default")
+assert(s.shared.set("progress", 42))
+assert(s.shared.set("flag", true))
+assert(s.shared.set("ratio", 2.5))
+assert(s.shared.set("bytes", "a\0b"))
+assert(not pcall(s.shared.set, "invalid", {}))
+assert(not pcall(s.shared.get, 12))
+)lua");
+    Check(written.isOk(), "OoT deve gravar no backend compartilhado: " + written.message);
+    const auto otherMod = oot.LoadModFromManifestAndSource(MakeManifest("test.other_mod"), R"lua(
+local s = require("ship").storage.shared
+assert(s.get("progress") == nil)
+assert(s.set("progress", "outro mod"))
+)lua");
+    Check(otherMod.isOk(), "mods diferentes devem manter namespaces isolados: " + otherMod.message);
+    const auto read = mm.LoadModFromManifestAndSource(MakeManifest("test.cross_game"), R"lua(
+local s = require("ship").storage
+assert(s.get("progress") == nil)
+assert(s.shared.get("progress") == 42)
+assert(s.shared.get("flag") == true and s.shared.get("ratio") == 2.5)
+assert(s.shared.get("bytes") == "a\0b")
+assert(s.shared.delete("progress") and not s.shared.delete("progress"))
+assert(s.shared.clear() == 3 and s.shared.clear() == 0)
+)lua");
+    Check(read.isOk(), "mesmo mod no MM deve ler e alterar o estado compartilhado: " + read.message);
+    const auto local = ootContext.storage->Get("test.cross_game", "progress");
+    Check(local.isOk() && local.value->has_value() &&
+              std::get<std::string>(**local.value) == "somente oot",
+          "limpar storage compartilhado deve preservar storage local");
+    Check(shared->KeyCount("test.cross_game") == 0 && shared->KeyCount("test.other_mod") == 1,
+          "delete/clear compartilhados devem preservar dados de outro mod");
+}
+
+void TestSharedStorageRequiresItsOwnBackend() {
+    ShipLua::LuaApiHostContext context;
+    context.storage = std::make_shared<ShipLua::KeyValueStorage>();
+    ShipLua::ModHost localOnly(context);
+    const auto unavailable = localOnly.LoadModFromManifestAndSource(MakeManifest("test.no_shared"), R"lua(
+local s = require("ship").storage
+assert(s.set("key", "local"))
+for _, invoke in ipairs({
+    function() s.shared.get("key") end,
+    function() s.shared.set("key", "shared") end,
+    function() s.shared.delete("key") end,
+    function() s.shared.clear() end,
+}) do
+    local ok, err = pcall(invoke)
+    assert(not ok and tostring(err):find("recurso não suportado", 1, true))
+end
+assert(s.get("key") == "local")
+)lua");
+    Check(unavailable.isOk(), "backend local não deve substituir shared ausente: " + unavailable.message);
+    context.sharedStorage = std::make_shared<ShipLua::KeyValueStorage>();
+    context.storage.reset();
+    ShipLua::ModHost sharedOnly(context);
+    const auto available = sharedOnly.LoadModFromManifestAndSource(MakeManifest("test.only_shared"), R"lua(
+local s = require("ship").storage
+assert(s.shared.set("key", "shared") and s.shared.get("key") == "shared")
+assert(not pcall(s.get, "key"))
+)lua");
+    Check(available.isOk(), "shared deve funcionar sem storage local: " + available.message);
+}
+
 } // namespace
 
 int main() {
@@ -638,6 +716,8 @@ int main() {
     TestLegacyContextSynthesizesCapabilityDescriptors();
     TestCapabilityRegistrySharedAcrossMods();
     TestWorldTravelCapabilityUsesHostHandler();
+    TestSharedStorageAcrossGamesAndModIsolation();
+    TestSharedStorageRequiresItsOwnBackend();
     if (failures != 0) {
         std::cerr << failures << " check(s) failed\n";
         return 1;

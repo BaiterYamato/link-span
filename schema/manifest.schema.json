@@ -52,6 +52,18 @@
       "default": false,
       "description": "Link-Span-only hard requirement for both OoT and MM assets. When true the launcher refuses to start (exit code 8) unless assets for both games are present. Distinct from games=[\"oot\",\"mm\"], which means 'runs in either host'."
     },
+    "kind": {
+      "type": "string",
+      "enum": ["mod", "core_extension"],
+      "default": "mod",
+      "description": "Module role. core_extension may publish native services for later mods."
+    },
+    "load_phase": {
+      "type": "string",
+      "enum": ["pre_game", "runtime"],
+      "default": "runtime",
+      "description": "Lifecycle phase. pre_game is reserved for core_extension modules."
+    },
     "host": {
       "type": "object",
       "description": "Optional per-host version ranges.",
@@ -134,6 +146,54 @@
       },
       "additionalProperties": true
     },
+    "provider": {
+      "type": "object",
+      "description": "Provider nativo opcional. Exige host com código nativo habilitado e API >=0.5.0. Funções são definidas pelo mod, sem catálogo central.",
+      "required": [
+        "abi_version"
+      ],
+      "properties": {
+        "abi_version": {
+          "enum": ["1.0", "1.1"]
+        },
+        "win64": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024,
+          "pattern": "^(?!/)(?!.*[\\\\:\\u0000])(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)(?!.*\\/$).+$"
+        },
+        "linux64": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024,
+          "pattern": "^(?!/)(?!.*[\\\\:\\u0000])(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)(?!.*\\/$).+$"
+        },
+        "macos": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024,
+          "pattern": "^(?!/)(?!.*[\\\\:\\u0000])(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)(?!.*\\/$).+$"
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "win64"
+          ]
+        },
+        {
+          "required": [
+            "linux64"
+          ]
+        },
+        {
+          "required": [
+            "macos"
+          ]
+        }
+      ],
+      "additionalProperties": false
+    },
     "limits": {
       "type": "object",
       "description": "Per-mod resource limits that may only reduce host/provider limits.",
@@ -149,5 +209,32 @@
       "additionalProperties": true
     }
   },
+  "allOf": [
+    {
+      "if": {
+        "required": ["kind"],
+        "properties": { "kind": { "const": "core_extension" } }
+      },
+      "then": {
+        "required": ["load_phase", "provider"],
+        "properties": {
+          "load_phase": { "const": "pre_game" },
+          "provider": {
+            "properties": { "abi_version": { "const": "1.1" } }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": ["load_phase"],
+        "properties": { "load_phase": { "const": "pre_game" } }
+      },
+      "then": {
+        "required": ["kind"],
+        "properties": { "kind": { "const": "core_extension" } }
+      }
+    }
+  ],
   "additionalProperties": true
 }

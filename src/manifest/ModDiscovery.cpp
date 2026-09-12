@@ -1,9 +1,9 @@
 #include "shiplua/manifest/ModDiscovery.h"
+#include "shiplua/manifest/PackageFormat.h"
 
 #include <algorithm>
-#include <array>
-#include <fstream>
 #include <string>
+#include <miniz.h>
 
 namespace ShipLua {
 
@@ -19,18 +19,27 @@ bool IsRegularFileWithoutSymlink(const std::filesystem::path& path, std::error_c
            !std::filesystem::is_symlink(status);
 }
 
-bool HasZipSignature(const std::filesystem::path& path) {
-    std::ifstream file(path, std::ios::binary);
-    std::array<unsigned char, 4> signature{};
-    if (!file.read(reinterpret_cast<char*>(signature.data()), signature.size())) {
+bool HasRootManifest(const std::filesystem::path& path) {
+    mz_zip_archive archive{};
+    if (!mz_zip_reader_init_file(&archive, path.string().c_str(), 0)) {
         return false;
     }
-    return signature == std::array<unsigned char, 4>{0x50, 0x4b, 0x03, 0x04} ||
-           signature == std::array<unsigned char, 4>{0x50, 0x4b, 0x05, 0x06} ||
-           signature == std::array<unsigned char, 4>{0x50, 0x4b, 0x07, 0x08};
+    const int index = mz_zip_reader_locate_file(
+        &archive, "manifest.toml", nullptr, MZ_ZIP_FLAG_CASE_SENSITIVE);
+    mz_zip_archive_file_stat stat{};
+    const bool found = index >= 0 &&
+        mz_zip_reader_file_stat(&archive, static_cast<mz_uint>(index), &stat) &&
+        !stat.m_is_directory && ((stat.m_external_attr >> 16U) & 0170000U) != 0120000U;
+    mz_zip_reader_end(&archive);
+    return found;
 }
 
 } // namespace
+
+bool HasModPackageManifest(const std::filesystem::path& path) {
+    std::error_code error;
+    return IsRegularFileWithoutSymlink(path, error) && HasRootManifest(path);
+}
 
 Result<std::vector<DiscoveredMod>> DiscoverMods(const std::filesystem::path& root) {
     std::error_code error;
@@ -70,7 +79,7 @@ Result<std::vector<DiscoveredMod>> DiscoverMods(const std::filesystem::path& roo
             }
         } else if (!std::filesystem::is_symlink(status) &&
                    std::filesystem::is_regular_file(status) &&
-                   entry.path().extension() == ".shipmod" && HasZipSignature(entry.path())) {
+                   HasModPackageExtension(entry.path()) && HasRootManifest(entry.path())) {
             mods.push_back({entry.path(), ModSourceKind::Package});
         }
 
