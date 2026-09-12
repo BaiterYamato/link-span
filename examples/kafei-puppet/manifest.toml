@@ -1,7 +1,7 @@
 id = "baiteryamato.kafei_puppet"
 name = "Kafei Puppet"
 version = "0.1.0"
-api = ">=0.4 <0.5"
+api = ">=0.4 <0.6"
 entrypoint = "main.lua"
 description = "Aperte K para spawnar um puppet com o esqueleto do Young Link. Com um .otr substituto (ex.: Kafei) na pasta mods, o puppet usa o modelo substituído."
 authors = ["BaiterYamato"]

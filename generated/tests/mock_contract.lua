@@ -148,6 +148,8 @@ probe("ship.storage.clear", {  }, "integer")
 probe("ship.storage.shared.set", { "probe", "probe" }, "boolean")
 probe("ship.storage.shared.delete", { "probe" }, "boolean")
 probe("ship.storage.shared.clear", {  }, "integer")
+probe("ship.native.has", { "probe" }, "boolean")
+probe("ship.native.call", { "probe", "probe" }, "string")
 check(resolve(ship_mod, "mm.player.jump") == nil, "ship.mm.player.jump não deveria existir no host oot")
 check(resolve(ship_mod, "mm.spawn_dog") == nil, "ship.mm.spawn_dog não deveria existir no host oot")
 check(resolve(ship_mod, "mm.player.set_sword_skin") == nil, "ship.mm.player.set_sword_skin não deveria existir no host oot")
@@ -450,6 +452,20 @@ do
   check(not ok, "ship.storage.shared.delete sem argumentos deveria falhar")
   check(type(err) == "string" and err:find("invalid_argument", 1, true) ~= nil,
     "erro de ship.storage.shared.delete deveria carregar invalid_argument")
+end
+do
+  local fn = resolve(ship_mod, "native.has")
+  local ok, err = pcall(fn)
+  check(not ok, "ship.native.has sem argumentos deveria falhar")
+  check(type(err) == "string" and err:find("invalid_argument", 1, true) ~= nil,
+    "erro de ship.native.has deveria carregar invalid_argument")
+end
+do
+  local fn = resolve(ship_mod, "native.call")
+  local value, err = fn()
+  check(value == nil, "ship.native.call sem argumentos não deveria retornar valor")
+  check(type(err) == "table" and err.code == "invalid_argument",
+    "erro de ship.native.call deveria carregar invalid_argument")
 end
 
 -- Semântica de infraestrutura do mock.

@@ -27,6 +27,8 @@ class VersionRange {
   public:
     static Result<VersionRange> Parse(const std::string& text);
     bool Contains(const SemVersion& version) const;
+    // Para contratos cuja seção seria ignorada por runtimes anteriores.
+    bool RequiresAtLeast(const SemVersion& minimum) const;
 
   private:
     enum class Operator { Equal, Greater, GreaterEqual, Less, LessEqual };

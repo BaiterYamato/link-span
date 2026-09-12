@@ -200,6 +200,16 @@ Result<VersionRange> VersionRange::Parse(const std::string& text) {
     return Result<VersionRange>::ok(std::move(range));
 }
 
+bool VersionRange::RequiresAtLeast(const SemVersion& minimum) const {
+    for (const auto& comparator : mComparators) {
+        if ((comparator.operation == Operator::Equal || comparator.operation == Operator::Greater ||
+             comparator.operation == Operator::GreaterEqual) && comparator.version.Compare(minimum) >= 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool VersionRange::Contains(const SemVersion& version) const {
     for (const Comparator& comparator : mComparators) {
         const int compared = version.Compare(comparator.version);

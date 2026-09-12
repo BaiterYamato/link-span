@@ -5,6 +5,7 @@
 #include <string>
 
 #include "shiplua/manifest/PackageExtractor.h"
+#include "shiplua/manifest/PackageFormat.h"
 #include "shiplua/testing/ModTestRunner.h"
 
 namespace {
@@ -23,7 +24,7 @@ class TempDirectory {
 };
 
 void PrintUsage() {
-    std::cerr << "Uso: shiplua_mod_test_runner <diretório-do-mod|pacote.shipmod> "
+    std::cerr << "Uso: shiplua_mod_test_runner <diretório-do-mod|pacote.zip|pacote.shipmod> "
                  "[--game oot|mm] [--capability <nome>]...\n"
                  "\n"
                  "Executa os testes do mod (<mod>/tests/*.lua) no mock runtime, sem jogo/ROM.\n"
@@ -86,9 +87,13 @@ int main(int argc, char** argv) {
         return 2;
     }
     if (std::filesystem::is_regular_file(status)) {
-        if (input.extension() != ".shipmod") {
-            std::cerr << "Arquivo de entrada não é um pacote .shipmod: " << input.string() << '\n';
+        if (!ShipLua::HasModPackageExtension(input)) {
+            std::cerr << "Arquivo de entrada não é um pacote .zip ou .shipmod: " << input.string() << '\n';
             return 2;
+        }
+        if (!ShipLua::HasModPackageManifest(input)) {
+            std::cerr << "ZIP inválido ou sem manifest.toml regular na raiz: " << input.string() << '\n';
+            return 1;
         }
         const auto stamp = std::chrono::steady_clock::now().time_since_epoch().count();
         temporary = std::make_unique<TempDirectory>(

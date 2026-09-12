@@ -14,6 +14,7 @@
 #include "shiplua/runtime/Logger.h"
 #include "shiplua/runtime/LuaRuntime.h"
 #include "shiplua/runtime/Result.h"
+#include "shiplua/native/NativeProvider.h"
 
 namespace ShipLua {
 
@@ -30,7 +31,7 @@ struct ModLoadReport {
 class ModHost {
   public:
     explicit ModHost(Logger logger = {});
-    ModHost(LuaApiHostContext hostContext, Logger logger = {});
+    ModHost(LuaApiHostContext hostContext, Logger logger = {}, NativeProviderPolicy nativePolicy = {});
     ~ModHost();
 
     ModHost(const ModHost&) = delete;
@@ -50,7 +51,7 @@ class ModHost {
                                               const std::string& luaSource,
                                               std::size_t memoryLimitBytes = 0);
 
-    // Safely extracts a .shipmod into an owned cache directory, loads it, and
+    // Safely extracts a ZIP (.zip or .shipmod) into an owned cache directory, loads it, and
     // removes the extracted files on unload or failure.
     Result<void> LoadModFromPackage(const std::string& package,
                                     const std::string& extractionRoot,
@@ -84,16 +85,24 @@ class ModHost {
   private:
     struct LoadedMod {
         Manifest manifest;
+        // Destruição reversa: binding -> runtime -> provider -> pacote.
+        std::unique_ptr<NativeProvider> provider;
         std::unique_ptr<LuaRuntime> runtime;
         std::unique_ptr<LuaApiBinding> binding;
         std::filesystem::path ownedDirectory;
     };
 
+    Result<void> LoadMod(const Manifest&, const std::string&, std::size_t,
+                         const std::filesystem::path& directory);
+
     Logger mLogger;
     LuaApiHostContext mHostContext;
+    NativeProviderPolicy mNativePolicy;
     std::unique_ptr<EventDispatcher> mEvents;
     std::size_t mNextModLoadOrder = 0;
     std::map<std::string, LoadedMod> mMods;
+    std::vector<std::string> mLoadOrder;
+    std::vector<NativeHostService> mExtensionServices;
 };
 
 } // namespace ShipLua

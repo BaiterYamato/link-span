@@ -14,6 +14,7 @@
 #include "shiplua/manifest/DependencyResolver.h"
 #include "shiplua/manifest/ManifestParser.h"
 #include "shiplua/manifest/ModDiscovery.h"
+#include "shiplua/manifest/PackageFormat.h"
 #include "shiplua/manifest/SemVersion.h"
 
 namespace ShipLua {
@@ -172,9 +173,10 @@ EventKind ToEventKind(Generated::EventKind kind) {
 
 ModHost::ModHost(Logger logger) : ModHost(LuaApiHostContext{}, std::move(logger)) {}
 
-ModHost::ModHost(LuaApiHostContext hostContext, Logger logger)
+ModHost::ModHost(LuaApiHostContext hostContext, Logger logger, NativeProviderPolicy nativePolicy)
     : mLogger(std::move(logger)),
       mHostContext(std::move(hostContext)),
+      mNativePolicy(std::move(nativePolicy)),
       mEvents(std::make_unique<EventDispatcher>()) {
     for (const Generated::EventBinding& event : Generated::kEvents) {
         const auto defined = mEvents->DefineEvent(std::string(event.name), ToEventKind(event.kind));
@@ -192,18 +194,24 @@ ModHost::~ModHost() {
 ModHost::ModHost(ModHost&& other) noexcept
     : mLogger(std::move(other.mLogger)),
       mHostContext(std::move(other.mHostContext)),
+      mNativePolicy(std::move(other.mNativePolicy)),
       mEvents(std::move(other.mEvents)),
       mNextModLoadOrder(other.mNextModLoadOrder),
-      mMods(std::move(other.mMods)) {}
+      mMods(std::move(other.mMods)),
+      mLoadOrder(std::move(other.mLoadOrder)),
+      mExtensionServices(std::move(other.mExtensionServices)) {}
 
 ModHost& ModHost::operator=(ModHost&& other) noexcept {
     if (this != &other) {
         UnloadAll();
         mLogger = std::move(other.mLogger);
         mHostContext = std::move(other.mHostContext);
+        mNativePolicy = std::move(other.mNativePolicy);
         mEvents = std::move(other.mEvents);
         mNextModLoadOrder = other.mNextModLoadOrder;
         mMods = std::move(other.mMods);
+        mLoadOrder = std::move(other.mLoadOrder);
+        mExtensionServices = std::move(other.mExtensionServices);
     }
     return *this;
 }
@@ -230,18 +238,43 @@ Result<void> ModHost::LoadModFromDirectory(const std::string& dir, std::size_t m
                                      manifest.entrypoint + "': " + source.message);
     }
 
-    return LoadModFromManifestAndSource(manifest, *source.value, memoryLimitBytes);
+    return LoadMod(manifest, *source.value, memoryLimitBytes, modDir);
 }
 
 Result<void> ModHost::LoadModFromManifestAndSource(const Manifest& manifest,
                                                    const std::string& luaSource,
                                                    std::size_t memoryLimitBytes) {
+    return LoadMod(manifest, luaSource, memoryLimitBytes, {});
+}
+
+Result<void> ModHost::LoadMod(const Manifest& manifest, const std::string& luaSource,
+                             std::size_t memoryLimitBytes, const std::filesystem::path& directory) {
     if (manifest.id.empty()) {
         return Result<void>::err(ErrorCode::InvalidArgument, "manifest has an empty id");
     }
     if (mMods.find(manifest.id) != mMods.end()) {
         return Result<void>::err(ErrorCode::InvalidState,
                                  "mod '" + manifest.id + "' is already loaded");
+    }
+    if (manifest.kind == ModKind::CoreExtension &&
+        (manifest.loadPhase != ModLoadPhase::PreGame || !manifest.provider ||
+         manifest.provider->abiVersion != "1.1")) {
+        return Result<void>::err(ErrorCode::InvalidArgument,
+                                 "core_extension requires pre_game and provider ABI 1.1");
+    }
+    if (manifest.kind == ModKind::Mod && manifest.loadPhase == ModLoadPhase::PreGame) {
+        return Result<void>::err(ErrorCode::InvalidArgument,
+                                 "pre_game is reserved for core_extension");
+    }
+    if (manifest.loadPhase == ModLoadPhase::PreGame) {
+        const auto runtimeLoaded = std::any_of(
+            mMods.begin(), mMods.end(), [](const auto& item) {
+                return item.second.manifest.loadPhase == ModLoadPhase::Runtime;
+            });
+        if (runtimeLoaded) {
+            return Result<void>::err(ErrorCode::InvalidState,
+                                     "pre_game core extension must load before runtime mods");
+        }
     }
     if (!mHostContext.gameId.empty()) {
         auto compatible = ValidateCompatibility(manifest, mHostContext);
@@ -251,6 +284,33 @@ Result<void> ModHost::LoadModFromManifestAndSource(const Manifest& manifest,
         }
     }
 
+    // Declaração antes de runtime/binding garante a ordem também no rollback.
+    std::unique_ptr<NativeProvider> provider;
+    if (manifest.provider) {
+        auto nativePolicy = mNativePolicy;
+        nativePolicy.services.insert(nativePolicy.services.end(),
+                                     mExtensionServices.begin(), mExtensionServices.end());
+        auto native = NativeProvider::Load(manifest, directory, nativePolicy);
+        if (!native.isOk()) return Result<void>::err(native.code,
+            "mod '" + manifest.id + "' [native]: " + native.message);
+        provider = std::move(*native.value);
+        if (manifest.kind == ModKind::CoreExtension) {
+            for (const auto& published : provider->PublishedServices()) {
+                const auto collision = std::find_if(
+                    nativePolicy.services.begin(), nativePolicy.services.end(),
+                    [&published](const NativeHostService& existing) {
+                        return existing.name == published.name &&
+                               existing.version == published.version;
+                    });
+                if (collision != nativePolicy.services.end()) {
+                    return Result<void>::err(
+                        ErrorCode::InvalidState,
+                        "mod '" + manifest.id + "' [native]: duplicate service '" +
+                            published.name + "' version " + std::to_string(published.version));
+                }
+            }
+        }
+    }
     auto runtime = std::make_unique<LuaRuntime>(manifest.id, mLogger, memoryLimitBytes);
     if (runtime->State() == nullptr) {
         return Result<void>::err(ErrorCode::HostFailure,
@@ -260,6 +320,7 @@ Result<void> ModHost::LoadModFromManifestAndSource(const Manifest& manifest,
     LuaApiModPolicy policy;
     policy.permissions = manifest.permissionGrants;
     policy.maxActors = manifest.limitActors;
+    policy.native = provider.get();
     auto binding = std::make_unique<LuaApiBinding>(
         *runtime, *mEvents, mLogger, mHostContext, mNextModLoadOrder,
         manifest.loadPriority, 3, std::move(policy));
@@ -276,9 +337,16 @@ Result<void> ModHost::LoadModFromManifestAndSource(const Manifest& manifest,
         return run;
     }
 
-    mLogger.info(manifest.id, "loaded mod '" + manifest.name + "' v" + manifest.version);
+    mLogger.info(manifest.id, "loaded mod '" + manifest.name + "' v" + manifest.version +
+                              (provider ? " [native]" : ""));
     mMods.emplace(manifest.id,
-                  LoadedMod{manifest, std::move(runtime), std::move(binding), {}});
+                  LoadedMod{manifest, std::move(provider), std::move(runtime), std::move(binding), {}});
+    auto stored = mMods.find(manifest.id);
+    if (manifest.kind == ModKind::CoreExtension && stored != mMods.end() && stored->second.provider) {
+        const auto& published = stored->second.provider->PublishedServices();
+        mExtensionServices.insert(mExtensionServices.end(), published.begin(), published.end());
+    }
+    mLoadOrder.push_back(manifest.id);
     ++mNextModLoadOrder;
     return Result<void>::ok();
 }
@@ -287,6 +355,10 @@ Result<void> ModHost::LoadModFromPackage(const std::string& package,
                                          const std::string& extractionRoot,
                                          const PackageLimits& limits,
                                          std::size_t memoryLimitBytes) {
+    if (!HasModPackageManifest(package)) {
+        return Result<void>::err(ErrorCode::InvalidArgument,
+                                 "package is not a readable ZIP with manifest.toml at its root");
+    }
     const std::filesystem::path destination = MakePackageDirectory(extractionRoot);
     Result<void> extracted = ExtractShipmod(package, destination, limits);
     if (!extracted.isOk()) {
@@ -472,8 +544,30 @@ Result<void> ModHost::UnloadMod(const std::string& id) {
         return Result<void>::err(ErrorCode::InvalidHandle,
                                  "mod '" + modId + "' is not loaded");
     }
+    if (it->second.provider && it->second.provider->IsCalling()) {
+        return Result<void>::err(ErrorCode::InvalidState, "cannot unload a mod during its native callback");
+    }
+    for (const auto& [otherId, other] : mMods) {
+        if (otherId == modId) continue;
+        const bool declaredDependency = std::any_of(
+            other.manifest.dependencies.begin(), other.manifest.dependencies.end(),
+            [&modId](const auto& dependency) { return dependency.first == modId; });
+        const bool nativeConsumer = other.provider && other.provider->CanAccessServiceFrom(modId);
+        if (declaredDependency || nativeConsumer) {
+            return Result<void>::err(ErrorCode::InvalidState,
+                                     "cannot unload mod '" + modId +
+                                         "' while dependent '" + otherId + "' is loaded");
+        }
+    }
     const std::filesystem::path ownedDirectory = std::move(it->second.ownedDirectory);
-    mMods.erase(it); // destroys the LuaRuntime (closes its lua_State)
+    std::erase_if(mExtensionServices, [&modId](const NativeHostService& service) {
+        return service.owner == modId;
+    });
+    std::erase(mLoadOrder, modId);
+    {
+        // Retirar do mapa antes de shutdown/finalizadores chamarem serviços do host.
+        auto unloaded = mMods.extract(it);
+    } // binding -> lua_close -> native shutdown -> dlclose
     if (!ownedDirectory.empty()) {
         std::error_code error;
         std::filesystem::remove_all(ownedDirectory, error);
@@ -488,10 +582,8 @@ Result<void> ModHost::UnloadMod(const std::string& id) {
 }
 
 void ModHost::UnloadAll() {
-    while (!mMods.empty()) {
-        const std::string id = mMods.begin()->first;
-        UnloadMod(id);
-    }
+    const auto ids = mLoadOrder;
+    for (auto it = ids.rbegin(); it != ids.rend(); ++it) UnloadMod(*it);
 }
 
 LuaRuntime* ModHost::GetRuntime(const std::string& id) {

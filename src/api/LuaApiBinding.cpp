@@ -12,6 +12,7 @@
 #include <utility>
 
 #include "shiplua/generated/ApiBindings.h"
+#include "shiplua/native/NativeProvider.h"
 
 #if __has_include(<lua.hpp>)
 #include <lua.hpp>
@@ -477,6 +478,7 @@ LuaApiBinding::LuaApiBinding(LuaRuntime& runtime, EventDispatcher& events, Logge
       mHotkeys(mHostContext.hotkeys),
       mTimers(mHostContext.timers),
       mStorage(mHostContext.storage),
+      mSharedStorage(mHostContext.sharedStorage),
       mActors(mHostContext.actors),
       mModPolicy(std::move(modPolicy)),
       mModLoadOrder(modLoadOrder),
@@ -549,9 +551,68 @@ int LuaApiBinding::InstallProtected(lua_State* state) noexcept {
     return failed ? Fail(state, "exceção C++ durante instalação da API ship") : 0;
 }
 
+int LuaApiBinding::NativeHas(lua_State* state) noexcept {
+    auto* provider = static_cast<NativeProvider*>(lua_touserdata(state, lua_upvalueindex(1)));
+    size_t length = 0;
+    const char* name = lua_type(state, 1) == LUA_TSTRING ? lua_tolstring(state, 1, &length) : nullptr;
+    if (!name || !length || length > 128) return Fail(state, "expected native function name (1..128 bytes)");
+    lua_pushboolean(state, provider && provider->Has(std::string_view(name, length)));
+    return 1;
+}
+
+int LuaApiBinding::NativeCall(lua_State* state) noexcept {
+    auto* provider = static_cast<NativeProvider*>(lua_touserdata(state, lua_upvalueindex(1)));
+    size_t nameLength = 0, requestLength = 0;
+    const char* name = lua_type(state, 1) == LUA_TSTRING ? lua_tolstring(state, 1, &nameLength) : nullptr;
+    const char* request = lua_type(state, 2) == LUA_TSTRING ? lua_tolstring(state, 2, &requestLength) : nullptr;
+    char response[SHIP_NATIVE_MAX_BYTES];
+    NativeCallResult result{ErrorCode::Unsupported, 0};
+    if (!name || !request || !nameLength || nameLength > 128) {
+        result.code = ErrorCode::InvalidArgument;
+    } else if (requestLength > SHIP_NATIVE_MAX_BYTES) {
+        result.code = ErrorCode::ResourceLimit;
+    } else if (provider) {
+        result = provider->Call(std::string_view(name, nameLength), request,
+            static_cast<uint32_t>(requestLength), response, sizeof(response));
+    }
+    // Só PODs vivos daqui em diante: alocação Lua pode gerar longjmp no MSVC.
+    if (result.code == ErrorCode::Ok) {
+        lua_pushlstring(state, response, result.size);
+        return 1;
+    }
+    const char* code = "host_failure";
+    const char* message = "native provider call failed";
+    switch (result.code) {
+        case ErrorCode::Unsupported: code = "unsupported"; message = "native provider/service unavailable"; break;
+        case ErrorCode::InvalidArgument: code = "invalid_argument"; message = "expected native function name and byte string"; break;
+        case ErrorCode::InvalidHandle: code = "invalid_handle"; message = "native function not registered by this mod"; break;
+        case ErrorCode::InvalidState: code = "invalid_state"; message = "native provider disabled, reentered or called on wrong thread"; break;
+        case ErrorCode::ResourceLimit: code = "resource_limit"; message = "native request/response exceeds 65536 bytes"; break;
+        default: break;
+    }
+    lua_pushnil(state);
+    lua_createtable(state, 0, 2);
+    lua_pushstring(state, code);
+    lua_setfield(state, -2, "code");
+    lua_pushstring(state, message);
+    lua_setfield(state, -2, "message");
+    return 2;
+}
+
 void LuaApiBinding::BuildModule(lua_State* state) {
     lua_newtable(state);
     const int ship = lua_gettop(state);
+
+    lua_newtable(state);
+    // Provider sobrevive a lua_close; LuaApiBinding não. Finalizadores podem
+    // guardar estas closures, logo não capturar `this` como outras APIs legadas.
+    lua_pushlightuserdata(state, mModPolicy.native);
+    lua_pushcclosure(state, &LuaApiBinding::NativeHas, 1);
+    lua_setfield(state, -2, "has");
+    lua_pushlightuserdata(state, mModPolicy.native);
+    lua_pushcclosure(state, &LuaApiBinding::NativeCall, 1);
+    lua_setfield(state, -2, "call");
+    lua_setfield(state, ship, "native");
 
     lua_newtable(state);
     SetFunction(state, -1, "id", &LuaApiBinding::GameId, this);
@@ -600,13 +661,12 @@ void LuaApiBinding::BuildModule(lua_State* state) {
     SetFunction(state, -1, "set", &LuaApiBinding::StorageSet, this);
     SetFunction(state, -1, "delete", &LuaApiBinding::StorageDelete, this);
     SetFunction(state, -1, "clear", &LuaApiBinding::StorageClear, this);
-    // ship.storage.shared.* — mesmo backend, namespace comum. Declarada no
-    // schema desde a 0.4 e nunca montada aqui; o contrato indexava nil.
+    // Backend compartilhado entre jogos, com namespace separado para cada mod.
     lua_newtable(state);
-    SetFunction(state, -1, "get", &LuaApiBinding::StorageSharedGet, this);
-    SetFunction(state, -1, "set", &LuaApiBinding::StorageSharedSet, this);
-    SetFunction(state, -1, "delete", &LuaApiBinding::StorageSharedDelete, this);
-    SetFunction(state, -1, "clear", &LuaApiBinding::StorageSharedClear, this);
+    SetFunction(state, -1, "get", &LuaApiBinding::SharedStorageGet, this);
+    SetFunction(state, -1, "set", &LuaApiBinding::SharedStorageSet, this);
+    SetFunction(state, -1, "delete", &LuaApiBinding::SharedStorageDelete, this);
+    SetFunction(state, -1, "clear", &LuaApiBinding::SharedStorageClear, this);
     lua_setfield(state, -2, "shared");
     lua_setfield(state, ship, "storage");
 
@@ -1474,89 +1534,6 @@ int LuaApiBinding::CancelTimer(lua_State* state, const char*& error) {
 // ship.storage — namespace automático por mod (plan-sdk.md §8.18)
 // ---------------------------------------------------------------------------
 
-// Escopo passado ao KeyValueStorage. O compartilhado usa um nome que nenhum mod
-// pode ter: ids de mod sao identificadores pontuados e nao aceitam cifrao, entao
-// `$shared` nunca colide com o namespace de ninguem.
-std::string LuaApiBinding::StorageScope(bool shared) const {
-    return shared ? std::string("$shared") : mRuntime.ModId();
-}
-
-int LuaApiBinding::StorageSharedGet(lua_State* state) noexcept {
-    LuaApiBinding* binding = FromUpvalue(state);
-    const char* error = nullptr;
-    int result = 0;
-    try {
-        if (binding == nullptr) {
-            error = "contexto da API ship indisponível";
-        } else {
-            result = binding->GetStorage(state, error, /*shared=*/true);
-        }
-    } catch (...) {
-        error = ErrorMessage(ErrorCode::HostFailure);
-    }
-    if (error != nullptr) {
-        return luaL_error(state, "%s", error);
-    }
-    return result;
-}
-
-int LuaApiBinding::StorageSharedSet(lua_State* state) noexcept {
-    LuaApiBinding* binding = FromUpvalue(state);
-    const char* error = nullptr;
-    int result = 0;
-    try {
-        if (binding == nullptr) {
-            error = "contexto da API ship indisponível";
-        } else {
-            result = binding->SetStorage(state, error, /*shared=*/true);
-        }
-    } catch (...) {
-        error = ErrorMessage(ErrorCode::HostFailure);
-    }
-    if (error != nullptr) {
-        return luaL_error(state, "%s", error);
-    }
-    return result;
-}
-
-int LuaApiBinding::StorageSharedDelete(lua_State* state) noexcept {
-    LuaApiBinding* binding = FromUpvalue(state);
-    const char* error = nullptr;
-    int result = 0;
-    try {
-        if (binding == nullptr) {
-            error = "contexto da API ship indisponível";
-        } else {
-            result = binding->DeleteStorage(state, error, /*shared=*/true);
-        }
-    } catch (...) {
-        error = ErrorMessage(ErrorCode::HostFailure);
-    }
-    if (error != nullptr) {
-        return luaL_error(state, "%s", error);
-    }
-    return result;
-}
-
-int LuaApiBinding::StorageSharedClear(lua_State* state) noexcept {
-    LuaApiBinding* binding = FromUpvalue(state);
-    const char* error = nullptr;
-    int result = 0;
-    try {
-        if (binding == nullptr) {
-            error = "contexto da API ship indisponível";
-        } else {
-            result = binding->ClearStorage(state, error, /*shared=*/true);
-        }
-    } catch (...) {
-        error = ErrorMessage(ErrorCode::HostFailure);
-    }
-    if (error != nullptr) {
-        return luaL_error(state, "%s", error);
-    }
-    return result;
-}
-
 int LuaApiBinding::StorageGet(lua_State* state) noexcept {
     LuaApiBinding* binding = FromUpvalue(state);
     const char* error = nullptr;
@@ -1565,7 +1542,8 @@ int LuaApiBinding::StorageGet(lua_State* state) noexcept {
         if (binding == nullptr) {
             error = "contexto da API ship indisponível";
         } else {
-            result = binding->GetStorage(state, error);
+            result = binding->GetStorage(state, error, binding->mStorage.get(),
+                                         "ship.storage.get exige uma chave textual");
         }
     } catch (...) {
         error = ErrorMessage(ErrorCode::HostFailure);
@@ -1573,22 +1551,23 @@ int LuaApiBinding::StorageGet(lua_State* state) noexcept {
     return error != nullptr ? Fail(state, error) : result;
 }
 
-int LuaApiBinding::GetStorage(lua_State* state, const char*& error, bool shared) {
-    if (mStorage == nullptr) {
+int LuaApiBinding::GetStorage(lua_State* state, const char*& error, KeyValueStorage* storage,
+                             const char* label) {
+    if (storage == nullptr) {
         error = ErrorMessage(ErrorCode::Unsupported);
         return 0;
     }
     if (lua_type(state, 1) != LUA_TSTRING) {
-        error = "ship.storage.get exige uma chave textual";
+        error = label; // "<label>.get exige uma chave textual" — mensagem simplificada
         return 0;
     }
     size_t length = 0;
     const char* key = lua_tolstring(state, 1, &length);
     if (key == nullptr) {
-        error = "ship.storage.get exige uma chave textual";
+        error = label;
         return 0;
     }
-    auto result = mStorage->Get(StorageScope(shared), std::string(key, length));
+    auto result = storage->Get(mRuntime.ModId(), std::string(key, length));
     if (!result.isOk()) {
         error = ErrorMessage(result.code);
         return 0;
@@ -1613,7 +1592,8 @@ int LuaApiBinding::StorageSet(lua_State* state) noexcept {
         if (binding == nullptr) {
             error = "contexto da API ship indisponível";
         } else {
-            result = binding->SetStorage(state, error);
+            result = binding->SetStorage(state, error, binding->mStorage.get(),
+                                         "ship.storage.set exige uma chave textual");
         }
     } catch (...) {
         error = ErrorMessage(ErrorCode::HostFailure);
@@ -1621,19 +1601,20 @@ int LuaApiBinding::StorageSet(lua_State* state) noexcept {
     return error != nullptr ? Fail(state, error) : result;
 }
 
-int LuaApiBinding::SetStorage(lua_State* state, const char*& error, bool shared) {
-    if (mStorage == nullptr) {
+int LuaApiBinding::SetStorage(lua_State* state, const char*& error, KeyValueStorage* storage,
+                             const char* label) {
+    if (storage == nullptr) {
         error = ErrorMessage(ErrorCode::Unsupported);
         return 0;
     }
     if (lua_type(state, 1) != LUA_TSTRING) {
-        error = "ship.storage.set exige uma chave textual";
+        error = label;
         return 0;
     }
     size_t length = 0;
     const char* key = lua_tolstring(state, 1, &length);
     if (key == nullptr) {
-        error = "ship.storage.set exige uma chave textual";
+        error = label;
         return 0;
     }
     KeyValueStorage::Value value;
@@ -1655,11 +1636,11 @@ int LuaApiBinding::SetStorage(lua_State* state, const char*& error, bool shared)
             break;
         }
         default:
-            error = "ship.storage.set aceita somente booleano, número ou texto";
+            error = "ship.storage set aceita somente booleano, número ou texto";
             return 0;
     }
     const auto stored =
-        mStorage->Set(StorageScope(shared), std::string(key, length), std::move(value));
+        storage->Set(mRuntime.ModId(), std::string(key, length), std::move(value));
     if (!stored.isOk()) {
         error = ErrorMessage(stored.code);
         return 0;
@@ -1676,7 +1657,8 @@ int LuaApiBinding::StorageDelete(lua_State* state) noexcept {
         if (binding == nullptr) {
             error = "contexto da API ship indisponível";
         } else {
-            result = binding->DeleteStorage(state, error);
+            result = binding->DeleteStorage(state, error, binding->mStorage.get(),
+                                            "ship.storage.delete exige uma chave textual");
         }
     } catch (...) {
         error = ErrorMessage(ErrorCode::HostFailure);
@@ -1684,22 +1666,23 @@ int LuaApiBinding::StorageDelete(lua_State* state) noexcept {
     return error != nullptr ? Fail(state, error) : result;
 }
 
-int LuaApiBinding::DeleteStorage(lua_State* state, const char*& error, bool shared) {
-    if (mStorage == nullptr) {
+int LuaApiBinding::DeleteStorage(lua_State* state, const char*& error, KeyValueStorage* storage,
+                                const char* label) {
+    if (storage == nullptr) {
         error = ErrorMessage(ErrorCode::Unsupported);
         return 0;
     }
     if (lua_type(state, 1) != LUA_TSTRING) {
-        error = "ship.storage.delete exige uma chave textual";
+        error = label;
         return 0;
     }
     size_t length = 0;
     const char* key = lua_tolstring(state, 1, &length);
     if (key == nullptr) {
-        error = "ship.storage.delete exige uma chave textual";
+        error = label;
         return 0;
     }
-    auto removed = mStorage->Delete(StorageScope(shared), std::string(key, length));
+    auto removed = storage->Delete(mRuntime.ModId(), std::string(key, length));
     if (!removed.isOk()) {
         error = ErrorMessage(removed.code);
         return 0;
@@ -1716,7 +1699,7 @@ int LuaApiBinding::StorageClear(lua_State* state) noexcept {
         if (binding == nullptr) {
             error = "contexto da API ship indisponível";
         } else {
-            result = binding->ClearStorage(state, error);
+            result = binding->ClearStorage(state, error, binding->mStorage.get());
         }
     } catch (...) {
         error = ErrorMessage(ErrorCode::HostFailure);
@@ -1724,18 +1707,89 @@ int LuaApiBinding::StorageClear(lua_State* state) noexcept {
     return error != nullptr ? Fail(state, error) : result;
 }
 
-int LuaApiBinding::ClearStorage(lua_State* state, const char*& error, bool shared) {
-    if (mStorage == nullptr) {
+int LuaApiBinding::ClearStorage(lua_State* state, const char*& error, KeyValueStorage* storage) {
+    if (storage == nullptr) {
         error = ErrorMessage(ErrorCode::Unsupported);
         return 0;
     }
-    auto cleared = mStorage->Clear(StorageScope(shared));
+    auto cleared = storage->Clear(mRuntime.ModId());
     if (!cleared.isOk()) {
         error = ErrorMessage(cleared.code);
         return 0;
     }
     lua_pushinteger(state, static_cast<lua_Integer>(*cleared.value));
     return 1;
+}
+
+// ship.storage.shared.* — mesmos impls, mas apontando para o store cross-game.
+// Reaproveitam GetStorage/SetStorage/DeleteStorage/ClearStorage passando
+// mSharedStorage; o namespace por mod é o mesmo, então o MESMO mod vê o mesmo
+// estado em OoT e MM.
+int LuaApiBinding::SharedStorageGet(lua_State* state) noexcept {
+    LuaApiBinding* binding = FromUpvalue(state);
+    const char* error = nullptr;
+    int result = 0;
+    try {
+        if (binding == nullptr) {
+            error = "contexto da API ship indisponível";
+        } else {
+            result = binding->GetStorage(state, error, binding->mSharedStorage.get(),
+                                         "ship.storage.shared.get exige uma chave textual");
+        }
+    } catch (...) {
+        error = ErrorMessage(ErrorCode::HostFailure);
+    }
+    return error != nullptr ? Fail(state, error) : result;
+}
+
+int LuaApiBinding::SharedStorageSet(lua_State* state) noexcept {
+    LuaApiBinding* binding = FromUpvalue(state);
+    const char* error = nullptr;
+    int result = 0;
+    try {
+        if (binding == nullptr) {
+            error = "contexto da API ship indisponível";
+        } else {
+            result = binding->SetStorage(state, error, binding->mSharedStorage.get(),
+                                         "ship.storage.shared.set exige uma chave textual");
+        }
+    } catch (...) {
+        error = ErrorMessage(ErrorCode::HostFailure);
+    }
+    return error != nullptr ? Fail(state, error) : result;
+}
+
+int LuaApiBinding::SharedStorageDelete(lua_State* state) noexcept {
+    LuaApiBinding* binding = FromUpvalue(state);
+    const char* error = nullptr;
+    int result = 0;
+    try {
+        if (binding == nullptr) {
+            error = "contexto da API ship indisponível";
+        } else {
+            result = binding->DeleteStorage(state, error, binding->mSharedStorage.get(),
+                                            "ship.storage.shared.delete exige uma chave textual");
+        }
+    } catch (...) {
+        error = ErrorMessage(ErrorCode::HostFailure);
+    }
+    return error != nullptr ? Fail(state, error) : result;
+}
+
+int LuaApiBinding::SharedStorageClear(lua_State* state) noexcept {
+    LuaApiBinding* binding = FromUpvalue(state);
+    const char* error = nullptr;
+    int result = 0;
+    try {
+        if (binding == nullptr) {
+            error = "contexto da API ship indisponível";
+        } else {
+            result = binding->ClearStorage(state, error, binding->mSharedStorage.get());
+        }
+    } catch (...) {
+        error = ErrorMessage(ErrorCode::HostFailure);
+    }
+    return error != nullptr ? Fail(state, error) : result;
 }
 
 #if defined(_MSC_VER)

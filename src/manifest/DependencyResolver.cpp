@@ -75,6 +75,12 @@ Result<ModResolution> ResolveMods(const std::vector<Manifest>& manifests) {
                 resolution.rejected[id] = "dependency '" + dependencyId + "' version is incompatible";
                 break;
             }
+            if (manifest->loadPhase == ModLoadPhase::PreGame &&
+                dependency->second->loadPhase != ModLoadPhase::PreGame) {
+                resolution.rejected[id] = "pre_game mod cannot depend on runtime mod '" +
+                                          dependencyId + "'";
+                break;
+            }
         }
     }
 
@@ -124,7 +130,21 @@ Result<ModResolution> ResolveMods(const std::vector<Manifest>& manifests) {
         }
     }
 
+    // A fase e uma fronteira real: todo core saudavel precede todo mod runtime.
+    for (const auto& [beforeId, beforeManifest] : candidates) {
+        if (resolution.rejected.contains(beforeId) ||
+            beforeManifest->loadPhase != ModLoadPhase::PreGame) continue;
+        for (const auto& [afterId, afterManifest] : candidates) {
+            if (resolution.rejected.contains(afterId) ||
+                afterManifest->loadPhase != ModLoadPhase::Runtime) continue;
+            AddEdge(beforeId, afterId, edges, indegree);
+        }
+    }
+
     auto readyLess = [&candidates](const std::string& left, const std::string& right) {
+        const auto leftPhase = candidates.at(left)->loadPhase;
+        const auto rightPhase = candidates.at(right)->loadPhase;
+        if (leftPhase != rightPhase) return leftPhase == ModLoadPhase::PreGame;
         const int leftPriority = candidates.at(left)->loadPriority;
         const int rightPriority = candidates.at(right)->loadPriority;
         return leftPriority != rightPriority ? leftPriority < rightPriority : left < right;

@@ -1,4 +1,7 @@
+#include <chrono>
 #include <cstdint>
+#include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -125,6 +128,86 @@ void TestValidationAndLimits() {
           "updating an existing key should not hit the key count limit");
 }
 
+void TestSerializeRoundtrip() {
+    ShipLua::KeyValueStorage source;
+    source.Set("mod.a", "flag", true);
+    source.Set("mod.a", "count", std::int64_t{-42});
+    source.Set("mod.a", "ratio", 3.25);
+    source.Set("mod.b", "label", std::string("olá\0mundo", 9)); // valor com NUL
+
+    const std::string blob = source.Serialize();
+
+    ShipLua::KeyValueStorage restored;
+    Check(restored.Deserialize(blob).isOk(), "deserialize of a valid blob should succeed");
+
+    const auto flag = restored.Get("mod.a", "flag");
+    Check(flag.isOk() && flag.value->has_value() && std::get<bool>(**flag.value),
+          "serialize should preserve bool across mods");
+    const auto count = restored.Get("mod.a", "count");
+    Check(count.isOk() && std::get<std::int64_t>(**count.value) == -42,
+          "serialize should preserve negative int");
+    const auto ratio = restored.Get("mod.a", "ratio");
+    Check(ratio.isOk() && std::get<double>(**ratio.value) == 3.25,
+          "serialize should preserve double");
+    const auto label = restored.Get("mod.b", "label");
+    Check(label.isOk() && std::get<std::string>(**label.value) == std::string("olá\0mundo", 9),
+          "serialize should preserve string with NUL and cross-mod namespace");
+
+    // Blob corrompido não deve derrubar nem aceitar silenciosamente.
+    ShipLua::KeyValueStorage bad;
+    Check(!bad.Deserialize("lixo").isOk(), "deserialize of garbage should fail");
+    Check(!bad.Deserialize(blob.substr(0, blob.size() - 3)).isOk(),
+          "deserialize of a truncated blob should fail");
+}
+
+void TestPersistenceToDisk() {
+    const auto dir = std::filesystem::temp_directory_path() /
+        ("shiplua_kv_persist_test_" + std::to_string(
+            std::chrono::steady_clock::now().time_since_epoch().count()));
+    std::error_code ec;
+    std::filesystem::create_directories(dir, ec);
+    const auto path = dir / "store.bin";
+    std::filesystem::remove(path, ec);
+
+    // Arquivo ausente na primeira execução não é erro.
+    {
+        ShipLua::KeyValueStorage storage;
+        Check(storage.EnablePersistence(path).isOk(),
+              "enabling persistence with no existing file should succeed");
+        Check(storage.Set("mod.rpg", "level", std::int64_t{5}).isOk(), "set should succeed");
+        Check(storage.Set("mod.rpg", "xp", std::int64_t{1200}).isOk(), "second set should succeed");
+        // A gravação é adiada: só marca sujo, não toca o disco a cada Set.
+        Check(storage.IsDirty(), "mutations should mark the store dirty");
+        Check(!std::filesystem::exists(path, ec), "set must NOT write to disk by itself");
+        Check(storage.Flush().isOk(), "flush should write pending changes");
+        Check(!storage.IsDirty(), "flush should clear the dirty flag");
+        Check(storage.Flush().isOk(), "flushing a clean store should be a cheap no-op");
+    }
+    Check(std::filesystem::exists(path, ec), "persistence should have written the file");
+
+    // Nova instância carrega o que foi gravado — simula fechar e reabrir o jogo.
+    {
+        ShipLua::KeyValueStorage reopened;
+        Check(reopened.EnablePersistence(path).isOk(), "reopening the persisted file should succeed");
+        const auto level = reopened.Get("mod.rpg", "level");
+        Check(level.isOk() && level.value->has_value() && std::get<std::int64_t>(**level.value) == 5,
+              "persisted level should survive across instances");
+        const auto xp = reopened.Get("mod.rpg", "xp");
+        Check(xp.isOk() && xp.value->has_value() && std::get<std::int64_t>(**xp.value) == 1200,
+              "persisted xp should survive across instances");
+        // Delete também marca sujo e precisa de flush.
+        Check(reopened.Delete("mod.rpg", "xp").isOk(), "delete with persistence should succeed");
+        Check(reopened.Flush().isOk(), "flush after delete should succeed");
+    }
+    {
+        ShipLua::KeyValueStorage third;
+        third.EnablePersistence(path);
+        const auto xp = third.Get("mod.rpg", "xp");
+        Check(xp.isOk() && !xp.value->has_value(), "deletion should persist across instances");
+    }
+    std::filesystem::remove_all(dir, ec);
+}
+
 } // namespace
 
 int main() {
@@ -132,6 +215,8 @@ int main() {
     TestDeleteClearAndKeys();
     TestNamespacing();
     TestValidationAndLimits();
+    TestSerializeRoundtrip();
+    TestPersistenceToDisk();
 
     if (failures != 0) {
         std::cerr << failures << " check(s) failed\n";

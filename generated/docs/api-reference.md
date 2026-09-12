@@ -1,7 +1,7 @@
 <!-- Gerado por tools/generate_api_docs.py. Não edite manualmente. -->
 # Referência da API ShipLua
 
-Versão da API: `0.4.0`. Versão do schema: `1`.
+Versão da API: `0.5.0`. Versão do schema: `1`.
 
 ## Tipos
 
@@ -87,6 +87,8 @@ Versão da API: `0.4.0`. Versão do schema: `1`.
 | `ship.hud.draw_text` | `text: string`, `x: integer`, `y: integer`, `r: integer?`, `g: integer?`, `b: integer?`, `a: integer?`, `scale: number?` | `boolean` | `oot` | `experimental` | `0.4.0` | `hud.draw` | `invalid_argument`, `invalid_state` |
 | `ship.hud.draw_ring` | `cx: number`, `cy: number`, `radius: number`, `thickness: number?`, `fraction: number?`, `r: integer?`, `g: integer?`, `b: integer?`, `a: integer?` | `boolean` | `oot` | `experimental` | `0.4.0` | `hud.draw` | `invalid_argument`, `invalid_state` |
 | `ship.hud.draw_icon` | `path: string`, `x: integer`, `y: integer`, `w: integer`, `h: integer`, `options: hud_icon_options?` | `boolean` | `oot` | `experimental` | `0.4.0` | `hud.icons` | `invalid_argument`, `invalid_state`, `unsupported` |
+| `ship.native.has` | `name: string` | `boolean` | `common` | `experimental` | `0.5.0` | — | `invalid_argument` |
+| `ship.native.call` | `name: string`, `request: string` | `string, operation_error?` | `common` | `experimental` | `0.5.0` | — | `unsupported`, `invalid_argument`, `invalid_handle`, `invalid_state`, `resource_limit`, `host_failure` |
 
 ## Eventos
 

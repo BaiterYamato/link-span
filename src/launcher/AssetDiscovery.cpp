@@ -1,4 +1,5 @@
 #include "linkspan/launcher/AssetDiscovery.h"
+#include "shiplua/manifest/PackageFormat.h"
 
 #include <algorithm>
 #include <array>
@@ -202,7 +203,7 @@ std::vector<std::string> DiscoverDualWorldMods(const std::filesystem::path& dire
                                        std::istreambuf_iterator<char>());
             requiresBoth = RequiresBothGames(manifest);
             id = path.parent_path().filename().string();
-        } else if (Lower(path.extension().string()) == ".shipmod") {
+        } else if (ShipLua::HasModPackageExtension(path)) {
             requiresBoth = PackageRequiresBothGames(path);
             id = path.stem().string();
         }

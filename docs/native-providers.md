@@ -1,252 +1,176 @@
-# Providers nativos — quando um mod precisa mesmo de C++
+# Mods nativos independentes — SDK experimental 0.5.0
 
-> Nível 3 do plano do SDK (plan-sdk.md §8.20). Este documento substitui o
-> esboço de princípios por um design concreto: layout de pacote, cabeçalho
-> ABI, sequência de carregamento e postura de segurança.
+Um `.zip` pode trazer Lua, assets e uma biblioteca C/C++ própria. O autor
+registra funções no init e as chama com `ship.native.call`. Não precisa adicionar
+cada função ao schema do Link-Span, a uma allowlist ou ao código do loader.
 
-## O problema que isso resolve
+## Estado real
 
-A ponte de hooks (`ship.hooks.result` + eventos `hook.*`, ver
-[cross-world-assets.md](cross-world-assets.md) e o catálogo gerado em
-`generated/docs/api-reference.md`) cobre a maioria das ideias de mod: um
-evento nativo já existe, o mod assina, decide o resultado, pronto — zero
-recompilação do host.
+Implementado no core: carga dinâmica, ABI C 1.0/1.1, funções privadas por instância,
+consulta de serviços do host, core extensions que publicam serviços para outros
+mods, diretórios e pacotes, rollback, unload e erros Lua.
+O exemplo `examples/native-dash` é compilado separadamente do host. O teste
+`native_independent_mod` muda apenas a DLL/SO e verifica SHA-256 inalterado do
+executável. O gameplay usado nessa prova é simulado, sem ROM.
 
-Mas duas auditorias independentes de sistemas de itens customizados em
-produção (forks reais de Shipwright — um com ~24 itens portados de outros
-jogos Zelda, outro com Arm Cannon/Glider/UltraHand ao estilo Tears of the
-Kingdom) encontraram uma classe de mecanismo que **nenhum hook resolve
-bem**, porque a natureza do trabalho é nativa, não um "sim/não" ou um valor
-modificado:
+**Esta worktree ainda não foi integrada aos executáveis Shipwright/2Ship.**
+Eles precisam incorporar esta versão do SDK uma vez e publicar serviços do motor.
+Uma função nova do mod não exige rebuild; uma integração do motor que o host ainda
+não expõe pode exigir atualização do adaptador. Isto ainda não equivale a Mixins
+arbitrários sobre qualquer função do jogo.
 
-- **Física por frame sustentada** (planador, correntes de vento, atualização
-  de campos de colisão a cada tick) — um hook devolve um valor uma vez; isso
-  precisa de um laço C rodando todo frame.
-- **Manipulação de structs privadas de um ator específico** (ex.: escrever
-  direto em `EnBoom->moveTo`) — só é seguro quando compilado contra o
-  layout exato daquele overlay, algo que um payload de evento (só
-  bool/número/string/array/objeto) não consegue carregar.
-- **Análise geométrica pesada** (varrer milhares de polígonos de colisão da
-  cena por lançamento de item) — expor isso por chamada Lua por polígono
-  seria uma regressão séria de performance.
-- **Redimensionar array nativo de tamanho fixo** (ex.: crescer o inventário
-  além do `gItemSlots[56]` vanilla) — exige recompilar a struct de save.
-- **Ciclo de vida de slot de câmera** — arbitragem `CAM_STAT_ACTIVE`/`WAIT`
-  errada corrompe o renderer.
-
-Para esses casos, a resposta do projeto não é "então não dá" — é: **o mod
-compila e traz o próprio código nativo**, sem exigir que o host/modloader
-inteiro seja recompilado para aceitá-lo. Isso mantém a promessa central do
-SDK (liberdade do modder) mesmo na borda onde Lua genuinamente não alcança.
-
-## Layout do pacote
-
-```text
-meu-item.shipmod (zip)
-├── manifest.toml
-├── main.lua
-├── assets/                  (opcional, já suportado hoje)
-└── provider/                (novo)
-    ├── win64.dll
-    ├── linux64.so
-    └── macos.dylib
-```
-
-`manifest.toml` ganha uma seção opcional:
+## Criar um mod
 
 ```toml
+id = "meu.mod"
+name = "Meu mod"
+version = "1.0.0"
+api = ">=0.5 <1.0"
+entrypoint = "main.lua"
+
 [provider]
 abi_version = "1.0"
-win64 = "provider/win64.dll"
-linux64 = "provider/linux64.so"
-macos = "provider/macos.dylib"
-# Capabilities que o provider promete registrar — o host valida que ele
-# realmente as registrou no init, e recusa o mod se a lista não bater
-# (mesma disciplina de "declarar antes de usar" que schema/capabilities.yml
-# já impõe para capabilities nativas do host).
-declares = ["meuitem.arm_cannon.fire"]
+win64 = "provider/meu_mod.dll"
+linux64 = "provider/libmeu_mod.so"
+macos = "provider/libmeu_mod.dylib"
 ```
 
-Um `.shipmod` sem seção `[provider]` continua sendo só Lua+assets — a
-imensa maioria dos mods nunca precisa disso.
+Binários desta ABI: x86-64. Campo de plataforma ausente causa erro explícito.
+Não há `declares`: nomes e implementação das funções pertencem ao mod.
 
-## Cabeçalho ABI (`ship_provider_abi.h`)
+## Criar uma core extension
 
-C puro, versionado por tamanho de struct (padrão estilo COM: o primeiro
-campo é sempre `size`, permitindo o host aceitar providers compilados contra
-uma versão *mais antiga* do cabeçalho sem quebrar):
+Uma extensão estrutural carrega antes dos mods comuns e publica tabelas C
+versionadas. Esse é o formato destinado a frameworks como Unbound e NEI:
+
+```toml
+id = "meu.framework"
+name = "Meu framework"
+version = "1.0.0"
+api = ">=0.5 <1.0"
+entrypoint = "main.lua"
+kind = "core_extension"
+load_phase = "pre_game"
+
+[provider]
+abi_version = "1.1"
+win64 = "provider/framework.dll"
+```
+
+No `init`, a DLL publica qualquer contrato próprio pelo callback anexado na ABI
+1.1:
 
 ```c
-#ifndef SHIP_PROVIDER_ABI_H
-#define SHIP_PROVIDER_ABI_H
-
-#include <stdint.h>
-#include <stdbool.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#define SHIP_PROVIDER_ABI_VERSION_MAJOR 1
-#define SHIP_PROVIDER_ABI_VERSION_MINOR 0
-
-typedef enum ShipResult {
-    SHIP_OK = 0,
-    SHIP_ERR_ABI_MISMATCH = 1,
-    SHIP_ERR_INVALID_ARGUMENT = 2,
-    SHIP_ERR_ALREADY_REGISTERED = 3,
-    SHIP_ERR_HOST_FAILURE = 4,
-} ShipResult;
-
-// Handle opaco para o payload de um evento/hook — o provider NUNCA vê a
-// struct C++ real (ShipLua::EventPayload); só pode ler/escrever por estas
-// funções, iguais às que a própria ponte de hooks usa internamente.
-typedef struct ShipEventPayload ShipEventPayload;
-
-typedef struct ShipRuntimeApi {
-    uint32_t size; // sizeof(ShipRuntimeApi) no momento em que o HOST foi
-                   // compilado — o provider verifica antes de usar campos
-                   // além dos que conhece.
-    uint32_t abiVersionMajor;
-    uint32_t abiVersionMinor;
-
-    // Logging — nunca stdout/stderr direto; sempre pelo runtime, que já
-    // sabe rotear pro spdlog do host com o prefixo do mod certo.
-    void (*log_info)(const char* modId, const char* message);
-    void (*log_warn)(const char* modId, const char* message);
-    void (*log_error)(const char* modId, const char* message);
-
-    // Alocação — nunca malloc/free cru do provider; sempre pela arena do
-    // host, para que o rastreamento de memória (o mesmo ZELDA_ARENA_* que
-    // detectou o vazamento do corpo do Goron nesta sessão) continue válido.
-    void* (*alloc)(size_t bytes);
-    void (*free)(void* ptr);
-
-    // Capabilities/eventos — MESMOS registries que ship.hooks.* usa; um
-    // provider registra pelo ABI, um mod Lua consome por ship.events.on
-    // como qualquer outro evento "hook.*". Provider não ganha um sistema
-    // paralelo.
-    ShipResult (*register_capability)(const char* name, const char* description);
-    ShipResult (*subscribe_event)(const char* eventName,
-                                  void (*callback)(ShipEventPayload* payload, void* userData),
-                                  void* userData);
-
-    // Leitura/escrita de payload — só tipos escalares, iguais ao que
-    // EventValue já suporta (bool/int64/double/string). Sem ponteiro cru:
-    // um provider PODE manter seu próprio ponteiro para uma struct de ator
-    // específica se ele mesmo a resolveu (ex.: via um handle opaco de ator
-    // que o host já expõe), mas nunca recebe um ponteiro de engine cru
-    // pela ABI em si.
-    bool (*payload_get_bool)(ShipEventPayload* payload, const char* key, bool* out);
-    bool (*payload_get_number)(ShipEventPayload* payload, const char* key, double* out);
-    bool (*payload_get_string)(ShipEventPayload* payload, const char* key, char* outBuf, size_t bufSize);
-    void (*payload_set_bool)(ShipEventPayload* payload, const char* key, bool value);
-    void (*payload_set_number)(ShipEventPayload* payload, const char* key, double value);
-
-    // Hook de ciclo de vida por frame — a peça que os hooks event-based não
-    // davam: um provider pode pedir para ser chamado todo frame, sem
-    // depender de um evento nativo existir para aquele ponto exato.
-    ShipResult (*register_frame_tick)(void (*callback)(void* userData), void* userData);
-} ShipRuntimeApi;
-
-typedef struct ShipProviderDescriptor {
-    uint32_t size;
-    const char* modId;      // mesmo id do manifest.toml do mod dono
-    const char* providerName;
-    const char* version;
-} ShipProviderDescriptor;
-
-// Único ponto de entrada exigido — resolvido por nome via
-// GetProcAddress/dlsym após o carregamento da biblioteca.
-typedef ShipResult (*ShipProviderInitFn)(const ShipRuntimeApi* runtime, const ShipProviderDescriptor* self);
-// Chamado no unload do mod — todo callback/capability registrado deve ser
-// desfeito aqui, ou o host recusa o unload com um erro claro.
-typedef void (*ShipProviderShutdownFn)(void);
-
-#ifdef __cplusplus
-}
-#endif
-#endif // SHIP_PROVIDER_ABI_H
+runtime->register_service(runtime->context, "meu.framework.items", 1,
+                          sizeof(items_api), &items_api);
 ```
 
-O provider exporta exatamente duas funções, por nome fixo (`extern "C"`,
-sem name mangling):
+Outro provider usa `get_service` com o mesmo nome e versão. O Link-Span cuida de
+ordem, compatibilidade e lifetime; ele não interpreta os campos da tabela nem
+exige uma função nova no schema. ABI 1.0 continua válida para mods nativos comuns.
+O unload da extensão é recusado enquanto um consumidor do serviço permanece
+carregado, e `UnloadAll` encerra os módulos na ordem inversa da carga.
 
-```c
-ShipResult ShipProvider_Init(const ShipRuntimeApi* runtime, const ShipProviderDescriptor* self);
-void ShipProvider_Shutdown(void);
+```lua
+local ship = require("ship")
+if ship.native.has("dash") then
+    local result, err = ship.native.call("dash", "")
+    assert(result, err and err.message)
+end
 ```
 
-## Sequência de carregamento
+`has` exige nome textual de 1 a 128 bytes. `call` recebe e devolve strings de
+bytes (inclusive NUL); protocolo é livre, por exemplo JSON. Cada direção tem
+limite de 65536 bytes. Erros retornam `nil, {code, message}`. Três falhas nativas
+consecutivas desativam chamadas até recarregar o mod; argumentos inválidos não
+entram nessa contagem. Cada instância pode registrar até 256 funções no init.
 
-1. `ModHost::LoadModFromManifestAndSource` detecta `[provider]` no
-   manifest.toml. Se a plataforma atual não tem entrada correspondente
-   (`win64`/`linux64`/`macos`), o mod carrega só a parte Lua e loga aviso
-   — degrada, não recusa (mesma filosofia de `ship.capabilities.has` para
-   capabilities ausentes).
-2. A DLL/so/dylib é extraída para a MESMA pasta isolada por mod que já
-   existe hoje para assets (`ownedDirectory` em `ModHost`) — nunca para uma
-   pasta compartilhada, para não colidir entre mods.
-3. `LoadLibrary`/`dlopen` na cópia extraída (nunca no zip em si).
-4. Resolve `ShipProvider_Init` por nome; se ausente, recusa o mod inteiro
-   com erro claro (não silencioso).
-5. Compara `abiVersionMajor` do host com o que o provider foi compilado
-   contra (embutido no próprio binário via uma constante — o host recusa
-   ANTES de chamar `Init` se major não bater; minor mais baixo é aceito,
-   maior é recusado).
-6. Chama `ShipProvider_Init(&runtime, &descriptor)`.
-7. Confere que toda capability em `manifest.toml`'s `[provider].declares`
-   foi de fato registrada — se não, recusa o mod (mesma disciplina que
-   pegou o bug de "hooks.bridge esquecida no host" desta sessão, aplicada
-   agora ao mod em vez de ao host).
-8. No unload: chama `ShipProvider_Shutdown()`, depois `FreeLibrary`/`dlclose`.
+## Compilar sem recompilar o host
 
-## Postura de segurança — isto não é sandboxed
+A partir da raiz do SDK:
 
-Diferente de Lua, um provider nativo tem acesso total ao processo: pode ler
-qualquer memória, chamar qualquer API do SO, travar o jogo, ou pior. Isso
-não é um detalhe a esconder:
+```powershell
+cmake --build build --config Release --target native_sdk_host
+cmake -S examples/native-dash -B build/native-dash -DDASH_VELOCITY=12.0
+cmake --build build/native-dash --config Release
+build/tests/Release/native_sdk_host.exe build/native-dash/mod 12 oot
+```
 
-- O launcher e o log do host **distinguem visualmente** mods com provider
-  nativo dos mods puramente Lua (ex.: `ShipLua carregou 'x' [nativo]` vs
-  `ShipLua carregou 'x'`) — o jogador sabe o que está rodando.
-- A wiki de instalação de mods (`docs/wiki/`) ganha uma seção explícita:
-  "mods com provider nativo têm o mesmo nível de confiança que instalar um
-  programa qualquer — revise a fonte ou confie no autor, não é opcional
-  como com Lua puro."
-- O host **nunca** baixa nem compila um provider automaticamente — o
-  modder compila e distribui o binário já pronto dentro do `.shipmod`.
+Agora altere somente o mod, preservando o mesmo host:
 
-## O que isso NÃO é
+```powershell
+cmake -S examples/native-dash -B build/native-dash -DDASH_VELOCITY=21.0
+cmake --build build/native-dash --config Release
+build/tests/Release/native_sdk_host.exe build/native-dash/mod 21 oot
+```
 
-Não é uma segunda linguagem de extensão paralela ao Lua. Um provider só
-existe para preencher os furos específicos que a ponte de hooks documenta
-como "irredutivelmente nativo" (ver `generated/docs/api-reference.md` e o
-apêndice de casos nativos abaixo) — a API que ele usa (`register_capability`,
-`subscribe_event`) é a MESMA que os hosts já usam internamente, só cruzando
-uma fronteira C ABI em vez de C++ direto. Um provider bem escrito deveria,
-na prática, terminar registrando um `hook.*` que o RESTO do mod (a parte
-Lua) consome normalmente — o C fica confinado ao pedaço que realmente
-precisa dele.
+A pasta `build/native-dash/mod` já é instalável no host de demonstração. Para
+distribuir um `.zip`, compacte `manifest.toml`, `main.lua` e a biblioteca sob
+`provider/`, mantendo o manifesto na raiz do arquivo, sem pasta envolvente.
+`.shipmod` continua aceito como extensão alternativa do mesmo ZIP.
 
-## Casos reais que motivaram este design (2026-07-21)
+```powershell
+Compress-Archive -Path build/native-dash/mod/* -DestinationPath build/native-dash.zip
+python tools/shipmod.py validate build/native-dash.zip
+build/tests/Release/native_sdk_host.exe build/native-dash.zip 21 oot
+```
 
-Levantados minerando dois forks de sistemas de item customizado em produção
-(github.com/skijer/Shipwright branch Not-Enough-Items,
-github.com/xoascf/Shipwright PR #10):
+O build independente usa apenas o cabeçalho `include/shiplua/native/ship_native_abi.h`;
+não linka shiplua, Lua nem o executável. O teste automatizado repete diretório e
+pacote para identidades oot/mm e compara o hash do host.
 
-- Integração de física do planador/correntes de vento por frame.
-- Puppeteering de campos privados de um overlay de ator específico
-  (`EnBoom->moveTo`).
-- Análise geométrica de polígonos de colisão vizinhos para decidir se uma
-  superfície é "gancháel" (Whip/grappling hook).
-- Redimensionar `gItemSlots[]` para inventário estendido além do vanilla.
-- Ciclo de vida de sub-câmera (`Play_CreateSubCamera`/`CAM_STAT_WAIT`).
+## Integração do host e liberdade de extensão
 
-## Status de implementação
+```cpp
+ShipLua::NativeProviderPolicy native;
+native.enabled = true; // escolha de executar código nativo confiável
+native.services.push_back({"meu_host.player", 1, sizeof(playerApi), &playerApi});
+ShipLua::ModHost mods(context, logger, native);
+```
 
-Este documento é o design; **o carregamento dinâmico de biblioteca (passos
-2-8 acima) ainda não está implementado nos hosts**. A ponte de hooks (Nível
-2, já em produção) resolve a maioria dos casos reais encontrados nas duas
-auditorias — os providers nativos ficam reservados para os poucos que
-sobraram genuinamente irredutíveis, listados acima.
+`get_service(context, name, version, minimum_size)` devolve tabela C do host ou
+NULL. O loader não interpreta o conteúdo da tabela nem possui catálogo central
+de nomes de serviço. Assim, um adaptador pode expor uma interface ampla do motor,
+e bibliotecas de mods podem encapsulá-la. O exemplo oferece `example.player` com
+leitura/escrita de velocidade; **essa tabela não é uma implementação OoT/MM**.
+
+Tabelas e contextos dos serviços devem sobreviver a todos os providers. O host
+não pode destruir/mover a si mesmo de dentro de um callback nativo. Unload do mod
+ativo é recusado; funções do mod não podem ser registradas depois do init.
+
+## ABI e ciclo de vida
+
+A biblioteca exporta `ShipNative_Query` com convenção C. O descritor informa
+size/major/minor, init e shutdown. Init recebe tabela de serviços do runtime e
+produz estado por instância. O provider aloca/libera seu próprio estado, sem
+transferir malloc/free entre CRTs diferentes. Writer só é válido durante call.
+
+A ordem de descarregamento é: remover inscrições do binding, fechar Lua mantendo
+provider vivo para finalizadores, shutdown, descarregar DLL/SO e remover arquivos
+extraídos. Falha de init/entrypoint desfaz a instância. Exceções C++ são destruídas
+antes da biblioteca que implementa sua classe ser descarregada.
+
+## Confiança, compatibilidade e limites
+
+A escolha `enabled` é sobre executar código nativo, não sobre quais mecânicas um
+mod pode criar. É false por padrão para hosts antigos; o manifesto não a ativa.
+Um callback `authorize(manifest, caminho_absoluto)` é opcional para integrar UI ou
+validação de hashes. O jogo não baixa nem compila código de terceiros sozinho.
+
+DLLs/SOs **não têm sandbox**. Construtores e DllMain executam no carregamento,
+antes da query/checagem de ABI. Dependências transitivas da biblioteca também são
+código confiado. Exceções compatíveis são tratadas; crash, corrupção de memória e
+loops nativos não são isolados. A política não protege de um processo local que
+altere o arquivo entre aprovação e carregamento.
+
+Caminhos do binário precisam permanecer dentro do mod, sem traversal ou links/
+reparse points. Bibliotecas usam lookup local/system no Windows, RTLD_LOCAL no
+POSIX. Não há suporte validado a ARM, hot reload com referências ativas, registries
+concretos de novos atores/itens ou transformação arbitrária de código do host.
+
+Fonte do contrato: `rfcs/0011-native-provider-runtime.md`. O design anterior de
+providers listava capabilities/declarations e callbacks por frame; esta entrega
+substitui esse esboço por funções livres e acesso a serviços C. Eventos por frame
+podem chamar essas funções pelo Lua sem criar novas APIs centrais.
+Core extensions e serviços entre mods são definidos em
+`rfcs/0015-core-extension-abi.md`.

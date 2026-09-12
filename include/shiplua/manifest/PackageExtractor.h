@@ -15,7 +15,7 @@ struct PackageLimits {
     std::uint64_t maxCompressionRatio = 200;
 };
 
-// Extracts a .shipmod ZIP into `destination`. All entries are validated before
+// Extracts a ZIP (.zip or .shipmod) into `destination`. All entries are validated before
 // any bytes are written. Extraction happens in a sibling staging directory and
 // is committed with a rename only after every entry succeeds. Destination must
 // not already exist.

@@ -3,6 +3,36 @@ target_link_libraries(runtime_tests PRIVATE shiplua)
 
 add_test(NAME runtime_tests COMMAND runtime_tests)
 
+foreach(mode RANGE 0 3)
+    add_library(native_fixture_${mode} MODULE native/Fixture.c)
+    target_include_directories(native_fixture_${mode} PRIVATE "${SHIPLUA_SOURCE_DIR}/include")
+    target_compile_definitions(native_fixture_${mode} PRIVATE FIXTURE_MODE=${mode})
+endforeach()
+add_library(native_missing_export MODULE native/MissingExport.c)
+target_include_directories(native_missing_export PRIVATE "${SHIPLUA_SOURCE_DIR}/include")
+add_library(native_throw MODULE native/ThrowFixture.cpp)
+target_include_directories(native_throw PRIVATE "${SHIPLUA_SOURCE_DIR}/include")
+add_library(native_core_fixture MODULE native/CoreFixture.c)
+target_include_directories(native_core_fixture PRIVATE "${SHIPLUA_SOURCE_DIR}/include" "${CMAKE_CURRENT_SOURCE_DIR}/native")
+add_library(native_core_consumer MODULE native/CoreConsumerFixture.c)
+target_include_directories(native_core_consumer PRIVATE "${SHIPLUA_SOURCE_DIR}/include" "${CMAKE_CURRENT_SOURCE_DIR}/native")
+add_executable(native_provider_tests native/NativeProviderTests.cpp)
+target_link_libraries(native_provider_tests PRIVATE shiplua miniz)
+add_dependencies(native_provider_tests native_fixture_0 native_fixture_1 native_fixture_2 native_fixture_3 native_missing_export native_throw native_core_fixture native_core_consumer)
+add_test(NAME native_provider_tests COMMAND native_provider_tests
+    $<TARGET_FILE:native_fixture_0> $<TARGET_FILE:native_fixture_1>
+    $<TARGET_FILE:native_fixture_2> $<TARGET_FILE:native_fixture_3> $<TARGET_FILE:native_missing_export>
+    $<TARGET_FILE:native_throw> $<TARGET_FILE:native_core_fixture>
+    $<TARGET_FILE:native_core_consumer>)
+
+add_executable(native_sdk_host native/NativeSdkHost.cpp)
+target_link_libraries(native_sdk_host PRIVATE shiplua)
+add_test(NAME native_independent_mod COMMAND "${Python3_EXECUTABLE}"
+    "${CMAKE_CURRENT_SOURCE_DIR}/native/test_independent_mod.py"
+    --host $<TARGET_FILE:native_sdk_host> --sdk "${SHIPLUA_SOURCE_DIR}"
+    --cmake "${CMAKE_COMMAND}" --generator "${CMAKE_GENERATOR}"
+    --platform "${CMAKE_GENERATOR_PLATFORM}")
+
 add_executable(handle_registry_tests unit/HandleRegistryTests.cpp)
 target_link_libraries(handle_registry_tests PRIVATE shiplua)
 
@@ -24,7 +54,7 @@ target_link_libraries(manifest_host_tests PRIVATE shiplua)
 add_test(NAME manifest_host_tests COMMAND manifest_host_tests)
 
 add_executable(manifest_discovery_tests unit/ManifestDiscoveryTests.cpp)
-target_link_libraries(manifest_discovery_tests PRIVATE shiplua)
+target_link_libraries(manifest_discovery_tests PRIVATE shiplua miniz)
 target_compile_definitions(manifest_discovery_tests PRIVATE
     SHIPLUA_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
 
@@ -216,6 +246,11 @@ set_tests_properties(mod_runner_usage PROPERTIES WILL_FAIL TRUE)
 
 add_test(NAME shipmod_cli_tests
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tools/test_shipmod.py")
+add_test(NAME zip_package_tools
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tools/test_zip_packages.py"
+        --validator $<TARGET_FILE:shiplua_manifest_validator>
+        --runner $<TARGET_FILE:shiplua_mod_test_runner>
+        --sdk "${SHIPLUA_SOURCE_DIR}")
 add_test(NAME hello_runtime_manifest_validation
     COMMAND shiplua_manifest_validator "${SHIPLUA_SOURCE_DIR}/examples/hello-runtime")
 add_test(NAME hello_runtime_mod_tests_oot

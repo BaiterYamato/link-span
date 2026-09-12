@@ -31,7 +31,7 @@ struct AssetSet {
 };
 
 AssetSet DiscoverAssets(const std::filesystem::path& directory);
-// Returns IDs of unpacked directory mods and packaged .shipmod files explicitly
+// Returns IDs of unpacked directory mods and packaged .zip/.shipmod files explicitly
 // declaring that both worlds are required. Ordinary games = ["oot", "mm"]
 // remains compatible with either host; only requires_both_games = true is a
 // hard dual-world requirement.

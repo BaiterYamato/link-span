@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "api_version": "0.4.0",
+  "api_version": "0.5.0",
   "capabilities": [
     {"name": "core.events", "status": "contract", "hosts": ["oot", "mm"], "description": "Eventos e lifecycle centrais do host."},
     {"name": "hooks.bridge", "status": "contract", "hosts": ["oot", "mm"], "description": "Ponte genérica para os pontos de instrumentação nativos (VB_*/On* do GameInteractor) — eventos hook.* assináveis com ship.events.on e decididos com ship.hooks.result, sem precisar de função nativa dedicada por habilidade."},

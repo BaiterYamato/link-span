@@ -4,7 +4,7 @@
 -- Derivados da IDL (schema/*.yml); qualquer falha aborta a carga do mod.
 local ship = require("ship")
 
-local API_VERSION = "0.4.0"
+local API_VERSION = "0.5.0"
 
 local FUNCTIONS = {
   { name = "ship.game.id", availability = "common", required_arguments = 0, error_mode = "raise" },
@@ -69,6 +69,8 @@ local FUNCTIONS = {
   { name = "ship.hud.draw_text", availability = "oot", required_arguments = 3, error_mode = "raise" },
   { name = "ship.hud.draw_ring", availability = "oot", required_arguments = 3, error_mode = "raise" },
   { name = "ship.hud.draw_icon", availability = "oot", required_arguments = 5, error_mode = "raise" },
+  { name = "ship.native.has", availability = "common", required_arguments = 1, error_mode = "raise" },
+  { name = "ship.native.call", availability = "common", required_arguments = 2, error_mode = "return" },
 }
 
 local EVENTS = { "game.ready", "game.frame", "game.shutdown", "scene.enter", "actor.init", "actor.update", "actor.destroy", "save.loaded", "text.open", "audio.sequence_started", "input.hotkey", "input.action", "hook.oot.player.speed.run", "hook.oot.player.fall_damage", "hook.oot.item.receive", "hook.oot.player.health_change", "hook.oot.player.bonk", "hook.oot.enemy.defeat", "hook.oot.item.give", "hook.oot.hud.draw", "hook.oot.player.first_person_control", "hook.oot.player.arrow_type_select", "hook.oot.player.body_anim_select", "hook.mm.player.speed.walk", "hook.mm.player.goron_roll.consume_magic", "hook.mm.player.goron_roll.disable_spike_mode", "hook.mm.player.goron_roll.increase_spike_level", "hook.mm.item.give", "hook.mm.enemy.defeat", "hook.mm.item.should_give" }
