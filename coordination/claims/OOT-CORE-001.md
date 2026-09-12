@@ -3,7 +3,7 @@
 - Status: claimed
 - Agent: Codex
 - Platform: Windows 11 / Codex
-- Branches: agent/NATIVE-001-provider-runtime; agent/OOT-NATIVE-001-native-engine
+- Branch: agent/NATIVE-001-provider-runtime; agent/OOT-NATIVE-001-native-engine
 - Started: 2026-09-12T12:00:00-03:00
 - Depends on: COREEXT-001, OOT-COREEXT-001
 - Files:
