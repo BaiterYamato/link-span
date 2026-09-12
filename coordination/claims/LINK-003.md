@@ -20,6 +20,13 @@
   - tests/**
   - hosts/shipwright/**
   - hosts/2ship2harkinian/**
+- Exception:
+  - `examples/survival-demo/**` liberado para `SURVIVAL-001` enquanto esta
+    tarefa estiver em `review`.
+  - `schema/**`, `generated/**`, `docs/api/**`, `include/shiplua/**`,
+    `src/api/**`, `src/host/**`, `src/mock/**`, `tests/**`,
+    `hosts/shipwright/**` e `examples/survival-demo/**` liberados para
+    `SURVIVAL-002` até a conclusão da build jogável.
 - Goal:
   - Consolidar o launcher dual em uma worktree limpa, com build deterministico OoT/MM/dual, tres mods comuns funcionando nos dois hosts e troca autenticada de mundo.
 - Guardrails:

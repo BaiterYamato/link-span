@@ -179,3 +179,80 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
 - Decisão pendente antes da publicação do SDK: adotar namespace de tag
   (`sdk-v0.1.0-alpha.1`) ou alinhar o primeiro SDK ao SemVer atual da API.
 - Este bloqueio não impede integrar o CLI nem iniciar `OOT-MODSDK-001`.
+
+## [OOT-COREMODS-001] Core extensions, Unbound e Not Enough Items no OoT
+
+- createdUtc: 2026-09-10T01:01:02Z
+- status: planned
+- scope: mixed
+- summary: Criar uma Core Extension ABI carregada antes do jogo e migrar SoH:
+  Unbound 0.6 e Not Enough Items para `.shipmod` autônomos no Shipwright 9.2.3,
+  sem recompilar o host para instalar ou atualizar cada mod. Majora's Mask fica
+  adiado até o gate funcional completo do OoT.
+- milestones:
+  1. Congelar e inventariar integralmente as duas fontes de referência.
+  2. Entregar manifesto, lifecycle, service registry, hooks e rollback da ABI.
+  3. Integrar uma única vez o substrato OoT necessário a recursos e layouts.
+  4. Portar e empacotar Unbound Framework com conformidade ao formato 2.
+  5. Portar e empacotar NEI independente de Unbound, em ondas de itens.
+  6. Validar os dois sozinhos, juntos e com Dynamic Movement Remake.
+  7. Encerrar o Gate OoT antes de planejar o adapter de Majora's Mask.
+- refs:
+  - docs/plans/oot-coremods-unbound-nei/plan.md
+  - coordination/claims/OOT-COREMODS-PLAN-001.md
+  - https://github.com/roborich/Shipwright/releases/tag/9.2.3-unbound0.6
+  - https://github.com/skijer/Shipwright/tree/Not-Enough-Items
+
+## UPDATE OOT-COREMODS-001 — ABI 1.1 executada no Shipwright 9.2.3
+
+- Status: in_progress
+- Concluído:
+  - `core_extension` e fase `pre_game` implementadas no SDK;
+  - service registry C versionado incluído pela ABI aditiva 1.1;
+  - compatibilidade com providers ABI 1.0 e lifetime de serviços cobertos;
+  - host OoT Release recompilado contra o SDK atual;
+  - core e consumer empacotados como ZIPs separados e validados;
+  - playtest isolado no Shipwright 9.2.3 comprovou core antes do consumer,
+    retorno `42`, dois mods ativos e unload em ordem inversa;
+  - overlay ABI 1.1 gerado com Dynamic Movement Remake 0.2.3, checksums
+    internos válidos e sem ROM, `oot.o2r`, saves ou configuração.
+- Artefato:
+  - `OOT-NATIVE-001/build/distribution/LinkSpan-Shipwright-9.2.3-CoreExtensions-ABI1.1-Win64-overlay.zip`
+  - SHA-256 `7C91F2A7E163CBADBED18976A9364EAA573347320CA724760537D574CD273A89`.
+- Próximo: materializar os registries reais usados por Unbound e Not Enough
+  Items, iniciando por recursos, objetos, atores, itens e UI.
+
+## UPDATE OOT-COREMODS-001 — contrato público do Prelude incorporado
+
+- Status: in_progress
+- Fonte revisada: manual Unbound, índice OoT e páginas de compatibilidade de
+  versões do Prelude of Light em 2026-09-12.
+- Plano ampliado com:
+  - valores publicados para mundo, rooms, atores, objetos, doors, mesh,
+    colisão, DynaPoly, exits, câmeras, luz, água, cenas, entrances, diálogo e
+    texturas;
+  - limites que continuam existindo e não podem ser prometidos como removidos;
+  - regeneração de `oot-unbound.o2r` por fingerprint de ROM/build/conversor;
+  - compatibilidade entre famílias de ROM e categorias de recursos renomeados;
+  - detecção de colisão quando dois mods incluem a mesma cena completa;
+  - testes de fronteira e critérios adicionais do Gate OoT.
+- Próximo: usar essa matriz como entrada verificável de `UNBOUND-001` e dos
+  contratos de resource/scene registry.
+
+## UPDATE OOT-COREMODS-001 — PR NEI #7 conferida
+
+- Status: in_progress
+- Conferência em 2026-09-12:
+  - PR #7 aberta, não draft, mergeável e com estado `clean`;
+  - head continua exatamente em
+    `c29262b76ead6f00786885ae4be68916cbee77f5`, já congelado no plano;
+  - nenhuma mudança de código posterior ao snapshot foi encontrada;
+  - entrega foi promovida de experimental para `Not enough items (Release)`;
+  - release `NEI INSTALLER` publica instaladores Windows/Linux/macOS;
+  - descrição exige bundles Pikachu, NEI part 1, Wolf Link e libsm64 por
+    plataforma.
+- Plano ampliado para inventariar bundles/licenças, isolar transformações,
+  tornar Mario/libsm64 e FleetShipCombo adapters opcionais, nunca empacotar ROM
+  SM64 e manter o NEI central operacional sem esses componentes.
+- Próximo: executar `NEI-001` por diff contra o base SHA da PR, separando os
+  merges de upstream dos subsistemas próprios do mod.

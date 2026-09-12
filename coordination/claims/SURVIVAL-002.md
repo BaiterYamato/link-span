@@ -1,0 +1,34 @@
+# SURVIVAL-002
+
+- Status: review
+- Agent: codex-windows-01
+- Platform: Windows 11 / Codex
+- Branch: release/v0.2.0-alpha.1
+- Started: 2026-07-25
+- Depends on: SURVIVAL-001, LINK-003, OOT-001
+- Files:
+  - SPEC.md
+  - rfcs/0010-game-state-directional-input-and-hud-icons.md
+  - schema/**
+  - generated/**
+  - docs/api/**
+  - include/shiplua/**
+  - src/api/**
+  - src/host/**
+  - src/mock/**
+  - tests/**
+  - examples/survival-demo/**
+  - coordination/claims/SURVIVAL-002.md
+  - coordination/handoffs/SURVIVAL-002.md
+  - hosts/shipwright/**
+- External host:
+  - D:/Desenvolvimento/ship-lua-worktrees/shipwright-limpo/Shipwright/soh/soh/ShipLua/**
+  - D:/Desenvolvimento/ship-lua-worktrees/shipwright-limpo/Shipwright/soh/soh/Enhancements/**
+- Goal:
+  - Entregar Fase 0 jogável com estado correto, quatro quickslots direcionais,
+    ícones/quantidades na HUD, bolsa persistente e consumo explícito.
+- Guardrails:
+  - RFC antes de alterar contrato público.
+  - Não tocar em garrafas, trade quest ou padding de save nesta fase.
+  - Preservar input vanilla em slot vazio ou após unload.
+  - Não versionar binários, ROMs, `.o2r`, saves ou assets protegidos.
