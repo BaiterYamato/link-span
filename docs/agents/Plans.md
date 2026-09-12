@@ -256,3 +256,22 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
   SM64 e manter o NEI central operacional sem esses componentes.
 - Próximo: executar `NEI-001` por diff contra o base SHA da PR, separando os
   merges de upstream dos subsistemas próprios do mod.
+
+## UPDATE OOT-COREMODS-001 — OOT-CORE-002 registry dinâmico validado
+
+- Status: in_progress
+- Concluído em 2026-09-12:
+  - serviço C `linkspan.oot.registry` v1 publicado pelo host OoT;
+  - espaços namespaced, IDs determinísticos, payloads copiados, busca por
+    nome/ID/handle, enumeração ordenada e cleanup em cascata;
+  - provider externo cria seu próprio catálogo e o remove no unload;
+  - testes de registry/engine e duas compilações independentes do mod verdes;
+  - playtest isolado Shipwright 9.2.3 com marcador `space=ok; entries=2`, sem
+    exceções e com arquivos rastreados inalterados;
+  - Dynamic Movement Remake 0.2.4 e overlay OOT-CORE-002 gerados e validados.
+- Artefato:
+  - `OOT-NATIVE-001/build/distribution/LinkSpan-Shipwright-9.2.3-OOT-CORE-002-RegistryV1-Win64-overlay.zip`
+  - SHA-256 `1233D3923F81838452C4037102F5169DA5FBD88987EF2E43D4A225ED32798324`.
+- Próximo: `UNBOUND-002/003` no substrato do overlay, seguido do adapter de
+  cena/entrance sobre o registry v1; depois `OOT-CORE-003` para
+  item/actor/inventory e o primeiro item sintético da NEI.
