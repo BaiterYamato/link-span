@@ -110,6 +110,14 @@ void RunContractOnHost(const std::string& game, const std::string& source) {
     // serviços em memória, como o mock runtime faz (MODSDK-004).
     context.timers = std::make_shared<ShipLua::FrameTimerScheduler>();
     context.storage = std::make_shared<ShipLua::KeyValueStorage>();
+    // O contexto anuncia a capability core.storage.shared (ContractCapabilities
+    // a inclui), entao precisa mesmo fornecer o backend: RFC 0001 diz que uma
+    // capacidade so e anunciada quando o adaptador implementa sua semantica.
+    // Sem isto, ship.storage.shared.* respondia unsupported e o contrato caia.
+    context.sharedStorage = std::make_shared<ShipLua::KeyValueStorage>();
+    // Mesma logica para player.speed, anunciada em ambos os jogos: o nucleo so
+    // publica a superficie, e o backend real pertence ao adaptador de host.
+    context.playerSpeedMultiplier = [](double) { return ShipLua::Result<void>::ok(); };
     context.actors = std::make_shared<ShipLua::MockActorProvider>(game);
     context.worldTravel = [](const ShipLua::WorldDestination&) {
         return ShipLua::Result<void>::ok();

@@ -40,6 +40,10 @@ struct LuaApiHostContext {
     std::shared_ptr<KeyValueStorage> sharedStorage;
     std::shared_ptr<ActorProvider> actors;         // nullable; null = host sem ship.actor
     std::function<Result<void>(const WorldDestination&)> worldTravel;
+    // Multiplicador de velocidade do jogador (capability player.speed). Existe
+    // nos dois jogos, mas quem sabe mexer no estado e o adaptador de host.
+    // Nullable: sem backend, ship.player.set_speed_multiplier retorna unsupported.
+    std::function<Result<void>(double)> playerSpeedMultiplier;
     // Games whose assets/hosts are available to the supervising Link-Span
     // process. Empty keeps standalone compatibility and means only gameId.
     std::vector<std::string> availableGames;
@@ -112,6 +116,8 @@ class LuaApiBinding {
     static int SharedStorageDelete(lua_State* state) noexcept;
     static int SharedStorageClear(lua_State* state) noexcept;
     static int WorldTravel(lua_State* state) noexcept;
+    static int HooksResult(lua_State* state) noexcept;
+    static int PlayerSetSpeedMultiplier(lua_State* state) noexcept;
     static int ActorSpawn(lua_State* state) noexcept;
     static int ActorDestroy(lua_State* state) noexcept;
     static int ActorExists(lua_State* state) noexcept;
@@ -146,6 +152,8 @@ class LuaApiBinding {
     int SetStorage(lua_State* state, const char*& error, KeyValueStorage* storage, const char* label);
     int DeleteStorage(lua_State* state, const char*& error, KeyValueStorage* storage, const char* label);
     int ClearStorage(lua_State* state, const char*& error, KeyValueStorage* storage);
+    int HooksResultFromLua(lua_State* state, const char*& error);
+    int PlayerSetSpeedMultiplierFromLua(lua_State* state, const char*& error);
     int WorldTravelFromLua(lua_State* state, const char*& error);
     int ActorSpawnFromLua(lua_State* state);
     int ActorDestroyFromLua(lua_State* state);
@@ -169,6 +177,9 @@ class LuaApiBinding {
     std::shared_ptr<KeyValueStorage> mStorage;
     std::shared_ptr<KeyValueStorage> mSharedStorage;
     std::shared_ptr<ActorProvider> mActors;
+    // Payload do evento sendo entregue agora. Valido somente durante
+    // InvokeCallback; e por onde ship.hooks.result devolve o valor ao host.
+    EventPayload* mActivePayload = nullptr;
     LuaApiModPolicy mModPolicy;
     std::map<std::string, std::shared_ptr<HotkeyCallback>> mHotkeyCallbacks;
     std::size_t mModLoadOrder = 0;

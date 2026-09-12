@@ -100,6 +100,71 @@ void PushEventPayload(lua_State* state, const EventPayload& payload) {
     PushEventObject(state, payload);
 }
 
+// Caminho inverso de PushEventValue: le um valor Lua e devolve o EventValue
+// equivalente. Usado por ship.hooks.result, que grava a resposta do mod no
+// payload do hook em voo. A profundidade e limitada porque a tabela vem do mod
+// e pode ser ciclica; ao estourar, o ramo vira nil em vez de recursao infinita.
+constexpr int kMaxEventValueDepth = 8;
+
+EventValue ReadEventValue(lua_State* state, int index, int depth) {
+    if (depth > kMaxEventValueDepth) {
+        return EventValue{};
+    }
+    const int absolute = lua_absindex(state, index);
+    switch (lua_type(state, absolute)) {
+    case LUA_TBOOLEAN:
+        return EventValue{lua_toboolean(state, absolute) != 0};
+    case LUA_TNUMBER:
+        if (lua_isinteger(state, absolute)) {
+            return EventValue{static_cast<std::int64_t>(lua_tointeger(state, absolute))};
+        }
+        return EventValue{static_cast<double>(lua_tonumber(state, absolute))};
+    case LUA_TSTRING: {
+        size_t length = 0;
+        const char* text = lua_tolstring(state, absolute, &length);
+        return EventValue{std::string(text != nullptr ? text : "", length)};
+    }
+    case LUA_TTABLE:
+        break;
+    default:
+        return EventValue{};
+    }
+
+    // Sequencia (1..n sem buracos) vira Array; qualquer outra tabela vira Object
+    // com as chaves textuais. Chaves nao textuais sao ignoradas.
+    const lua_Integer length = static_cast<lua_Integer>(lua_rawlen(state, absolute));
+    bool sequence = length > 0;
+    for (lua_Integer i = 1; sequence && i <= length; ++i) {
+        lua_rawgeti(state, absolute, i);
+        sequence = lua_type(state, -1) != LUA_TNIL;
+        lua_pop(state, 1);
+    }
+    if (sequence) {
+        EventValue::Array items;
+        items.reserve(static_cast<std::size_t>(length));
+        for (lua_Integer i = 1; i <= length; ++i) {
+            lua_rawgeti(state, absolute, i);
+            items.push_back(ReadEventValue(state, -1, depth + 1));
+            lua_pop(state, 1);
+        }
+        return EventValue{std::move(items)};
+    }
+
+    EventValue::Object object;
+    lua_pushnil(state);
+    while (lua_next(state, absolute) != 0) {
+        if (lua_type(state, -2) == LUA_TSTRING) {
+            size_t keyLength = 0;
+            const char* key = lua_tolstring(state, -2, &keyLength);
+            if (key != nullptr) {
+                object.emplace(std::string(key, keyLength), ReadEventValue(state, -1, depth + 1));
+            }
+        }
+        lua_pop(state, 1);
+    }
+    return EventValue{std::move(object)};
+}
+
 void PushStorageValue(lua_State* state, const KeyValueStorage::Value& value) {
     std::visit(
         [state](const auto& item) {
@@ -669,6 +734,17 @@ void LuaApiBinding::BuildModule(lua_State* state) {
     SetFunction(state, -1, "clear", &LuaApiBinding::SharedStorageClear, this);
     lua_setfield(state, -2, "shared");
     lua_setfield(state, ship, "storage");
+
+    lua_newtable(state);
+    SetFunction(state, -1, "result", &LuaApiBinding::HooksResult, this);
+    lua_setfield(state, ship, "hooks");
+
+    // O adaptador de host acrescenta ship.player.get/set (especificos de jogo)
+    // reaproveitando esta mesma tabela, e sobrescreve set_speed_multiplier pela
+    // implementacao real. O nucleo so garante que a superficie common exista.
+    lua_newtable(state);
+    SetFunction(state, -1, "set_speed_multiplier", &LuaApiBinding::PlayerSetSpeedMultiplier, this);
+    lua_setfield(state, ship, "player");
 
     lua_newtable(state);
     SetFunction(state, -1, "travel", &LuaApiBinding::WorldTravel, this);
@@ -1792,6 +1868,81 @@ int LuaApiBinding::SharedStorageClear(lua_State* state) noexcept {
     return error != nullptr ? Fail(state, error) : result;
 }
 
+// ship.hooks.result(valor) - o caminho de volta da ponte de hooks. Um hook
+// should/modify entrega o payload ao mod; o mod responde gravando
+// __hook_result nele, e o adaptador de host le essa chave ao voltar. Vive no
+// nucleo porque quem e dono do payload em voo e o dispatcher, nao o host.
+int LuaApiBinding::HooksResultFromLua(lua_State* state, const char*& error) {
+    if (lua_gettop(state) < 1) {
+        error = "ship.hooks.result exige um valor";
+        return 0;
+    }
+    if (mActivePayload == nullptr) {
+        // Chamada fora de um callback de evento: nao ha payload para responder.
+        error = ErrorMessage(ErrorCode::InvalidState);
+        return 0;
+    }
+    (*mActivePayload)["__hook_result"] = ReadEventValue(state, 1, 0);
+    lua_pushboolean(state, 1);
+    return 1;
+}
+
+int LuaApiBinding::HooksResult(lua_State* state) noexcept {
+    LuaApiBinding* binding = FromUpvalue(state);
+    const char* error = nullptr;
+    int result = 0;
+    try {
+        if (binding == nullptr) {
+            error = "contexto da API ship indisponivel";
+        } else {
+            result = binding->HooksResultFromLua(state, error);
+        }
+    } catch (...) {
+        error = ErrorMessage(ErrorCode::HostFailure);
+    }
+    return error != nullptr ? Fail(state, error) : result;
+}
+
+// ship.player.set_speed_multiplier(fator) - primitiva comum aos dois jogos, mas
+// o estado que ela dirige pertence ao host. O nucleo mantem a funcao sempre na
+// superficie (contrato: toda funcao common existe) e delega ao provider; sem
+// provider, responde unsupported, e quem faz feature detection e
+// ship.capabilities.has("player.speed").
+int LuaApiBinding::PlayerSetSpeedMultiplierFromLua(lua_State* state, const char*& error) {
+    if (lua_type(state, 1) != LUA_TNUMBER) {
+        error = "ship.player.set_speed_multiplier exige um fator numerico";
+        return 0;
+    }
+    const double factor = static_cast<double>(lua_tonumber(state, 1));
+    if (!mHostContext.playerSpeedMultiplier) {
+        error = ErrorMessage(ErrorCode::Unsupported);
+        return 0;
+    }
+    const Result<void> applied = mHostContext.playerSpeedMultiplier(factor);
+    if (!applied.isOk()) {
+        error = ErrorMessage(applied.code);
+        return 0;
+    }
+    lua_pushboolean(state, 1);
+    return 1;
+}
+
+int LuaApiBinding::PlayerSetSpeedMultiplier(lua_State* state) noexcept {
+    LuaApiBinding* binding = FromUpvalue(state);
+    const char* error = nullptr;
+    int result = 0;
+    try {
+        if (binding == nullptr) {
+            error = "contexto da API ship indisponivel";
+        } else {
+            result = binding->PlayerSetSpeedMultiplierFromLua(state, error);
+        }
+    } catch (...) {
+        error = ErrorMessage(ErrorCode::HostFailure);
+    }
+    return error != nullptr ? Fail(state, error) : result;
+}
+
 #if defined(_MSC_VER)
 #define SHIPLUA_WORLD_NOINLINE __declspec(noinline)
 #elif defined(__GNUC__) || defined(__clang__)
@@ -2055,7 +2206,12 @@ EventFlow LuaApiBinding::InvokeCallback(const std::shared_ptr<LuaCallback>& call
     const int handlerIndex = lua_gettop(state);
     lua_rawgeti(state, LUA_REGISTRYINDEX, callback->registryReference);
     PushEventPayload(state, payload);
+    // Enquanto o callback roda, ship.hooks.result escreve neste payload.
+    // Restaura o anterior no fim porque um callback pode disparar outro evento.
+    EventPayload* const previousPayload = mActivePayload;
+    mActivePayload = &payload;
     const int status = lua_pcall(state, 1, 0, handlerIndex);
+    mActivePayload = previousPayload;
     if (status == LUA_OK) {
         lua_pop(state, 1);
         callback->consecutiveFailures = 0;
