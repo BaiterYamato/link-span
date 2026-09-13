@@ -300,3 +300,20 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
 - Próximo: `UNBOUND-002B`, com factory JSON externa e estratégia de merge por
   schema no coremod; depois `UNBOUND-003` para containers ampliados.
 - Commits locais: `53bef1f16` e `221339a39` (host), `59dd141` (RFC 0017).
+
+## UPDATE OOT-COREMODS-001 — OOT-UNBOUND-002B factory JSON externa validada
+
+- Status: in_progress
+- Concluído em 2026-09-12:
+  - coremod externo publica `linkspan.unbound.json_factory` v1 sem alteração no
+    host;
+  - schema `linkspan.unbound.actor-patch/v1` registrado com merge recursivo de
+    objetos e substituição integral de arrays e escalares;
+  - resultado possui handle opaco, metadata, hash e liberação explícita;
+  - coremod e consumidor compilam sem link com `soh.exe` e passam testes de
+    merge válido, schema divergente e JSON inválido;
+  - playtest isolado `20260912-193800` carregou os dois ZIPs na ordem correta,
+    mesclou duas camadas e preservou executável, O2Rs e pacotes byte a byte.
+- Próximo: `UNBOUND-003`, com containers/layouts ampliados, seguido do adapter
+  que materializa uma scene factory a partir do JSON mesclado.
+- Commit local: `dad1b2914` (host).

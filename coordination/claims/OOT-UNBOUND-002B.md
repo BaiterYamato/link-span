@@ -1,0 +1,29 @@
+# OOT-UNBOUND-002B
+
+- Status: done
+- Agent: Codex
+- Platform: Windows 11 / Codex
+- Branch: agent/OOT-NATIVE-001-native-engine
+- Started: 2026-09-12T22:30:33.9153141Z
+- Reviewed: 2026-09-12 — factory externa, pacotes e playtest final validados.
+- Closed: 2026-09-12 — commit local `dad1b2914` (host); sem push.
+- Depends on: OOT-UNBOUND-002A
+- Files:
+  - OOT-NATIVE-001/soh/native-sdk/unbound-core/CMakeLists.txt
+  - OOT-NATIVE-001/soh/native-sdk/unbound-core/include/linkspan/unbound/json_factory.h
+  - OOT-NATIVE-001/soh/native-sdk/unbound-core/json_merge.h
+  - OOT-NATIVE-001/soh/native-sdk/unbound-core/json_merge.cpp
+  - OOT-NATIVE-001/soh/native-sdk/unbound-core/unbound_core.cpp
+  - OOT-NATIVE-001/soh/native-sdk/unbound-core/unbound_consumer.cpp
+  - OOT-NATIVE-001/soh/native-sdk/unbound-core/core-main.lua
+  - OOT-NATIVE-001/soh/native-sdk/unbound-core/consumer-main.lua
+  - OOT-NATIVE-001/soh/native-sdk/unbound-core/tests.cpp
+  - OOT-NATIVE-001/soh/native-sdk/unbound-core/README.md
+  - OOT-NATIVE-001/tools/package-unbound-factory-demo.ps1
+  - OOT-NATIVE-001/docs/native-mods.md
+  - coordination/handoffs/OOT-UNBOUND-002B.md
+  - docs/agents/Plans.md
+- Goal:
+  - Publicar uma factory JSON versionada pelo coremod Unbound sem alterar o host.
+  - Mesclar objetos recursivamente e substituir arrays com validação de schema.
+  - Provar coremod e consumidor em ZIPs independentes sem alterar o hash do soh.exe.
