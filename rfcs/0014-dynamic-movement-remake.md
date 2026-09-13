@@ -47,6 +47,15 @@ pressionado) e um anel no HUD a marca; L físico vira o R do N64 (escudo), `-` o
 do N64 e D-pad direita o C-Up (Navi e primeira pessoa); toque no R3 alterna a
 Lente da Verdade e segurar R3 por 400 ms alterna a máscara do slot infantil.
 
+A 0.2.8 completa o D-pad:
+- esquerda tira a ocarina do inventário sem botão C;
+- cima veste o traje: o toque volta ao último usado e, sem histórico, vai do
+  Kokiri ao primeiro especial;
+- baixo alterna as botas com as Kokiri;
+- segurar cima ou baixo por 400 ms abre uma troca rápida: os ícones das opções
+  obtidas e permitidas pela idade aparecem no HUD, o destaque avança a cada 450 ms
+  e o destacado é vestido ao soltar.
+
 Estados determinísticos:
 
 ```text
@@ -96,6 +105,7 @@ entre frames ou cenas.
 ## Evolução do perfil
 
 Item em ZR, seleção em R, escudo em L, Lente e máscaras no R3 e C-Up no D-pad
-direita entraram na 0.2.7. As próximas fatias ativam Ocarina, menu/mapa e
-seletores de Gear/Boots por toque/pressão longa. Cada ação permanece no pacote do
-mod e reutiliza primitivas gerais do host.
+direita entraram na 0.2.7; ocarina e seletores de traje e botas por toque e
+pressão longa, na 0.2.8. Menu e mapa usam o `+` e o L do N64 no `-`, nativos. Hotbars
+e atalhos adicionais ficam para as próximas fatias. Cada ação permanece no pacote
+do mod e reutiliza primitivas gerais do host.

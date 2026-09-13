@@ -37,6 +37,17 @@ com todos os campos da v1 e acrescenta:
   Box Shop e `restrictions.tradeItems` com a exceção do MMBunnyHood) e a idade de
   `CHECK_AGE_REQ_ITEM`. Depois chama o `Player_UseItem` nativo, que mantém magia
   e sons do jogo, e confirma que o estado mudou;
+- desde OOT-MOVE-005 o mesmo atalho aceita duas famílias de item:
+  - `ITEM_OCARINA_FAIRY` e `ITEM_OCARINA_TIME`, com as mesmas condições de botão,
+    `restrictions.ocarina`, o lock-on hostil do `Player_UseItem` e o
+    `Player_ActionHandler_13` no mesmo frame, como `func_8084B4D4`. Sem isso o
+    `Player_ProcessItemButtons` seguinte guardaria a ocarina fora dos botões. A
+    recusa fora do chão desfaz o pedido;
+  - `ITEM_TUNIC_*` e `ITEM_BOOTS_*` pelo caminho do `AssignableTunicsAndBoots`:
+    posse, `gEquipAgeReqs`, `Inventory_ChangeEquipment` e `Player_SetEquipmentData`.
+    A troca vale com escudo ou item na mão, é bloqueada em conversa, cutscene,
+    ocarina, pausa e nos bloqueios gerais do C, e ignora perigo submerso. Usar o
+    equipado volta ao Kokiri;
 - `get_item_button_rect(button, x, y, size, alpha)`: `Interface_DrawItemButtons`
   registra a posição final de C-Left, C-Down e C-Right. O host devolve a captura
   do frame atual ou do anterior, porque `hook.oot.hud.draw` roda antes de
@@ -78,4 +89,12 @@ recompilados contra o SDK do host novo.
 - máscaras recusadas por idade, sem PersistentMasks fora dos botões, fora do slot
   infantil e com restrição de troca; liberadas num botão C e com MMBunnyHood;
 - provider externo: ZR no C selecionado, R pulando C vazio e bloqueado com ZR
-  pressionado, `hud_selection`, R3 com lente e máscara e restauração no unload.
+  pressionado, `hud_selection`, R3 com lente e máscara e restauração no unload;
+- ocarina recusada fora do inventário, com restrição de cena, lock-on hostil e
+  fora do chão (sem pedido pendente); liberada no evento de arco a cavalo, que
+  bloqueia a lente;
+- trajes e botas recusados sem posse, pela idade, em conversa, a cavalo, tocando
+  ocarina e na pausa; aceitos com escudo e submerso, com o som pesado das botas de
+  ferro e a volta ao Kokiri;
+- provider externo 0.2.8: ocarina no D-pad esquerda, toque e troca rápida de traje
+  e botas e `hud_quick_swap`.
