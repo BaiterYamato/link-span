@@ -275,3 +275,28 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
 - Próximo: `UNBOUND-002/003` no substrato do overlay, seguido do adapter de
   cena/entrance sobre o registry v1; depois `OOT-CORE-003` para
   item/actor/inventory e o primeiro item sintético da NEI.
+
+## UPDATE OOT-COREMODS-001 — OOT-UNBOUND-002A resources multilayer validado
+
+- Status: in_progress
+- Concluído em 2026-09-12:
+  - libultraship lê todas as cópias montadas de um caminho em ordem de
+    prioridade;
+  - `linkspan.oot.resources` v2 preserva a v1 e expõe bytes, origem, versão,
+    índice/total e hash FNV-1a por camada;
+  - provider externo monta duas camadas JSON, consome ambas e desmonta as duas
+    sem lógica de Unbound compilada no host;
+  - testes unitários, provider independente em duas velocidades e playtest
+    isolado `20260912-190154` aprovados;
+  - o ZIP final exato foi repetido na sessão `20260912-190921`, também válida,
+    com os mesmos marcadores e hashes pós-teste intactos;
+  - Dynamic Movement Remake 0.2.5 e overlay ResourcesV2 validados, sem ROM,
+    `oot.o2r`, saves ou configuração pessoal.
+- Artefatos:
+  - `OOT-NATIVE-001/build/distribution/Dynamic-Movement-Remake-0.2.5.zip`
+    (`76F8075CBE40A3760FEC61FBD1F62550F237E1CC6E7B6D8D68212CD4107A4556`);
+  - `OOT-NATIVE-001/build/distribution/LinkSpan-Shipwright-9.2.3-OOT-UNBOUND-002A-ResourcesV2-Win64-overlay.zip`
+    (`945DE40CE0A89BF5332AA6F328D64A5BFAD3943E5DE526C2A8BCD76D788DFDD5`).
+- Próximo: `UNBOUND-002B`, com factory JSON externa e estratégia de merge por
+  schema no coremod; depois `UNBOUND-003` para containers ampliados.
+- Commits locais: `53bef1f16` e `221339a39` (host), `59dd141` (RFC 0017).
