@@ -1,6 +1,6 @@
 # OOT-MOVE-002
 
-- Status: claimed
+- Status: done
 - Agent: Claude
 - Platform: Windows
 - Branch: agent/OOT-NATIVE-001-native-engine
@@ -8,7 +8,6 @@
 - Depends on: OOT-MOVE-001, OOT-CORE-002
 - Files:
   - OOT-NATIVE-001/build/oot-move-002/**
-  - RELEASE-UNIFICADA/OOT/mods/Dynamic-Movement-Remake-*.zip
   - coordination/claims/OOT-MOVE-002.md
   - coordination/handoffs/OOT-MOVE-002.md
 - Goal:

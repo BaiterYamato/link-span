@@ -334,3 +334,59 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
 - Pendente: revalidação end-to-end (prova independente, relink e playtest)
   após OOT-UNBOUND-003A estabilizar as structs z64 em edição ativa.
 - Commit local: `b2eedb37b` (host).
+
+## UPDATE OOT-COREMODS-001 — OOT-UNBOUND-003A contagens estruturais ampliadas
+
+- Status: review
+- Concluído em 2026-09-13:
+  - atores vivos agora suportam o orçamento de 8.192 e o banco estrutural de
+    objetos possui 1.024 slots;
+  - atores de setup, salas e atores de transição usam contadores de 16 bits;
+  - meshes tipo 0/2 usam contagem de 32 bits no recurso e no runtime, com até
+    1.024 entradas transparentes ordenadas por sala;
+  - savestates usam storage dinâmico para IDs de atores de transição;
+  - clamps e guardas impedem wrap e escrita fora do banco, com diagnóstico;
+  - `UnboundLayoutChecks.cpp` fixa os limites esperados por `static_assert`;
+  - build Release x64, testes de actor provider, engine, registry, factory JSON
+    e duas compilações independentes de mod passaram;
+  - o host manteve SHA-256
+    `5503b5106e92728d3d504cda1b204e663987d74a87b39b3d7992c0fc878c336b`
+    durante a prova de independência.
+- Limites conhecidos:
+  - o pool em bytes do banco de objetos ainda não é dinâmico;
+  - atores vanilla com índices privados `s8` ainda não alcançam slots acima de
+    127;
+  - falta playtest com fixtures acima dos tetos vanilla.
+- Próximo: `OOT-UNBOUND-003B` para colisão ampla, containers/ownership e
+  fixtures sintéticas de fronteira; depois scene/entrance indirection.
+
+## UPDATE OOT-COREMODS-001 — OOT-MOVE-004 movement v2 e Dynamic Movement Remake 0.2.7
+
+- Status: review
+- Concluído em 2026-09-13:
+  - `linkspan.oot.movement` v2 publicado junto da v1: eixo físico, gatilho
+    ligado a botão virtual, atalho nativo de Lente e máscaras com as regras do
+    jogo e posição dos botões C no HUD (RFC 0018);
+  - Dynamic Movement Remake 0.2.7 no exemplo do repositório: ZR usa o C
+    selecionado, R troca com anel no HUD, L escudo, `-` L do N64, R3
+    lente/máscara, D-pad direita C-Up e câmera que volta a seguir Link ao andar;
+  - testes do host, prova independente e smoke de boot com o overlay
+    MovementV2-OcarinaV1 válidos;
+  - OOT-MOVE-002 e OOT-MOVE-003 (0.2.5 e 0.2.6 isolados) encerrados como
+    integrados.
+- Pendente: playtest com controle físico na RELEASE-UNIFICADA.
+- Commits locais: `78dc1106c` (host), `519b45a` (RFCs 0018 e 0014) e `5f39d7e82`
+  (OOT-UNBOUND-003A, assumido do Codex a pedido do usuário).
+
+## UPDATE OOT-COREMODS-001 — OOT-MIC-001 serviço de ocarina e Mic Ocarina 0.1.0
+
+- Status: review
+- Concluído em 2026-09-13, assumido do Codex a pedido do usuário:
+  - `linkspan.oot.ocarina` v1: estado publicado pelo update de input da ocarina,
+    padrões de `gOcarinaSongNotes` e entrega da música reconhecida ao fluxo
+    nativo (RFC 0019);
+  - mod `mic-ocarina` 0.1.0 com captura SDL2, detector YIN e matcher por
+    contorno, com o subsistema de áudio encerrado no shutdown;
+  - smoke de boot com Dynamic Movement 0.2.7 e Mic Ocarina juntos válido.
+- Pendente: playtest com microfone real e calibração dos limiares.
+- Commits locais: `28b0750ee` (host e mod) e `61058b8` (RFC 0019).

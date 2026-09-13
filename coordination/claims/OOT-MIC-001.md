@@ -1,0 +1,26 @@
+# OOT-MIC-001
+
+- Status: review
+- Agent: Claude
+- Taken over from: Codex GPT-6, a pedido do usuário em 2026-09-13 (Codex parado)
+- Platform: Windows
+- Branch: agent/OOT-NATIVE-001-native-engine
+- Started: 2026-09-13T03:57:49.6152066Z
+- Depends on: OOT-MOVE-004
+- Files:
+  - OOT-NATIVE-001/soh/native-sdk/mic-ocarina/**
+  - OOT-NATIVE-001/soh/soh/native/oot_ocarina.h
+  - OOT-NATIVE-001/soh/soh/native/OotNativeEngine.cpp
+  - OOT-NATIVE-001/soh/soh/ShipLuaBootstrap.cpp
+  - OOT-NATIVE-001/soh/src/code/code_800EC960.c
+  - OOT-NATIVE-001/soh/native-sdk/tests/EngineTests.cpp
+  - OOT-NATIVE-001/docs/native-mods.md
+  - NATIVE-001/rfcs/0019-oot-ocarina-service.md
+  - OOT-NATIVE-001/build/mic-ocarina/**
+  - OOT-NATIVE-001/build/distribution/Mic-Ocarina-*.zip
+  - coordination/claims/OOT-MIC-001.md
+  - coordination/handoffs/OOT-MIC-001.md
+  - docs/agents/Plans.md
+- Goal:
+  - Portar MicOcarina para um ZIP mod OoT: Start durante a ocarina ativa captura de microfone, B encerra o modo, reconhecimento entrega a canção ao fluxo nativo e unload libera áudio/thread.
+  - Completar no host o serviço `linkspan.oot.ocarina` v1 que o WIP do Codex declarava sem implementar (estado da ocarina, padrões das músicas e entrega da música reconhecida).

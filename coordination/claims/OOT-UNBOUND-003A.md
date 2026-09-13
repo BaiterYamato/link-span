@@ -1,0 +1,28 @@
+# OOT-UNBOUND-003A
+
+- Status: review
+- Agent: Codex GPT-6
+- Platform: Windows
+- Branch: agent/OOT-NATIVE-001-native-engine
+- Started: 2026-09-13T02:58:41.4797876Z
+- Depends on: OOT-UNBOUND-002B
+- Files:
+  - OOT-NATIVE-001/soh/include/z64.h
+  - OOT-NATIVE-001/soh/include/z64actor.h
+  - OOT-NATIVE-001/soh/include/z64object.h
+  - OOT-NATIVE-001/soh/soh/resource/type/scenecommand/SetMesh.h
+  - OOT-NATIVE-001/soh/soh/resource/importer/scenecommand/SetMeshFactory.cpp
+  - OOT-NATIVE-001/soh/soh/z_scene_otr.cpp
+  - OOT-NATIVE-001/soh/soh/Enhancements/savestates.cpp
+  - OOT-NATIVE-001/soh/soh/resource/logging/SceneCommandLoggers.cpp
+  - OOT-NATIVE-001/soh/src/code/z_actor.c
+  - OOT-NATIVE-001/soh/src/code/z_scene.c
+  - OOT-NATIVE-001/soh/src/code/z_room.c
+  - OOT-NATIVE-001/soh/soh/unbound/UnboundLayoutChecks.cpp
+  - OOT-NATIVE-001/docs/architecture/unbound-count-layouts.md
+  - link-span/coordination/claims/OOT-UNBOUND-003A.md
+  - link-span/coordination/handoffs/OOT-UNBOUND-003A.md
+  - link-span/docs/agents/Plans.md
+- Goal:
+  - Ampliar contagens estruturais de atores, objetos, setups, salas e meshes acima dos limites herdados do N64.
+  - Preservar valores acima de 255/127 em testes ROM-free e manter build do host verificável.
