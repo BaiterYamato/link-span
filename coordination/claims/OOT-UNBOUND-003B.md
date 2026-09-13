@@ -1,0 +1,34 @@
+# OOT-UNBOUND-003B
+
+- Status: review
+- Agent: Claude
+- Taken over from: Codex GPT-6, a pedido do usuário em 2026-09-13 (Codex suspenso sem concluir)
+- Platform: Windows
+- Branch: agent/OOT-NATIVE-001-native-engine
+- Started: 2026-09-13T13:38:26.4579694Z
+- Depends on: OOT-UNBOUND-003A
+- Files:
+  - OOT-NATIVE-001/soh/include/functions.h
+  - OOT-NATIVE-001/soh/include/z64bgcheck.h
+  - OOT-NATIVE-001/soh/soh/resource/type/CollisionHeader.h
+  - OOT-NATIVE-001/soh/soh/resource/importer/CollisionHeaderFactory.cpp
+  - OOT-NATIVE-001/soh/src/code/z_bgcheck.c
+  - OOT-NATIVE-001/soh/src/code/z_lib.c
+  - OOT-NATIVE-001/soh/src/code/z_play.c
+  - OOT-NATIVE-001/soh/src/code/code_800430A0.c
+  - OOT-NATIVE-001/soh/soh/Enhancements/debugger/colViewer.cpp
+  - OOT-NATIVE-001/soh/src/overlays/actors/ovl_Bg_Mizu_Water/z_bg_mizu_water.c
+  - OOT-NATIVE-001/soh/soh/unbound/UnboundCollisionChecks.cpp
+  - OOT-NATIVE-001/soh/soh/unbound/CollisionVertexWords.h
+  - OOT-NATIVE-001/soh/tests/OotUnboundCollisionTests.cpp
+  - OOT-NATIVE-001/soh/CMakeLists.txt
+  - OOT-NATIVE-001/docs/architecture/unbound-collision-layout.md
+  - OOT-NATIVE-001/build/oot-unbound-003b-wip-backup/**
+  - coordination/claims/OOT-UNBOUND-003B.md
+  - coordination/handoffs/OOT-UNBOUND-003B.md
+  - docs/agents/Plans.md
+- Goal:
+  - Ampliar índices e containers de colisão sem truncamento nos limites herdados do N64.
+  - Manter compatibilidade de leitura com collision resources OTR v0.
+  - Garantir crescimento e liberação segura das tabelas alocadas no PlayState.
+  - Adicionar provas ROM-free de layout, unpack e fronteiras.

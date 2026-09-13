@@ -392,3 +392,73 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
   - smoke de boot com Dynamic Movement 0.2.7 e Mic Ocarina juntos válido.
 - Pendente: playtest com microfone real e calibração dos limiares.
 - Commits locais: `28b0750ee` (host e mod) e `61058b8` (RFC 0019).
+
+## PLAN PLN-OOT-UNBOUND-003B — Colisão ampla e containers expansíveis no OoT
+
+- Status: in_progress
+- Data: 2026-09-13
+- Escopo: engine
+- Resumo: portar o núcleo de colisão do Unbound mantendo o formato OTR v0 compatível e sem depender do framework JSON ou de alterações na libultraship.
+- Milestones:
+  - ampliar índices, contagens, vértices e sentinelas de colisão com invariantes de layout;
+  - preservar arquivos OTR v0 por unpack explícito no factory binário/XML;
+  - substituir tabelas estáticas por containers de heap com crescimento seguro e liberação no PlayState;
+  - corrigir leitores transitivos e o bake de DynaPoly sem estreitamento silencioso;
+  - adicionar checks compiláveis e fixtures sintéticas limit-1/limit/limit+1; validar build Release e testes nativos.
+- Nota: escopo OOT-NATIVE-001. Recorte baseado no Unbound `fd236b911d475594b8fd71184aa35faa8fad2aaa`; extensão de mundo, paths, room-mesh OARR, água v3/JSON e SceneDB ficam para etapas posteriores.
+- Refs:
+  - `docs/plans/oot-coremods-unbound-nei/plan.md`
+  - `coordination/handoffs/OOT-UNBOUND-003A.md`
+  - Unbound `fd236b911d475594b8fd71184aa35faa8fad2aaa`
+
+## UPDATE PLN-OOT-UNBOUND-003B — colisão ampliada em review
+
+- Status: review
+- Concluído em 2026-09-13, assumido do Codex a pedido do usuário:
+  - `CollisionPoly` com palavras de vértice `u32` (índice de 29 bits, flags nos
+    bits 29 a 31); contagens, `SSNode`/`SSList`, `polyId` e inícios de lista
+    dinâmica em 32 bits; `SS_NULL` passou a `0xFFFFFFFF`;
+  - o OTR v0 binário desempacota as palavras `u16`; o XML aceita as formas
+    legada e ampliada e deixou de truncar contagens;
+  - tabelas de colisão no heap, nós crescendo por índice e `BgCheck_Free` no
+    `Play_Destroy`; polígonos e vértices dinâmicos fixos em 16.384, com guarda;
+  - correções sobre o WIP: `polyIndex` `s16` no caminho de transformação
+    inalterada do DynaPoly, macro de flag com shift indefinido, `assert`s de
+    capacidade que viravam escrita fora da tabela e `CollisionContext` não
+    zerado antes de `BgCheck_Free`;
+  - `UnboundCollisionChecks.cpp` e `oot_unbound_collision_tests` (65.536 palavras
+    legadas, índices largos, realocação do DynaPoly e crescimento das tabelas);
+  - build Release, testes nativos, prova independente, unbound-core e smoke de
+    boot de 171 s na tela de título, com troca de cena, válidos.
+- Limites: vértices em `Vec3s`, `BG_ACTOR_MAX` 50, listas dinâmicas fixas e OTR
+  binário com índice de 13 bits.
+- Pendente: playtest com save (Forest Temple, Water Temple, plataformas móveis e
+  Shadow Temple) e cena sintética acima dos tetos vanilla.
+- Commit local: `cfcf23c75`.
+
+## UPDATE OOT-COREMODS-001 — OOT-MOVE-005 D-pad do Dynamic Movement Remake 0.2.8
+
+- Status: review
+- Concluído em 2026-09-13:
+  - `player_use_item_shortcut` aceita ocarinas (por `Player_ActionHandler_13`) e
+    trajes e botas (caminho do `AssignableTunicsAndBoots`), com as regras do jogo
+    (RFC 0018);
+  - Dynamic Movement Remake 0.2.8: D-pad esquerda tira a ocarina, cima troca o
+    traje e baixo as botas, com troca rápida e ícones no HUD ao segurar;
+  - testes do host, prova independente, pacote, overlay MovementV2-D-pad e smoke
+    de boot com o Mic Ocarina 0.1.1 válidos.
+- Pendente: playtest com controle físico.
+- Commits locais: `8d082255c` (host e exemplo), `893474a09` (docs) e `4244f7d`
+  (RFCs 0018 e 0014).
+
+## UPDATE OOT-COREMODS-001 — OOT-MIC-002 aviso de microfone no HUD
+
+- Status: review
+- Concluído em 2026-09-13 pelo Codex; commit local e reempacotamento pelo Claude a
+  pedido do usuário:
+  - Mic Ocarina 0.1.1 desenha a tarja `MICROFONE ATIVO` / `B: SAIR` no HUD
+    enquanto o microfone captura, só no Lua, com `hud.draw` obrigatório;
+  - ZIP reempacotado para o host do OOT-UNBOUND-003B e carregado no smoke junto do
+    Dynamic Movement 0.2.8.
+- Pendente: ver o aviso com microfone real; a tarja pode cobrir corações e magia.
+- Commit local: `8ef12c061`.

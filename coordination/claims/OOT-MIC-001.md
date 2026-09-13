@@ -1,6 +1,6 @@
 # OOT-MIC-001
 
-- Status: review
+- Status: released
 - Agent: Claude
 - Taken over from: Codex GPT-6, a pedido do usuário em 2026-09-13 (Codex parado)
 - Platform: Windows

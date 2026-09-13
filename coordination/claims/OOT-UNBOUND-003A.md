@@ -1,6 +1,6 @@
 # OOT-UNBOUND-003A
 
-- Status: review
+- Status: released
 - Agent: Codex GPT-6
 - Platform: Windows
 - Branch: agent/OOT-NATIVE-001-native-engine
