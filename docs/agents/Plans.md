@@ -317,3 +317,20 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
 - Próximo: `UNBOUND-003`, com containers/layouts ampliados, seguido do adapter
   que materializa uma scene factory a partir do JSON mesclado.
 - Commit local: `dad1b2914` (host).
+
+## UPDATE OOT-COREMODS-001 — OOT-NATIVE-002 fingerprint da ABI estreitado
+
+- Status: in_progress
+- Concluído em 2026-09-12:
+  - `LINKSPAN_OOT_LAYOUT_ID` passa a cobrir somente `soh/include` (structs z64),
+    `soh/soh/native` (contratos) e `shiplua/native` do SDK, mais flags do
+    compilador;
+  - headers internos de `soh/src`, `soh/soh` e `libultraship` não invalidam mais
+    mods nativos compilados (regressão da DLL 0.2.4 diagnosticada e corrigida
+    na origem);
+  - prova positiva (header do libultraship não muda o id) e negativa (header
+    z64 muda o id) executadas no configure;
+  - testes `oot_native_registry_tests` e `oot_native_engine_tests` verdes.
+- Pendente: revalidação end-to-end (prova independente, relink e playtest)
+  após OOT-UNBOUND-003A estabilizar as structs z64 em edição ativa.
+- Commit local: `b2eedb37b` (host).
