@@ -2,10 +2,10 @@
 
 ## Estado
 
-review — fingerprint `LINKSPAN_OOT_LAYOUT_ID` estreitado para a superfície real
-da ABI nativa, com prova positiva e negativa em nível de configure e testes
-unitários verdes. Revalidação end-to-end (prova independente + playtest)
-pendente até OOT-UNBOUND-003A estabilizar a árvore.
+done — fingerprint `LINKSPAN_OOT_LAYOUT_ID` estreitado para a superfície real
+da ABI nativa. Revalidação end-to-end concluída em 2026-09-13 após o review de
+OOT-UNBOUND-003A, com prova independente contra o host playtestado e dois mods
+nativos carregados em jogo.
 
 ## Problema
 
@@ -57,17 +57,24 @@ verdes; revalidação end-to-end pendente (ver Pendências).
   `048d94faf69372c1...` (guarda continua ativa); arquivo revertido.
 - `oot_native_registry_tests.exe` e `oot_native_engine_tests.exe`: exit 0 com o
   fingerprint novo.
+- Revalidação de 2026-09-13 (após 003A entrar em review, commits `5f39d7e82`,
+  `78dc1106c`, `28b0750ee` sobre `b2eedb37b`):
+  - `oot_native_registry_tests.exe` e `oot_native_engine_tests.exe`: exit 0;
+  - `test_independent.py`: provider recompilado fora da árvore e carregado
+    contra o host final; SHA-256 do `soh.exe` permaneceu
+    `254F33929BDC96F3A8FE0F9D1C7FB80A662D8DCDD1CC80A8BF5F3B7556CCE1AD`;
+  - playtest `move-004-mic-001-20260913-0217` (válido): mesmo executável
+    carregou em jogo os mods nativos Dynamic Movement Remake 0.2.7 e Mic
+    Ocarina 0.1.0, com `core-002-registry` íntegro.
 
 ## Pendências
 
-- A prova independente falhou durante esta sessão porque OOT-UNBOUND-003A
-  (Codex GPT-6, claim ativo) editou `z64.h`/`z64actor.h`/`z64object.h` **entre**
-  o build do probe e o build do provider (id `84bb3ec5...` → `2d85915a...`).
-  Falha de concorrência de build, não do mecanismo.
-- Pendente após 003A fechar: rerodar `test_independent.py`, relink do
-  `soh.exe` e playtest isolado com o mod exemplo recompilado (0.2.5). O id muda
-  uma última vez nesta transição; mods 0.2.4 e anteriores exigem rebuild, o que
-  já era o comportamento esperado para mudança de contrato.
+- Resolvido em 2026-09-13: a falha da prova independente durante a sessão
+  original era concorrência de build com OOT-UNBOUND-003A editando headers z64
+  entre o build do probe e o do provider; com a árvore estável, a prova passou.
+- Mods compilados antes desta mudança (0.2.4 e anteriores) exigem rebuild —
+  comportamento esperado em mudança de contrato; 0.2.5+ já nascem no esquema
+  novo.
 - Interação favorável: as mudanças de struct do 003A (contagens acima de 255)
   **devem** invalidar mods — e continuam invalidando, pois `soh/include` segue
   no fingerprint.
@@ -77,11 +84,11 @@ verdes; revalidação end-to-end pendente (ver Pendências).
 - O id muda uma última vez nesta transição; mods nativos já compilados (0.2.4,
   0.2.5) exigem rebuild contra o SDK novo — comportamento esperado em mudança
   de contrato.
-- Enquanto OOT-UNBOUND-003A editar structs z64, o id seguirá mudando a cada
-  build; mods devem ser recompilados junto até essa frente estabilizar.
+- Mudanças futuras em structs z64 (como as do 003A) continuam invalidando
+  mods propositalmente; apenas headers fora da fronteira C deixaram de fazê-lo.
 
 ## Próxima ação recomendada
 
-Quando OOT-UNBOUND-003A estiver em review: reconfigurar, rebuild completo,
-`test_independent.py`, regenerar Dynamic Movement Remake 0.2.5 e playtest
-isolado; então marcar OOT-NATIVE-002 como done.
+Tarefa concluída. Sem ação pendente de OOT-NATIVE-002; as frentes abertas
+seguem OOT-UNBOUND-003B+ (adapter de cena) e OOT-MOVE-004/OOT-MIC-001 (review
+e integração dos mods 0.2.7/0.1.0).

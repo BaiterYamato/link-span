@@ -331,8 +331,10 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
   - prova positiva (header do libultraship não muda o id) e negativa (header
     z64 muda o id) executadas no configure;
   - testes `oot_native_registry_tests` e `oot_native_engine_tests` verdes.
-- Pendente: revalidação end-to-end (prova independente, relink e playtest)
-  após OOT-UNBOUND-003A estabilizar as structs z64 em edição ativa.
+- Revalidado em 2026-09-13 após o review de OOT-UNBOUND-003A: testes unitários
+  e prova independente verdes contra o host `254F3392...`, e o playtest
+  `move-004-mic-001-20260913-0217` carregou dois mods nativos em jogo com o
+  fingerprint novo. Tarefa `done`.
 - Commit local: `b2eedb37b` (host).
 
 ## UPDATE OOT-COREMODS-001 — OOT-UNBOUND-003A contagens estruturais ampliadas

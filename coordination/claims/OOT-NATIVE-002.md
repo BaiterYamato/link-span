@@ -1,6 +1,6 @@
 # OOT-NATIVE-002
 
-- Status: review
+- Status: done
 - Agent: Kimi
 - Platform: Windows 11 / Kimi Code CLI
 - Branch: agent/OOT-NATIVE-001-native-engine
@@ -34,3 +34,4 @@ qualquer commit que toca um header invalida todos os mods nativos. A DLL 0.2.4
 carrega `ac4caa5c...`; o host passou a usar `0d6b905f...`.
 
 - Reviewed: 2026-09-12 — fingerprint estreitado, provas positiva/negativa e testes verdes; revalidação end-to-end aguarda OOT-UNBOUND-003A.
+- Closed: 2026-09-13 — revalidação end-to-end verde contra o host `254F3392...`; commits `b2eedb37b` (host) e coordenação no link-span; sem push.
