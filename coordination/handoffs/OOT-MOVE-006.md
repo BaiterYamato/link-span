@@ -2,7 +2,7 @@
 
 ## Estado
 
-review — host, DMR 0.2.9 (com o D-pad do HUD) e testes validados, com commit local e instalação na pasta de teste (boot check OK). Falta o playtest do usuário com controle, inclusive do D-pad.
+review — host, DMR 0.2.9 e testes validados, com commits locais e instalação na pasta de teste (boot check OK). O D-pad do HUD foi conferido em jogo por print. Faltam, no playtest com controle, a mira em primeira pessoa pelo analógico direito e a cruz de fundo do D-pad.
 
 ## Resultado
 
@@ -12,7 +12,8 @@ review — host, DMR 0.2.9 (com o D-pad do HUD) e testes validados, com commit l
   - HUD com um único slot de item: só o botão C equipado no ZR aparece;
   - segurar R abre o menu de itens (os C que têm item, na ordem do HUD). O analógico direito anda uma opção por inclinação, sem ciclo nem volta ao início, e soltar o R equipa o destacado no ZR. Com o ZR pressionado, a troca é recusada;
   - segurar D-pad cima/baixo abre o menu de traje/botas no equipado, com o mesmo passo pelo analógico direito. Soltar aplica, e o toque continua alternando;
-  - com um menu aberto, a câmera livre é desligada e só volta depois de o analógico direito passar pelo centro;
+  - com um menu aberto, em primeira pessoa ou com a mira pronta (`PLAYER_STATE1_FIRST_PERSON` ou `READY_TO_FIRE`), a câmera livre é desligada e só volta depois de o analógico direito passar pelo centro;
+  - primeira pessoa e mira pelo analógico direito: o mod liga `gSettings.Controls.RightStickAim` enquanto está carregado e restaura no unload. O `func_8084ABD8` do Player soma o analógico direito ao esquerdo na visão (C-Up) e na mira de arco, estilingue e gancho;
   - D-pad do HUD nativo com as funções do mod: traje equipado em cima, botas embaixo, ocarina na esquerda e Navi na direita, com o ícone do usuário. O HUD Lua lê posição e alpha de cada direção por `hud_dpad` e desenha com `ship.hud.draw_icon`.
 - Host, settings transitórios em `OotNativeEngine.cpp`:
   - ficam só em memória, interceptados em `get/set_setting_int` só na thread do jogo, e zeram quando a ponte de gamepad muda (init e shutdown do host);
@@ -23,22 +24,23 @@ review — host, DMR 0.2.9 (com o D-pad do HUD) e testes validados, com commit l
     - Um B apertado com o escudo erguido chega no frame seguinte, depois de o escudo baixar, porque o OoT não ataca com `PLAYER_STATE1_SHIELDING` (`func_8083BB20`).
     - O Dark Link (`EnTorch2`) usa `play->playerUpdate` com input próprio e não passa pelo filtro.
   - **4, `linkspan.hud.dpad`:**
-    - `z_parameter.c` desenha o fundo do D-pad mesmo sem `DpadEquips` e pula os ícones e a munição dos itens do D-pad;
-    - `Interface_DrawItemIconTexture` captura a posição das direções 4..7 e, com textura nula, só captura;
-    - `get_item_button_rect` passa a aceitar 4..7.
+    - `z_parameter.c` mostra o D-pad mesmo sem `DpadEquips` e pula os ícones e a munição dos itens do D-pad. Em vez de desenhar o fundo, só o captura;
+    - `DrawHudOverlay` (`ShipLuaBootstrap.cpp`) desenha esse fundo antes dos callbacks do `hook.oot.hud.draw`. O hook roda em `OnPlayDrawEnd`, antes do `Interface_Draw` e no mesmo `OVERLAY_DISP`; desenhado pelo `Interface_Draw`, o fundo cobria os ícones;
+    - `Interface_DrawItemIconTexture` captura a posição das direções 4..7 e, com textura nula, só captura; `get_item_button_rect` passa a aceitar 4..7.
 - Ícone da Navi:
   - o PNG do usuário virou um recurso OTEX RGBA32 32x32 em `assets/textures/baiteryamato/dynamic_movement_remake/gNaviIconTex`, convertido por `tools/convert-png-to-hud-icon.ps1`. O PNG fica fora do git, porque `soh/.gitignore` ignora `*.png`;
-  - o core extrai o ZIP em `mods/.shiplua-cache/<pacote>/` e carrega a DLL de lá. `package_assets.cpp` acha `assets/` pelo caminho da DLL, e o provider monta a pasta com `mount_archive` no `configure` e desmonta no shutdown.
+  - o core extrai o ZIP em `mods/.shiplua-cache/<pacote>/` e carrega a DLL de lá. `package_assets.cpp` acha `assets/` pelo caminho da DLL, e o provider monta a pasta com `mount_archive` no `configure` e desmonta no shutdown;
+  - `NativeMountResourceArchive` passa o caminho em `generic_string`. O `FolderArchive` casa a base com a listagem em barras normais; com barra invertida, a pasta montava sem nenhum arquivo, e a Navi não aparecia no primeiro teste.
 - Por que não CVars de cosméticos: a primeira versão usava `gCosmetics.HUD.C*Button.PosType = 4`. O SoH salva a config em vários pontos, então o "oculto" ficou gravado depois do unload (boot check com CDown/CRight = 4 na config).
 - Layout id inalterado (`16ff0d5a`): nenhum header do SDK mudou.
 - Instalação em `RELEASE-UNIFICADA/OOT-teste-save-20260913`:
-  - `soh.exe` `AABA1A0B`; os anteriores (`01860E47`, `137C907E` e `DF11CAC2`) ficaram em `host-originais`;
-  - `mods`: DMR 0.2.9 `BB166640` e Mic Ocarina 0.1.4 (OOT-MIC-003). As builds anteriores do DMR 0.2.9 (HUD por CVar, sem a espada acima do escudo e sem o D-pad) e o Mic 0.1.3 foram para `mods-originais`;
+  - `soh.exe` `942D69E6`; os anteriores (`01860E47`, `137C907E`, `DF11CAC2` e `AABA1A0B`) ficaram em `host-originais`;
+  - `mods`: DMR 0.2.9 `F6C3E18A` e Mic Ocarina 0.1.4 (OOT-MIC-003). As builds anteriores do DMR 0.2.9 e o Mic 0.1.3 foram para `mods-originais`;
   - config: CDown/CRight com `PosType = 4`, gravados pela sessão do usuário com o 0.2.9 por CVar, voltaram a 0 (cópia anterior em `shipofharkinian.json.bak-dmr029-cvar2`).
 
 ## Commits
 
-- `373d970db` e `7710ac73e` em `OOT-UPSTREAM-78DC-001`, branch `agent/OOT-UPSTREAM-001-78dc6d970-integration`, só local, sem push.
+- `373d970db`, `7710ac73e`, `dba5cfd34` e `76972835f` em `OOT-UPSTREAM-78DC-001`, branch `agent/OOT-UPSTREAM-001-78dc6d970-integration`, só locais, sem push.
 
 ## Arquivos alterados
 
@@ -46,6 +48,7 @@ review — host, DMR 0.2.9 (com o D-pad do HUD) e testes validados, com commit l
 - `OOT-UPSTREAM-78DC-001/soh/native-sdk/example/package_assets.h` e `package_assets.cpp`
 - `OOT-UPSTREAM-78DC-001/soh/native-sdk/example/assets/textures/baiteryamato/dynamic_movement_remake/gNaviIconTex`
 - `OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeEngine.cpp`
+- `OOT-UPSTREAM-78DC-001/soh/soh/ShipLuaBootstrap.cpp`
 - `OOT-UPSTREAM-78DC-001/soh/src/code/z_parameter.c`
 - `OOT-UPSTREAM-78DC-001/soh/src/overlays/actors/ovl_player_actor/z_player.c`
 - `OOT-UPSTREAM-78DC-001/soh/native-sdk/tests/EngineTests.cpp`
@@ -64,11 +67,12 @@ cmake --build build/dynamic-movement-0.2.9 --config Release
 tools/package-linkspan-mod.ps1 -Source build/dynamic-movement-0.2.9/mod -OutputPath build/distribution/Dynamic-Movement-Remake-0.2.9-layout-16ff0d5a.zip
 shiplua_manifest_validator.exe build/distribution/Dynamic-Movement-Remake-0.2.9-layout-16ff0d5a.zip
 prepare-runtime-session.ps1 + boot de 45 s na pasta de teste + finish-runtime-session.ps1 -RequireTrackedUnchanged -Strict
+prepare-runtime-session.ps1 + invoke-input-sequence.ps1 -Execute (A a cada 3 s até o save abrir) + captura do HUD em jogo
 ```
 
 ## Resultado da validação
 
-- Host: build exit 0; `x64/Release/soh.exe` SHA-256 `AABA1A0BEBAB2BDD030519F68FFB635BCB914C5EDFF002889F94538694E69671`.
+- Host: build exit 0; `x64/Release/soh.exe` SHA-256 `942D69E620B066B673ECFF960E872C69598C7088F31F37B3FB109E352AB42286`.
   - O primeiro build do D-pad falhou: um `CLOSE_DISPS` com `return` antecipado fechava a chave aberta por `OPEN_DISPS`. A captura sem textura passou a pular só o desenho.
 - `oot_native_engine_tests` exit 0, com os casos novos:
   - os botões C ocultos ficam só em memória, não chegam à ponte de settings, e a ocultação é recusada fora da thread do jogo;
@@ -81,31 +85,31 @@ prepare-runtime-session.ps1 + boot de 45 s na pasta de teste + finish-runtime-se
     - a sonda devolve 7;
     - `linkspan.hud.dpad` fica só em memória e é recusado fora da thread do jogo;
     - `hud_dpad` devolve as quatro direções capturadas com traje, botas e ocarina, e `get_item_button_rect(8)` é recusado;
+    - o fundo capturado só fica disponível para o hook do HUD com o D-pad tomado;
+  - primeira pessoa: o `configure` liga o `RightStickAim`, a câmera livre fica desligada com `PLAYER_STATE1_FIRST_PERSON` e só volta com o analógico no centro;
   - o menu do R abre no C equipado, anda uma opção por inclinação do analógico, pula C vazio e não troca com o ZR pressionado;
   - o menu do D-pad abre no traje equipado e não avança sozinho;
   - o perfil liga o escudo no eixo do ZL, a espada acima do escudo e o D-pad do HUD;
-  - no unload voltam o `InvertYAxis`, os três botões C, o R e o D-pad.
+  - no unload voltam o `InvertYAxis`, o `RightStickAim`, os três botões C, o R e o D-pad.
 - `test_independent.py` exit 0: dois providers compilados fora da árvore modificaram o Player, com o hash do host inalterado.
 - DMR:
   - build exit 0;
-  - a DLL tem o layout id `16ff0d5a`, `hud_dpad` e `linkspan.hud.dpad`;
+  - a DLL tem o layout id `16ff0d5a`, `hud_dpad`, `linkspan.hud.dpad` e `gSettings.Controls.RightStickAim`;
   - o zip leva `assets/textures/baiteryamato/dynamic_movement_remake/gNaviIconTex`;
-  - validator exit 0; SHA-256 `BB16664073D01827FD22D41555AEC87188052271B8453091D4F3D0B1BD313192`.
+  - validator exit 0; SHA-256 `F6C3E18A8F65713EE8E389D79287A7FED51559928B5B56E989C4F0C68D82BF0F`.
 - Ícone: 4176 bytes, com o cabeçalho igual ao dos ícones vanilla. A prévia foi conferida visualmente, e a decodificação de ícones vanilla confirmou a ordem R, G, B, A.
-- Boot com o host final (`build/oot-upstream-001/evidence/move006-dpad-boot-20260914-1247`, sessão válida):
-  - `soh.exe` `AABA1A0B` vivo aos 45 s e fechado com exit 0;
-  - DMR 0.2.9 e Mic 0.1.4 carregados e `carregou 2 mod(s)`, com o perfil do D-pad no log, sem exceção nem erro de mapeamento;
-  - ícone da Navi extraído em `mods/.shiplua-cache` (4176 bytes);
-  - saves, `.o2r` e mods inalterados;
-  - config sem `PosType = 4` e sem nomes `linkspan.*`.
-- Os boots anteriores, com os hosts `DF11CAC2` (`move006-sword-boot-20260914-1132`) e `137C907E` (`move006-mic014-boot-20260914-1045`), tiveram o mesmo resultado.
-- O boot para na tela inicial. Menus, escudo, espada, HUD com um slot e D-pad só aparecem em jogo com gamepad, no playtest.
+- Em jogo, com o host `942D69E6` (`build/oot-upstream-001/evidence/move006-dpadfix-hud4`, save aberto por input de teclado):
+  - o print do HUD mostra traje em cima, ocarina na esquerda, botas embaixo e Navi na direita, inteiros e por cima do D-pad;
+  - a cruz do fundo não ficou distinguível no print, com a parede marrom atrás; ampliação e medição de pixels foram inconclusivas.
+- Boot com o DMR final (`build/oot-upstream-001/evidence/move006-rightstick-boot-20260914-1329`, sessão válida): vivo aos 45 s e fechado com exit 0, com o perfil "primeira pessoa e mira=stick direito" no log, saves, `.o2r` e mods inalterados e nenhum nome `linkspan.*` na config.
+- Os boots anteriores (`move006-dpad-boot-20260914-1247`, `move006-sword-boot-20260914-1132` e `move006-mic014-boot-20260914-1045`) tiveram o mesmo resultado.
+- A mira com o analógico direito em jogo não foi exercitada: a automação só envia teclado.
 
 ## Pendências
 
-- Playtest do usuário com controle: D-pad do HUD (ícones e troca de traje/botas), menu do R, menus do D-pad, ZL com Y, câmera e HUD com um slot.
+- Playtest do usuário com controle: visão e mira em primeira pessoa pelo analógico direito, cruz do D-pad atrás dos ícones, troca de traje/botas refletida no D-pad, menu do R, menus do D-pad, ZL com Y, câmera e HUD com um slot.
 - Overlay para a `RELEASE-UNIFICADA\OOT` desatualizado:
-  - o de `build/distribution` (`F56F4A9E`) tem o host `DF11CAC2`, sem o D-pad;
+  - o de `build/distribution` (`F56F4A9E`) tem o host `DF11CAC2`, sem o D-pad e sem a mira pelo analógico direito;
   - gerar de novo depois do playtest e rodar o smoke de instalação limpa (`tools/test-linkspan-overlay.ps1 -ResourceLogging`). O empacotamento leva uns 10 minutos de disco e foi adiado para não pesar durante o jogo.
 - Push, só quando o usuário pedir publicação.
 
@@ -115,7 +119,8 @@ prepare-runtime-session.ps1 + boot de 45 s na pasta de teste + finish-runtime-se
   - com Y ou B pressionado o Link não defende;
   - quando o escudo estava erguido, o golpe sai um frame depois;
   - segurar B para carregar o giro também mantém o escudo abaixado.
-- `FreeLook.Enabled`, `InvertYAxis` e `PersistentMasks` continuam sendo CVars reais: se o SoH salvar a config com o mod carregado, o valor do mod fica gravado (a restauração do unload não persiste). Já acontecia com `FreeLook` e `PersistentMasks` antes desta tarefa.
+- `FreeLook.Enabled`, `InvertYAxis`, `RightStickAim` e `PersistentMasks` continuam sendo CVars reais: se o SoH salvar a config com o mod carregado, o valor do mod fica gravado (a restauração do unload não persiste). Já acontecia com `FreeLook` e `PersistentMasks` antes desta tarefa.
+- A direção vertical da mira pelo analógico direito segue o `Controls.InvertAimingYAxis` do usuário (0 na config de teste), que o mod não muda.
 - Sem gamepad o perfil Nintendo não é aplicado: os três botões C continuam no HUD, e a espada acima do escudo e o D-pad do HUD não ligam.
 - Com o D-pad tomado, os itens do `DpadEquips` do SoH somem do HUD. O mod já usa o D-pad físico, então eles também não eram usáveis.
 - `mount_archive` recebe o caminho na página de código ativa. Em uma instalação com caractere fora dela, a Navi fica sem ícone, e o resto do D-pad continua.
