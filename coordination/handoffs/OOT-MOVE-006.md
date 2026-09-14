@@ -2,7 +2,7 @@
 
 ## Estado
 
-review — host, DMR 0.2.9 e testes validados, com commits locais e instalação na pasta de teste (boot check OK). O D-pad do HUD foi conferido em jogo por print. Faltam, no playtest com controle, a mira em primeira pessoa pelo analógico direito e a cruz de fundo do D-pad.
+review — host, DMR 0.2.9 e testes validados, com commits locais e instalação na pasta de teste. O D-pad do HUD foi conferido em jogo por print. O usuário relatou que, em primeira pessoa, o vertical do analógico direito estava invertido e o esquerdo ainda girava a visão; o mod passou a ligar o `MoveInFirstPerson` e a desinverter a mira. Faltam, no playtest com controle, olhar e andar em primeira pessoa e a cruz de fundo do D-pad.
 
 ## Resultado
 
@@ -13,7 +13,7 @@ review — host, DMR 0.2.9 e testes validados, com commits locais e instalação
   - segurar R abre o menu de itens (os C que têm item, na ordem do HUD). O analógico direito anda uma opção por inclinação, sem ciclo nem volta ao início, e soltar o R equipa o destacado no ZR. Com o ZR pressionado, a troca é recusada;
   - segurar D-pad cima/baixo abre o menu de traje/botas no equipado, com o mesmo passo pelo analógico direito. Soltar aplica, e o toque continua alternando;
   - com um menu aberto, em primeira pessoa ou com a mira pronta (`PLAYER_STATE1_FIRST_PERSON` ou `READY_TO_FIRE`), a câmera livre é desligada e só volta depois de o analógico direito passar pelo centro;
-  - primeira pessoa e mira pelo analógico direito: o mod liga `gSettings.Controls.RightStickAim` enquanto está carregado e restaura no unload. O `func_8084ABD8` do Player soma o analógico direito ao esquerdo na visão (C-Up) e na mira de arco, estilingue e gancho;
+  - primeira pessoa e mira: enquanto está carregado, o mod liga `gSettings.Controls.RightStickAim` e `gSettings.MoveInFirstPerson` e fixa `Controls.InvertAimingYAxis` e `Controls.InvertZAimingYAxis` em 0; no unload, restaura os quatro. Assim, o `func_8084ABD8` do Player move a visão (C-Up) e a mira de arco, estilingue e gancho só pelo analógico direito, com o vertical normal, e o esquerdo anda com o Link na direção da visão. Na mira com o ZL (`func_8083FD78`), o vertical também fica normal. Sem as chaves na config, o SoH inverte os dois eixos (padrão do N64), e a config de teste não tinha nenhuma delas;
   - D-pad do HUD nativo com as funções do mod: traje equipado em cima, botas embaixo, ocarina na esquerda e Navi na direita, com o ícone do usuário. O HUD Lua lê posição e alpha de cada direção por `hud_dpad` e desenha com `ship.hud.draw_icon`.
 - Host, settings transitórios em `OotNativeEngine.cpp`:
   - ficam só em memória, interceptados em `get/set_setting_int` só na thread do jogo, e zeram quando a ponte de gamepad muda (init e shutdown do host);
@@ -35,12 +35,12 @@ review — host, DMR 0.2.9 e testes validados, com commits locais e instalação
 - Layout id inalterado (`16ff0d5a`): nenhum header do SDK mudou.
 - Instalação em `RELEASE-UNIFICADA/OOT-teste-save-20260913`:
   - `soh.exe` `942D69E6`; os anteriores (`01860E47`, `137C907E`, `DF11CAC2` e `AABA1A0B`) ficaram em `host-originais`;
-  - `mods`: DMR 0.2.9 `F6C3E18A` e Mic Ocarina 0.1.4 (OOT-MIC-003). As builds anteriores do DMR 0.2.9 e o Mic 0.1.3 foram para `mods-originais`;
+  - `mods`: DMR 0.2.9 `56476B44` e Mic Ocarina 0.1.4 (OOT-MIC-003). As builds anteriores do DMR 0.2.9 e o Mic 0.1.3 foram para `mods-originais`;
   - config: CDown/CRight com `PosType = 4`, gravados pela sessão do usuário com o 0.2.9 por CVar, voltaram a 0 (cópia anterior em `shipofharkinian.json.bak-dmr029-cvar2`).
 
 ## Commits
 
-- `373d970db`, `7710ac73e`, `dba5cfd34` e `76972835f` em `OOT-UPSTREAM-78DC-001`, branch `agent/OOT-UPSTREAM-001-78dc6d970-integration`, só locais, sem push.
+- `373d970db`, `7710ac73e`, `dba5cfd34`, `76972835f` e `cc825b99b` em `OOT-UPSTREAM-78DC-001`, branch `agent/OOT-UPSTREAM-001-78dc6d970-integration`, só locais, sem push.
 
 ## Arquivos alterados
 
@@ -68,6 +68,7 @@ tools/package-linkspan-mod.ps1 -Source build/dynamic-movement-0.2.9/mod -OutputP
 shiplua_manifest_validator.exe build/distribution/Dynamic-Movement-Remake-0.2.9-layout-16ff0d5a.zip
 prepare-runtime-session.ps1 + boot de 45 s na pasta de teste + finish-runtime-session.ps1 -RequireTrackedUnchanged -Strict
 prepare-runtime-session.ps1 + invoke-input-sequence.ps1 -Execute (A a cada 3 s até o save abrir) + captura do HUD em jogo
+prepare-runtime-session.ps1 + invoke-input-sequence.ps1 -Execute (save aberto, C-Up, W e D segurados, com capturas) + finish-runtime-session.ps1 -RequireTrackedUnchanged -Strict
 ```
 
 ## Resultado da validação
@@ -86,28 +87,32 @@ prepare-runtime-session.ps1 + invoke-input-sequence.ps1 -Execute (A a cada 3 s a
     - `linkspan.hud.dpad` fica só em memória e é recusado fora da thread do jogo;
     - `hud_dpad` devolve as quatro direções capturadas com traje, botas e ocarina, e `get_item_button_rect(8)` é recusado;
     - o fundo capturado só fica disponível para o hook do HUD com o D-pad tomado;
-  - primeira pessoa: o `configure` liga o `RightStickAim`, a câmera livre fica desligada com `PLAYER_STATE1_FIRST_PERSON` e só volta com o analógico no centro;
+  - primeira pessoa: o `configure` liga `RightStickAim` e `MoveInFirstPerson` e zera `InvertAimingYAxis` e `InvertZAimingYAxis`; a câmera livre fica desligada com `PLAYER_STATE1_FIRST_PERSON` e só volta com o analógico no centro;
   - o menu do R abre no C equipado, anda uma opção por inclinação do analógico, pula C vazio e não troca com o ZR pressionado;
   - o menu do D-pad abre no traje equipado e não avança sozinho;
   - o perfil liga o escudo no eixo do ZL, a espada acima do escudo e o D-pad do HUD;
-  - no unload voltam o `InvertYAxis`, o `RightStickAim`, os três botões C, o R e o D-pad.
+  - no unload voltam o `InvertYAxis`, os quatro settings de primeira pessoa, os três botões C, o R e o D-pad.
 - `test_independent.py` exit 0: dois providers compilados fora da árvore modificaram o Player, com o hash do host inalterado.
 - DMR:
   - build exit 0;
-  - a DLL tem o layout id `16ff0d5a`, `hud_dpad`, `linkspan.hud.dpad` e `gSettings.Controls.RightStickAim`;
+  - a DLL tem o layout id `16ff0d5a`, `hud_dpad`, `linkspan.hud.dpad` e os nomes dos quatro settings de primeira pessoa;
   - o zip leva `assets/textures/baiteryamato/dynamic_movement_remake/gNaviIconTex`;
-  - validator exit 0; SHA-256 `F6C3E18A8F65713EE8E389D79287A7FED51559928B5B56E989C4F0C68D82BF0F`.
+  - validator exit 0; SHA-256 `56476B445B082CAC3FE52C6C1487418980A26DD97AC58739822996E70F622B6F`.
 - Ícone: 4176 bytes, com o cabeçalho igual ao dos ícones vanilla. A prévia foi conferida visualmente, e a decodificação de ícones vanilla confirmou a ordem R, G, B, A.
 - Em jogo, com o host `942D69E6` (`build/oot-upstream-001/evidence/move006-dpadfix-hud4`, save aberto por input de teclado):
   - o print do HUD mostra traje em cima, ocarina na esquerda, botas embaixo e Navi na direita, inteiros e por cima do D-pad;
   - a cruz do fundo não ficou distinguível no print, com a parede marrom atrás; ampliação e medição de pixels foram inconclusivas.
-- Boot com o DMR final (`build/oot-upstream-001/evidence/move006-rightstick-boot-20260914-1329`, sessão válida): vivo aos 45 s e fechado com exit 0, com o perfil "primeira pessoa e mira=stick direito" no log, saves, `.o2r` e mods inalterados e nenhum nome `linkspan.*` na config.
-- Os boots anteriores (`move006-dpad-boot-20260914-1247`, `move006-sword-boot-20260914-1132` e `move006-mic014-boot-20260914-1045`) tiveram o mesmo resultado.
-- A mira com o analógico direito em jogo não foi exercitada: a automação só envia teclado.
+- Sessão com o DMR final e o save aberto por teclado (`build/oot-upstream-001/evidence/move006-fpmove-ingame`, sessão válida, exit 0):
+  - o log traz o perfil novo ("primeira pessoa e mira=stick direito olha (vertical normal), esquerdo anda");
+  - a config ficou com `RightStickAim` 1, `MoveInFirstPerson` 1, `InvertAimingYAxis` 0 e `InvertZAimingYAxis` 0, sem nenhum nome `linkspan.*`;
+  - save, `.o2r` e mods inalterados;
+  - na casa do Link, o C-Up pela seta ↑ (o mapeamento de teclado da pasta) não entrou em primeira pessoa, e W e D andaram com o Link em terceira pessoa. O motivo não foi isolado: o teclado chegava ao jogo, e a entrada depende do setting de câmera da sala (`Camera_CheckValidMode` em `func_8083B8F4`). O menu do SoH estava aberto por cima, estado salvo na config da pasta.
+- Os boots anteriores (`move006-rightstick-boot-20260914-1329`, `move006-dpad-boot-20260914-1247`, `move006-sword-boot-20260914-1132` e `move006-mic014-boot-20260914-1045`) ficaram vivos aos 45 s, fecharam com exit 0 e mantiveram saves, `.o2r` e mods.
+- Olhar e andar em primeira pessoa com o controle não foram exercitados: a automação só envia teclado e não entrou em primeira pessoa.
 
 ## Pendências
 
-- Playtest do usuário com controle: visão e mira em primeira pessoa pelo analógico direito, cruz do D-pad atrás dos ícones, troca de traje/botas refletida no D-pad, menu do R, menus do D-pad, ZL com Y, câmera e HUD com um slot.
+- Playtest do usuário com controle: vertical do analógico direito em primeira pessoa e na mira (com e sem ZL), andar em primeira pessoa pelo analógico esquerdo, cruz do D-pad atrás dos ícones, troca de traje/botas refletida no D-pad, menu do R, menus do D-pad, ZL com Y, câmera e HUD com um slot.
 - Overlay para a `RELEASE-UNIFICADA\OOT` desatualizado:
   - o de `build/distribution` (`F56F4A9E`) tem o host `DF11CAC2`, sem o D-pad e sem a mira pelo analógico direito;
   - gerar de novo depois do playtest e rodar o smoke de instalação limpa (`tools/test-linkspan-overlay.ps1 -ResourceLogging`). O empacotamento leva uns 10 minutos de disco e foi adiado para não pesar durante o jogo.
@@ -119,8 +124,9 @@ prepare-runtime-session.ps1 + invoke-input-sequence.ps1 -Execute (A a cada 3 s a
   - com Y ou B pressionado o Link não defende;
   - quando o escudo estava erguido, o golpe sai um frame depois;
   - segurar B para carregar o giro também mantém o escudo abaixado.
-- `FreeLook.Enabled`, `InvertYAxis`, `RightStickAim` e `PersistentMasks` continuam sendo CVars reais: se o SoH salvar a config com o mod carregado, o valor do mod fica gravado (a restauração do unload não persiste). Já acontecia com `FreeLook` e `PersistentMasks` antes desta tarefa.
-- A direção vertical da mira pelo analógico direito segue o `Controls.InvertAimingYAxis` do usuário (0 na config de teste), que o mod não muda.
+- `FreeLook.Enabled`, `InvertYAxis`, `PersistentMasks` e os quatro settings de primeira pessoa continuam sendo CVars reais: se o SoH salvar a config com o mod carregado, o valor do mod fica gravado (a restauração do unload não persiste). Já acontecia com `FreeLook` e `PersistentMasks` antes desta tarefa.
+- `MoveInFirstPerson` é a opção do próprio SoH e também roda na primeira pessoa a cavalo e na galeria de tiro (`Player_Action_8084FA54`), casos não exercitados.
+- Na mira com o ZL, o analógico esquerdo continua inclinando a mira junto com o direito: o SoH usa o maior dos dois.
 - Sem gamepad o perfil Nintendo não é aplicado: os três botões C continuam no HUD, e a espada acima do escudo e o D-pad do HUD não ligam.
 - Com o D-pad tomado, os itens do `DpadEquips` do SoH somem do HUD. O mod já usa o D-pad físico, então eles também não eram usáveis.
 - `mount_archive` recebe o caminho na página de código ativa. Em uma instalação com caractere fora dela, a Navi fica sem ícone, e o resto do D-pad continua.

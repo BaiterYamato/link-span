@@ -21,3 +21,4 @@
   - Dynamic Movement Remake 0.2.9: analogico direito com o eixo vertical normal, escudo no ZL junto da mira e HUD com um unico slot de item (o C equipado no ZR).
   - Segurar R abre o menu de itens e segurar D-pad cima/baixo abre o de traje/botas; nos tres o analogico direito escolhe para a esquerda e a direita, sem ciclo automatico, e soltar aplica.
   - D-pad do HUD nativo com as funções do mod: Navi na direita (ícone do usuário), ocarina na esquerda, traje em cima e botas embaixo.
+  - Primeira pessoa e mira: o analógico direito olha com o eixo vertical normal e o esquerdo anda com o Link.
