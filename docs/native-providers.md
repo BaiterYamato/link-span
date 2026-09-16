@@ -119,6 +119,18 @@ if (runtime->resolve_symbol(runtime->context, "z_player.c!Player_Action_Roll", &
 - Recompile e republique o mod a cada executável novo. Detalhes em
   `rfcs/0023-native-escape-hatch.md`.
 
+## Crash e proteção de boot
+
+- **Crash log:** o host escreve no crash log qual mod estava em `init`, `call`,
+  `hook` ou `shutdown` e quais bibliotecas de mods aparecem na pilha
+  (`WriteNativeCrashReport`).
+- **Proteção de boot:** com `ModHost::EnableBootGuard`, um mod nativo que derruba o
+  início é gravado em `mods/.shiplua-disabled` e pulado nos inícios seguintes.
+- **Reativar:** apague a linha do mod nesse arquivo.
+- **Janela de proteção:** `ConfirmBoot()` encerra a proteção depois que o jogo roda
+  normalmente.
+- Detalhes em `rfcs/0024-native-crash-attribution.md`.
+
 ```lua
 local ship = require("ship")
 if ship.native.has("dash") then
