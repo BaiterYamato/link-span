@@ -525,3 +525,19 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
 - Layout id novo `2222c48e`; `soh.exe` `CA715C7F…`.
 - Commits locais: `256fbf0` (core), `6d9cca4da` e `01ef736b6` (host).
 - Próximo: OOT-CORE-003 (itens, inventário e tipos de ator).
+
+## UPDATE OOT-COREMODS-001 — COREEXT-009 atribuição de crash e proteção de boot
+
+- Status: review
+- Concluído em 2026-09-16:
+  - atividade nativa por thread e mapa de DLLs de mods no crash log do SoH;
+  - mod nativo que derruba o boot vai para `mods/.shiplua-disabled` e é pulado,
+    com o motivo, até o usuário apagar a linha;
+  - boot confirmado após 300 frames; callback de crash registrado antes da carga
+    dos mods;
+  - prova em jogo com mod que cai no init: crash atribuído e boot seguinte limpo.
+- Fase B: com COREEXT-006/008/009 em review, fica pendente só o validador de
+  exports no `shipmod.py doctor`.
+- Layout id `01e37d13`; `soh.exe` `D9FDB586…`.
+- Commits locais: `dac31da` e `b6cd6b9` (core), `39a7f5c11` (host).
+- Próximo: OOT-CORE-003.
