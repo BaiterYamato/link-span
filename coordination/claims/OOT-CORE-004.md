@@ -1,0 +1,24 @@
+# OOT-CORE-004
+
+- Status: review
+- Agent: Claude (Opus 5)
+- Platform: Windows
+- Branch: agent/OOT-UPSTREAM-001-78dc6d970-integration
+- Started: 2026-09-16T22:57:48.0762363Z
+- Depends on: COREEXT-006, OOT-CORE-003, OOT-CORE-005
+- Files:
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/oot_world.h
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/oot_colliders.h
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeWorld.h
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeWorld.cpp
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeWorldGame.cpp
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeEngine.cpp
+  - OOT-UPSTREAM-78DC-001/soh/soh/OTRGlobals.cpp
+  - OOT-UPSTREAM-78DC-001/soh/soh/ShipLuaBootstrap.cpp
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/ExportSdk.cmake
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/tests/EngineTests.cpp
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/world-demo/**
+  - OOT-UPSTREAM-78DC-001/tools/package-world-demo.ps1
+  - OOT-UPSTREAM-78DC-001/docs/native-mods.md
+- Goal:
+  - Consultas de chão, linha, parede e água, colliders cilíndricos com dono e knockback no Player, com demo em jogo

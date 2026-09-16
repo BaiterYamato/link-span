@@ -573,3 +573,18 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
 - Layout id `57449c15`; `soh.exe` `80D57D7E…`.
 - Commit local: `0f64fe5c2` (host).
 - Próximo: OOT-CORE-004 (colisão e mundo).
+
+## UPDATE OOT-COREMODS-001 — OOT-CORE-004 mundo e colliders
+
+- Status: review
+- Concluído em 2026-09-16:
+  - `linkspan.oot.world` v1: chão, line test, parede por esfera e água;
+  - `linkspan.oot.colliders` v1: cilindro AT/AC/OC de mods com leitura de
+    acertos, destroy adiado para depois da checagem e knockback do Player;
+  - prova em jogo: alvo de mod apoiado no chão, acertado pela espada
+    (`dmg=0x100`) e empurrando o Link ao encostar.
+- Fora desta fatia: esferas, tris e quads; DynaPoly de mods; tabela de dano;
+  filtros globais de update.
+- Layout id `0efec9e8`; `soh.exe` `29084FD3…`.
+- Commit local: `474082587` (host).
+- Fase C: resta OOT-CORE-007 (layouts ampliados do Unbound).
