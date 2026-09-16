@@ -512,3 +512,16 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
 - Layout id novo `abff4332`.
 - Commits locais: `a19d83b1b` (host) e `106a536` (RFC 0022).
 - Próximo: COREEXT-008 (escape hatch).
+
+## UPDATE OOT-COREMODS-001 — COREEXT-008 escape hatch na ABI 1.3
+
+- Status: review
+- Concluído em 2026-09-16:
+  - ABI 1.3 com `get_host_fingerprint`, `resolve_symbol`, `install_patch` e
+    `remove_patch`; `provider.host_fingerprints` no manifesto de core extensions;
+  - host OoT resolve funções por `soh.symbols` (gerado do PDB, recusando RVAs
+    dobrados por ICF) e desvia com MinHook v1.3.4;
+  - prova em jogo: core extension desvia `Interface_Draw` e o HUD pisca.
+- Layout id novo `2222c48e`; `soh.exe` `CA715C7F…`.
+- Commits locais: `256fbf0` (core), `6d9cca4da` e `01ef736b6` (host).
+- Próximo: OOT-CORE-003 (itens, inventário e tipos de ator).
