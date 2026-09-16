@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "shiplua/manifest/Manifest.h"
+#include "shiplua/native/NativeHooks.h"
 #include "shiplua/native/ship_native_abi.h"
 #include "shiplua/runtime/Result.h"
 
@@ -32,6 +33,9 @@ struct NativeProviderPolicy {
     std::function<bool(const Manifest&, const std::filesystem::path&)> authorize;
     // Serviços de extensão do host; tabelas devem sobreviver aos mods carregados.
     std::vector<NativeHostService> services;
+    // ABI 1.2: registro de hooks compartilhado por todos os providers do host.
+    // Ausente = register_hook/declare_hook_point retornam UNSUPPORTED.
+    std::shared_ptr<NativeHookRegistry> hooks;
 };
 
 // Resultado POD: permite empurrar valores Lua sem longjmp sobre RAII C++.
@@ -65,6 +69,12 @@ class NativeProvider {
     static const void* SHIP_NATIVE_CALL GetService(void*, const char*, uint32_t, uint32_t) noexcept;
     static ShipNativeStatus SHIP_NATIVE_CALL RegisterService(
         void*, const char*, uint32_t, uint32_t, const void*) noexcept;
+    static ShipNativeStatus SHIP_NATIVE_CALL RegisterHook(void*, const ShipNativeHookSpec*, uint64_t*) noexcept;
+    static ShipNativeStatus SHIP_NATIVE_CALL UnregisterHook(void*, uint64_t) noexcept;
+    static ShipNativeStatus SHIP_NATIVE_CALL DeclareHookPoint(
+        void*, const ShipNativeHookPointSpec*, uint64_t*) noexcept;
+    static ShipNativeStatus SHIP_NATIVE_CALL DispatchHook(
+        void*, uint64_t, void*, uint32_t, ShipNativeHookOriginalFn, void*) noexcept;
     void* mLibrary = nullptr;
     void* mInstance = nullptr;
     void (SHIP_NATIVE_CALL *mShutdown)(void*) = nullptr;
@@ -72,6 +82,7 @@ class NativeProvider {
     std::map<std::string, Function, std::less<>> mFunctions;
     std::vector<NativeHostService> mServices;
     std::vector<NativeHostService> mPublishedServices;
+    std::shared_ptr<NativeHookRegistry> mHooks;
     std::string mOwnerId;
     std::thread::id mThread = std::this_thread::get_id();
     bool mInitializing = true;

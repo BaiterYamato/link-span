@@ -75,8 +75,8 @@ ShipNativeStatus SHIP_NATIVE_CALL Write(void* context, const char* bytes, uint32
 } // namespace
 
 Result<void> ValidateNativeManifest(const NativeProviderManifest& provider) {
-    if (provider.abiVersion != "1.0" && provider.abiVersion != "1.1") {
-        return Result<void>::err(ErrorCode::Unsupported, "provider.abi_version must be 1.0 or 1.1");
+    if (provider.abiVersion != "1.0" && provider.abiVersion != "1.1" && provider.abiVersion != "1.2") {
+        return Result<void>::err(ErrorCode::Unsupported, "provider.abi_version must be 1.0, 1.1 or 1.2");
     }
     if (provider.win64.empty() && provider.linux64.empty() && provider.macos.empty()) {
         return Result<void>::err(ErrorCode::InvalidArgument, "provider needs a platform library");
@@ -130,6 +130,7 @@ Result<std::unique_ptr<NativeProvider>> NativeProvider::Load(
             }
         }
         instance->mServices = policy.services;
+        instance->mHooks = policy.hooks;
 #ifdef _WIN32
         // Não procurar dependências no CWD/PATH do processo.
         instance->mLibrary = LoadLibraryExW(resolved.value->c_str(), nullptr,
@@ -145,7 +146,8 @@ Result<std::unique_ptr<NativeProvider>> NativeProvider::Load(
 #endif
         if (!query) return R::err(ErrorCode::Unsupported, "ShipNative_Query export missing");
         const auto* descriptor = query();
-        const uint32_t requiredMinor = manifest.provider->abiVersion == "1.1" ? 1u : 0u;
+        const uint32_t requiredMinor = manifest.provider->abiVersion == "1.2" ? 2u
+                                     : manifest.provider->abiVersion == "1.1" ? 1u : 0u;
         if (!descriptor || descriptor->size < sizeof(ShipNativeDescriptor) ||
             descriptor->abi_major != SHIP_NATIVE_ABI_MAJOR ||
             descriptor->abi_minor > SHIP_NATIVE_ABI_MINOR ||
@@ -153,7 +155,8 @@ Result<std::unique_ptr<NativeProvider>> NativeProvider::Load(
             return R::err(ErrorCode::Unsupported, "native provider ABI/descriptor incompatible");
         }
         instance->mRuntime = {sizeof(ShipNativeRuntime), SHIP_NATIVE_ABI_MAJOR,
-            SHIP_NATIVE_ABI_MINOR, instance.get(), &Register, &GetService, &RegisterService};
+            SHIP_NATIVE_ABI_MINOR, instance.get(), &Register, &GetService, &RegisterService,
+            &RegisterHook, &UnregisterHook, &DeclareHookPoint, &DispatchHook};
         // Guardar shutdown ANTES de init: rollback inclui inicialização parcial.
         instance->mShutdown = descriptor->shutdown;
         const auto result = descriptor->init(&instance->mRuntime, &instance->mInstance);
@@ -172,6 +175,8 @@ Result<std::unique_ptr<NativeProvider>> NativeProvider::Load(
 NativeProvider::~NativeProvider() {
     mInitializing = false;
     mFunctions.clear();
+    // Antes do shutdown: nenhum callback pode chegar a uma instância desmontando.
+    if (mHooks) mHooks->RemoveOwner(mOwnerId);
     if (mShutdown) {
         try { mShutdown(mInstance); } catch (...) { /* Não atravessar a fronteira do host. */ }
     }
@@ -243,6 +248,61 @@ ShipNativeStatus SHIP_NATIVE_CALL NativeProvider::RegisterService(
         self->mRegistrationFailed = true;
         return SHIP_NATIVE_FAILURE;
     }
+}
+
+ShipNativeStatus SHIP_NATIVE_CALL NativeProvider::RegisterHook(
+    void* context, const ShipNativeHookSpec* spec, uint64_t* handle) noexcept {
+    auto* self = static_cast<NativeProvider*>(context);
+    if (!self || self->mThread != std::this_thread::get_id()) return SHIP_NATIVE_FAILURE;
+    if (!self->mHooks) return SHIP_NATIVE_UNSUPPORTED;
+    if (!spec) return SHIP_NATIVE_INVALID_ARGUMENT;
+    try {
+        return self->mHooks->Register(self->mOwnerId, *spec, handle);
+    } catch (...) {
+        return SHIP_NATIVE_FAILURE;
+    }
+}
+
+ShipNativeStatus SHIP_NATIVE_CALL NativeProvider::UnregisterHook(void* context, uint64_t handle) noexcept {
+    auto* self = static_cast<NativeProvider*>(context);
+    if (!self || self->mThread != std::this_thread::get_id()) return SHIP_NATIVE_FAILURE;
+    if (!self->mHooks) return SHIP_NATIVE_UNSUPPORTED;
+    try {
+        return self->mHooks->Unregister(self->mOwnerId, handle);
+    } catch (...) {
+        return SHIP_NATIVE_FAILURE;
+    }
+}
+
+ShipNativeStatus SHIP_NATIVE_CALL NativeProvider::DeclareHookPoint(
+    void* context, const ShipNativeHookPointSpec* spec, uint64_t* point) noexcept {
+    auto* self = static_cast<NativeProvider*>(context);
+    if (!self || self->mThread != std::this_thread::get_id() || !self->mInitializing) {
+        return SHIP_NATIVE_FAILURE;
+    }
+    if (!self->mCanPublishServices || !self->mHooks) return SHIP_NATIVE_UNSUPPORTED;
+    if (!spec) {
+        self->mRegistrationFailed = true;
+        return SHIP_NATIVE_INVALID_ARGUMENT;
+    }
+    try {
+        const auto status = self->mHooks->DeclarePoint(self->mOwnerId, *spec, point);
+        if (status != SHIP_NATIVE_OK) self->mRegistrationFailed = true;
+        return status;
+    } catch (...) {
+        self->mRegistrationFailed = true;
+        return SHIP_NATIVE_FAILURE;
+    }
+}
+
+ShipNativeStatus SHIP_NATIVE_CALL NativeProvider::DispatchHook(
+    void* context, uint64_t point, void* payload, uint32_t payloadSize,
+    ShipNativeHookOriginalFn original, void* originalContext) noexcept {
+    auto* self = static_cast<NativeProvider*>(context);
+    if (!self || self->mThread != std::this_thread::get_id()) return SHIP_NATIVE_FAILURE;
+    if (!self->mHooks) return SHIP_NATIVE_UNSUPPORTED;
+    if (!self->mHooks->IsOwnerOf(self->mOwnerId, point)) return SHIP_NATIVE_INVALID_ARGUMENT;
+    return self->mHooks->Dispatch(point, payload, payloadSize, original, originalContext);
 }
 
 bool NativeProvider::CanAccessServiceFrom(std::string_view owner) const noexcept {

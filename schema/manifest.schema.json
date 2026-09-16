@@ -154,7 +154,7 @@
       ],
       "properties": {
         "abi_version": {
-          "enum": ["1.0", "1.1"]
+          "enum": ["1.0", "1.1", "1.2"]
         },
         "win64": {
           "type": "string",
@@ -220,7 +220,7 @@
         "properties": {
           "load_phase": { "const": "pre_game" },
           "provider": {
-            "properties": { "abi_version": { "const": "1.1" } }
+            "properties": { "abi_version": { "enum": ["1.1", "1.2"] } }
           }
         }
       }

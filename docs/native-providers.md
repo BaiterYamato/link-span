@@ -6,7 +6,7 @@ cada função ao schema do Link-Span, a uma allowlist ou ao código do loader.
 
 ## Estado real
 
-Implementado no core: carga dinâmica, ABI C 1.0/1.1, funções privadas por instância,
+Implementado no core: carga dinâmica, ABI C 1.0/1.1/1.2 (hooks), funções privadas por instância,
 consulta de serviços do host, core extensions que publicam serviços para outros
 mods, diretórios e pacotes, rollback, unload e erros Lua.
 O exemplo `examples/native-dash` é compilado separadamente do host. O teste
@@ -70,6 +70,28 @@ ordem, compatibilidade e lifetime; ele não interpreta os campos da tabela nem
 exige uma função nova no schema. ABI 1.0 continua válida para mods nativos comuns.
 O unload da extensão é recusado enquanto um consumidor do serviço permanece
 carregado, e `UnloadAll` encerra os módulos na ordem inversa da carga.
+
+## Hooks nativos (ABI 1.2)
+
+Com `abi_version = "1.2"`, um provider entra no fluxo do jogo sem função nova no
+host. O host (ou uma core extension, no init) declara pontos com nome, versão e
+tamanho de payload; qualquer provider registra hooks neles:
+
+```c
+ShipNativeHookSpec spec = {sizeof(spec), "oot.actor.update", 1, sizeof(ShipOotActorHookV1),
+                           SHIP_NATIVE_HOOK_REPLACE, 0, 0, MeuUpdate, estado};
+uint64_t handle;
+runtime->register_hook(runtime->context, &spec, &handle);
+```
+
+- `observe` (fase `BEFORE`/`AFTER`) lê; `transform` altera o payload em cadeia;
+  `replace` é exclusivo e decide se chama `call->call_original(call)`.
+- Maior prioridade roda antes; empate segue a ordem de carga.
+- `UNSUPPORTED` recusa sem contar falha; três falhas seguidas desativam o hook.
+- Hooks do mod saem sozinhos no unload, antes do `shutdown`.
+
+Uma core extension publica pontos próprios com `declare_hook_point` e os
+dispara com `dispatch_hook`. Detalhes em `rfcs/0021-native-hooks.md`.
 
 ```lua
 local ship = require("ship")

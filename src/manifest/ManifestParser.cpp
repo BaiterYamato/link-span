@@ -144,9 +144,10 @@ Result<Manifest> ParseTable(const toml::table& table, const std::string& sourceN
             return Result<Manifest>::err(ErrorCode::InvalidArgument,
                 sourceName + ": core_extension requires load_phase='pre_game'");
         }
-        if (!manifest.provider || manifest.provider->abiVersion != "1.1") {
+        if (!manifest.provider ||
+            (manifest.provider->abiVersion != "1.1" && manifest.provider->abiVersion != "1.2")) {
             return Result<Manifest>::err(ErrorCode::InvalidArgument,
-                sourceName + ": core_extension requires provider ABI 1.1");
+                sourceName + ": core_extension requires provider ABI 1.1 or 1.2");
         }
     } else if (manifest.loadPhase == ModLoadPhase::PreGame) {
         return Result<Manifest>::err(ErrorCode::InvalidArgument,

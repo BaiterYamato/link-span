@@ -53,7 +53,7 @@ void Package(const fs::path& dir, const fs::path& target) {
 }
 
 int main(int argc, char** argv) {
-    if (argc != 9) return 2;
+    if (argc != 11) return 2;
     const auto root = fs::temp_directory_path() / ("shiplua-native-" +
         std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
     fs::create_directories(root);
@@ -137,6 +137,41 @@ int main(int argc, char** argv) {
                   "core unload blocked while native consumer holds its service");
             Check(host.UnloadMod("test.consumer").isOk(), "consumer unload");
             Check(host.UnloadMod("test.core").isOk(), "core unload after consumer");
+        }
+        {
+            const auto mods = root / ("hooks-" + game);
+            MakeMod(mods / "z-core", argv[9], "test.hooks.core", "loaded=true",
+                    "kind='core_extension'\nload_phase='pre_game'\n", "1.2");
+            MakeMod(mods / "a-consumer", argv[10], "test.hooks.consumer", "loaded=true", {}, "1.2");
+            auto hookPolicy = policy;
+            hookPolicy.hooks = std::make_shared<NativeHookRegistry>();
+            const auto& hooks = *hookPolicy.hooks;
+            ModHost host(context, {}, hookPolicy);
+            const auto loaded = host.LoadModsFromRoot(mods, root / ("hooks-cache-" + game));
+            Check(loaded.isOk() && loaded.value->loadedIds ==
+                      std::vector<std::string>{"test.hooks.core", "test.hooks.consumer"},
+                  "hook core and consumer load");
+            Check(hooks.HookCount() == 2, "consumer hooks registered in init");
+            Run(host, "test.hooks.core", "assert(require('ship').native.call('run','5')=='12')");
+            Run(host, "test.hooks.consumer", R"lua(
+                local n=require('ship').native
+                assert(n.call('hooks','observed')=='12')
+                assert(n.call('hooks','declared')=='2')
+                assert(n.call('hooks','replace')=='0')
+                assert(n.call('hooks','replace')=='4')
+            )lua");
+            Run(host, "test.hooks.core", "assert(require('ship').native.call('run','5')=='112')");
+            Run(host, "test.hooks.consumer", "assert(require('ship').native.call('hooks','unhook')=='0')");
+            Run(host, "test.hooks.core", "assert(require('ship').native.call('run','5')=='12')");
+            Run(host, "test.hooks.consumer", "assert(require('ship').native.call('hooks','replace')=='0')");
+            Check(host.UnloadMod("test.hooks.consumer").isOk() && hooks.HookCount() == 0,
+                  "unload removes consumer hooks");
+            Run(host, "test.hooks.core", "assert(require('ship').native.call('run','5')=='10')");
+            Check(host.LoadModFromDirectory((mods / "a-consumer").string()).isOk() && hooks.HookCount() == 2,
+                  "consumer reload registers again");
+            Check(host.UnloadMod("test.hooks.core").isOk(), "core unload with hooked point");
+            Check(hooks.HookCount() == 0 && !hooks.FindPoint("test.hooks.value", 1),
+                  "core unload drops its point and foreign hooks");
         }
         {
             const auto mods = root / ("core-duplicate-" + game);
