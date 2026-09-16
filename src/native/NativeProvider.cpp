@@ -1,4 +1,5 @@
 #include "shiplua/native/NativeProvider.h"
+#include "shiplua/native/NativeDiagnostics.h"
 
 #include <algorithm>
 #include <cstring>
@@ -150,6 +151,7 @@ Result<std::unique_ptr<NativeProvider>> NativeProvider::Load(
         const auto query = reinterpret_cast<ShipNativeQueryFn>(dlsym(instance->mLibrary, "ShipNative_Query"));
 #endif
         if (!query) return R::err(ErrorCode::Unsupported, "ShipNative_Query export missing");
+        RegisterNativeModule(instance->mOwnerId.c_str(), instance->mLibrary);
         const auto* descriptor = query();
         const uint32_t requiredMinor = manifest.provider->abiVersion == "1.3" ? 3u
                                      : manifest.provider->abiVersion == "1.2" ? 2u
@@ -166,7 +168,11 @@ Result<std::unique_ptr<NativeProvider>> NativeProvider::Load(
             &GetHostFingerprint, &ResolveSymbol, &InstallPatch, &RemovePatch};
         // Guardar shutdown ANTES de init: rollback inclui inicialização parcial.
         instance->mShutdown = descriptor->shutdown;
-        const auto result = descriptor->init(&instance->mRuntime, &instance->mInstance);
+        ShipNativeStatus result;
+        {
+            const NativeActivityScope activity(instance->mOwnerId.c_str(), "init", nullptr);
+            result = descriptor->init(&instance->mRuntime, &instance->mInstance);
+        }
         instance->mInitializing = false;
         if (result != SHIP_NATIVE_OK || instance->mRegistrationFailed) {
             return R::err(ErrorCode::HostFailure, "native provider initialization/registration failed");
@@ -192,9 +198,11 @@ NativeProvider::~NativeProvider() {
     }
     mPatches.clear();
     if (mShutdown) {
+        const NativeActivityScope activity(mOwnerId.c_str(), "shutdown", nullptr);
         try { mShutdown(mInstance); } catch (...) { /* Não atravessar a fronteira do host. */ }
     }
     if (mLibrary) {
+        UnregisterNativeModule(mLibrary);
 #ifdef _WIN32
         FreeLibrary(static_cast<HMODULE>(mLibrary));
 #else
@@ -429,6 +437,7 @@ NativeCallResult NativeProvider::Call(std::string_view name, const char* request
     Writer writer{response, std::min(capacity, SHIP_NATIVE_MAX_BYTES)};
     mCalling = true;
     ShipNativeStatus status = SHIP_NATIVE_FAILURE;
+    const NativeActivityScope activity(mOwnerId.c_str(), "call", function->first.c_str());
     try {
         status = function->second.callback(function->second.user, request, length, Write, &writer);
     } catch (...) { status = SHIP_NATIVE_FAILURE; }

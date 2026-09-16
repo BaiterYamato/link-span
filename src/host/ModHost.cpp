@@ -16,6 +16,7 @@
 #include "shiplua/manifest/ModDiscovery.h"
 #include "shiplua/manifest/PackageFormat.h"
 #include "shiplua/manifest/SemVersion.h"
+#include "shiplua/native/NativeDiagnostics.h"
 
 namespace ShipLua {
 
@@ -392,10 +393,70 @@ Result<void> ModHost::LoadModFromPackage(const std::string& package,
     return Result<void>::ok();
 }
 
+namespace {
+constexpr const char* kBootMarkerName = ".shiplua-boot";
+constexpr const char* kDisabledListName = ".shiplua-disabled";
+
+std::map<std::string, std::string> ReadDisabledMods(const std::filesystem::path& file) {
+    std::map<std::string, std::string> disabled;
+    std::ifstream input(file, std::ios::binary);
+    std::string line;
+    while (std::getline(input, line)) {
+        if (!line.empty() && line.back() == '\r') line.pop_back();
+        if (line.empty() || line.front() == '#') continue;
+        const auto tab = line.find('\t');
+        disabled[line.substr(0, tab)] = tab == std::string::npos ? "" : line.substr(tab + 1);
+    }
+    return disabled;
+}
+} // namespace
+
+void ModHost::EnableBootGuard(const std::filesystem::path& directory) {
+    mBootGuardDirectory = directory;
+}
+
+void ModHost::ConfirmBoot() {
+    if (mBootGuardDirectory.empty()) return;
+    ClearNativeBootMarker();
+    std::error_code ignored;
+    std::filesystem::remove(mBootGuardDirectory / kBootMarkerName, ignored);
+}
+
 Result<ModLoadReport> ModHost::LoadModsFromRoot(const std::filesystem::path& root,
                                                 const std::filesystem::path& extractionRoot,
                                                 const PackageLimits& limits,
                                                 std::size_t memoryLimitBytes) {
+    std::map<std::string, std::string> disabledMods;
+    std::vector<std::pair<std::string, std::string>> newlyDisabled;
+    const bool bootGuard = !mBootGuardDirectory.empty();
+    if (bootGuard) {
+        const auto marker = mBootGuardDirectory / kBootMarkerName;
+        const auto disabledFile = mBootGuardDirectory / kDisabledListName;
+        {
+            std::ifstream input(marker, std::ios::binary);
+            std::string line;
+            if (std::getline(input, line)) {
+                if (!line.empty() && line.back() == '\r') line.pop_back();
+                const auto tab = line.find('\t');
+                const auto state = line.substr(0, tab);
+                const auto id = tab == std::string::npos ? std::string() : line.substr(tab + 1);
+                if (!id.empty() && (state == "loading" || state == "crashed")) {
+                    newlyDisabled.emplace_back(id, state == "loading"
+                        ? "o jogo fechou durante o init deste mod nativo"
+                        : "o crash handler atribuiu a este mod um crash antes do boot confirmado");
+                }
+            }
+        }
+        std::error_code ignored;
+        std::filesystem::remove(marker, ignored);
+        if (!newlyDisabled.empty()) {
+            std::ofstream output(disabledFile, std::ios::binary | std::ios::app);
+            for (const auto& [id, reason] : newlyDisabled) output << id << '\t' << reason << '\n';
+        }
+        disabledMods = ReadDisabledMods(disabledFile);
+        SetNativeBootMarker(marker);
+    }
+
     auto discovered = DiscoverMods(root);
     if (!discovered.isOk()) {
         return Result<ModLoadReport>::err(discovered.code, discovered.message);
@@ -450,6 +511,16 @@ Result<ModLoadReport> ModHost::LoadModsFromRoot(const std::filesystem::path& roo
             }
             continue;
         }
+        const auto disabled = disabledMods.find(parsed.value->id);
+        if (disabled != disabledMods.end()) {
+            report.rejected[parsed.value->id] = "desativado pela proteção de boot (" + disabled->second +
+                "); apague a linha do mod em " + kDisabledListName + " para reativar";
+            if (!ownedDirectory.empty()) {
+                std::error_code ignored;
+                std::filesystem::remove_all(ownedDirectory, ignored);
+            }
+            continue;
+        }
         auto compatible = ValidateCompatibility(*parsed.value, mHostContext);
         if (!compatible.isOk()) {
             report.rejected[parsed.value->id] = compatible.message;
@@ -496,7 +567,10 @@ Result<ModLoadReport> ModHost::LoadModsFromRoot(const std::filesystem::path& roo
             continue;
         }
 
+        const bool native = bootGuard && candidate->manifest.provider.has_value();
+        if (native) WriteNativeBootMarker("loading", id.c_str());
         auto loaded = LoadModFromDirectory(candidate->directory.string(), memoryLimitBytes);
+        if (native) WriteNativeBootMarker("running", "");
         if (!loaded.isOk()) {
             report.rejected[id] = loaded.message;
             continue;

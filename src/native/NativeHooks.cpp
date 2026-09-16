@@ -1,4 +1,5 @@
 #include "shiplua/native/NativeHooks.h"
+#include "shiplua/native/NativeDiagnostics.h"
 
 #include <algorithm>
 #include <array>
@@ -55,7 +56,9 @@ ShipNativeStatus SHIP_NATIVE_CALL CallOriginal(const ShipNativeHookCall* call) {
     return RunOriginal(*call, frame->original, frame->context);
 }
 
-ShipNativeStatus Invoke(ShipNativeHookFn callback, void* user, const ShipNativeHookCall& call) noexcept {
+ShipNativeStatus Invoke(const std::string& owner, ShipNativeHookFn callback, void* user,
+                        const ShipNativeHookCall& call) noexcept {
+    const NativeActivityScope activity(owner.c_str(), "hook", call.point);
     try {
         return callback(user, &call);
     } catch (...) {
@@ -319,7 +322,7 @@ ShipNativeStatus NativeHookRegistry::Dispatch(uint64_t pointId, void* payload, u
             if (!hook.enabled || hook.mode != SHIP_NATIVE_HOOK_OBSERVE || hook.phase != phase) continue;
             call.mode = SHIP_NATIVE_HOOK_OBSERVE;
             call.phase = phase;
-            RecordFailure(point, hook, Invoke(hook.callback, hook.user, call));
+            RecordFailure(point, hook, Invoke(hook.owner, hook.callback, hook.user, call));
         }
     };
 
@@ -343,7 +346,7 @@ ShipNativeStatus NativeHookRegistry::Dispatch(uint64_t pointId, void* payload, u
         if (payloadSize) std::memcpy(snapshot, payload, payloadSize);
         call.mode = SHIP_NATIVE_HOOK_TRANSFORM;
         call.phase = 0;
-        if (RecordFailure(point, hook, Invoke(hook.callback, hook.user, call)) && payloadSize) {
+        if (RecordFailure(point, hook, Invoke(hook.owner, hook.callback, hook.user, call)) && payloadSize) {
             std::memcpy(payload, snapshot, payloadSize);
         }
     }
@@ -360,7 +363,7 @@ ShipNativeStatus NativeHookRegistry::Dispatch(uint64_t pointId, void* payload, u
         call.phase = 0;
         call.call_original = CallOriginal;
         call.original_context = &frame;
-        status = Invoke(replace->callback, replace->user, call);
+        status = Invoke(replace->owner, replace->callback, replace->user, call);
         call.call_original = nullptr;
         call.original_context = nullptr;
         if (RecordFailure(point, *replace, status) && !frame.called) {

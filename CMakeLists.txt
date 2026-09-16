@@ -74,6 +74,10 @@ target_include_directories(shiplua PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/generated/include")
 target_link_libraries(shiplua PRIVATE lua_static tomlplusplus::tomlplusplus miniz)
 target_link_libraries(shiplua PRIVATE ${CMAKE_DL_LIBS})
+if(WIN32)
+    # GetModuleInformation no mapa de módulos do diagnóstico nativo (COREEXT-009).
+    target_link_libraries(shiplua PUBLIC psapi)
+endif()
 # Expose Lua headers to privileged consumers (host adapters) so they can install
 # host-specific bindings (e.g. ship.mm.*) directly on a runtime's lua_State.
 # Mods never see this: it is a build-time include path for the C++ adapter only.

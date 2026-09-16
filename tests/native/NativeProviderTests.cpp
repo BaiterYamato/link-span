@@ -8,6 +8,10 @@
 #include <miniz.h>
 #include "shiplua/host/ModHost.h"
 #include "shiplua/manifest/ManifestParser.h"
+#include "shiplua/native/NativeDiagnostics.h"
+#ifdef _WIN32
+#include <windows.h>
+#endif
 #include "FixtureService.h"
 
 namespace fs = std::filesystem;
@@ -243,6 +247,79 @@ int main(int argc, char** argv) {
                     local r=require('ship').native.call('report','')
                     assert(r=='fp=2:0: res=2 ins=2 orig=0', r)
                 )lua");
+            }
+        }
+        {
+            // Proteção de boot e atribuição de crash (COREEXT-009).
+            const auto guardRoot = root / ("guard-" + game);
+            const auto guardCache = root / ("guard-cache-" + game);
+            MakeMod(guardRoot / "native", argv[1], "test.guard");
+            auto readText = [](const fs::path& path) {
+                std::ifstream input(path, std::ios::binary);
+                return std::string((std::istreambuf_iterator<char>(input)), std::istreambuf_iterator<char>());
+            };
+            {
+                ModHost host(context, {}, policy);
+                host.EnableBootGuard(guardRoot);
+                const auto loaded = host.LoadModsFromRoot(guardRoot, guardCache);
+                Check(loaded.isOk() && loaded.value->loadedIds == std::vector<std::string>{"test.guard"},
+                      "guard loads healthy native mod");
+                Check(readText(guardRoot / ".shiplua-boot") == "running\t\n", "marker says running after load");
+                char report[4096];
+                size_t used = 0;
+#ifdef _WIN32
+                const auto dll = LoadLibraryW((guardRoot / "native/provider/module.bin").c_str());
+                const auto query = dll ? reinterpret_cast<uintptr_t>(GetProcAddress(dll, "ShipNative_Query")) : 0;
+                char owner[128] = {};
+                Check(query && FindNativeModuleOwner(query, owner, sizeof(owner)) && std::string(owner) == "test.guard",
+                      "module map attributes the provider DLL");
+                if (dll) FreeLibrary(dll);
+#endif
+                {
+                    const NativeActivityScope outer("test.guard", "call", "echo");
+                    const NativeActivityScope inner("test.other", "hook", "oot.actor.update");
+                    used = WriteNativeCrashReport(report, sizeof(report));
+                }
+                const std::string text(report, used);
+                Check(text.find("mod 'test.other' em hook oot.actor.update") != std::string::npos &&
+                          text.find("mod 'test.guard' em call echo") != std::string::npos &&
+                          text.find("'test.other' sera desativado") != std::string::npos,
+                      "crash report lists activity and blames the innermost owner: " + text);
+                Check(readText(guardRoot / ".shiplua-boot") == "crashed\ttest.other\n", "crash marks the blamed mod");
+                used = WriteNativeCrashReport(report, 16);
+                Check(used <= 16, "crash report respects capacity");
+            }
+            {
+                // Simula o marcador de um boot que caiu durante o init do mod.
+                std::ofstream(guardRoot / ".shiplua-boot", std::ios::binary) << "loading\ttest.guard\n";
+                ModHost host(context, {}, policy);
+                host.EnableBootGuard(guardRoot);
+                const auto loaded = host.LoadModsFromRoot(guardRoot, guardCache);
+                Check(loaded.isOk() && loaded.value->loadedIds.empty() &&
+                          loaded.value->rejected.count("test.guard") &&
+                          loaded.value->rejected.at("test.guard").find("prote") != std::string::npos,
+                      "mod that crashed the boot is disabled");
+                const auto disabled = readText(guardRoot / ".shiplua-disabled");
+                Check(disabled.find("test.guard\t") != std::string::npos &&
+                          disabled.find("test.other\t") == std::string::npos,
+                      "disabled list names the mod (the earlier crash marker was overwritten by the new boot)");
+                host.ConfirmBoot();
+                Check(!fs::exists(guardRoot / ".shiplua-boot"), "confirm removes marker");
+            }
+            {
+                fs::remove(guardRoot / ".shiplua-disabled");
+                ModHost host(context, {}, policy);
+                host.EnableBootGuard(guardRoot);
+                const auto loaded = host.LoadModsFromRoot(guardRoot, guardCache);
+                Check(loaded.isOk() && loaded.value->loadedIds == std::vector<std::string>{"test.guard"},
+                      "removing the disabled line re-enables the mod");
+                host.ConfirmBoot();
+                char report[1024];
+                const NativeActivityScope activity("test.guard", "call", "echo");
+                const auto used = WriteNativeCrashReport(report, sizeof(report));
+                Check(std::string(report, used).find("sera desativado") == std::string::npos &&
+                          !fs::exists(guardRoot / ".shiplua-boot"),
+                      "after confirm a crash is reported but no mod is disabled");
             }
         }
         {
