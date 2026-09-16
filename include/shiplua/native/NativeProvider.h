@@ -25,6 +25,16 @@ struct NativeHostService {
     std::string owner;
 };
 
+// ABI 1.3: implementação do escape hatch fornecida pelo host. As funções rodam na
+// thread do jogo; o core cuida de permissão, dono e remoção no unload.
+struct NativeEscapeHatch {
+    // SHA-256 hex minúsculo do executável; vazio = desconhecido.
+    std::function<std::string()> fingerprint;
+    std::function<ShipNativeStatus(const char* name, uintptr_t* address)> resolve;
+    std::function<ShipNativeStatus(uintptr_t target, void* detour, void** original, uint64_t* patch)> install;
+    std::function<ShipNativeStatus(uint64_t patch)> remove;
+};
+
 struct NativeProviderPolicy {
     // Escolha única do host de permitir código nativo. Não é uma allowlist de
     // mecânicas, nomes de função ou mods. Lua não pode modificar esta política.
@@ -36,6 +46,8 @@ struct NativeProviderPolicy {
     // ABI 1.2: registro de hooks compartilhado por todos os providers do host.
     // Ausente = register_hook/declare_hook_point retornam UNSUPPORTED.
     std::shared_ptr<NativeHookRegistry> hooks;
+    // ABI 1.3: ausente = get_host_fingerprint e o escape hatch retornam UNSUPPORTED.
+    std::shared_ptr<NativeEscapeHatch> escapeHatch;
 };
 
 // Resultado POD: permite empurrar valores Lua sem longjmp sobre RAII C++.
@@ -75,6 +87,11 @@ class NativeProvider {
         void*, const ShipNativeHookPointSpec*, uint64_t*) noexcept;
     static ShipNativeStatus SHIP_NATIVE_CALL DispatchHook(
         void*, uint64_t, void*, uint32_t, ShipNativeHookOriginalFn, void*) noexcept;
+    static ShipNativeStatus SHIP_NATIVE_CALL GetHostFingerprint(void*, char*, uint32_t, uint32_t*) noexcept;
+    static ShipNativeStatus SHIP_NATIVE_CALL ResolveSymbol(void*, const char*, uintptr_t*) noexcept;
+    static ShipNativeStatus SHIP_NATIVE_CALL InstallPatch(void*, uintptr_t, void*, void**, uint64_t*) noexcept;
+    static ShipNativeStatus SHIP_NATIVE_CALL RemovePatch(void*, uint64_t) noexcept;
+    bool EscapeHatchAllowed() noexcept;
     void* mLibrary = nullptr;
     void* mInstance = nullptr;
     void (SHIP_NATIVE_CALL *mShutdown)(void*) = nullptr;
@@ -83,6 +100,11 @@ class NativeProvider {
     std::vector<NativeHostService> mServices;
     std::vector<NativeHostService> mPublishedServices;
     std::shared_ptr<NativeHookRegistry> mHooks;
+    std::shared_ptr<NativeEscapeHatch> mEscapeHatch;
+    std::vector<std::string> mHostFingerprints;
+    std::vector<uint64_t> mPatches;
+    bool mEscapeChecked = false;
+    bool mEscapeAllowed = false;
     std::string mOwnerId;
     std::thread::id mThread = std::this_thread::get_id();
     bool mInitializing = true;

@@ -6,7 +6,7 @@ cada função ao schema do Link-Span, a uma allowlist ou ao código do loader.
 
 ## Estado real
 
-Implementado no core: carga dinâmica, ABI C 1.0/1.1/1.2 (hooks), funções privadas por instância,
+Implementado no core: carga dinâmica, ABI C 1.0 a 1.3 (hooks e escape hatch), funções privadas por instância,
 consulta de serviços do host, core extensions que publicam serviços para outros
 mods, diretórios e pacotes, rollback, unload e erros Lua.
 O exemplo `examples/native-dash` é compilado separadamente do host. O teste
@@ -92,6 +92,32 @@ runtime->register_hook(runtime->context, &spec, &handle);
 
 Uma core extension publica pontos próprios com `declare_hook_point` e os
 dispara com `dispatch_hook`. Detalhes em `rfcs/0021-native-hooks.md`.
+
+## Escape hatch (ABI 1.3)
+
+Para mudanças que nenhum serviço ou hook cobre, uma core extension com
+`abi_version = "1.3"` pode resolver funções do executável por nome e desviá-las:
+
+```toml
+[provider]
+abi_version = "1.3"
+win64 = "provider/framework.dll"
+host_fingerprints = ["<sha256 do executável>"]
+```
+
+```c
+uintptr_t target;
+void* original;
+uint64_t patch;
+if (runtime->resolve_symbol(runtime->context, "z_player.c!Player_Action_Roll", &target) == SHIP_NATIVE_OK)
+    runtime->install_patch(runtime->context, target, MeuRoll, &original, &patch);
+```
+
+- `get_host_fingerprint` diz qual SHA-256 declarar.
+- Fora da lista de fingerprints, ou em mod comum, as chamadas retornam `UNSUPPORTED`.
+- Os patches saem sozinhos no unload, antes do `shutdown`.
+- Recompile e republique o mod a cada executável novo. Detalhes em
+  `rfcs/0023-native-escape-hatch.md`.
 
 ```lua
 local ship = require("ship")

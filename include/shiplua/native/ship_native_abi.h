@@ -17,7 +17,7 @@ extern "C" {
 #endif
 
 #define SHIP_NATIVE_ABI_MAJOR 1u
-#define SHIP_NATIVE_ABI_MINOR 2u
+#define SHIP_NATIVE_ABI_MINOR 3u
 #define SHIP_NATIVE_MAX_BYTES 65536u
 
 typedef uint32_t ShipNativeStatus;
@@ -125,6 +125,23 @@ typedef struct ShipNativeRuntime {
     ShipNativeStatus (SHIP_NATIVE_CALL *dispatch_hook)(
         void* context, uint64_t point, void* payload, uint32_t payload_size,
         ShipNativeHookOriginalFn original, void* original_context);
+    /* ABI 1.3: escape hatch (RFC 0023). get_host_fingerprint vale para qualquer
+       provider e escreve o SHA-256 hex do executável (64 bytes, sem NUL); com
+       output NULL e capacity 0 só informa o tamanho. As outras três exigem core
+       extension com abi_version "1.3" cujo provider.host_fingerprints contém o
+       fingerprint atual; fora disso retornam UNSUPPORTED. */
+    ShipNativeStatus (SHIP_NATIVE_CALL *get_host_fingerprint)(
+        void* context, char* output, uint32_t capacity, uint32_t* output_size);
+    /* Nome "Funcao" quando único no executável, ou "arquivo.c!Funcao" para
+       funções static repetidas. Ausente ou ambíguo = UNSUPPORTED. */
+    ShipNativeStatus (SHIP_NATIVE_CALL *resolve_symbol)(
+        void* context, const char* name, uintptr_t* address);
+    /* Desvia `target` (dentro do executável) para `detour`; *original recebe o
+       trampolim para chamar a função original. Segundo patch no mesmo endereço
+       = LIMIT. O host remove os patches do mod antes do shutdown. */
+    ShipNativeStatus (SHIP_NATIVE_CALL *install_patch)(
+        void* context, uintptr_t target, void* detour, void** original, uint64_t* patch);
+    ShipNativeStatus (SHIP_NATIVE_CALL *remove_patch)(void* context, uint64_t patch);
 } ShipNativeRuntime;
 
 typedef struct ShipNativeDescriptor {

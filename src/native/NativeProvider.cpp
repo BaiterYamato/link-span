@@ -75,8 +75,9 @@ ShipNativeStatus SHIP_NATIVE_CALL Write(void* context, const char* bytes, uint32
 } // namespace
 
 Result<void> ValidateNativeManifest(const NativeProviderManifest& provider) {
-    if (provider.abiVersion != "1.0" && provider.abiVersion != "1.1" && provider.abiVersion != "1.2") {
-        return Result<void>::err(ErrorCode::Unsupported, "provider.abi_version must be 1.0, 1.1 or 1.2");
+    if (provider.abiVersion != "1.0" && provider.abiVersion != "1.1" && provider.abiVersion != "1.2" &&
+        provider.abiVersion != "1.3") {
+        return Result<void>::err(ErrorCode::Unsupported, "provider.abi_version must be 1.0, 1.1, 1.2 or 1.3");
     }
     if (provider.win64.empty() && provider.linux64.empty() && provider.macos.empty()) {
         return Result<void>::err(ErrorCode::InvalidArgument, "provider needs a platform library");
@@ -131,6 +132,10 @@ Result<std::unique_ptr<NativeProvider>> NativeProvider::Load(
         }
         instance->mServices = policy.services;
         instance->mHooks = policy.hooks;
+        instance->mEscapeHatch = policy.escapeHatch;
+        if (manifest.kind == ModKind::CoreExtension && manifest.provider->abiVersion == "1.3") {
+            instance->mHostFingerprints = manifest.provider->hostFingerprints;
+        }
 #ifdef _WIN32
         // Não procurar dependências no CWD/PATH do processo.
         instance->mLibrary = LoadLibraryExW(resolved.value->c_str(), nullptr,
@@ -146,7 +151,8 @@ Result<std::unique_ptr<NativeProvider>> NativeProvider::Load(
 #endif
         if (!query) return R::err(ErrorCode::Unsupported, "ShipNative_Query export missing");
         const auto* descriptor = query();
-        const uint32_t requiredMinor = manifest.provider->abiVersion == "1.2" ? 2u
+        const uint32_t requiredMinor = manifest.provider->abiVersion == "1.3" ? 3u
+                                     : manifest.provider->abiVersion == "1.2" ? 2u
                                      : manifest.provider->abiVersion == "1.1" ? 1u : 0u;
         if (!descriptor || descriptor->size < sizeof(ShipNativeDescriptor) ||
             descriptor->abi_major != SHIP_NATIVE_ABI_MAJOR ||
@@ -156,7 +162,8 @@ Result<std::unique_ptr<NativeProvider>> NativeProvider::Load(
         }
         instance->mRuntime = {sizeof(ShipNativeRuntime), SHIP_NATIVE_ABI_MAJOR,
             SHIP_NATIVE_ABI_MINOR, instance.get(), &Register, &GetService, &RegisterService,
-            &RegisterHook, &UnregisterHook, &DeclareHookPoint, &DispatchHook};
+            &RegisterHook, &UnregisterHook, &DeclareHookPoint, &DispatchHook,
+            &GetHostFingerprint, &ResolveSymbol, &InstallPatch, &RemovePatch};
         // Guardar shutdown ANTES de init: rollback inclui inicialização parcial.
         instance->mShutdown = descriptor->shutdown;
         const auto result = descriptor->init(&instance->mRuntime, &instance->mInstance);
@@ -177,6 +184,13 @@ NativeProvider::~NativeProvider() {
     mFunctions.clear();
     // Antes do shutdown: nenhum callback pode chegar a uma instância desmontando.
     if (mHooks) mHooks->RemoveOwner(mOwnerId);
+    // Patches saem na ordem inversa, também antes do shutdown.
+    if (mEscapeHatch && mEscapeHatch->remove) {
+        for (auto patch = mPatches.rbegin(); patch != mPatches.rend(); ++patch) {
+            try { mEscapeHatch->remove(*patch); } catch (...) { /* Seguir removendo os demais. */ }
+        }
+    }
+    mPatches.clear();
     if (mShutdown) {
         try { mShutdown(mInstance); } catch (...) { /* Não atravessar a fronteira do host. */ }
     }
@@ -303,6 +317,92 @@ ShipNativeStatus SHIP_NATIVE_CALL NativeProvider::DispatchHook(
     if (!self->mHooks) return SHIP_NATIVE_UNSUPPORTED;
     if (!self->mHooks->IsOwnerOf(self->mOwnerId, point)) return SHIP_NATIVE_INVALID_ARGUMENT;
     return self->mHooks->Dispatch(point, payload, payloadSize, original, originalContext);
+}
+
+bool NativeProvider::EscapeHatchAllowed() noexcept {
+    if (!mEscapeChecked) {
+        mEscapeChecked = true;
+        try {
+            if (mEscapeHatch && mEscapeHatch->fingerprint && !mHostFingerprints.empty()) {
+                const auto current = mEscapeHatch->fingerprint();
+                mEscapeAllowed = !current.empty() &&
+                    std::find(mHostFingerprints.begin(), mHostFingerprints.end(), current) != mHostFingerprints.end();
+            }
+        } catch (...) {
+            mEscapeAllowed = false;
+        }
+    }
+    return mEscapeAllowed;
+}
+
+ShipNativeStatus SHIP_NATIVE_CALL NativeProvider::GetHostFingerprint(
+    void* context, char* output, uint32_t capacity, uint32_t* outputSize) noexcept {
+    auto* self = static_cast<NativeProvider*>(context);
+    if (!self || self->mThread != std::this_thread::get_id()) return SHIP_NATIVE_FAILURE;
+    if (!outputSize || (!output && capacity)) return SHIP_NATIVE_INVALID_ARGUMENT;
+    *outputSize = 0;
+    if (!self->mEscapeHatch || !self->mEscapeHatch->fingerprint) return SHIP_NATIVE_UNSUPPORTED;
+    try {
+        const auto text = self->mEscapeHatch->fingerprint();
+        if (text.empty()) return SHIP_NATIVE_UNSUPPORTED;
+        *outputSize = static_cast<uint32_t>(text.size());
+        if (!output) return SHIP_NATIVE_OK;
+        if (capacity < text.size()) return SHIP_NATIVE_LIMIT;
+        std::memcpy(output, text.data(), text.size());
+        return SHIP_NATIVE_OK;
+    } catch (...) {
+        return SHIP_NATIVE_FAILURE;
+    }
+}
+
+ShipNativeStatus SHIP_NATIVE_CALL NativeProvider::ResolveSymbol(
+    void* context, const char* name, uintptr_t* address) noexcept {
+    auto* self = static_cast<NativeProvider*>(context);
+    if (!self || self->mThread != std::this_thread::get_id()) return SHIP_NATIVE_FAILURE;
+    if (!self->EscapeHatchAllowed() || !self->mEscapeHatch->resolve) return SHIP_NATIVE_UNSUPPORTED;
+    if (!name || !*name || std::strlen(name) > 512 || !address) return SHIP_NATIVE_INVALID_ARGUMENT;
+    try {
+        return self->mEscapeHatch->resolve(name, address);
+    } catch (...) {
+        return SHIP_NATIVE_FAILURE;
+    }
+}
+
+ShipNativeStatus SHIP_NATIVE_CALL NativeProvider::InstallPatch(
+    void* context, uintptr_t target, void* detour, void** original, uint64_t* patch) noexcept {
+    auto* self = static_cast<NativeProvider*>(context);
+    if (!self || self->mThread != std::this_thread::get_id()) return SHIP_NATIVE_FAILURE;
+    if (!self->EscapeHatchAllowed() || !self->mEscapeHatch->install || !self->mEscapeHatch->remove) {
+        return SHIP_NATIVE_UNSUPPORTED;
+    }
+    if (!target || !detour || !original || !patch) return SHIP_NATIVE_INVALID_ARGUMENT;
+    if (self->mPatches.size() >= 256) return SHIP_NATIVE_LIMIT;
+    try {
+        self->mPatches.reserve(self->mPatches.size() + 1);
+        uint64_t id = 0;
+        const auto status = self->mEscapeHatch->install(target, detour, original, &id);
+        if (status != SHIP_NATIVE_OK) return status;
+        self->mPatches.push_back(id);
+        *patch = id;
+        return SHIP_NATIVE_OK;
+    } catch (...) {
+        return SHIP_NATIVE_FAILURE;
+    }
+}
+
+ShipNativeStatus SHIP_NATIVE_CALL NativeProvider::RemovePatch(void* context, uint64_t patch) noexcept {
+    auto* self = static_cast<NativeProvider*>(context);
+    if (!self || self->mThread != std::this_thread::get_id()) return SHIP_NATIVE_FAILURE;
+    if (!self->EscapeHatchAllowed()) return SHIP_NATIVE_UNSUPPORTED;
+    const auto found = std::find(self->mPatches.begin(), self->mPatches.end(), patch);
+    if (found == self->mPatches.end()) return SHIP_NATIVE_INVALID_ARGUMENT;
+    try {
+        const auto status = self->mEscapeHatch->remove(patch);
+        if (status == SHIP_NATIVE_OK) self->mPatches.erase(found);
+        return status;
+    } catch (...) {
+        return SHIP_NATIVE_FAILURE;
+    }
 }
 
 bool NativeProvider::CanAccessServiceFrom(std::string_view owner) const noexcept {

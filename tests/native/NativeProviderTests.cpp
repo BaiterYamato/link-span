@@ -53,7 +53,7 @@ void Package(const fs::path& dir, const fs::path& target) {
 }
 
 int main(int argc, char** argv) {
-    if (argc != 11) return 2;
+    if (argc != 12) return 2;
     const auto root = fs::temp_directory_path() / ("shiplua-native-" +
         std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
     fs::create_directories(root);
@@ -172,6 +172,78 @@ int main(int argc, char** argv) {
             Check(host.UnloadMod("test.hooks.core").isOk(), "core unload with hooked point");
             Check(hooks.HookCount() == 0 && !hooks.FindPoint("test.hooks.value", 1),
                   "core unload drops its point and foreign hooks");
+        }
+        {
+            // Escape hatch ABI 1.3: host falso de patches, fingerprint conferido pelo manifesto.
+            struct FakePatches {
+                int installed = 0;
+                int removed = 0;
+                uint64_t next = 1;
+            } patches;
+            auto hatch = std::make_shared<NativeEscapeHatch>();
+            hatch->fingerprint = [] { return std::string(64, 'a'); };
+            hatch->resolve = [](const char* name, uintptr_t* address) -> ShipNativeStatus {
+                if (std::string(name) != "Target") return SHIP_NATIVE_UNSUPPORTED;
+                *address = 0x1000;
+                return SHIP_NATIVE_OK;
+            };
+            hatch->install = [&patches](uintptr_t target, void*, void** original, uint64_t* id) -> ShipNativeStatus {
+                if (target != 0x1000) return SHIP_NATIVE_INVALID_ARGUMENT;
+                ++patches.installed;
+                *original = reinterpret_cast<void*>(target);
+                *id = patches.next++;
+                return SHIP_NATIVE_OK;
+            };
+            hatch->remove = [&patches](uint64_t) -> ShipNativeStatus {
+                ++patches.removed;
+                return SHIP_NATIVE_OK;
+            };
+            auto escapePolicy = policy;
+            escapePolicy.escapeHatch = hatch;
+            const std::string core = "kind='core_extension'\nload_phase='pre_game'\n";
+            const auto escapeRoot = root / ("escape-" + game);
+            MakeMod(escapeRoot / "allowed", argv[11], "test.escape.allowed", "loaded=true", core, "1.3");
+            {
+                std::ofstream manifest(escapeRoot / "allowed/manifest.toml", std::ios::app);
+                manifest << "host_fingerprints=['" << std::string(64, 'A') << "']\n";
+            }
+            MakeMod(escapeRoot / "denied", argv[11], "test.escape.denied", "loaded=true", core, "1.3");
+            {
+                std::ofstream manifest(escapeRoot / "denied/manifest.toml", std::ios::app);
+                manifest << "host_fingerprints=['" << std::string(64, 'b') << "']\n";
+            }
+            MakeMod(escapeRoot / "plain", argv[11], "test.escape.plain", "loaded=true", {}, "1.3");
+            {
+                ModHost host(context, {}, escapePolicy);
+                Check(host.LoadModFromDirectory((escapeRoot / "allowed").string()).isOk(), "escape allowed load");
+                Run(host, "test.escape.allowed", R"lua(
+                    local r=require('ship').native.call('report','')
+                    assert(r=='fp=0:64:aaaa res=0 ins=0 orig=1', r)
+                )lua");
+                Check(patches.installed == 1 && patches.removed == 0, "patch installed with matching fingerprint");
+                Check(host.UnloadMod("test.escape.allowed").isOk() && patches.removed == 1,
+                      "unload removes the core extension patch");
+                Check(host.LoadModFromDirectory((escapeRoot / "denied").string()).isOk(), "escape denied load");
+                Run(host, "test.escape.denied", R"lua(
+                    local r=require('ship').native.call('report','')
+                    assert(r=='fp=0:64:aaaa res=2 ins=2 orig=0', r)
+                )lua");
+                Check(host.LoadModFromDirectory((escapeRoot / "plain").string()).isOk(), "escape plain mod load");
+                Run(host, "test.escape.plain", R"lua(
+                    local r=require('ship').native.call('report','')
+                    assert(r=='fp=0:64:aaaa res=2 ins=2 orig=0', r)
+                )lua");
+                Check(patches.installed == 1, "no patch without permission");
+            }
+            {
+                ModHost host(context, {}, policy);
+                MakeMod(escapeRoot / "nohatch", argv[11], "test.escape.nohatch", "loaded=true", core, "1.3");
+                Check(host.LoadModFromDirectory((escapeRoot / "nohatch").string()).isOk(), "host without hatch");
+                Run(host, "test.escape.nohatch", R"lua(
+                    local r=require('ship').native.call('report','')
+                    assert(r=='fp=2:0: res=2 ins=2 orig=0', r)
+                )lua");
+            }
         }
         {
             const auto mods = root / ("core-duplicate-" + game);
@@ -313,6 +385,12 @@ int main(int argc, char** argv) {
     Check(!ParseManifestString(ManifestText("test.invalid")+
         "kind='core_extension'\nload_phase='pre_game'\n"+ProviderText()).isOk(),
         "core extension requires ABI 1.1");
+    Check(!ParseManifestString(ManifestText("test.invalid")+ProviderText("provider/module.bin", "1.3")+
+        "host_fingerprints=['" + std::string(64, 'a') + "']\n").isOk(),
+        "host_fingerprints only for core extensions");
+    Check(!ParseManifestString(ManifestText("test.invalid")+"kind='core_extension'\nload_phase='pre_game'\n"+
+        ProviderText("provider/module.bin", "1.3")+"host_fingerprints=['xyz']\n").isOk(),
+        "host_fingerprints must be SHA-256");
     Check(!ParseManifestString(ManifestText("test.invalid")+
         "load_phase='pre_game'\n"+ProviderText()).isOk(),
         "pre_game phase is reserved for core extensions");

@@ -1,6 +1,7 @@
 #include "shiplua/manifest/ManifestParser.h"
 
 #include <algorithm>
+#include <cctype>
 #include <exception>
 #include <fstream>
 #include <sstream>
@@ -118,6 +119,22 @@ Result<Manifest> ParseTable(const toml::table& table, const std::string& sourceN
             sourceName + ": provider must be a table");
         NativeProviderManifest native;
         for (const auto& [key, node] : *provider) {
+            if (key.str() == "host_fingerprints") {
+                const auto* list = node.as_array();
+                if (!list || list->empty() || list->size() > 32) return Result<Manifest>::err(
+                    ErrorCode::InvalidArgument, sourceName + ": provider.host_fingerprints must be a list of 1-32 SHA-256");
+                for (const auto& item : *list) {
+                    auto text = item.value<std::string>();
+                    const auto hex = text && text->size() == 64 &&
+                        std::all_of(text->begin(), text->end(), [](char c) { return std::isxdigit(static_cast<unsigned char>(c)) != 0; });
+                    if (!hex) return Result<Manifest>::err(ErrorCode::InvalidArgument,
+                        sourceName + ": provider.host_fingerprints entries must be SHA-256 hex");
+                    std::transform(text->begin(), text->end(), text->begin(),
+                                   [](char c) { return static_cast<char>(std::tolower(static_cast<unsigned char>(c))); });
+                    native.hostFingerprints.push_back(*text);
+                }
+                continue;
+            }
             const auto value = node.value<std::string>();
             if (!value || value->empty()) return Result<Manifest>::err(ErrorCode::InvalidArgument,
                 sourceName + ": provider fields must be nonempty strings");
@@ -138,6 +155,11 @@ Result<Manifest> ParseTable(const toml::table& table, const std::string& sourceN
         }
         manifest.provider = std::move(native);
     }
+    if (manifest.provider && !manifest.provider->hostFingerprints.empty() &&
+        (manifest.kind != ModKind::CoreExtension || manifest.provider->abiVersion != "1.3")) {
+        return Result<Manifest>::err(ErrorCode::InvalidArgument,
+            sourceName + ": provider.host_fingerprints requires a core_extension with ABI 1.3");
+    }
 
     if (manifest.kind == ModKind::CoreExtension) {
         if (manifest.loadPhase != ModLoadPhase::PreGame) {
@@ -145,9 +167,10 @@ Result<Manifest> ParseTable(const toml::table& table, const std::string& sourceN
                 sourceName + ": core_extension requires load_phase='pre_game'");
         }
         if (!manifest.provider ||
-            (manifest.provider->abiVersion != "1.1" && manifest.provider->abiVersion != "1.2")) {
+            (manifest.provider->abiVersion != "1.1" && manifest.provider->abiVersion != "1.2" &&
+             manifest.provider->abiVersion != "1.3")) {
             return Result<Manifest>::err(ErrorCode::InvalidArgument,
-                sourceName + ": core_extension requires provider ABI 1.1 or 1.2");
+                sourceName + ": core_extension requires provider ABI 1.1, 1.2 or 1.3");
         }
     } else if (manifest.loadPhase == ModLoadPhase::PreGame) {
         return Result<Manifest>::err(ErrorCode::InvalidArgument,
