@@ -480,3 +480,21 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
 - Pendente: flags de cena de mod no save, `titleCardTexture`, `layers`, mapa e a
   slice 1 (JSON alterando ator em Hyrule Field).
 - Commits locais: `d62addd71` (host) e `ecbbd60` (RFC 0020).
+
+## UPDATE OOT-COREMODS-001 — COREEXT-006 hooks nativos na ABI 1.2
+
+- Status: review
+- Concluído em 2026-09-16:
+  - inventário focado da Fase C (`docs/plans/oot-coremods-unbound-nei/inventory-phase-c.md`):
+    - a Fase B não estava fechada; faltavam hooks, escape hatch e diagnóstico;
+    - UNBOUND-001 e NEI-001 continuam abertos;
+  - ABI 1.2 com hooks observe/transform/replace, dono, prioridade, replace exclusivo e
+    remoção no unload;
+  - host OoT declara `oot.play.update`, `oot.actor.update` e `oot.actor.draw` v1;
+  - prova em jogo: hooks demo 1.2 junto do Unbound 1.1, com o Link piscando pelo replace
+    do draw.
+- Gate B coberto: uma DLL registra serviço, factory e hook, falha de forma transacional
+  e atualiza sem alterar o `soh.exe`.
+- Layout id novo `58ce84d0`: providers nativos precisam de rebuild.
+- Commits locais: `a274387` (core) e `0426f771a` (host).
+- Próximo: OOT-CORE-006 (save por namespace).
