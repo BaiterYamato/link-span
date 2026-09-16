@@ -556,3 +556,20 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
 - Layout id `0f4750de`; `soh.exe` `7C293505…`.
 - Commit local: `1affa9b8e` (host).
 - Próximo: OOT-CORE-005 (player, câmera e render).
+
+## UPDATE OOT-COREMODS-001 — OOT-CORE-005 câmera, render e limb do Player
+
+- Status: review
+- Concluído em 2026-09-16:
+  - `linkspan.oot.camera` v1: subcâmera com dono único, vista reaplicada por
+    frame e posse perdida em cutscene ou troca de cena;
+  - `linkspan.oot.render` v1: display lists e pilha de matrizes em escopo de
+    draw (ator de mod, `oot.actor.draw`, `oot.player.limb_draw`);
+  - hook `oot.player.limb_draw` v1;
+  - prova em jogo: modelo na mão direita do Link e câmera orbitando em ciclos,
+    com recusa correta durante a cutscene de abertura.
+- Fora desta fatia: animação e ações do Player, primeira pessoa e mira,
+  partículas, luzes, quake e materiais.
+- Layout id `57449c15`; `soh.exe` `80D57D7E…`.
+- Commit local: `0f64fe5c2` (host).
+- Próximo: OOT-CORE-004 (colisão e mundo).
