@@ -462,3 +462,21 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
     Dynamic Movement 0.2.8.
 - Pendente: ver o aviso com microfone real; a tarja pode cobrir corações e magia.
 - Commit local: `8ef12c061`.
+
+## UPDATE OOT-COREMODS-001 — OOT-UNBOUND-003C registro de cenas e entradas por nome
+
+- Status: review
+- Concluído em 2026-09-16:
+  - host: `EntranceInfo.scene` em 16 bits, `gEntranceTable` como ponteiro para a
+    tabela vigente e serviço `linkspan.oot.scenes` v1 (cenas 128-32767, entradas
+    em grupos de 4 depois das vanilla, busca por nome, viagem); flags de cenas de
+    mod fora do array fixo; guarda de entrada inválida no `Play_Init`;
+  - `linkspan.unbound.framework` 0.2.0 lê `unbound/scenes.json` de todas as
+    camadas no `game.ready` e registra no host; demo registra uma cópia do Hyrule
+    Field e viaja até ela;
+  - testes nativos, prova independente, testes do coremod, pacotes validados e
+    prova em jogo (`Scene Init - sceneNum: 0x80, entranceIndex: 0x614`).
+- Layout id novo `57d074f9`: providers nativos precisam de rebuild.
+- Pendente: flags de cena de mod no save, `titleCardTexture`, `layers`, mapa e a
+  slice 1 (JSON alterando ator em Hyrule Field).
+- Commits locais: `d62addd71` (host) e `ecbbd60` (RFC 0020).
