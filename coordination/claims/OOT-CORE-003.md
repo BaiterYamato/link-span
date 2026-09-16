@@ -1,0 +1,27 @@
+# OOT-CORE-003
+
+- Status: review
+- Agent: Claude (Opus 5)
+- Platform: Windows
+- Branch: agent/OOT-UPSTREAM-001-78dc6d970-integration
+- Started: 2026-09-16T19:03:08.4560939Z
+- Depends on: COREEXT-006
+- Files:
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/oot_items.h
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/oot_actors.h
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeItems.h
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeItems.cpp
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeItemsGame.cpp
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeEngine.cpp
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeSaveGame.cpp
+  - OOT-UPSTREAM-78DC-001/soh/soh/OTRGlobals.cpp
+  - OOT-UPSTREAM-78DC-001/soh/soh/ShipLuaBootstrap.cpp
+  - OOT-UPSTREAM-78DC-001/soh/include/variables.h
+  - OOT-UPSTREAM-78DC-001/soh/src/code/z_inventory.c
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/ExportSdk.cmake
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/tests/EngineTests.cpp
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/item-demo/**
+  - OOT-UPSTREAM-78DC-001/tools/package-item-demo.ps1
+  - OOT-UPSTREAM-78DC-001/docs/native-mods.md
+- Goal:
+  - Itens sintéticos em botões C (ícone, uso, save por nome) e tipos de ator registrados em runtime, com demo em jogo

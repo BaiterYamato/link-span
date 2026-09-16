@@ -541,3 +541,18 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
 - Layout id `01e37d13`; `soh.exe` `D9FDB586…`.
 - Commits locais: `dac31da` e `b6cd6b9` (core), `39a7f5c11` (host).
 - Próximo: OOT-CORE-003.
+
+## UPDATE OOT-COREMODS-001 — OOT-CORE-003 itens sintéticos e tipos de ator
+
+- Status: review
+- Concluído em 2026-09-16:
+  - `linkspan.oot.items` v1: item de mod com id `0xA0`–`0xEF`, ícone no HUD,
+    callback de uso no botão C e botões gravados pelo nome no save;
+  - `linkspan.oot.actors` v1: tipo de ator no `ActorDB` sem editar a tabela
+    estática, com unregister seguro e `draw_display_list`;
+  - prova em jogo: item no C-Right cria orbes; recarga restaura; sem o mod o
+    botão esvazia com aviso e sem crash.
+- Fora desta fatia: página de inventário (NEI-003) e get-item com mensagem (NEI-002).
+- Layout id `0f4750de`; `soh.exe` `7C293505…`.
+- Commit local: `1affa9b8e` (host).
+- Próximo: OOT-CORE-005 (player, câmera e render).
