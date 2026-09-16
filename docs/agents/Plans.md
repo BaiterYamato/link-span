@@ -498,3 +498,17 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
 - Layout id novo `58ce84d0`: providers nativos precisam de rebuild.
 - Commits locais: `a274387` (core) e `0426f771a` (host).
 - Próximo: OOT-CORE-006 (save por namespace).
+
+## UPDATE OOT-COREMODS-001 — OOT-CORE-006 save por namespace
+
+- Status: review
+- Concluído em 2026-09-16:
+  - `linkspan.oot.save` v1: blocos JSON por namespace na seção `linkspan` do save,
+    com versão, transação e dependência obrigatória;
+  - eventos como hooks observe `oot.save.loaded/saving/deleted/copied`;
+  - flags das cenas de mod persistidas em `linkspan.scenes`;
+  - prova em duas sessões: contador gravado pelo pause e lido do disco na reabertura.
+- Achado: save feito numa cena de mod reabre em Kakariko (respawn vanilla).
+- Layout id novo `abff4332`.
+- Commits locais: `a19d83b1b` (host) e `106a536` (RFC 0022).
+- Próximo: COREEXT-008 (escape hatch).

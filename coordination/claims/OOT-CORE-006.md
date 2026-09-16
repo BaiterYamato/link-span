@@ -1,0 +1,35 @@
+# OOT-CORE-006
+
+- Status: review
+- Agent: Claude (Opus 5)
+- Platform: Windows
+- Branch: agent/OOT-UPSTREAM-001-78dc6d970-integration
+- Started: 2026-09-16T17:25:22.4540238Z
+- Depends on: COREEXT-006, OOT-UNBOUND-003C
+- Files:
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/oot_save.h
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeSave.h
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeSave.cpp
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeSaveGame.cpp
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/oot_hooks.h
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeHooks.h
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeHooks.cpp
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeScenes.h
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeScenes.cpp
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeEngine.cpp
+  - OOT-UPSTREAM-78DC-001/soh/soh/ShipLuaBootstrap.cpp
+  - OOT-UPSTREAM-78DC-001/soh/soh/OTRGlobals.cpp
+  - OOT-UPSTREAM-78DC-001/soh/soh/SaveManager.cpp
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/ExportSdk.cmake
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/tests/**
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/save-demo/**
+  - OOT-UPSTREAM-78DC-001/tools/package-save-demo.ps1
+  - OOT-UPSTREAM-78DC-001/docs/native-mods.md
+  - OOT-UPSTREAM-78DC-001/build/oot-upstream-001/evidence/core006-*/**
+  - RELEASE-UNIFICADA/OOT-teste-cenas-20260914/**
+  - NATIVE-001/rfcs/0022-oot-save-namespaces.md
+  - docs/agents/Plans.md
+  - coordination/claims/OOT-CORE-006.md
+  - coordination/handoffs/OOT-CORE-006.md
+- Goal:
+  - Servico linkspan.oot.save v1 com blocos JSON por namespace e versao numa secao linkspan do save, transacao, blocos desconhecidos preservados, hooks oot.save.loaded/saving/deleted/copied e flags das cenas de mod persistidas
