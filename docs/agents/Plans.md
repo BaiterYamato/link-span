@@ -588,3 +588,16 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
 - Layout id `0efec9e8`; `soh.exe` `29084FD3…`.
 - Commit local: `474082587` (host).
 - Fase C: resta OOT-CORE-007 (layouts ampliados do Unbound).
+
+## UPDATE OOT-COREMODS-001 — OOT-CORE-003B get-item de itens sintéticos (slice D3)
+
+- Status: review
+- Concluído em 2026-09-16:
+  - `linkspan.oot.items` v2: `set_get_item` (modelo, mensagem, receive) e
+    `give_item`; o Link levanta o item com fanfarra e caixa de texto;
+  - `z_player.c` desvia o `modIndex` do Link-Span para o receive do mod;
+  - prova em jogo: item recebido, equipado no C-Right pelo receive, usado,
+    salvo e restaurado na recarga. Slice 3 da Fase D coberto.
+- Layout id `03ee0131`; `soh.exe` `822FD891…`.
+- Commit local: `83b5b5b42` (host).
+- Próximo: OOT-CORE-007 ou slice 4 da Fase D (item com modelo, animação e collider).

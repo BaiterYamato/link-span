@@ -1,0 +1,21 @@
+# OOT-CORE-003B
+
+- Status: review
+- Agent: Claude (Opus 5)
+- Platform: Windows
+- Branch: agent/OOT-UPSTREAM-001-78dc6d970-integration
+- Started: 2026-09-16T23:34:02.9614260Z
+- Depends on: OOT-CORE-003
+- Files:
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/oot_items.h
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeItems.h
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeItems.cpp
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeItemsGame.cpp
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeEngine.cpp
+  - OOT-UPSTREAM-78DC-001/soh/src/overlays/actors/ovl_player_actor/z_player.c
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/tests/EngineTests.cpp
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/item-demo/**
+  - OOT-UPSTREAM-78DC-001/tools/package-item-demo.ps1
+  - OOT-UPSTREAM-78DC-001/docs/native-mods.md
+- Goal:
+  - Get-item de itens sintéticos (Link levanta o item com modelo e mensagem do mod) e slice D3: recebido, equipado e salvo
