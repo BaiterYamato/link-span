@@ -246,5 +246,167 @@ class DoctorTests(unittest.TestCase):
             self.assertIn(expected, out)
 
 
+def build_pe(exports: list[str], imports: list[str], machine: int = 0x8664, dll: bool = True) -> bytes:
+    """PE32+ mínimo com uma seção contendo os diretórios de export e import."""
+    section_rva, section_raw = 0x1000, 0x200
+    body = bytearray()
+
+    def add_string(text: str) -> int:
+        rva = section_rva + len(body)
+        body.extend(text.encode("ascii") + b"\0")
+        return rva
+
+    name_rvas = [add_string(name) for name in exports]
+    import_name_rvas = [add_string(name) for name in imports]
+    while len(body) % 4:
+        body.append(0)
+    names_table = section_rva + len(body)
+    for rva in name_rvas:
+        body.extend(rva.to_bytes(4, "little"))
+    export_dir = section_rva + len(body)
+    export = bytearray(40)
+    export[24:28] = len(exports).to_bytes(4, "little")
+    export[32:36] = names_table.to_bytes(4, "little")
+    body.extend(export)
+    import_dir = section_rva + len(body)
+    for rva in import_name_rvas:
+        descriptor = bytearray(20)
+        descriptor[12:16] = rva.to_bytes(4, "little")
+        body.extend(descriptor)
+    body.extend(bytes(20))
+
+    pe = 0x40
+    optional_size = 112 + 16 * 8
+    header = bytearray(section_raw)
+    header[0:2] = b"MZ"
+    header[0x3C:0x40] = pe.to_bytes(4, "little")
+    header[pe:pe + 4] = b"PE\0\0"
+    header[pe + 4:pe + 6] = machine.to_bytes(2, "little")
+    header[pe + 6:pe + 8] = (1).to_bytes(2, "little")
+    header[pe + 20:pe + 22] = optional_size.to_bytes(2, "little")
+    header[pe + 22:pe + 24] = (0x2022 if dll else 0x0022).to_bytes(2, "little")
+    optional = pe + 24
+    header[optional:optional + 2] = (0x20B).to_bytes(2, "little")
+    header[optional + 108:optional + 112] = (16).to_bytes(4, "little")
+    dirs = optional + 112
+    header[dirs:dirs + 4] = export_dir.to_bytes(4, "little")
+    header[dirs + 8:dirs + 12] = import_dir.to_bytes(4, "little")
+    section = optional + optional_size
+    header[section:section + 6] = b".rdata"
+    header[section + 8:section + 12] = len(body).to_bytes(4, "little")
+    header[section + 12:section + 16] = section_rva.to_bytes(4, "little")
+    header[section + 16:section + 20] = len(body).to_bytes(4, "little")
+    header[section + 20:section + 24] = section_raw.to_bytes(4, "little")
+    return bytes(header) + bytes(body)
+
+
+NATIVE_MANIFEST = """\
+id = "teste.nativo"
+name = "Teste nativo"
+version = "1.0.0"
+api = ">=0.5 <1.0"
+entrypoint = "main.lua"
+{extra}
+[provider]
+abi_version = "{abi}"
+win64 = "provider/teste.dll"
+{provider_extra}"""
+
+
+@unittest.skipIf(shipmod.tomllib is None, "requer Python 3.11+ (tomllib)")
+class NativeDoctorTests(unittest.TestCase):
+    def make_mod(self, temporary: str, dll: bytes | None, abi: str = "1.0", extra: str = "",
+                 provider_extra: str = "", as_zip: bool = False) -> Path:
+        manifest = NATIVE_MANIFEST.format(abi=abi, extra=extra, provider_extra=provider_extra)
+        if as_zip:
+            package = Path(temporary) / "teste.shipmod"
+            with zipfile.ZipFile(package, "w") as archive:
+                archive.writestr("manifest.toml", manifest)
+                archive.writestr("main.lua", "")
+                if dll is not None:
+                    archive.writestr("provider/teste.dll", dll)
+            return package
+        mod = Path(temporary) / "mod"
+        (mod / "provider").mkdir(parents=True)
+        (mod / "manifest.toml").write_text(manifest, encoding="utf-8")
+        if dll is not None:
+            (mod / "provider" / "teste.dll").write_bytes(dll)
+        return mod
+
+    @staticmethod
+    def statuses(checks: list[tuple[str, str, str]]) -> dict[str, str]:
+        return {name: status for status, name, _ in checks}
+
+    def test_read_pe_returns_exports_and_imports(self) -> None:
+        pe = shipmod.read_pe(build_pe(["ShipNative_Query", "Outro"], ["KERNEL32.dll"]))
+        self.assertEqual(pe["machine"], 0x8664)
+        self.assertTrue(pe["dll"])
+        self.assertEqual(pe["exports"], ["ShipNative_Query", "Outro"])
+        self.assertEqual(pe["imports"], ["KERNEL32.dll"])
+
+    def test_read_pe_rejects_non_pe(self) -> None:
+        with self.assertRaises(ValueError):
+            shipmod.read_pe(b"nao e um pe")
+
+    def test_valid_package_passes(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            package = self.make_mod(temporary, build_pe(["ShipNative_Query"], ["KERNEL32.dll"]), as_zip=True)
+            code, out, _ = run_cli(["doctor", str(package)])
+        self.assertEqual(code, shipmod.EXIT_OK, out)
+        self.assertIn("0 falha(s)", out)
+
+    def test_missing_query_export_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            mod = self.make_mod(temporary, build_pe(["Outro"], ["KERNEL32.dll"]))
+            checks = shipmod.check_native_mod(mod)
+        self.assertEqual(self.statuses(checks)["Exports"], "falha")
+
+    def test_wrong_machine_and_exe_import_fail(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            mod = self.make_mod(temporary, build_pe(["ShipNative_Query"], ["soh.exe"], machine=0x14C))
+            checks = self.statuses(shipmod.check_native_mod(mod))
+        self.assertEqual(checks["Biblioteca win64"], "falha")
+        self.assertEqual(checks["Imports"], "falha")
+
+    def test_debug_crt_is_a_warning(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            mod = self.make_mod(temporary, build_pe(["ShipNative_Query"], ["VCRUNTIME140D.dll"]))
+            checks = self.statuses(shipmod.check_native_mod(mod))
+        self.assertEqual(checks["Imports"], "aviso")
+
+    def test_missing_library_and_traversal_fail(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            mod = self.make_mod(temporary, None)
+            self.assertEqual(self.statuses(shipmod.check_native_mod(mod))["Biblioteca win64"], "falha")
+        self.assertFalse(shipmod._safe_relative("../fora.dll"))
+        self.assertFalse(shipmod._safe_relative("C:/fora.dll"))
+        self.assertTrue(shipmod._safe_relative("provider/ok.dll"))
+
+    def test_core_extension_rules(self) -> None:
+        dll = build_pe(["ShipNative_Query"], ["KERNEL32.dll"])
+        with tempfile.TemporaryDirectory() as temporary:
+            mod = self.make_mod(temporary, dll, abi="1.0", extra='kind = "core_extension"\nload_phase = "pre_game"')
+            self.assertEqual(self.statuses(shipmod.check_native_mod(mod))["Tipo"], "falha")
+        with tempfile.TemporaryDirectory() as temporary:
+            mod = self.make_mod(temporary, dll, abi="9.9")
+            self.assertEqual(self.statuses(shipmod.check_native_mod(mod))["ABI"], "falha")
+
+    def test_fingerprints_checked_against_host(self) -> None:
+        dll = build_pe(["ShipNative_Query"], ["KERNEL32.dll"])
+        extra = 'kind = "core_extension"\nload_phase = "pre_game"'
+        with tempfile.TemporaryDirectory() as temporary:
+            mod = self.make_mod(temporary, dll, abi="1.3", extra=extra,
+                                provider_extra=f'host_fingerprints = ["{"a" * 64}"]')
+            listed = self.statuses(shipmod.check_native_mod(mod, "A" * 64))
+            other = self.statuses(shipmod.check_native_mod(mod, "b" * 64))
+        self.assertEqual(listed["Fingerprints"], "ok")
+        self.assertEqual(other["Fingerprints"], "aviso")
+
+    def test_lua_mod_has_nothing_to_validate(self) -> None:
+        code, out, _ = run_cli(["doctor", str(REPO_ROOT / "examples" / "hello-runtime")])
+        self.assertEqual(code, shipmod.EXIT_OK, out)
+        self.assertIn("sem [provider]", out)
+
+
 if __name__ == "__main__":
     unittest.main()

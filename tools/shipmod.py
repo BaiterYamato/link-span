@@ -6,7 +6,8 @@ Subcomandos (plan-sdk.md §16, release v0.1.0-alpha.1 §29):
 - ``new``      — cria o scaffold de um mod (manifest.toml, main.lua, README.md, tests/).
 - ``validate`` — valida manifestos (diretório, manifest.toml ou pacote .zip/.shipmod).
 - ``test``     — executa os testes do mod no mock runtime via shiplua_mod_test_runner.
-- ``doctor``   — diagnostica o ambiente de desenvolvimento e a saúde do repositório.
+- ``doctor``   — diagnostica o ambiente de desenvolvimento e a saúde do repositório;
+  com caminhos, valida ABI, exports e imports de mods nativos.
 
 Códigos de saída: 0 = sucesso; 1 = falha (inválido/testes falharam/checks falharam);
 2 = uso inválido; 3 = ferramenta necessária ausente.
@@ -511,8 +512,264 @@ def _check_examples() -> tuple[str, str, str]:
     return "ok", "Exemplos", f"{len(manifests)} exemplo(s) válidos (verificação básica)"
 
 
+# --- validador de ABI e exports de mods nativos (COREEXT-009, plan §9.9) ---
+
+NATIVE_ABI_VERSIONS = ("1.0", "1.1", "1.2", "1.3")
+NATIVE_QUERY_EXPORT = "ShipNative_Query"
+PE_MACHINE_AMD64 = 0x8664
+PE_FILE_DLL = 0x2000
+DEBUG_CRT_IMPORTS = {"msvcp140d.dll", "vcruntime140d.dll", "vcruntime140_1d.dll", "ucrtbased.dll"}
+SHA256_HEX = re.compile(r"^[0-9a-fA-F]{64}$")
+
+
+def _host_abi_minor() -> int | None:
+    """Minor da ABI declarada no cabeçalho do repositório (o que os hosts deste core aceitam)."""
+    header = REPO_ROOT / "include" / "shiplua" / "native" / "ship_native_abi.h"
+    try:
+        match = re.search(r"#define\s+SHIP_NATIVE_ABI_MINOR\s+(\d+)u?", header.read_text(encoding="utf-8"))
+    except OSError:
+        return None
+    return int(match.group(1)) if match else None
+
+
+def read_pe(data: bytes) -> dict[str, object]:
+    """Lê machine, flag de DLL, nomes exportados e DLLs importadas de um PE (PE32/PE32+).
+
+    Lança ValueError quando o arquivo não é PE ou tem diretórios fora do arquivo.
+    """
+    def u16(offset: int) -> int:
+        if offset + 2 > len(data):
+            raise ValueError("PE truncado")
+        return int.from_bytes(data[offset:offset + 2], "little")
+
+    def u32(offset: int) -> int:
+        if offset + 4 > len(data):
+            raise ValueError("PE truncado")
+        return int.from_bytes(data[offset:offset + 4], "little")
+
+    if data[:2] != b"MZ":
+        raise ValueError("sem cabeçalho MZ")
+    pe = u32(0x3C)
+    if data[pe:pe + 4] != b"PE\0\0":
+        raise ValueError("sem assinatura PE")
+    machine = u16(pe + 4)
+    section_count = u16(pe + 6)
+    optional_size = u16(pe + 20)
+    characteristics = u16(pe + 22)
+    optional = pe + 24
+    magic = u16(optional)
+    if magic == 0x20B:
+        dir_count, dirs = u32(optional + 108), optional + 112
+    elif magic == 0x10B:
+        dir_count, dirs = u32(optional + 92), optional + 96
+    else:
+        raise ValueError(f"optional header desconhecido (0x{magic:x})")
+    sections = []
+    table = optional + optional_size
+    for index in range(section_count):
+        entry = table + index * 40
+        sections.append((u32(entry + 12), max(u32(entry + 8), u32(entry + 16)), u32(entry + 20)))
+
+    def offset_of(rva: int) -> int:
+        for virtual, size, raw in sections:
+            if virtual <= rva < virtual + size:
+                return raw + (rva - virtual)
+        raise ValueError(f"RVA 0x{rva:x} fora das seções")
+
+    def c_string(rva: int) -> str:
+        start = offset_of(rva)
+        end = data.find(b"\0", start)
+        if end < 0:
+            raise ValueError("string sem terminador")
+        return data[start:end].decode("ascii", errors="replace")
+
+    exports: list[str] = []
+    if dir_count > 0 and u32(dirs) != 0:
+        directory = offset_of(u32(dirs))
+        names = offset_of(u32(directory + 32)) if u32(directory + 24) else 0
+        exports = [c_string(u32(names + 4 * i)) for i in range(u32(directory + 24))]
+    imports: list[str] = []
+    if dir_count > 1 and u32(dirs + 8) != 0:
+        descriptor = offset_of(u32(dirs + 8))
+        while u32(descriptor + 12) != 0 and len(imports) < 4096:
+            imports.append(c_string(u32(descriptor + 12)))
+            descriptor += 20
+    return {
+        "machine": machine,
+        "dll": bool(characteristics & PE_FILE_DLL),
+        "exports": exports,
+        "imports": imports,
+    }
+
+
+def _open_mod(path: Path) -> tuple[dict | None, object, str]:
+    """Abre diretório/pacote e devolve (manifesto, leitor de arquivo relativo, erro)."""
+    if path.is_dir():
+        def read_dir(relative: str) -> bytes | None:
+            candidate = path / relative
+            return candidate.read_bytes() if candidate.is_file() else None
+        reader = read_dir
+    elif path.is_file() and path.suffix.lower() in (".zip", ".shipmod"):
+        try:
+            with zipfile.ZipFile(path) as archive:
+                entries = {
+                    info.filename.replace("\\", "/"): archive.read(info)
+                    for info in archive.infolist() if not info.is_dir()
+                }
+        except (OSError, zipfile.BadZipFile) as exc:
+            return None, None, f"pacote inválido ({exc})"
+        reader = entries.get
+    else:
+        return None, None, "esperado diretório, .zip ou .shipmod"
+    raw = reader("manifest.toml")
+    if raw is None:
+        return None, None, "sem manifest.toml na raiz"
+    if tomllib is None:
+        return None, None, "a leitura do manifesto requer Python 3.11+ (tomllib)"
+    try:
+        data = tomllib.loads(raw.decode("utf-8"))
+    except (tomllib.TOMLDecodeError, UnicodeDecodeError) as exc:
+        return None, None, f"erro de sintaxe TOML ({exc})"
+    return data, reader, ""
+
+
+def _safe_relative(value: str) -> bool:
+    normalized = value.replace("\\", "/")
+    return bool(normalized) and not normalized.startswith("/") and ":" not in normalized and \
+        ".." not in normalized.split("/")
+
+
+def check_native_mod(path: Path, host_sha256: str | None = None) -> list[tuple[str, str, str]]:
+    """Checks de ABI, exports e imports de um mod nativo (diretório, .zip ou .shipmod)."""
+    data, reader, error = _open_mod(path)
+    if data is None:
+        return [("falha", "Manifesto", error)]
+    mod_id = data.get("id", "?")
+    provider = data.get("provider")
+    if provider is None:
+        return [("ok", "Provider", f"{mod_id}: sem [provider] (mod Lua, nada a validar)")]
+    if not isinstance(provider, dict):
+        return [("falha", "Provider", "[provider] precisa ser uma tabela")]
+
+    checks: list[tuple[str, str, str]] = []
+    kind = data.get("kind", "mod")
+    phase = data.get("load_phase", "runtime")
+    abi = provider.get("abi_version")
+    if abi not in NATIVE_ABI_VERSIONS:
+        checks.append(("falha", "ABI", f"abi_version {abi!r} fora de {', '.join(NATIVE_ABI_VERSIONS)}"))
+    else:
+        host_minor = _host_abi_minor()
+        minor = int(abi.split(".")[1])
+        if host_minor is not None and minor > host_minor:
+            checks.append(("falha", "ABI", f"{abi} exige host com ABI 1.{minor}; este core vai até 1.{host_minor}"))
+        else:
+            checks.append(("ok", "ABI", f"{abi} (core aceita até 1.{host_minor if host_minor is not None else '?'})"))
+    if kind == "core_extension":
+        if phase != "pre_game":
+            checks.append(("falha", "Tipo", "core_extension exige load_phase = \"pre_game\""))
+        elif abi in ("1.0",):
+            checks.append(("falha", "Tipo", "core_extension exige ABI 1.1 ou maior"))
+        else:
+            checks.append(("ok", "Tipo", "core_extension, pre_game"))
+    elif phase == "pre_game":
+        checks.append(("falha", "Tipo", "load_phase = \"pre_game\" é reservado a core_extension"))
+    fingerprints = provider.get("host_fingerprints")
+    if fingerprints is not None:
+        valid = isinstance(fingerprints, list) and 0 < len(fingerprints) <= 32 and \
+            all(isinstance(item, str) and SHA256_HEX.match(item) for item in fingerprints)
+        if not valid:
+            checks.append(("falha", "Fingerprints", "host_fingerprints precisa de 1-32 SHA-256 hex"))
+        elif kind != "core_extension" or abi != "1.3":
+            checks.append(("falha", "Fingerprints", "host_fingerprints exige core_extension com ABI 1.3"))
+        elif host_sha256 is not None:
+            listed = host_sha256.lower() in (item.lower() for item in fingerprints)
+            checks.append(("ok" if listed else "aviso", "Fingerprints",
+                           "host listado" if listed else "host fora da lista: escape hatch fica UNSUPPORTED"))
+        else:
+            checks.append(("ok", "Fingerprints", f"{len(fingerprints)} host(s); use --host para conferir"))
+    elif abi == "1.3" and kind == "core_extension":
+        checks.append(("aviso", "Fingerprints", "ABI 1.3 sem host_fingerprints: resolve/detour ficam UNSUPPORTED"))
+
+    library = provider.get("win64")
+    if not isinstance(library, str) or not library:
+        checks.append(("aviso", "Biblioteca win64", "ausente: o mod não carrega no Windows"))
+        return checks
+    if not _safe_relative(library):
+        checks.append(("falha", "Biblioteca win64", f"{library!r} precisa ser relativo e dentro do mod"))
+        return checks
+    binary = reader(library.replace("\\", "/"))
+    if binary is None:
+        checks.append(("falha", "Biblioteca win64", f"{library} não existe no mod"))
+        return checks
+    try:
+        pe = read_pe(binary)
+    except ValueError as exc:
+        checks.append(("falha", "Biblioteca win64", f"{library}: {exc}"))
+        return checks
+    if pe["machine"] != PE_MACHINE_AMD64 or not pe["dll"]:
+        checks.append(("falha", "Biblioteca win64",
+                       f"{library}: precisa ser DLL x86-64 (machine 0x{pe['machine']:x}, dll={pe['dll']})"))
+    else:
+        checks.append(("ok", "Biblioteca win64", f"{library}: DLL x86-64, {len(binary)} bytes"))
+    exports = pe["exports"]
+    if NATIVE_QUERY_EXPORT in exports:
+        checks.append(("ok", "Exports", f"{NATIVE_QUERY_EXPORT} ({len(exports)} export(s))"))
+    else:
+        checks.append(("falha", "Exports", f"{NATIVE_QUERY_EXPORT} não exportado (extern \"C\" + SHIP_NATIVE_EXPORT)"))
+    imports = [name.lower() for name in pe["imports"]]
+    executables = [name for name in imports if name.endswith(".exe")]
+    debug_crt = sorted(set(imports) & DEBUG_CRT_IMPORTS)
+    linked_core = [name for name in imports if name.startswith(("lua", "shiplua"))]
+    if executables:
+        checks.append(("falha", "Imports", "linka o executável (" + ", ".join(executables) +
+                       "): use serviços e resolve_symbol, não import"))
+    elif linked_core:
+        checks.append(("falha", "Imports", "linka Lua/shiplua (" + ", ".join(linked_core) +
+                       "): o provider usa só ship_native_abi.h"))
+    elif debug_crt:
+        checks.append(("aviso", "Imports", "CRT de debug (" + ", ".join(debug_crt) +
+                       "): não existe em máquinas de jogador; compile em Release"))
+    else:
+        checks.append(("ok", "Imports", ", ".join(pe["imports"]) or "nenhum"))
+    for field in ("linux64", "macos"):
+        other = provider.get(field)
+        if isinstance(other, str) and other and (not _safe_relative(other) or reader(other.replace("\\", "/")) is None):
+            checks.append(("aviso", f"Biblioteca {field}", f"{other} ausente no mod"))
+    return checks
+
+
+def _print_checks(checks: list[tuple[str, str, str]]) -> tuple[int, int]:
+    failures = warnings = 0
+    for status, name, detail in checks:
+        print(f"{STATUS_ICONS[status]} {name}: {detail}")
+        failures += status == "falha"
+        warnings += status == "aviso"
+    return failures, warnings
+
+
+def _doctor_mods(paths: list[str], host: str | None) -> int:
+    host_sha256 = None
+    if host:
+        import hashlib
+        try:
+            host_sha256 = hashlib.sha256(Path(host).read_bytes()).hexdigest()
+        except OSError as exc:
+            print(f"Erro: não foi possível ler o host {host} ({exc})", file=sys.stderr)
+            return EXIT_USAGE
+        print(f"Host: {host} (SHA-256 {host_sha256})")
+    total_failures = 0
+    for raw_path in paths:
+        print(f"shipmod doctor — {raw_path}")
+        failures, warnings = _print_checks(check_native_mod(Path(raw_path), host_sha256))
+        print(f"Resumo: {failures} falha(s), {warnings} aviso(s)")
+        print()
+        total_failures += failures
+    return EXIT_FAILURE if total_failures else EXIT_OK
+
+
 def cmd_doctor(args: argparse.Namespace) -> int:
-    del args  # diagnóstico não recebe opções
+    if getattr(args, "caminhos", None):
+        return _doctor_mods(args.caminhos, getattr(args, "host", None))
     checks = [
         _check_python(),
         _check_git(),
@@ -590,7 +847,14 @@ def build_parser() -> argparse.ArgumentParser:
     p_test.set_defaults(func=cmd_test)
 
     p_doctor = subparsers.add_parser(
-        "doctor", help="diagnostica o ambiente de desenvolvimento"
+        "doctor",
+        help="diagnostica o ambiente; com caminhos, valida ABI, exports e imports de mods nativos",
+    )
+    p_doctor.add_argument(
+        "caminhos", nargs="*", help="mods nativos a validar (diretório, .zip ou .shipmod)"
+    )
+    p_doctor.add_argument(
+        "--host", help="executável do jogo, para conferir host_fingerprints da ABI 1.3"
     )
     p_doctor.set_defaults(func=cmd_doctor)
 

@@ -88,6 +88,24 @@ Checks:
 Each check reports `ok`, `aviso` (warning) or `falha` (failure); the command
 exits with code `1` if there is at least one failure.
 
+### Validating native mods
+
+Given paths (directory, `.zip` or `.shipmod`), `doctor` inspects the
+`[provider]` library without loading it:
+
+```powershell
+python tools/shipmod.py doctor build/my-mod.shipmod --host x64/Release/soh.exe
+```
+
+- `abi_version` between 1.0 and this core's `ship_native_abi.h` minor;
+- core extension `kind`/`load_phase` and `host_fingerprints` rules (with
+  `--host`, warns when the executable's SHA-256 is not listed);
+- `win64` relative, inside the mod and present;
+- x86-64 PE flagged as a DLL, exporting `ShipNative_Query`;
+- imports: failure when linking the executable, Lua or shiplua; warning for a debug CRT.
+
+Mods without `[provider]` pass with no checks.
+
 ## Exit codes
 
 | Code | Meaning |

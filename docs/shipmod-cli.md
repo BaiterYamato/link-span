@@ -85,6 +85,24 @@ Verificações:
 Cada verificação resulta em `ok`, `aviso` ou `falha`; o comando sai com código
 `1` se houver ao menos uma falha.
 
+### Validar mods nativos
+
+Com caminhos (diretório, `.zip` ou `.shipmod`), o `doctor` confere a biblioteca
+do `[provider]` sem carregá-la:
+
+```powershell
+python tools/shipmod.py doctor build/meu-mod.shipmod --host x64/Release/soh.exe
+```
+
+- `abi_version` entre 1.0 e o minor do `ship_native_abi.h` deste core;
+- regras de `kind`/`load_phase` de core extension e de `host_fingerprints`
+  (com `--host`, avisa quando o SHA-256 do executável não está na lista);
+- `win64` relativo, dentro do mod e presente;
+- PE x86-64 marcado como DLL, com `ShipNative_Query` exportado;
+- imports: falha se linkar o executável, Lua ou shiplua; aviso para CRT de debug.
+
+Mods sem `[provider]` passam sem checks.
+
 ## Códigos de saída
 
 | Código | Significado |
