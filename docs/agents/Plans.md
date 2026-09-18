@@ -601,3 +601,33 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
 - Layout id `03ee0131`; `soh.exe` `822FD891…`.
 - Commit local: `83b5b5b42` (host).
 - Próximo: OOT-CORE-007 ou slice 4 da Fase D (item com modelo, animação e collider).
+
+## UPDATE OOT-COREMODS-001 — Fase D: slices D1, D4 e D5 (Gate D)
+
+- Status: review
+- Concluído em 2026-09-18, com um só rebuild de host (layout `4d74f423`, `soh.exe` `6BF3B438…`):
+  - OOT-UNBOUND-004A (slice D1):
+    - hook TRANSFORM `oot.room.actors` v1 no host;
+    - framework Unbound 0.3.0 mescla `scenes/<cena>/rooms/<n>.json` (`unbound/room/1`, SPEC §2/§3) sobre a
+      lista vanilla;
+    - prova em jogo: árvore vanilla movida para a frente do spawn do Hyrule Field, placa removida por `null`,
+      coração e arbusto novos, com `73 -> 74 atores`.
+  - OOT-CORE-005B (slice D4): serviço `linkspan.oot.skeletons` v1 (`SkelAnime` do mod com animação loop/once) e
+    demo `familiar-demo`. O item recebido, equipado e usado solta um Keese animado com collider AT.
+  - Slice D5: framework, demo do campo, demo de cenas, demo de itens e demo do familiar carregados juntos como
+    `.shipmod`:
+    - as viagens para o HF e para a cópia do HF (cena 128) passam pelo patch;
+    - os dois itens são recebidos, salvos e restaurados na recarga;
+    - o Keese do item sintético acerta a árvore posta pelo JSON do Unbound (`hits=1 alvo=0x77`).
+  - Slice D2: o respawn em Kakariko ao recarregar um save feito em cena de mod é o respawn vanilla de cenas que
+    não são dungeon, e o SPEC não define respawn por cena. Reclassificado como comportamento esperado.
+- Gate D: todos os slices instaláveis como `.shipmod`, com o mesmo `soh.exe` em todas as sessões.
+- Rebuild para `4d74f423`:
+  - DMR 0.2.9 (`D37E8A8E…`) e Mic 0.1.4 (`39F4AB19…`), com boot em gameplay na cópia de teste;
+  - overlay `LinkSpan-Shipwright-9.2.3-Upstream-78dc6d970-layout-4d74f423-DMR-0.2.9-Mic-0.1.4-Win64-overlay.zip`
+    (`977C9266…`).
+- Gate de lifecycle: só acusa sobreposição com claims em review do mesmo agente, já commitados.
+- Commits locais: `8d98a47cb` e `f4f6ad525` (host).
+- Próximo:
+  - OOT-CORE-007 e o validador de exports no `shipmod.py doctor`, para fechar o `COREEXT-GATE`;
+  - UNBOUND-001/NEI-001 completos antes das fases E e F.

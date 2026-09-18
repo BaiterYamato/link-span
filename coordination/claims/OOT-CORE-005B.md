@@ -1,0 +1,27 @@
+# OOT-CORE-005B
+
+- Status: review
+- Agent: Claude (Opus 5)
+- Platform: Windows
+- Branch: agent/OOT-UPSTREAM-001-78dc6d970-integration
+- Started: 2026-09-18T15:21:16Z
+- Depends on: OOT-CORE-003B, OOT-CORE-004, OOT-CORE-005
+- Files:
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/oot_skeletons.h
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeSkeletons.h
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeSkeletons.cpp
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeSkeletonsGame.cpp
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeEngine.cpp
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/ExportSdk.cmake
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeView.h
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeView.cpp
+  - OOT-UPSTREAM-78DC-001/tools/package-item-demo.ps1
+  - OOT-UPSTREAM-78DC-001/soh/soh/OTRGlobals.cpp
+  - OOT-UPSTREAM-78DC-001/soh/soh/ShipLuaBootstrap.cpp
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/tests/EngineTests.cpp
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/familiar-demo/**
+  - OOT-UPSTREAM-78DC-001/tools/package-familiar-demo.ps1
+  - OOT-UPSTREAM-78DC-001/docs/native-mods.md
+- Goal:
+  - Slice D4: item sintético com modelo esquelético animado e collider (serviço linkspan.oot.skeletons v1 e demo)
+  - Slice D5: Unbound e itens sintéticos carregados juntos, pacotes .shipmod sem mudar o soh.exe (Gate D)
