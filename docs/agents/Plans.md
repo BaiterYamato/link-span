@@ -661,3 +661,14 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
   - core `59a760b`.
 - Próximo: NEI-001 completo; depois a fase E (framework Unbound com JSON de cena, colisão e texto sobre este
   substrato) e a fase F.
+
+## UPDATE OOT-COREMODS-001 — NEI-001 (inventário integral do Not Enough Items)
+
+- Status: review
+- Concluído em 2026-09-18: `inventory-nei-001.md`, fork `skijer/Shipwright` `c29262b7` (PR #7 aberta, sem merge).
+  - Diff próprio sobre o merge-base `783139310`: 63 commits, 5 458 arquivos (4 718 assets, 388 em `soh/mods`, 79
+    em expansões, 273 no host).
+  - Catálogo de 197 linhas de `sNeiItems`: 62 itens com checklist (23 ativos) e 135 entradas só de randomizer.
+  - Ensaio de merge contra o host `16c4622d5`: 67 conflitos (28 no randomizer).
+  - Nenhum asset tem licença declarada, então nada vai para release sem autorização do autor.
+- Próximo: NEI-002 (registro sobre `linkspan.oot.items`) e fase E do Unbound.
