@@ -631,3 +631,33 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
 - Próximo:
   - OOT-CORE-007 e o validador de exports no `shipmod.py doctor`, para fechar o `COREEXT-GATE`;
   - UNBOUND-001/NEI-001 completos antes das fases E e F.
+
+## UPDATE OOT-COREMODS-001 — OOT-CORE-007 e validador do doctor (COREEXT-GATE)
+
+- Status: review
+- Concluído em 2026-09-18:
+  - UNBOUND-001: inventário integral do fork Unbound 0.6 (`inventory-unbound-001.md`, coord `373b1ae`).
+  - OOT-CORE-007: substrato do Unbound no host, por merge de 3 vias.
+    - Mundo amplo: posições f32, sala s16, colisão s32 com `bgActors` no heap e colliders f32.
+    - Render e recursos: matriz float, vértice s32, materiais animados, música por cena e texto crescente com
+      `OTRMessage_Set`/`Remove`.
+    - Sem SceneDB: flags de sala ≥ 32 vão para `SceneFlagsExt` (seção de save `unbound` v1).
+    - O hook `oot.room.actors` sobe para v2.
+  - Deriva de ponteiros (clang-cl): só as 6 linhas vanilla esperadas.
+  - Validador no `shipmod.py doctor <mod>` (core `59a760b`): ABI, core extension, fingerprints, PE x86-64 DLL com
+    `ShipNative_Query` e imports.
+- Layout id `3e3f59ad`; `soh.exe` `EA18F55F…`.
+- Rebuild único de 9 demos, DMR 0.2.9 (`C05AB783…`), Mic 0.1.4 (`9A02742B…`) e do overlay
+  `LinkSpan-Shipwright-9.2.3-Upstream-78dc6d970-layout-3e3f59ad-DMR-0.2.9-Mic-0.1.4-Win64-overlay.zip`
+  (`8BDA759F…`).
+- Provas em jogo:
+  - `core007-conjunto-ingame`: demos D1–D5 juntas, itens com texto próprio, Keese e orbe;
+  - `dmr-mic-3e3f59ad-boot`.
+- `COREEXT-GATE`: overlay 9.2.3 compila, o jogo roda com e sem mods, o SDK é exportado e os mods são recompilados
+  sem mudar o `soh.exe`. Critérios cumpridos, aguardando review.
+- Commits locais:
+  - libultraship `69ac4eb0`;
+  - host `16c4622d5`;
+  - core `59a760b`.
+- Próximo: NEI-001 completo; depois a fase E (framework Unbound com JSON de cena, colisão e texto sobre este
+  substrato) e a fase F.

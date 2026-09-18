@@ -1,0 +1,22 @@
+# OOT-CORE-007
+
+- Status: review
+- Agent: Claude (Opus 5)
+- Platform: Windows
+- Branch: agent/OOT-UPSTREAM-001-78dc6d970-integration
+- Started: 2026-09-18T16:25:00Z
+- Depends on: UNBOUND-001
+- Files:
+  - soh/../CMakeLists.txt do host (GBI_FLOAT_MTX, GBI_S32_VTX)
+  - libultraship (submódulo, branch agent/OOT-UPSTREAM-001-linkspan-extensions: fast/, ship/resource/)
+  - soh/include/z64.h, z64actor.h, z64bgcheck.h, z64collision_check.h, z64math.h, z64scene.h
+  - soh/src/code/ (z_bgcheck.c, z_scene_otr, z_play.c, z_actor.c, z_room.c, z_scene_proc.c e demais do merge)
+  - soh/src/overlays/ (54 atores com campos ampliados)
+  - soh/soh/resource/ (fábricas de cena, colisão, caminho, vértice e materiais animados)
+  - soh/soh/unbound/ (SceneFlagsExt, UnboundAudio, UnboundCollisionChecks)
+  - soh/soh/z_message_OTR.cpp, soh/soh/z_message_OTR.h, soh/soh/OTRGlobals.cpp, soh/soh/SaveManager.cpp
+  - soh/soh/native/oot_hooks.h, OotNativeHooks*.cpp, OotNativeScenes.*
+  - soh/native-sdk/unbound-core/, soh/native-sdk/tests/EngineTests.cpp
+  - scripts/unbound-pointer-drift.sh
+- Goal:
+  - Portar o substrato do Unbound 0.6 (mundo amplo, matriz float, vértice s32, colisão, materiais, luz, texto crescente e áudio por cena) para o host, sem SceneDB e sem as partes de framework, com um só rebuild de providers

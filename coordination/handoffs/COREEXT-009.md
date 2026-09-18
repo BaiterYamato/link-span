@@ -91,11 +91,14 @@ Prova em jogo, 2 sessões: RELEASE-UNIFICADA/OOT-teste-cenas-20260914, evidênci
 
 ## Pendências
 
-- `shipmod.py doctor` ainda não valida exports e ABI da DLL (item do plano §9.9).
+- Resolvido em 2026-09-18 (core `59a760b`): `shipmod.py doctor <mod>` valida ABI, regras de core extension e
+  `host_fingerprints` (`--host`), caminho `win64`, PE x86-64 DLL com `ShipNative_Query` e imports (executável,
+  Lua ou shiplua falham; CRT de debug avisa), sem carregar a DLL. 30 testes em `tests/tools/test_shipmod.py`
+  (PE sintético). Passa com DMR 0.2.9 e Mic 0.1.4 de `build/distribution`.
 - Sem teste de crash atribuído por pilha em hook ou detour em jogo; só o init foi exercitado.
 - Crash em thread sem atividade e sem DLL de mod na pilha não aponta culpado.
 - O log do SoH na cópia de teste acumula sessões anteriores; as evidências foram copiadas por sessão.
-- DMR 0.2.9 e Mic 0.1.4 precisam de rebuild para `01e37d13`.
+- DMR 0.2.9 e Mic 0.1.4: recompilados para o layout atual (`3e3f59ad`, OOT-CORE-007).
 
 ## Riscos
 
