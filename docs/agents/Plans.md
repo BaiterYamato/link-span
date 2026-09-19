@@ -672,3 +672,31 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
   - Ensaio de merge contra o host `16c4622d5`: 67 conflitos (28 no randomizer).
   - Nenhum asset tem licença declarada, então nada vai para release sem autorização do autor.
 - Próximo: NEI-002 (registro sobre `linkspan.oot.items`) e fase E do Unbound.
+
+## UPDATE OOT-COREMODS-001 — OOT-CORE-008, NEI-002 e fase E do Unbound (Gate E)
+
+- Status: review
+- Concluído em 2026-09-18/19:
+  - OOT-CORE-008 (host `b13913077`, layout `31899f1f`): items v3, resources v3 (tipos JSON), scenes v2, text v1 e
+    fábricas XML do Unbound.
+  - NEI-002 (host `efbef4188`): coremod `linkspan.nei` com `linkspan.nei.items` v1 e a demo Heart Seeds, provada em
+    jogo com save e upgrade (`evidence/nei-002`).
+  - Fase E, UNBOUND-002 a 012, agrupada como UNBOUND-E (host `56193b774`, `68687c480`): framework Unbound 0.4.0 com
+    base convertida, tipos JSON, registro, texto, CLI `linkspan_unbound_convert`, fixtures e `.shipmod` único.
+- Gate E em jogo (`evidence/unbound-e-gate`, `soh.exe` `8655C372`), sem erro no log:
+  - 101 cenas vanilla pela base JSON;
+  - casa JSON com title card, placa com texto do JSON, save e exit por nome até o Hyrule Field;
+  - x=z=45 000 com 45 000 polígonos, 600 corações visíveis e coletáveis;
+  - `texCycle` de material alternando.
+- Correções do playtest:
+  - transcode no pool de threads da libultraship;
+  - fallback vanilla de cena trocada;
+  - raiz `<Room>`;
+  - texto no primeiro frame.
+- Pendências:
+  - salas > 255, objetos > 128, DynaPoly e água;
+  - receitas de material além do `texCycle` sem prova visual;
+  - licença do Link-Span no pacote;
+  - comentário de thread em `oot_resources.h`;
+  - instalação sobre cópia fresca com overlay.
+- Próximo: review da fase E; limites pendentes ou fase F.
