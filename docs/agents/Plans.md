@@ -725,3 +725,25 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
   - trilha CEL-001 a 005 para o mod Wind Waker Style (`cbcd3e7`), com transporte no Fast3D e hooks de desenho no host;
   - fase W, numa rodada única de host, antes da fase G.
 - Próximo: fase F (NEI-003 a 016). O código de item do fork entra numa DLL que usa o host pelo escape hatch.
+
+## UPDATE OOT-COREMODS-001 — NEI-004A: fork NEI na DLL pelo escape hatch (fase F)
+
+- Status: review
+- O código de itens do fork NEI (`c29262b`) compila em C dentro da `linkspan_nei_core.dll` e usa o `soh.exe` só
+  por endereços resolvidos no init (ABI 1.3): 287 funções e 32 dados do host, desvios em `Player_Update` e
+  `Player_Draw`. Montagem por `nei-core/fork/sync.py`:
+  - patches;
+  - camada de compatibilidade;
+  - 213 variáveis do host por ponteiro;
+  - 41 funções extraídas, entre elas o armazenamento do `nei_save.cpp`;
+  - 134 stubs gerados.
+- Host (layout `31899f1f` mantido, `soh.exe` `B1A90CAA`):
+  - tabela de keep da API do jogo, contra o LTCG que inlinava metade das funções;
+  - link `/OPT:NOICF`: eram 1368 símbolos `folded`, agora sobram 2 da CRT.
+- Em jogo (`evidence/nei-f`, s3 e s4): Roc's Feather pula parado e em corrida, e o Roc's Cape faz pulo e pulo
+  duplo. Ícone, modelo e save do fork ainda são provisórios (NEI-007/012).
+- Commits host `40530741c` e `48569f926`. Três subagentes Codex escreveram a primeira versão dos geradores
+  (imports, extração, stubs), e um quarto fez a análise estática dos stubs.
+- Risco do gate F: pacote amarrado ao fingerprint do `soh.exe`; o keep completo precisa entrar na rodada de host
+  da fase W.
+- Próximo: onda A completa (persistência do `NeiSaveData`, get-item do fork, assets), depois Shovel e Somaria.
