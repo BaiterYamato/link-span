@@ -10,9 +10,9 @@
 | Host inicial | Shipwright 9.2.3 Ackbar Delta |
 | Runtime | Link-Span / ShipLua |
 | Formato distribuído | `.shipmod`, contêiner ZIP inspecionável |
-| Coremods-alvo | SoH: Unbound 0.6 e Not Enough Items |
+| Coremods-alvo | SoH: Unbound 0.6 e Not Enough Items; mod Wind Waker Style |
 | Majora's Mask | Adiado até o gate final de OoT |
-| Última atualização | 2026-09-12 |
+| Última atualização | 2026-09-19 |
 
 Este plano substitui qualquer suposição de que as duas modificações possam ser
 convertidas apenas copiando seus fontes para um ZIP. Ele define a infraestrutura
@@ -34,6 +34,10 @@ Referências congeladas para a análise inicial:
 - Release candidata NEI: [PR #7 — Not enough items (Release)](https://github.com/skijer/Shipwright/pull/7),
   ainda aberta e apontando para o mesmo commit congelado em 2026-09-12.
 - Estrutura NEI: [soh/mods/items/STRUCTURE.md](https://github.com/skijer/Shipwright/blob/Not-Enough-Items/soh/mods/items/STRUCTURE.md).
+- Unbound depois do snapshot: branch `unbound` em `0c31899007` (2026-09-19), 7 commits além de `fd236b9`
+  (Epona em cena customizada, rolagem fracionária, debug warp); tarefas `UNBOUND-013` a `015`.
+- Wind Waker Style: [branch wind-waker-style-cel-shading](https://github.com/roborich/Shipwright/tree/wind-waker-style-cel-shading),
+  commit `cbcd3e719d` (2026-09-19); trilha `CEL-001` a `CEL-005` (§11A).
 
 Os commits acima são pontos de referência. Antes de começar cada migração, eles
 devem ser confirmados e registrados novamente, porque as branches remotas podem
@@ -50,6 +54,7 @@ Uma instalação fresca do Shipwright 9.2.3 receberá o overlay do Link-Span uma
 mods/
 ├── Unbound-Framework-0.6.shipmod
 ├── Not-Enough-Items-1.0.shipmod
+├── Wind-Waker-Style.shipmod
 ├── Dynamic-Movement-Remake.shipmod
 └── outros mods e archives .o2r
 ```
@@ -618,6 +623,38 @@ válido anterior.
 
 **Aceite:** instalar o único `.shipmod` sobre uma cópia fresca com overlay.
 
+As tarefas 013 a 015 cobrem o delta `fd236b9..0c31899007` da branch `unbound`, registrado em 2026-09-19
+([inventário](inventory-unbound-001.md), "Delta de 2026-09-19"). A peça de host de cada uma entra na rodada única de
+host da Fase W (§13).
+
+#### `UNBOUND-013` — Epona em cenas customizadas
+
+- chave `horse` do registro de cenas (`true` ou `pos`/`angle`), com recusa registrada de campo malformado;
+- host: `func_8006CFC0` consulta o registro em vez da lista fixa, e as cinco cenas vanilla continuam semeadas;
+- `OBJECT_HORSE` anexado às salas de cena com `horse`;
+- cena da Epona gravada pelo nome, a partir do snapshot do save;
+- ponto de chamada da Epona's Song gerado com o teste de chão da Epona (sem água, rampa > 35° ou desnível > 300).
+
+**Aceite:** numa cena JSON com `horse`, a Epona's Song chama a Epona, ela espera no `pos` e continua com o Link
+depois de uma transição montada; sem `horse`, nada muda.
+
+#### `UNBOUND-014` — rolagem fracionária de materiais
+
+- `xSpeed`/`ySpeed` opcionais nas camadas de `texScroll` e `twoTexScroll`, somados ao passo inteiro;
+- host: `AnimatedMatTexScrollParams` com os dois floats (muda o layout id), `z_scene_proc.c` e o tile size float do
+  libultraship (`e01b3509`);
+- wrap de 32768 quartos de texel (SPEC §10).
+
+**Aceite:** o exemplo `lake-hylia-slow-water` e uma fixture com `xSpeed` 0.25 rolam mais devagar que um passo
+inteiro; cenas sem os campos rolam como antes.
+
+#### `UNBOUND-015` — cenas customizadas no debug warp
+
+- host: a tela "Better Debug Warp" pede a lista de cenas registradas ao serviço de cenas;
+- a seleção lembrada continua visível quando a lista muda de tamanho.
+
+**Aceite:** as cenas do registro aparecem no debug warp e levam à entrada `main`.
+
 ### 10.3 Matriz pública de limites do Prelude
 
 Além da SPEC congelada, o port deve reproduzir o comportamento observável que o
@@ -938,6 +975,73 @@ e não fazem parte do pacote.
 
 ---
 
+## 11A. Migração do Wind Waker Style (cel shading)
+
+Entrou no escopo em 2026-09-19: a branch
+[`wind-waker-style-cel-shading`](https://github.com/roborich/Shipwright/tree/wind-waker-style-cel-shading) do
+roborich vira mod do Link-Span, como o Unbound (coremod) e o NEI (mod). O
+[inventário CEL-001](inventory-cel-001.md) registra a fonte e a divisão.
+
+O fork já separa transporte (Fast3D do libultraship, opcodes GBI `gSPToon`,
+`gSPToonKey`, `gSPStencil`, `gSPToonShadow`) de política (código do jogo em
+`Enhancements/Graphics`). O port segue a mesma linha: o transporte e os pontos
+de extensão vão para o host uma vez, e a política vai para a DLL do mod.
+
+Serviço publicado pelo host para o mod:
+
+```text
+linkspan.oot.render (versão nova): opcodes toon/stencil/sombra, chaves toon_actors e suppress_vanilla_shadows,
+                                   receptores de sombra registrados pelo mod
+hooks oot.render.actor_draw, world_lights, sky_gradient, sky, sky_clouds, file_select_sky; oot.light.point_color
+```
+
+#### `CEL-001` — congelar fonte e inventariar
+
+Feito em 2026-09-19 ([inventário](inventory-cel-001.md)). Head `cbcd3e719d`, base `cb71e22a7`, libultraship
+`4698a3d6`.
+
+**Aceite:** cada arquivo do diff tem classe e destino.
+
+#### `CEL-002` — transporte no renderer do host
+
+- merge de 3 vias dos 15 commits do libultraship sobre o libultraship do host (que já tem o substrato Unbound);
+- opcodes GBI e handlers nos backends D3D11, OpenGL e Metal;
+- sem nenhuma leitura de config do SoH no transporte.
+
+**Aceite:** sem mod, a imagem é idêntica à atual (captura de referência); com opcodes emitidos por uma fixture, o
+toon e o stencil aparecem no D3D11.
+
+#### `CEL-003` — pontos de extensão do jogo
+
+- colchete `gSPToon` no laço de atores, ligado por chave do serviço;
+- hook por ator antes do draw, chamado só quando o mod pede;
+- pré-passe de receptores com a lista registrada pelo mod;
+- hooks de céu, luz do mundo e céu da seleção de arquivo nas posições do fork;
+- hook de cor de luz pontual (flicker) e chave para esconder o brilho vanilla;
+- chave de supressão das sombras vanilla nos helpers de `z_actor.c` e nos cinco atores do inventário.
+
+**Aceite:** um mod de teste recebe cada hook uma vez por frame no ponto certo; sem mod, nada muda.
+
+#### `CEL-004` — mod Wind Waker Style
+
+- DLL com `ToonLighting`, `WorldLighting`, céu (`WWSky*`, `WWClouds`, `WWNightSky`, `WWWindWisps`) e
+  `DekuStickLight`;
+- luz da Navi e das fadas por hook ou detour de `EnElf`;
+- menu "Wind Waker Style" pela API de menu do Link-Span, com as CVars `gEnhancements.Graphics.*` do fork;
+- texturas de nuvem no archive do pacote, geradas pelo script do fork.
+
+**Aceite:** as quatro famílias (Cel Shading, Light Casting, Actor Shadows, Sky) batem com o fork em capturas das
+mesmas cenas e horários.
+
+#### `CEL-005` — empacotar
+
+- `.shipmod` com DLL, Lua, archive, docs e licença;
+- manifesto sem dependência de Unbound ou NEI.
+
+**Aceite:** instalação fresca com overlay; o mod liga e desliga pelo menu sem reiniciar o jogo.
+
+---
+
 ## 12. Convivência Unbound + NEI
 
 ### 12.1 Regras
@@ -962,6 +1066,8 @@ e não fazem parte do pacote.
 | Unbound + Dynamic Movement | obrigatório | obrigatório | recomendado | obrigatório | obrigatório |
 | NEI + Dynamic Movement | obrigatório | obrigatório | obrigatório | obrigatório | obrigatório |
 | Os três | obrigatório | obrigatório | obrigatório | obrigatório | obrigatório |
+| Wind Waker Style sozinho | obrigatório | obrigatório | recomendado | obrigatório | obrigatório |
+| Wind Waker Style + Unbound + NEI | obrigatório | obrigatório | obrigatório | obrigatório | obrigatório |
 
 ---
 
@@ -1034,6 +1140,23 @@ helpers e testes estarem estáveis.
 
 **Gate F:** inventário completo do snapshot `NEI-001` encerrado sem recompilar o
 host durante as ondas.
+
+### Fase W — Wind Waker Style e delta do Unbound
+
+Entrou em 2026-09-19. Uma **rodada única de host** junta tudo que muda headers do
+SDK ou código do jogo, para gastar um só layout id:
+
+- `CEL-002` e `CEL-003` (renderer e pontos de extensão);
+- peças de host de `UNBOUND-013`, `UNBOUND-014` e `UNBOUND-015`;
+- hooks que a infraestrutura NEI (`NEI-004` a `NEI-006`) descobrir que o escape hatch não cobre, antes das ondas
+  de itens.
+
+Depois da rodada, `CEL-004`/`CEL-005` e o lado framework das tarefas Unbound não
+recompilam o host.
+
+**Gate W:** as quatro famílias do Wind Waker Style e as três novidades do Unbound
+aprovadas em jogo com um só `soh.exe`, e os mods já publicados reempacotados para
+o layout novo.
 
 ### Fase G — integração e release OoT
 

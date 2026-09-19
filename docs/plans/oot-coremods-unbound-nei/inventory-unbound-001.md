@@ -182,6 +182,21 @@ O host só expõe a base: o JSON da libultraship e, no UNBOUND-005, um serviço 
 | `src/ship/resource/ResourceLoader.cpp` | +51/-1 | JSON e factories (sniffing de $schema) |
 | `src/ship/resource/archive/ArchiveManager.cpp` | +13/-0 | camadas (já portado no OOT-UNBOUND-002A) |
 
+## Delta de 2026-09-19 (`0c31899`)
+
+A branch `unbound` andou 7 commits depois do snapshot (`fd236b9..0c31899007`): 23 arquivos, +731/−49. O Gate E
+continua valendo para o formato 2 do snapshot. As novidades entram como tarefas próprias (UNBOUND-013 a 015,
+plano §10.2), todas com peça no host.
+
+| Commit | Mudança | Host | Framework |
+|---|---|---|---|
+| `8526084`, `989300d`, `8d430fd` | **Epona em cena customizada.** A chave `horse` do registro de cenas (SPEC §7, adição da versão 2) substitui a lista fixa de cinco cenas de `func_8006CFC0`. Ela aceita `true` ou `pos`/`angle`, anexa `OBJECT_HORSE` às salas, grava a cena da Epona pelo nome no save e gera o ponto de chamada da Epona's Song com o teste de chão da própria Epona. | `z_horse.c` (+26), `ovl_En_Horse` (+115), `z_scene_otr.cpp` (+38) | ler `horse` no registro e publicar pelo serviço de cenas |
+| `380e856`, `5d41e29` | **Rolagem fracionária.** A camada de `texScroll`/`twoTexScroll` aceita `xSpeed`/`ySpeed` (SPEC §4.2) somados ao passo inteiro. O wrap passa de 2048 para 32768 quartos de texel (SPEC §10, mudança de comportamento da versão 2). | `AnimatedMatTexScrollParams` cresce de 0x4 para 0xC (`z64scene.h`, muda o layout id); `z_scene_proc.c` (+75); libultraship `e01b3509` (tile size float com tolerância) | aceitar `xSpeed`/`ySpeed` no transcode e na fábrica XML |
+| `71781260`, `0c318990` | **Debug warp.** A tela "Better Debug Warp" lista as cenas customizadas registradas e mantém a seleção visível. | `ovl_select/z_select.c` (+16), `UnboundSceneSelect.cpp` (+107) | fornecer a lista ao host pelo serviço de cenas |
+
+O restante é documentação (`SPEC.md`, `registries.md`, `materials.md`, `prelude-handoff.md`, `testing.md`) e o exemplo
+`lake-hylia-slow-water`.
+
 ## Todos os arquivos do diff
 
 | Arquivo | Categoria | Grupos | Linhas | Ensaio de merge |

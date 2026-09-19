@@ -74,17 +74,44 @@ Sessões em jogo s1..s9 (evidence/unbound-e-gate), soh.exe 8655C372, layout 3189
 - Texto: `definidas=2 removidas=1 falhas=0`. A sonda confirma 0x03FE nova, 0x0301 trocada e 0x0345 removida.
 - Save da cópia restaurado (`1788F5DD`). Os mods de teste foram para `mods-anteriores/unbound-e-gate-20260918`.
 
+## Limites da fase E (2026-09-19)
+
+Fixtures `lab` e `many` (host `0665b941c`), sessões s2 e s3 em `evidence/unbound-e-limites`, sem `[error]` no log:
+
+- `many`: 300 salas, Link na sala 299, 203 objetos, 100 transition actors, 300 mesh entries e DynaPoly 60/64 com
+  16 384 polígonos. Na sala 299 ele nada (`agua=1 nado=1`) e coleta o coração.
+- `lab`: as 6 receitas de material animam (scroll, two-scroll, color, lerp, non-linear e `texCycle`), provadas por
+  diferença de pixels entre quadros. O two-scroll passou a usar a textura grade, porque a listrada só varia em x.
+- `many` reusa a DL do lab: sem as animações de material, o segmento 0x0D ficava sem textura.
+
+## Review conjunta E+F (2026-09-19)
+
+Três revisores: host, framework Unbound e NEI-002. Corrigido nos commits host `660bd3085` e `c0f1245b4`:
+
+| Achado | Gravidade | Correção |
+|---|---|---|
+| Índice de vértice ou tipo de superfície fora da faixa na colisão lia além do array | alta | `CollisionHeaderFactory` zera o índice e avisa uma vez por recurso |
+| JSON profundo estourava a pilha do nlohmann | alta | Recusa acima de 64 níveis antes do parse, em todos os pontos de leitura |
+| Mapas do registro de cenas lidos no pool de recursos enquanto a thread do jogo registra | média | `shared_mutex` nos mapas |
+| Título de cena menor que 144x24 era lido além do fim | média | Textura conferida uma vez por caminho |
+| Iluminação com mais de 255 entradas estourava o contador u8 | média | Corte em 255 com nota |
+| Recurso pedido por `LoadResourceAsync` dentro de transcode trava no mutex | baixa | Invariante documentada |
+
+Não corrigido, de baixo impacto: o conjunto estático de caminhos de título cresce com o número de cenas,
+`UnregisterOotJsonType` espera o transcode em andamento e o log do framework não tem limite de tamanho.
+
+Regressão depois das correções (`evidence/unbound-ef-review`, s2, `soh.exe` `8C7BC455`, layout `31899f1f`): as 7
+viagens das fixtures (house, wide, cavern, cavern_b, lab, many e house) sem erro, com as texturas do lab certas.
+O `soh.symbols` passou a trazer 17 756 variáveis como `[data]`, para o escape hatch da fase F.
+
 ## Pendências
 
-- Limites não exercitados em jogo:
-  - salas > 255, objetos > 128, transition actors, mesh entries;
-  - DynaPoly crescente e água;
-  - receitas de material fora do `texCycle`.
 - Comparação com a release de referência do Unbound 0.6: não disponível.
 - Licença do repositório Link-Span para o `LICENSES.md` do pacote. Decisão do usuário.
 - Comentário de thread em `oot_resources.h`: corrigir na próxima mudança de layout.
 - Instalar o `.shipmod` único numa cópia fresca com overlay (aceite 012).
 - Cache da base por tamanho e data: trocar por hash se aparecer caso de arquivo alterado com a mesma data.
+- Delta do Unbound de 2026-09-19 (`0c31899`): UNBOUND-013 a 015 no plano, na fase W.
 
 ## Riscos
 
@@ -94,5 +121,5 @@ Sessões em jogo s1..s9 (evidence/unbound-e-gate), soh.exe 8655C372, layout 3189
 
 ## Próxima ação recomendada
 
-- Review da fase E. Depois, completar os limites pendentes com fixtures dedicadas (salas/objetos/DynaPoly) ou seguir
-  para a fase F, conforme a prioridade do plano.
+- Aceite da fase E pelo usuário. Os limites e a review estão fechados; o que resta é instalação limpa, licença e o
+  delta do Unbound na fase W.

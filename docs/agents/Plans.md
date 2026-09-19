@@ -700,3 +700,28 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
   - comentário de thread em `oot_resources.h`;
   - instalação sobre cópia fresca com overlay.
 - Próximo: review da fase E; limites pendentes ou fase F.
+
+## UPDATE OOT-COREMODS-001 — limites da fase E, review E+F e escopo novo (delta do Unbound e Wind Waker Style)
+
+- Status: review
+- Limites da fase E provados em jogo (host `0665b941c`, `evidence/unbound-e-limites`):
+  - 300 salas, 203 objetos, 100 transition actors e 300 mesh entries;
+  - DynaPoly 60/64 com 16 384 polígonos;
+  - nado e coleta na sala 299;
+  - as 6 receitas de material animando.
+- Review conjunta E+F, corrigida nos commits host `660bd3085` e `c0f1245b4`:
+  - clamp de índices de colisão;
+  - limite de 64 níveis de JSON;
+  - `shared_mutex` no registro de cenas;
+  - título de cena conferido;
+  - iluminação cortada em 255;
+  - save do NEI lido por tipo, sem exceção na fronteira C e sem item órfão.
+- Regressão depois das correções: as 7 viagens das fixtures sem erro (`evidence/unbound-ef-review`, `soh.exe`
+  `8C7BC455`, layout `31899f1f`).
+- `soh.symbols` com variáveis (`[data]`), base do escape hatch da fase F.
+- Escopo novo no `plan.md`:
+  - delta do Unbound `0c31899`: UNBOUND-013 a 015, com registro de cavalos, scroll fracionário (muda o layout) e
+    warp de debug;
+  - trilha CEL-001 a 005 para o mod Wind Waker Style (`cbcd3e7`), com transporte no Fast3D e hooks de desenho no host;
+  - fase W, numa rodada única de host, antes da fase G.
+- Próximo: fase F (NEI-003 a 016). O código de item do fork entra numa DLL que usa o host pelo escape hatch.
