@@ -204,6 +204,11 @@ int main(int argc, char** argv) {
             };
             auto escapePolicy = policy;
             escapePolicy.escapeHatch = hatch;
+            // Estado por mod nos serviços do host é devolvido depois de os patches saírem.
+            std::vector<std::string> unloadedOwners;
+            escapePolicy.onProviderUnload = [&](std::string_view owner) {
+                unloadedOwners.emplace_back(std::string(owner) + (patches.removed == 1 ? ":sem-patch" : ":com-patch"));
+            };
             const std::string core = "kind='core_extension'\nload_phase='pre_game'\n";
             const auto escapeRoot = root / ("escape-" + game);
             MakeMod(escapeRoot / "allowed", argv[11], "test.escape.allowed", "loaded=true", core, "1.3");
@@ -227,6 +232,8 @@ int main(int argc, char** argv) {
                 Check(patches.installed == 1 && patches.removed == 0, "patch installed with matching fingerprint");
                 Check(host.UnloadMod("test.escape.allowed").isOk() && patches.removed == 1,
                       "unload removes the core extension patch");
+                Check(unloadedOwners.size() == 1 && unloadedOwners[0] == "test.escape.allowed:sem-patch",
+                      "unload notifies the host after removing patches");
                 Check(host.LoadModFromDirectory((escapeRoot / "denied").string()).isOk(), "escape denied load");
                 Run(host, "test.escape.denied", R"lua(
                     local r=require('ship').native.call('report','')

@@ -48,6 +48,10 @@ struct NativeProviderPolicy {
     std::shared_ptr<NativeHookRegistry> hooks;
     // ABI 1.3: ausente = get_host_fingerprint e o escape hatch retornam UNSUPPORTED.
     std::shared_ptr<NativeEscapeHatch> escapeHatch;
+    // Chamado uma vez, na thread do host, depois de remover hooks e patches e
+    // antes do shutdown da DLL. Serviços que guardam estado por mod usam isto
+    // para devolver o comportamento-padrão mesmo se o mod não o fizer.
+    std::function<void(std::string_view owner)> onProviderUnload;
 };
 
 // Resultado POD: permite empurrar valores Lua sem longjmp sobre RAII C++.
@@ -101,6 +105,7 @@ class NativeProvider {
     std::vector<NativeHostService> mPublishedServices;
     std::shared_ptr<NativeHookRegistry> mHooks;
     std::shared_ptr<NativeEscapeHatch> mEscapeHatch;
+    std::function<void(std::string_view owner)> mOnProviderUnload;
     std::vector<std::string> mHostFingerprints;
     std::vector<uint64_t> mPatches;
     bool mEscapeChecked = false;

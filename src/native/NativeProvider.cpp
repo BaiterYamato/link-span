@@ -134,6 +134,7 @@ Result<std::unique_ptr<NativeProvider>> NativeProvider::Load(
         instance->mServices = policy.services;
         instance->mHooks = policy.hooks;
         instance->mEscapeHatch = policy.escapeHatch;
+        instance->mOnProviderUnload = policy.onProviderUnload;
         if (manifest.kind == ModKind::CoreExtension && manifest.provider->abiVersion == "1.3") {
             instance->mHostFingerprints = manifest.provider->hostFingerprints;
         }
@@ -197,6 +198,9 @@ NativeProvider::~NativeProvider() {
         }
     }
     mPatches.clear();
+    if (mOnProviderUnload) {
+        try { mOnProviderUnload(mOwnerId); } catch (...) { /* O unload continua seguro. */ }
+    }
     if (mShutdown) {
         const NativeActivityScope activity(mOwnerId.c_str(), "shutdown", nullptr);
         try { mShutdown(mInstance); } catch (...) { /* Não atravessar a fronteira do host. */ }
