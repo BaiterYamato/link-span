@@ -810,6 +810,19 @@ save, UI, randomizer e multiplayer.
 
 **Aceite:** 48 slots operam com save, controle e resoluções suportadas.
 
+**Prova (rodada W, host `43CAD3FC` / layout `ce528052`):** a página de itens do kaleido do fork entrou
+na DLL e o menu do jogo a usa, por três desvios (`KaleidoScope_DrawItemSelect`, `SetupItemEquip`,
+`UpdateItemEquip`) — o resto do menu continua sendo o do host, que é o "sem substituir o menu inteiro".
+Duas páginas e 48 slots (a de máscaras de MM exige `mm.o2r` e ficou desligada), troca pelo BTN_L,
+cursor e painel de nome acompanhando o slot, e item da página equipado num botão C. Sessão `n5` em
+`build/oot-upstream-001/evidence/nei-003/` — ver `coordination/handoffs/NEI-003.md`.
+
+**O que ficou de fora:** os ícones da página saem errados, porque apontam para o bundle de assets do
+fork, que não é redistribuível (é o `NEI-007`); item de id u16 num botão C não entra no save, porque o
+campo `extButtons` do fork não existe no `SaveContext` deste host e persistir custaria o layout id; e
+os refinamentos do `z_kaleido_scope_PAL.c` (cursor padrão, painel de informação, vértices das páginas
+extras) e as rodas de ciclagem não foram desviados.
+
 #### `NEI-004` — extrair helpers compartilhados
 
 - input/equip;
@@ -824,6 +837,13 @@ save, UI, randomizer e multiplayer.
 **Aceite:** helpers compilam dentro da DLL e acessam o host somente pela ABI ou
 pelo escape hatch declarado.
 
+**Prova (rodada W):** as oito categorias já estavam na DLL desde a `NEI-004A`, por acidente de
+construção; agora são contrato em `soh/native-sdk/nei-core/fork/helpers.txt` e gate automatizado em
+`tools/check-nei-fork-helpers.ps1`, que confere símbolo definido no objeto por categoria, o relatório
+do escape hatch com 0 erros (302 funções e 50 dados) e que a DLL importa só a CRT e o `KERNEL32` — ver
+`coordination/handoffs/NEI-004.md`. O gate prova montagem e isolamento, não semântica: quem exercita
+cada helper são as ondas de item.
+
 #### `NEI-005` — pipeline de Player
 
 - dispatcher por frame;
@@ -835,6 +855,14 @@ pelo escape hatch declarado.
 
 **Aceite:** troca rápida entre itens não deixa câmera, collider, animação ou
 modelo residual.
+
+**Prova (rodada W):** o pipeline é o do fork, compilado em C na DLL, posto no frame pelos desvios de
+`Player_Update`/`Player_Draw`. `fork/pipeline_probe.c` publica no `stats` os quatro lugares onde o
+resíduo apareceria — visual do fork, `itemAction`/`modelGroup`, `AT_ON` dos quads de arma e `setting`
+da câmera. Na sessão `q3` de `build/oot-upstream-001/evidence/nei-005/`, o Roc's Feather foi usado, o
+Roc's Cape entrou no mesmo botão C antes de o pulo acabar, foi usado, e a linha do `stats` voltou
+idêntica à de antes da troca. Ver `coordination/handoffs/NEI-005.md`. A prova cobre dois itens sem
+modelo na mão; vale refazê-la com um item com modelo quando o `NEI-007` e a onda A entrarem.
 
 #### `NEI-006` — atores customizados
 
