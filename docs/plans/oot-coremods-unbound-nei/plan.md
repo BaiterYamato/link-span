@@ -645,6 +645,11 @@ depois de uma transição montada; sem `horse`, nada muda.
   libultraship (`e01b3509`);
 - wrap de 32768 quartos de texel (SPEC §10).
 
+**Armadilha achada na prova (vale para todo atributo float do XML de cena):** o `setlocale(LC_ALL, ".UTF8")` do
+`main.c` adota o locale do usuário; num Windows pt-BR o separador decimal do CRT vira vírgula e o `sscanf("%f")`
+do tinyxml2 para no ponto, então `XSpeed="0.25"` é lido como 0 e `PosX="1.5"` como 1. O host agora força
+`LC_NUMERIC` em `C` e o transcode escreve sempre com ponto.
+
 **Aceite:** o exemplo `lake-hylia-slow-water` e uma fixture com `xSpeed` 0.25 rolam mais devagar que um passo
 inteiro; cenas sem os campos rolam como antes.
 
@@ -917,6 +922,20 @@ marcados explicitamente como desativados com motivo verificável.
 
 **Aceite:** matriz novo/load/save/copy/delete/reinstall aprovada.
 
+**Prova da matriz (rodada W, host `43CAD3FC` / layout `ce528052`):** aprovada nas cinco sessões em
+`build/oot-upstream-001/evidence/nei-012/`, lida no `stats` do coremod (`| arquivo=N`) e no JSON dos saves —
+ver `coordination/handoffs/NEI-012.md`. O vínculo com o arquivo carregado é `loadedSlot`, e apagar ou
+sobrescrever por cópia esse arquivo o desliga, de modo que o próximo save daquele slot recomeça do zero.
+
+**Duas coisas ficaram de fora, as duas porque custariam o layout id:**
+
+- a importação do save do fork original (`sections.nei` → `nei.state`) é opcional no recorte e exigiria
+  duplicar a lista de campos do NEI no host ou abrir `open_legacy_section` em `ShipOotSaveV1`;
+- rodar sem o mod preserva a posse (`nei.items`, `nei.state`) mas esvazia o vínculo do botão C em
+  `linkspan.items`, que é o contrato escrito em `soh/soh/native/oot_items.h` ("nome sem registro esvazia o
+  botão"). O host avisa no log qual item era, então o comportamento é previsível; preservar o nome exige mexer
+  nesse header.
+
 #### `NEI-013` — Randomizer
 
 - adapter separado;
@@ -1153,6 +1172,12 @@ SDK ou código do jogo, para gastar um só layout id:
 
 Depois da rodada, `CEL-004`/`CEL-005` e o lado framework das tarefas Unbound não
 recompilam o host.
+
+O Wind Waker Style é um mod (DLL, Lua e archive num `.shipmod`), como o NEI, o
+Unbound, o Mic Ocarina, o DMR e a vegetação da Fase V. A rodada entrega ao host
+só transporte e pontos de extensão genéricos, desligados por padrão e utilizáveis
+por qualquer mod. Cores, listas de atores, CVars `gEnhancements.Graphics.*` e menu
+ficam na DLL do mod; sem ele instalado, o jogo renderiza como hoje.
 
 **Gate W:** as quatro famílias do Wind Waker Style e as três novidades do Unbound
 aprovadas em jogo com um só `soh.exe`, e os mods já publicados reempacotados para
