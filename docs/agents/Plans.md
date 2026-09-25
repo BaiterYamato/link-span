@@ -800,8 +800,11 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
   - o Cane de Somaria invoca a estátua;
   - Fire/Ice/Light Rod golpeiam com o segundo C e lançam o projétil;
   - HUD correto.
+- **Aquisição e save** (`evidence/nei-008`, g4): get-item com modelo dos sete itens da onda A, save pelo pause e
+  `possuidos=7` depois de reabrir. O pause caía porque o fork testa existência de recurso com
+  `ResourceMgr_LoadTexOrDListByName == NULL`; o `resource_guard.c` pergunta antes ao VFS (host `09dfae8bb`).
 - **Pendências:**
-  - get-item e save com o host novo;
+  - o item no botão C não persiste (limite da NEI-003);
   - atualizar a `RELEASE-UNIFICADA\OOT` com o `soh.exe` novo;
   - push aguardando autorização.
 - Commit host `4f40d1126`.

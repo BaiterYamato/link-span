@@ -925,7 +925,9 @@ Itens que validam as primitivas fundamentais:
 - Precisou da rodada de host `NEI-HOST-001`.
 - Com o host novo, Shovel, Cane of Somaria e Fire/Ice/Light Rod funcionam pelo botão C, com animação e efeito
   (`evidence/nei-host-001`, s5). O rod golpeia com o mesmo C de novo; o B troca para a espada, como no vanilla.
-- Faltam o get-item e o save com o host novo. Ver `coordination/handoffs/NEI-008.md` e `NEI-HOST-001.md`.
+- Get-item dos sete itens e save/reload provados com o host novo (`evidence/nei-008`, g4: `possuidos=7` depois de
+  reabrir). O item no botão C não persiste (limite da NEI-003). Ver `coordination/handoffs/NEI-008.md` e
+  `NEI-HOST-001.md`.
 
 #### `NEI-009` — port de itens, onda B
 
