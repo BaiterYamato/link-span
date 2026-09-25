@@ -889,6 +889,17 @@ modelo na mão; vale refazê-la com um item com modelo quando o `NEI-007` e a on
 **Aceite:** nenhum modelo ou animação permanece compilado como array C apenas
 para contornar o resource manager.
 
+**Prova (host `43CAD3FC` / layout `ce528052`):** `tools/build-nei-assets.py` gera no computador de quem joga
+nove `nei-assets-<componente>.o2r` (núcleo, formas, expansões, rede) e o manifesto com origem, licença, hash e
+associação de cada arquivo; nada disso entra em pacote, porque o fork não tem licença. O validador dá 0
+sobrescritas do jogo, 5538 referências de 1130 display lists conferidas por hash e 0 caminhos `__OTR__` do
+núcleo ausentes. Os 11 modelos que o fork escreveu em C viraram recursos (`fork/cmodels.py`, 36 convertidos);
+em C no núcleo só sobrou geometria procedural escrita à mão, e os modelos C da SW97 ficam com o `NEI-015`.
+Os caminhos seguem os do fork, não `mod/skijer.nei/`, porque as DLs binárias apontam por hash; o validador
+prova direto o que o prefixo garantiria. Em jogo (`evidence/nei-007`, s1), o get-item de Feather, Whip,
+Spinner e Elemental Wand mostra modelo e texto do archive, e a página 2 mostra os ícones reais. Pendentes:
+os bundles externos da PR #7, que exigem download. Ver `coordination/handoffs/NEI-007.md`.
+
 #### `NEI-008` — port de itens, onda A
 
 Itens que validam as primitivas fundamentais:

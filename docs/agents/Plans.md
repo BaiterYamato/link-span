@@ -747,3 +747,20 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
 - Risco do gate F: pacote amarrado ao fingerprint do `soh.exe`; o keep completo precisa entrar na rodada de host
   da fase W.
 - Próximo: onda A completa (persistência do `NeiSaveData`, get-item do fork, assets), depois Shovel e Somaria.
+
+## UPDATE OOT-COREMODS-001 — NEI-007: assets do fork NEI gerados localmente
+
+- Status: review
+- `tools/build-nei-assets.py` gera, a partir do commit `c29262b`, nove `nei-assets-<componente>.o2r` e o manifesto
+  (origem, licença "sem licença declarada", hash, associação). Os arquivos ficam em `<jogo>/nei-assets/`, fora de
+  qualquer pacote.
+- Validador: 0 sobrescritas do jogo, 5538 referências de DL por hash, 0 caminhos `__OTR__` do núcleo ausentes.
+- `fork/cmodels.py` converte os 11 modelos em C do fork em recursos (36 arrays). No núcleo sobra só geometria
+  procedural à mão; os modelos C da SW97 ficam para o NEI-015.
+- O coremod monta os archives no init e define 24 itens do fork com ícone, texto e modelo reais. A posse no
+  registro sincroniza a página 2.
+- Em jogo (`evidence/nei-007`): get-item de Feather, Whip, Spinner e Elemental Wand com modelo do archive, e
+  ícones reais na página 2.
+- Desvio: caminhos do fork, sem o prefixo `mod/skijer.nei/`, porque as DLs apontam por hash.
+- Pendente: bundles externos da PR #7 (download depende de autorização).
+- Commit host `4f642485b`.
