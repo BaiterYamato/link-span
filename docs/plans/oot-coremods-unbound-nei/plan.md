@@ -874,6 +874,15 @@ modelo na mão; vale refazê-la com um item com modelo quando o `NEI-007` e a on
 **Aceite:** criar e destruir atores repetidamente sem vazamento ou ponteiro
 órfão.
 
+**Prova (host `43CAD3FC` / layout `ce528052`):** os atores do fork são portadores vanilla com
+`update/draw/destroy` trocados; o `sync.py` reescreve o código do fork que entra na DLL para passar pela guarda
+`fork/actor_guard.c` (74 trocas, 49 spawns e 168 testes `p->update == NULL`, que liam ator liberado, viram
+`NeiActor_IsAlive`, validado pelas listas do actorCtx). No descarregamento, todo ator que aponta para a DLL volta
+ao ponteiro original ou morre. Em jogo (`evidence/nei-006`, s1), seis ciclos de criar/matar as três invocações da
+Cane of Somaria, acúmulo com descarte pelo limite do fork e `reset` com invocações vivas terminam com 31 criados
+e 31 liberados; o ensaio do descarregamento acha todos os atores do fork. Ver
+`coordination/handoffs/NEI-006.md`.
+
 #### `NEI-007` — converter assets
 
 - modelos, display lists, texturas, ícones e nomes;

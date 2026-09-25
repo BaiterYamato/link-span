@@ -764,3 +764,18 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
 - Desvio: caminhos do fork, sem o prefixo `mod/skijer.nei/`, porque as DLs apontam por hash.
 - Pendente: bundles externos da PR #7 (download depende de autorização).
 - Commit host `4f642485b`.
+
+## UPDATE OOT-COREMODS-001 — NEI-006: guarda de atores do fork NEI
+
+- Status: review
+- Os atores do fork são portadores vanilla com funções trocadas. O `sync.py` põe o código do fork que entra na
+  DLL atrás de `fork/actor_guard.c`:
+  - 74 trocas de função;
+  - 49 spawns;
+  - 168 testes de vida que liam ator liberado, agora `NeiActor_IsAlive`.
+- No descarregamento, nenhum ator fica apontando para a DLL: volta ao ponteiro original ou morre.
+- Em jogo (`evidence/nei-006`): ciclos de criar/matar as invocações da Somaria, acúmulo e `reset` com
+  invocações vivas terminam com 31 criados e 31 liberados, sem crash e com o save intacto.
+- Fica de fora: descarregamento real com a cena viva (o ShipLua só descarrega ao fechar o jogo) e ABA de
+  endereço reaproveitado.
+- Commit host `bea9468dc`.
