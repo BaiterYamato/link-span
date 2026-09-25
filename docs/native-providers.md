@@ -115,6 +115,7 @@ if (runtime->resolve_symbol(runtime->context, "z_player.c!Player_Action_Roll", &
 
 - `get_host_fingerprint` diz qual SHA-256 declarar.
 - Fora da lista de fingerprints, ou em mod comum, as chamadas retornam `UNSUPPORTED`.
+- Até 1024 patches por provider; além disso `install_patch` retorna `LIMIT`.
 - Os patches saem sozinhos no unload, antes do `shutdown`.
 - Recompile e republique o mod a cada executável novo. Detalhes em
   `rfcs/0023-native-escape-hatch.md`.

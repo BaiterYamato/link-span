@@ -15,6 +15,9 @@
 
 namespace ShipLua {
 namespace {
+// Patches do escape hatch por provider. O NEI sobrepõe cada função do host que o fork mudou (~320).
+constexpr size_t kMaxPatchesPerProvider = 1024;
+
 bool ValidPath(const std::string& text) {
     if (text.empty() || text.size() > 1024 || text.front() == '/' ||
         text.find('\\') != std::string::npos || text.find(':') != std::string::npos ||
@@ -388,7 +391,7 @@ ShipNativeStatus SHIP_NATIVE_CALL NativeProvider::InstallPatch(
         return SHIP_NATIVE_UNSUPPORTED;
     }
     if (!target || !detour || !original || !patch) return SHIP_NATIVE_INVALID_ARGUMENT;
-    if (self->mPatches.size() >= 256) return SHIP_NATIVE_LIMIT;
+    if (self->mPatches.size() >= kMaxPatchesPerProvider) return SHIP_NATIVE_LIMIT;
     try {
         self->mPatches.reserve(self->mPatches.size() + 1);
         uint64_t id = 0;
