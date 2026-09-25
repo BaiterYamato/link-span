@@ -779,3 +779,29 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
 - Fica de fora: descarregamento real com a cena viva (o ShipLua só descarrega ao fechar o jogo) e ABA de
   endereço reaproveitado.
 - Commit host `bea9468dc`.
+
+## UPDATE OOT-COREMODS-001 — NEI-HOST-001 e NEI-008: rodada de host e onda A em jogo
+
+- Status: review
+- **Gate F revisado** por decisão do usuário (2026-09-25): uma rodada de host antes das ondas, em vez de nenhuma.
+- **O host** compila 81 arquivos sem inline e sem LTCG (`soh/hookable_sources.txt`). O layout id segue
+  `ce528052`; o `soh.exe` de teste é o `0D7D8899`.
+- **A DLL do NEI** sobrepõe as 314 funções do host que o fork mudou: `overlay.py`, merges à mão, 314/314
+  desvios.
+- **Core:** o limite de patches por provider subiu para 1024 (branch `agent/NEI-HOST-001-patch-cap`, `d5aba71`).
+- **Correções que a prova em jogo exigiu:**
+  - tradução do id runtime do botão para o id lógico do fork;
+  - desvio dos VB que bloqueiam a faixa sintética;
+  - array `extern` incompleto;
+  - stubs com valor neutro ou repasse;
+  - `nei_fork_protos.h` + `/we4013` (88 chamadas sem protótipo; o ícone truncado derrubava o Fast3D).
+- **NEI-008 em jogo** (`evidence/nei-host-001`, s5):
+  - Shovel cava;
+  - o Cane de Somaria invoca a estátua;
+  - Fire/Ice/Light Rod golpeiam com o segundo C e lançam o projétil;
+  - HUD correto.
+- **Pendências:**
+  - get-item e save com o host novo;
+  - atualizar a `RELEASE-UNIFICADA\OOT` com o `soh.exe` novo;
+  - push aguardando autorização.
+- Commit host `4f40d1126`.

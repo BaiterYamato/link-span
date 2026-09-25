@@ -920,6 +920,13 @@ Itens que validam as primitivas fundamentais:
 
 **Aceite:** aquisição, inventário, uso, animação, efeito e save completos.
 
+**Estado (2026-09-25, review, host `4f40d1126`):**
+
+- Precisou da rodada de host `NEI-HOST-001`.
+- Com o host novo, Shovel, Cane of Somaria e Fire/Ice/Light Rod funcionam pelo botão C, com animação e efeito
+  (`evidence/nei-host-001`, s5). O rod golpeia com o mesmo C de novo; o B troca para a espada, como no vanilla.
+- Faltam o get-item e o save com o host novo. Ver `coordination/handoffs/NEI-008.md` e `NEI-HOST-001.md`.
+
 #### `NEI-009` — port de itens, onda B
 
 Itens de combate e projéteis:
@@ -1205,8 +1212,11 @@ fixture com a release de referência.
 Executar `NEI-002` a `NEI-016`, liberando as ondas de itens somente após seus
 helpers e testes estarem estáveis.
 
-**Gate F:** inventário completo do snapshot `NEI-001` encerrado sem recompilar o
-host durante as ondas.
+**Gate F:** inventário completo do snapshot `NEI-001` encerrado com **uma** rodada
+de host antes das ondas (`NEI-HOST-001`, decisão do usuário em 2026-09-25) e sem
+outra recompilação do host durante elas. A rodada existe porque o fork mudou 314
+funções do host, e a DLL só consegue sobrepô-las se cada uma tiver endereço próprio
+(`soh/hookable_sources.txt`, sem inline nem LTCG).
 
 ### Fase W — Wind Waker Style e delta do Unbound
 
