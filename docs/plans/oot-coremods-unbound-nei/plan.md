@@ -1053,6 +1053,17 @@ sobrescrever por cópia esse arquivo o desliga, de modo que o próximo save daqu
 **Aceite:** dois clientes sincronizam aquisição e uso dos itens selecionados no
 escopo inicial.
 
+**Estado (2026-09-26): review.**
+
+- O Anchor ficou no modloader, como o randomizer. A NEI-HOST-003 dá ao host:
+  - o get-item sintético nos parceiros pelo nome do registro;
+  - o serviço `linkspan.oot.anchor` para namespaces de save no estado do time.
+  O NEI compartilha `nei.items` e `nei.state`.
+- Dois clientes num relay local: o baú do Mido em A entrega a Roc's Feather em B ao vivo. O estado do time
+  resincroniza os dois blocos ao entrar e depois de voltar. Um item desconhecido gera aviso, sem entrega.
+- Uso (contagem) vai pelo estado do time, não ao vivo. Salas com clientes sem Link-Span não são suportadas.
+- Ver `coordination/handoffs/NEI-014.md` e `NEI-HOST-003.md`.
+
 #### `NEI-015` — normalizar expansões e dependências externas
 
 - tratar formas Pikachu e Wolf Link como componentes declarados, com assets,

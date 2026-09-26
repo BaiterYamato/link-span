@@ -880,3 +880,21 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
 - Layout id `d2aece6b`: Unbound, DMR, Mic e demos precisam de rebuild.
 - Commits host `e5a0a4836` e `796023860`.
 
+## UPDATE OOT-COREMODS-001 — NEI-014 e NEI-HOST-003: Anchor no modloader
+
+- Status: review
+- **Host (NEI-HOST-003):**
+  - o item sintético vai no `GIVE_ITEM` pelo nome do registro, e quem recebe entrega pelo receive do mod;
+  - nome desconhecido gera aviso;
+  - serviço `linkspan.oot.anchor` v1: namespaces de save compartilhados em `state.linkspan` do estado do time;
+  - hook `oot.anchor.state`;
+  - estado montado a pedido de outro cliente dispara `oot.save.saving` antes.
+- **NEI (NEI-014):** compartilha `nei.items` e `nei.state` e relê os dois no `oot.anchor.state`.
+- **Em jogo** (`evidence/nei-014`, dois clientes, relay em 127.0.0.1):
+  - aquisição ao vivo de A para B;
+  - resync ao entrar;
+  - estado guardado reaplicado com o save local sem o item;
+  - aviso de item desconhecido.
+- **Layout id `0d86df42`:** Unbound, DMR, Mic e demos precisam de rebuild.
+- **Commits host:** `1d6287b46` e `0275f6179`.
+
