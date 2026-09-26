@@ -941,6 +941,14 @@ Itens de combate e projéteis:
 
 **Aceite:** dano, collider, consumo de magia e interrupções corretos.
 
+**Estado (2026-09-25): review.**
+
+- Rods, Ball and Chain, Demise e os upgrades Razor/Gilded têm dano, magia e collider provados contra inimigos
+  postos pelo instrumento (`evidence/nei-009`, sessões b5, b6 e u3).
+- O patch `0003` corrige o corte para frente dos rods, que o fork nunca disparava.
+- Bomb Arrows é elemento da expansão Sw97 (desligada por padrão) e passa para a NEI-015.
+- Ver `coordination/handoffs/NEI-009.md`.
+
 #### `NEI-010` — port de itens, onda C
 
 Itens de travessia e controle:

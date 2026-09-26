@@ -808,3 +808,21 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
   - atualizar a `RELEASE-UNIFICADA\OOT` com o `soh.exe` novo;
   - push aguardando autorização.
 - Commit host `4f40d1126`.
+
+## UPDATE OOT-COREMODS-001 — NEI-009: onda B com dano provado
+
+- Status: review
+- **Instrumento:** inimigo à frente do Link (Deku Baba, Tektite, Baby Dodongo, Wolfos); vida e magia cheias;
+  nível da Kokiri Sword; vida do alvo no `stats`.
+- **Em jogo** (`evidence/nei-009`):
+  - Fire/Ice/Light Rod com Z: projétil, magia -3 e dano na Deku Baba;
+  - Ball and Chain e Demise matam (Demise gasta 12 de magia);
+  - Razor tira 2 por golpe no Wolfos e Gilded tira 4 (a Kokiri tira 1).
+- **Fork:** os rods reiniciavam o último golpe com 0 (`PLAYER_MWA_FORWARD_SLASH_1H`), e o corte com Z nunca
+  soltava projétil. Corrigido no patch `0003-rod-corte-para-frente.patch`.
+- **Pendências:**
+  - Bomb Arrows é elemento da expansão Sw97 (CVar com default 0, exige arco) e vai para a NEI-015;
+  - modelos Razor/Gilded pedem o `mm.o2r`;
+  - upgrades de adulto não testados.
+- Commit host `c87bc1405`.
+
