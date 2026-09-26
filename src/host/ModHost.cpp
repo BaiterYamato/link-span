@@ -612,6 +612,15 @@ Result<DispatchOutcome> ModHost::DispatchEvent(const std::string& name,
     return mEvents->Dispatch(name, payload);
 }
 
+void ModHost::PumpMenu() noexcept {
+    for (const std::string& id : mLoadOrder) {
+        const auto found = mMods.find(id);
+        if (found != mMods.end() && found->second.binding != nullptr) {
+            found->second.binding->PumpMenu();
+        }
+    }
+}
+
 Result<void> ModHost::UnloadMod(const std::string& id) {
     const std::string modId = id;
     auto it = mMods.find(modId);

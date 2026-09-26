@@ -81,6 +81,9 @@ class ModHost {
 
     Result<DispatchOutcome> DispatchEvent(const std::string& name, EventPayload& payload);
 
+    // Consome input do adaptador de menu e executa callbacks na thread Lua.
+    void PumpMenu() noexcept;
+
     // Destroys the mod's LuaRuntime (releasing all of its resources) and
     // removes it. ErrorCode::InvalidHandle if no such mod is loaded.
     Result<void> UnloadMod(const std::string& id);

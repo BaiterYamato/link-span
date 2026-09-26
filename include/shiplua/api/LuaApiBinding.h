@@ -12,6 +12,7 @@
 #include "shiplua/capability/CapabilityRegistry.h"
 #include "shiplua/events/EventDispatcher.h"
 #include "shiplua/input/HotkeyRegistry.h"
+#include "shiplua/menu/MenuRegistry.h"
 #include "shiplua/runtime/Logger.h"
 #include "shiplua/runtime/LuaRuntime.h"
 #include "shiplua/runtime/Result.h"
@@ -43,6 +44,8 @@ struct LuaApiHostContext {
     // Games whose assets/hosts are available to the supervising Link-Span
     // process. Empty keeps standalone compatibility and means only gameId.
     std::vector<std::string> availableGames;
+    // Adaptador de menu declarativo. Nullable; capability core.menu ausente.
+    std::shared_ptr<MenuRegistry> menu;
 };
 
 // Per-mod authorization and resource policy derived from manifest.toml.
@@ -71,6 +74,7 @@ class LuaApiBinding {
 
     Result<void> Install();
     std::size_t SubscriptionCount() const;
+    void PumpMenu() noexcept;
 
   private:
     struct LuaCallback {
@@ -84,6 +88,12 @@ class LuaApiBinding {
         int registryReference = -2;
         std::size_t consecutiveFailures = 0;
         bool active = true;
+    };
+
+    struct MenuCallback {
+        int registryReference = -2;
+        bool active = true;
+        std::size_t failures = 0;
     };
 
     static LuaApiBinding* FromUpvalue(lua_State* state);
@@ -100,6 +110,7 @@ class LuaApiBinding {
     static int EventsOn(lua_State* state) noexcept;
     static int EventsOff(lua_State* state) noexcept;
     static int HotkeysRegister(lua_State* state) noexcept;
+    static int MenuRegister(lua_State* state) noexcept;
     static int TimerAfter(lua_State* state) noexcept;
     static int TimerEvery(lua_State* state) noexcept;
     static int TimerCancel(lua_State* state) noexcept;
@@ -131,6 +142,7 @@ class LuaApiBinding {
     int RegisterEventFromLua(lua_State* state, const char*& error);
     int RemoveEventFromLua(lua_State* state, const char*& error);
     int RegisterHotkey(lua_State* state, const char*& error);
+    int RegisterMenu(lua_State* state, const char*& error);
     int CapabilityHasFromLua(lua_State* state, const char*& error);
     int CapabilityListFromLua(lua_State* state, const char*& error);
     int CapabilityInfoFromLua(lua_State* state, const char*& error);
@@ -164,6 +176,7 @@ class LuaApiBinding {
     Logger mLogger;
     LuaApiHostContext mHostContext;
     std::shared_ptr<HotkeyRegistry> mHotkeys;
+    std::shared_ptr<MenuRegistry> mMenu;
     std::shared_ptr<CapabilityRegistry> mCapabilities;
     std::shared_ptr<FrameTimerScheduler> mTimers;
     std::shared_ptr<KeyValueStorage> mStorage;
@@ -171,6 +184,11 @@ class LuaApiBinding {
     std::shared_ptr<ActorProvider> mActors;
     LuaApiModPolicy mModPolicy;
     std::map<std::string, std::shared_ptr<HotkeyCallback>> mHotkeyCallbacks;
+    std::map<std::string, MenuPage> mMenuPages;
+    std::map<std::string, std::shared_ptr<MenuCallback>> mMenuCallbacks;
+    std::uint64_t mNextMenuGeneration = 1;
+    // Páginas refeitas no próximo PumpMenu: input aplicado, storage do mod alterado ou página nova.
+    bool mMenuDirty = false;
     std::size_t mModLoadOrder = 0;
     int mModPriority = 50;
     std::size_t mMaxConsecutiveFailures = 3;

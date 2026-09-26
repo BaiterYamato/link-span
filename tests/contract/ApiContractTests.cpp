@@ -15,6 +15,7 @@
 #include "shiplua/storage/KeyValueStorage.h"
 #include "shiplua/timer/FrameTimerScheduler.h"
 #include "shiplua/input/HotkeyRegistry.h"
+#include "shiplua/menu/MenuRegistry.h"
 
 #ifndef SHIPLUA_GENERATED_DIR
 #define SHIPLUA_GENERATED_DIR "generated"
@@ -73,6 +74,15 @@ struct FakeHotkeyRegistry : ShipLua::HotkeyRegistry {
     std::vector<FakeHotkey> registered;
 };
 
+// O OoT anuncia core.menu, e a API exige o adaptador junto; o contrato só precisa que ele exista.
+struct FakeMenuRegistry : ShipLua::MenuRegistry {
+    ShipLua::Result<void> Upsert(ShipLua::MenuPage) override { return ShipLua::Result<void>::ok(); }
+    void RemoveMod(const std::string&) noexcept override {}
+    std::vector<ShipLua::MenuPage> Snapshot() const override { return {}; }
+    void Enqueue(ShipLua::MenuInput) override {}
+    std::vector<ShipLua::MenuInput> DrainInputs(const std::string&) override { return {}; }
+};
+
 ShipLua::Manifest MakeManifest(std::string id) {
     ShipLua::Manifest manifest;
     manifest.id = std::move(id);
@@ -114,6 +124,7 @@ void RunContractOnHost(const std::string& game, const std::string& source) {
     context.worldTravel = [](const ShipLua::WorldDestination&) {
         return ShipLua::Result<void>::ok();
     };
+    if (game == "oot") context.menu = std::make_shared<FakeMenuRegistry>();
     ShipLua::ModHost host(context, ShipLua::Logger{});
     const std::string modId = "contract.api_" + game;
     const auto loaded = host.LoadModFromManifestAndSource(MakeManifest(modId), source);

@@ -140,6 +140,11 @@ target_link_libraries(lua_api_binding_tests PRIVATE shiplua)
 
 add_test(NAME lua_api_binding_tests COMMAND lua_api_binding_tests)
 
+add_executable(menu_api_tests unit/MenuApiTests.cpp)
+target_link_libraries(menu_api_tests PRIVATE shiplua)
+
+add_test(NAME menu_api_tests COMMAND menu_api_tests)
+
 add_executable(key_value_storage_tests unit/KeyValueStorageTests.cpp)
 target_link_libraries(key_value_storage_tests PRIVATE shiplua)
 

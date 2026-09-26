@@ -835,6 +835,18 @@ M.functions = {
     error_mode = "raise",
     errors = { "invalid_argument", "invalid_state", "unsupported" },
   },
+  ["ship.menu.register"] = {
+    version = "0.5.0",
+    stability = "preview",
+    availability = "common",
+    capability = "core.menu",
+    arguments = {
+      { name = "page", type = "any", required = true },
+    },
+    returns = "boolean",
+    error_mode = "raise",
+    errors = { "unsupported", "invalid_argument", "resource_limit", "host_failure" },
+  },
   ["ship.native.has"] = {
     version = "0.5.0",
     stability = "experimental",

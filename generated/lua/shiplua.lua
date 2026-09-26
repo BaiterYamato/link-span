@@ -193,6 +193,7 @@ ship.hooks = ship.hooks or {}
 ship.hotkeys = ship.hotkeys or {}
 ship.hud = ship.hud or {}
 ship.log = ship.log or {}
+ship.menu = ship.menu or {}
 ship.mm = ship.mm or {}
 ship.native = ship.native or {}
 ship.oot = ship.oot or {}
@@ -555,6 +556,11 @@ function ship.hud.draw_ring(cx, cy, radius, thickness, fraction, r, g, b, a) end
 ---@param options? ShipLuaHudIconOptions
 ---@return boolean
 function ship.hud.draw_icon(path, x, y, w, h, options) end
+
+--- API common; estabilidade: preview; desde: 0.5.0; capability: core.menu; erros: unsupported, invalid_argument, resource_limit, host_failure.
+---@param page any
+---@return boolean
+function ship.menu.register(page) end
 
 --- API common; estabilidade: experimental; desde: 0.5.0; capability: comum; erros: invalid_argument.
 ---@param name string
