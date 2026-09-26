@@ -1016,3 +1016,30 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
   - core `6731d60` (COREEXT-010) e `8110748` (MENU-001);
   - host `5c4138b80` (COREEXT-010), `6ba757d7b` (MENU-001) e `48c858c01` (NEI 0.3.3).
 
+## UPDATE OOT-COREMODS-001 — CEL-004A: pontos de extensão do Wind Waker Style no host
+
+- Status: work (marco A concluído; o mod é o marco B em diante)
+- **Host `d61b30877`:**
+  - `ShipOotRenderV3`: opt-out toon por ator, matriz `MTXMODE_NEW`, rotação por eixo, `Mtx` do frame, display list
+    da DLL, dados do frame e filhos de interpolação;
+  - `linkspan.oot.lights` v1: 8 luzes de mod com `LightInfo` fixo e handle com serial;
+  - `oot.light.point_color` v2, com o `LightInfo*` como identidade;
+  - `oot.light.fairy` v1, no fim do `EnElf_Update`.
+  - `z_actor.c` e os overlay-merges do NEI não mudam.
+- **Layout `1fe73b60`**, `soh.exe` `c9c01c6f`. O NEI 0.3.3 foi reempacotado para este host sem mudar código.
+- **Provado em jogo** com a fixture `cel-render-demo` 0.2.0, sozinha e com o NEI:
+  - o losango da DLL sai todo frame sem falha;
+  - a luz própria é reconhecida pelo `point_color`;
+  - uma fada solta passa pelo hook;
+  - no modo 3 o Link sai do toon e a sombra fica;
+  - desligar e religar funcionam, e o fechamento é limpo.
+  - A Navi não foi provada, porque o save da cópia não a tem.
+- **Achado fora do escopo, anterior à CEL-004:** com o NEI, o START na tela de título derruba o jogo (`0xc0000374`).
+  - Reproduzido também no host `7F1094A3` com o NEI antigo; sem mods o START funciona.
+  - Pede tarefa própria.
+- **Pendências:**
+  - marcos B a F (o mod `ww-style`);
+  - revisão Codex do diff do host;
+  - reempacote no layout final;
+  - licença;
+  - push.
