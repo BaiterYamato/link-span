@@ -60,8 +60,35 @@ próprio e não aparecem.
   O host remove no unload do mod, que acontece na thread do jogo.
 - Dois mods no mesmo alvo: o segundo recebe `LIMIT`; não há encadeamento.
 
+## Lote de ativação (COREEXT-010, 2026-09-26)
+
+A MinHook congela as threads do jogo a cada desvio ligado ou desligado, cerca de
+60 ms. Com os 314 desvios do NEI, isso somava ~19 s no boot e ~19 s no
+fechamento. O `NativeEscapeHatch` ganhou dois campos opcionais, `beginBatch` e
+`commitBatch`, e o core abre um lote em dois pontos:
+
+- **init de um provider com escape hatch liberado.** Os desvios instalados no
+  init ativam juntos quando ele retorna. O `install_patch` continua devolvendo
+  o trampolim na hora, mas o desvio só passa a rodar depois do init. Um init que
+  falha, ou lança, remove os seus desvios ainda dentro do lote, e nenhum chega a
+  rodar. Se o commit falhar, a carga falha e o unload remove o que tiver sido
+  aplicado.
+- **unload.** A remoção em ordem inversa vira um lote só, aplicado antes do
+  aviso ao host (`onProviderUnload`) e do `shutdown` da DLL.
+
+Fora desses pontos, `install_patch` e `remove_patch` valem no retorno, como
+antes. Host sem os dois campos mantém o comportamento antigo.
+
+Consequência para o mod: o init não pode depender de um desvio próprio já estar
+ativo. Em troca, some a janela em que o desvio rodava antes de o mod guardar o
+`original` devolvido.
+
 ## Testes
 
 `native_provider_tests` usa um host falso de patches. Ele cobre o fingerprint
 aceito (patch instalado e removido no unload), o fingerprint recusado, mod comum
-e host sem escape hatch, além das recusas do parser.
+e host sem escape hatch, além das recusas do parser. O lote de ativação tem um
+host falso que registra a ordem de begin, install, remove, commit e aviso de
+unload: lote no init, patch depois do init fora do lote, unload num lote só,
+init que falha removendo antes do commit, commit que falha derrubando a carga
+e nenhum lote sem permissão.

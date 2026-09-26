@@ -5,6 +5,7 @@
 #include <cstring>
 #include <exception>
 #include <set>
+#include <utility>
 
 #ifdef _WIN32
 #define NOMINMAX
@@ -17,6 +18,34 @@ namespace ShipLua {
 namespace {
 // Patches do escape hatch por provider. O NEI sobrepõe cada função do host que o fork mudou (~320).
 constexpr size_t kMaxPatchesPerProvider = 1024;
+
+// Lote de ativação do escape hatch (COREEXT-010). A MinHook congela as threads do jogo a cada desvio ligado ou
+// desligado (~60 ms); o lote junta os desvios de um init ou de um unload num congelamento só.
+class EscapeBatch {
+  public:
+    explicit EscapeBatch(NativeEscapeHatch* hatch) noexcept {
+        if (!hatch || !hatch->beginBatch || !hatch->commitBatch) return;
+        try {
+            hatch->beginBatch();
+            mHatch = hatch;
+        } catch (...) { /* Sem lote: cada desvio vale no retorno. */ }
+    }
+    ~EscapeBatch() { Commit(); }
+    EscapeBatch(const EscapeBatch&) = delete;
+    EscapeBatch& operator=(const EscapeBatch&) = delete;
+    ShipNativeStatus Commit() noexcept {
+        auto* hatch = std::exchange(mHatch, nullptr);
+        if (!hatch) return SHIP_NATIVE_OK;
+        try {
+            return hatch->commitBatch();
+        } catch (...) {
+            return SHIP_NATIVE_FAILURE;
+        }
+    }
+
+  private:
+    NativeEscapeHatch* mHatch = nullptr;
+};
 
 bool ValidPath(const std::string& text) {
     if (text.empty() || text.size() > 1024 || text.front() == '/' ||
@@ -172,14 +201,29 @@ Result<std::unique_ptr<NativeProvider>> NativeProvider::Load(
             &GetHostFingerprint, &ResolveSymbol, &InstallPatch, &RemovePatch};
         // Guardar shutdown ANTES de init: rollback inclui inicialização parcial.
         instance->mShutdown = descriptor->shutdown;
-        ShipNativeStatus result;
+        ShipNativeStatus result = SHIP_NATIVE_FAILURE;
+        ShipNativeStatus activated = SHIP_NATIVE_OK;
         {
-            const NativeActivityScope activity(instance->mOwnerId.c_str(), "init", nullptr);
-            result = descriptor->init(&instance->mRuntime, &instance->mInstance);
+            // Os desvios instalados no init ativam juntos quando ele retorna. Init que falha (ou lança) tira os
+            // seus antes de fechar o lote, e nenhum chega a rodar.
+            EscapeBatch batch(instance->EscapeHatchAllowed() ? instance->mEscapeHatch.get() : nullptr);
+            try {
+                const NativeActivityScope activity(instance->mOwnerId.c_str(), "init", nullptr);
+                result = descriptor->init(&instance->mRuntime, &instance->mInstance);
+            } catch (...) {
+                instance->mInitializing = false;
+                instance->RemovePatches();
+                throw;
+            }
+            instance->mInitializing = false;
+            if (result != SHIP_NATIVE_OK || instance->mRegistrationFailed) instance->RemovePatches();
+            activated = batch.Commit();
         }
-        instance->mInitializing = false;
         if (result != SHIP_NATIVE_OK || instance->mRegistrationFailed) {
             return R::err(ErrorCode::HostFailure, "native provider initialization/registration failed");
+        }
+        if (activated != SHIP_NATIVE_OK) {
+            return R::err(ErrorCode::HostFailure, "native provider patches could not be activated");
         }
         return R::ok(std::move(instance));
     } catch (const std::exception& exception) {
@@ -194,13 +238,12 @@ NativeProvider::~NativeProvider() {
     mFunctions.clear();
     // Antes do shutdown: nenhum callback pode chegar a uma instância desmontando.
     if (mHooks) mHooks->RemoveOwner(mOwnerId);
-    // Patches saem na ordem inversa, também antes do shutdown.
-    if (mEscapeHatch && mEscapeHatch->remove) {
-        for (auto patch = mPatches.rbegin(); patch != mPatches.rend(); ++patch) {
-            try { mEscapeHatch->remove(*patch); } catch (...) { /* Seguir removendo os demais. */ }
-        }
+    // Patches saem na ordem inversa, também antes do shutdown, num lote só: o commit desliga todos antes do
+    // aviso ao host e do shutdown da DLL.
+    {
+        EscapeBatch batch(mPatches.empty() ? nullptr : mEscapeHatch.get());
+        RemovePatches();
     }
-    mPatches.clear();
     if (mOnProviderUnload) {
         try { mOnProviderUnload(mOwnerId); } catch (...) { /* O unload continua seguro. */ }
     }
@@ -216,6 +259,15 @@ NativeProvider::~NativeProvider() {
         dlclose(mLibrary);
 #endif
     }
+}
+
+void NativeProvider::RemovePatches() noexcept {
+    if (mEscapeHatch && mEscapeHatch->remove) {
+        for (auto patch = mPatches.rbegin(); patch != mPatches.rend(); ++patch) {
+            try { mEscapeHatch->remove(*patch); } catch (...) { /* Seguir removendo os demais. */ }
+        }
+    }
+    mPatches.clear();
 }
 
 ShipNativeStatus SHIP_NATIVE_CALL NativeProvider::Register(

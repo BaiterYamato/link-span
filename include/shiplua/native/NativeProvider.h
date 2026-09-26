@@ -33,6 +33,11 @@ struct NativeEscapeHatch {
     std::function<ShipNativeStatus(const char* name, uintptr_t* address)> resolve;
     std::function<ShipNativeStatus(uintptr_t target, void* detour, void** original, uint64_t* patch)> install;
     std::function<ShipNativeStatus(uint64_t patch)> remove;
+    // Opcional (COREEXT-010): lote de ativação. O core abre um lote em volta do init de um provider e da
+    // remoção no unload; dentro dele o host pode só enfileirar install/remove, e commitBatch aplica tudo de
+    // uma vez e devolve o primeiro erro. Ausentes = cada install/remove vale no retorno.
+    std::function<void()> beginBatch;
+    std::function<ShipNativeStatus()> commitBatch;
 };
 
 struct NativeProviderPolicy {
@@ -96,6 +101,7 @@ class NativeProvider {
     static ShipNativeStatus SHIP_NATIVE_CALL InstallPatch(void*, uintptr_t, void*, void**, uint64_t*) noexcept;
     static ShipNativeStatus SHIP_NATIVE_CALL RemovePatch(void*, uint64_t) noexcept;
     bool EscapeHatchAllowed() noexcept;
+    void RemovePatches() noexcept;
     void* mLibrary = nullptr;
     void* mInstance = nullptr;
     void (SHIP_NATIVE_CALL *mShutdown)(void*) = nullptr;

@@ -117,6 +117,9 @@ if (runtime->resolve_symbol(runtime->context, "z_player.c!Player_Action_Roll", &
 - Fora da lista de fingerprints, ou em mod comum, as chamadas retornam `UNSUPPORTED`.
 - Até 1024 patches por provider; além disso `install_patch` retorna `LIMIT`.
 - Os patches saem sozinhos no unload, antes do `shutdown`.
+- No host OoT, os desvios instalados no init só passam a rodar quando o init
+  retorna, todos juntos; o init não pode depender deles. Depois do init, cada
+  `install_patch` e `remove_patch` vale no retorno.
 - Recompile e republique o mod a cada executável novo. Detalhes em
   `rfcs/0023-native-escape-hatch.md`.
 

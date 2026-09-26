@@ -255,6 +255,66 @@ int main(int argc, char** argv) {
                     assert(r=='fp=2:0: res=2 ins=2 orig=0', r)
                 )lua");
             }
+            {
+                // COREEXT-010: lote de ativação em volta do init e do unload; fora dele, cada desvio vale na
+                // hora. Minúscula = dentro do lote.
+                std::string log;
+                int depth = 0;
+                bool failInit = false;
+                bool failCommit = false;
+                auto batched = std::make_shared<NativeEscapeHatch>(*hatch);
+                batched->resolve = [&failInit](const char* name, uintptr_t* address) -> ShipNativeStatus {
+                    const std::string text(name);
+                    if (text != "Target" && !(failInit && text == "FailAfterPatch")) return SHIP_NATIVE_UNSUPPORTED;
+                    *address = 0x1000;
+                    return SHIP_NATIVE_OK;
+                };
+                batched->install = [&](uintptr_t target, void*, void** original, uint64_t* id) -> ShipNativeStatus {
+                    if (target != 0x1000) return SHIP_NATIVE_INVALID_ARGUMENT;
+                    log += depth ? 'i' : 'I';
+                    *original = reinterpret_cast<void*>(target);
+                    *id = patches.next++;
+                    return SHIP_NATIVE_OK;
+                };
+                batched->remove = [&](uint64_t) -> ShipNativeStatus {
+                    log += depth ? 'r' : 'R';
+                    return SHIP_NATIVE_OK;
+                };
+                batched->beginBatch = [&] {
+                    ++depth;
+                    log += '[';
+                };
+                batched->commitBatch = [&]() -> ShipNativeStatus {
+                    --depth;
+                    log += ']';
+                    return failCommit ? SHIP_NATIVE_FAILURE : SHIP_NATIVE_OK;
+                };
+                auto batchPolicy = policy;
+                batchPolicy.escapeHatch = batched;
+                batchPolicy.onProviderUnload = [&](std::string_view) { log += 'u'; };
+                ModHost host(context, {}, batchPolicy);
+                Check(host.LoadModFromDirectory((escapeRoot / "allowed").string()).isOk() && log == "[i]",
+                      "init patches activate in one batch");
+                Run(host, "test.escape.allowed", R"lua(
+                    local r=require('ship').native.call('patch_now','')
+                    assert(r=='0', r)
+                )lua");
+                Check(log == "[i]I", "patch after init is not batched");
+                Check(host.UnloadMod("test.escape.allowed").isOk() && log == "[i]I[rr]u",
+                      "unload removes every patch in one batch before notifying the host");
+                log.clear();
+                failInit = true;
+                Check(!host.LoadModFromDirectory((escapeRoot / "allowed").string()).isOk() && log == "[ir]u",
+                      "failed init removes its patches before the batch commits");
+                log.clear();
+                Check(host.LoadModFromDirectory((escapeRoot / "denied").string()).isOk() && log.empty(),
+                      "no batch without permission");
+                log.clear();
+                failInit = false;
+                failCommit = true;
+                Check(!host.LoadModFromDirectory((escapeRoot / "allowed").string()).isOk() && log == "[i][r]u",
+                      "failed activation fails the load and removes the patch in another batch");
+            }
         }
         {
             // Proteção de boot e atribuição de crash (COREEXT-009).
