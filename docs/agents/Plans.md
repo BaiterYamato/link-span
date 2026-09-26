@@ -920,3 +920,25 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
   - release do usuário.
 - **Commit host:** `8e739cbdd`.
 
+## UPDATE OOT-COREMODS-001 — rebuild para 0d86df42 e release do usuário
+
+- Status: review
+- **Rebuild para `0d86df42`:**
+  - Unbound 0.4.0, DMR 0.2.9, Mic 0.1.4;
+  - Scene Demo 0.1.1, Field Demo 0.1.0 e E-fixtures (só local);
+  - os demos nativos.
+  A demo das fábricas ficou de fora (obsoleta com o framework 0.4.0).
+- **Overlay** `...-layout-0d86df42-DMR-0.2.9-Mic-0.1.4-NEI-0.3.0-Win64-overlay.zip`: instalação limpa com
+  `-ResourceLogging` deu PROVA OK com 3 mods e com 14 (`evidence/release-0d86df42`).
+- **Release do usuário** (`RELEASE-UNIFICADA\OOT`):
+  - instalados overlay, DMR, Mic, NEI e os `nei-assets` locais;
+  - backup do estado anterior em `backup-antes-0d86df42-20260926`;
+  - boot check OK (3 mods, NEI com 24 itens, saída 0).
+- **Risco novo:** boot e fechamento ~19 s mais lentos com o NEI, desde a NEI-HOST-001. Os 314 desvios são
+  instalados e removidos um a um, e a MinHook congela as threads a cada um. Detalhes e correção proposta no
+  handoff NEI-016.
+- **Pendências:**
+  - licença do Link-Span;
+  - decisão sobre o escape hatch em lote;
+  - push.
+
