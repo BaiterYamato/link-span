@@ -963,6 +963,18 @@ Itens de travessia e controle:
 
 **Aceite:** câmera, raycast, alvo, movimento e cleanup por item aprovados.
 
+**Estado (2026-09-25): review.**
+
+- Os oito itens entram em ação pelo C com efeito visível (`evidence/nei-010`).
+- Provados em jogo:
+  - troca de lugar do Switch Hook;
+  - possessão do Armos pelo Dominion Rod;
+  - Spinner matando;
+  - Deku Leaf e Mogma gastando magia;
+  - cleanup sem ator vivo.
+- Pendentes, porque pedem cena própria: planar, pendurar, escalar e o voo guiado do Beetle.
+- Ver `coordination/handoffs/NEI-010.md`.
+
 #### `NEI-011` — port de itens, onda D
 
 Sistemas globais e experimentais:

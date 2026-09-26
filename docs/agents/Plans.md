@@ -826,3 +826,20 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
   - upgrades de adulto não testados.
 - Commit host `c87bc1405`.
 
+## UPDATE OOT-COREMODS-001 — NEI-010: onda C em jogo
+
+- Status: review
+- **Em jogo** (`evidence/nei-010`):
+  - Deku Leaf: rajada, magia -3;
+  - Whip: chicotada;
+  - Spinner: mata a Deku Baba;
+  - Switch Hook: troca de lugar, câmera muda;
+  - Gust Jar: suga;
+  - Beetle: voa e volta;
+  - Dominion Rod: possui o Armos, que imita o andar do Link;
+  - Mogma Mitts: liga, magia -5.
+- **Cleanup:** `vivos=0` depois de cada item.
+- **Instrumento:** distância do alvo no `stats`, estátua de Armos no `test_enemy`.
+- **Pendências:** planar, pendurar, escalar, voo guiado e primeira pessoa (cena própria).
+- Commit host `97e3e1372`.
+
