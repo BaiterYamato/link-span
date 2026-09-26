@@ -1099,6 +1099,19 @@ local sem impedir o jogo ou os demais itens.
 de SM64 e componentes legalmente não redistribuíveis são descobertos localmente
 e não fazem parte do pacote.
 
+**Estado (2026-09-26): review.**
+
+- `LinkSpan-NEI-0.3.0-layout-<id>.shipmod` traz:
+  - DLL, Lua e header;
+  - README com instalação e add-ons;
+  - `components.json`, licenças e o fonte do exemplo.
+  O relatório de hashes fica ao lado. Os instrumentos de teste saíram.
+- O overlay com o `.shipmod` passou duas vezes na prova de instalação limpa (`-ResourceLogging`):
+  - sem assets, 2 itens;
+  - com `nei-assets` locais, 24 itens.
+- Os assets e a ROM de SM64 ficam fora do pacote. Falta decidir a licença do Link-Span.
+- Ver `coordination/handoffs/NEI-016.md`.
+
 ---
 
 ## 11A. Migração do Wind Waker Style (cel shading)

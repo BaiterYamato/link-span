@@ -898,3 +898,25 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
 - **Layout id `0d86df42`:** Unbound, DMR, Mic e demos precisam de rebuild.
 - **Commits host:** `1d6287b46` e `0275f6179`.
 
+## UPDATE OOT-COREMODS-001 — NEI-016: .shipmod único do NEI
+
+- Status: review
+- **Pacote.** `tools/package-nei-core.ps1` gera `LinkSpan-NEI-0.3.0-layout-0d86df42.shipmod`, com:
+  - DLL, Lua e `nei_items.h`;
+  - README de instalação e de add-ons;
+  - `components.json` com os componentes externos;
+  - `LICENSES.md` e o fonte do exemplo Heart Seeds.
+  Ao lado fica o `.contents.json` com os hashes.
+- **Instrumentos de teste retirados:**
+  - funções nativas e hotkeys;
+  - `NeiTest_*` e `NeiProbe_*`;
+  - colunas extras do pipeline.
+  O log só registra mudanças.
+- **Instalação limpa** (base 9.2.3 oficial + overlay `0d86df42` + o `.shipmod`, `-ResourceLogging`): PROVA OK
+  sem assets (2 itens) e com `nei-assets` locais (24 itens).
+- **Pendências:**
+  - licença do Link-Span (não há arquivo LICENSE);
+  - rebuild de Unbound, DMR, Mic e demos;
+  - release do usuário.
+- **Commit host:** `8e739cbdd`.
+
