@@ -197,6 +197,33 @@ plano §10.2), todas com peça no host.
 O restante é documentação (`SPEC.md`, `registries.md`, `materials.md`, `prelude-handoff.md`, `testing.md`) e o exemplo
 `lake-hylia-slow-water`.
 
+## Delta de 2026-09-26 (`97e8893`, Unbound 0.8)
+
+De `0c31899007` até o tag `9.2.3-unbound0.8` (`97e889391a`, 2026-09-21) são 83 commits e 91 arquivos. Uns 60 são o
+port para navegador (WASM: `soh/wasm/`, `EmbedderBridge`, CMake do Emscripten, pacing em `graph.c`/`mixer.c`, base
+instalada sozinha), mesclado na branch; os bumps da libultraship (`e01b3509`→`20fd6d48`) e do ZAPDTR
+(`ee3397a3`→`dde8731f`) também são quase só WASM. Nada disso se aplica. O formato continua na versão 2: mod antigo
+continua carregando e não precisa de novo export. Changelog para exportadores em `unbound-docs/prelude-handoff.md`,
+entradas de 2026-09-19 e 2026-09-20. Tarefas UNBOUND-016 (framework) e UNBOUND-017 (host), plano §10.2.
+
+| Mudança | Host | Framework |
+|---|---|---|
+| **Número de cena e entrada.** O número depende dos mods montados; `sceneId` e `entrances.*.index` passam a ser ignorados com aviso (SPEC §7). O teto de grupo da referência é `0x7FF4`. | `OotNativeScenes.cpp` aplica o teto `0x7FF4` ao grupo, automático ou pedido; o `32764` de `oot_scenes.h` fica, porque entra no layout id | `scene_registry.cpp` ignora os dois campos com nota; `unbound_core.cpp` pede sempre `AUTO` |
+| **Saídas.** Número entre 1556 e `0x7FF8` recusa o documento; os nomes `ENTR_RETURN_*` (`0x7FF9`–`0x7FFF`) passam a valer (SPEC §4.2). | nenhuma | `transcode.cpp` (`ResolveExit`) |
+| **`sound` com faixa.** `seq` 0–109 ou 127, `natureAmbience` 0–19 (19 = nenhum); fora disso vira "nenhum" com aviso. O 255 dos exports do Prelude derrubava a thread de áudio no primeiro pôr do sol. | `Audio_PlayNatureAmbienceSequence` ignora id ≥ 20 (`code_800EC960.c`) | `transcode.cpp` limita e anota |
+| **Save por nome.** Entrada, cena salva e Farore's Wind gravados pelo nome; entrada que sumiu leva ao spawn padrão, e Farore's Wind que sumiu é apagado (`set = 0`). | bloco `linkspan.entrances` em `OotNativeSaveGame.cpp`, consultas de nome em `OotNativeScenes.cpp` | nenhuma |
+| **`SetMeshFactory`.** Reserva `polyNum` (o `polygon0.num` de uma malha tipo 1 é lixo da union) e não sobrescreve `single.unk_0C` quando `format == 1`. | `SetMeshFactory.cpp` | nenhuma |
+| **Grave Hole Jumps.** Remenda a cena que o jogo carrega, não o arquivo vanilla. | `GraveHoleJumps.cpp` (override do serviço de cenas; confere tipo do recurso, comandos nulos e colisão trocada por mod) | nenhuma |
+| **Correções gerais do SoH.** Combobox com valor fora da lista derrubava o jogo ao abrir o menu; `global.sav` ilegível (ou com campo de tipo errado) derrubava o boot, e a reconstrução pulava os slots até o próximo boot. | `UIWidgets.hpp`, `SaveManager.cpp` | nenhuma |
+
+Ficam fora:
+
+- **Ferramentas de dev** (`warp`/`entrance` por nome no console, warp point com `entranceName`): opcionais; o warp
+  point grava o número da entrada na config e se perde numa cena de mod quando os mods mudam.
+- **Save de slot ilegível:** o host 78dc já trata.
+- **Poda do mod menu, backends de áudio, CRCs do extrator, ZAPDTR:** efeito pequeno ou coisa do upstream.
+- **About do fork:** mexe em `variables.h`, que entra no layout id.
+
 ## Todos os arquivos do diff
 
 | Arquivo | Categoria | Grupos | Linhas | Ensaio de merge |

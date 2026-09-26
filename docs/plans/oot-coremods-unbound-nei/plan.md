@@ -12,7 +12,7 @@
 | Formato distribuído | `.shipmod`, contêiner ZIP inspecionável |
 | Coremods-alvo | SoH: Unbound 0.6 e Not Enough Items; mod Wind Waker Style |
 | Majora's Mask | Adiado até o gate final de OoT |
-| Última atualização | 2026-09-19 |
+| Última atualização | 2026-09-26 |
 
 Este plano substitui qualquer suposição de que as duas modificações possam ser
 convertidas apenas copiando seus fontes para um ZIP. Ele define a infraestrutura
@@ -36,6 +36,8 @@ Referências congeladas para a análise inicial:
 - Estrutura NEI: [soh/mods/items/STRUCTURE.md](https://github.com/skijer/Shipwright/blob/Not-Enough-Items/soh/mods/items/STRUCTURE.md).
 - Unbound depois do snapshot: branch `unbound` em `0c31899007` (2026-09-19), 7 commits além de `fd236b9`
   (Epona em cena customizada, rolagem fracionária, debug warp); tarefas `UNBOUND-013` a `015`.
+- Unbound 0.8: [release 9.2.3-unbound0.8](https://github.com/roborich/Shipwright/releases/tag/9.2.3-unbound0.8),
+  commit `97e889391a2a7f7b1b074711c5416d7cefb17200` (2026-09-21); tarefas `UNBOUND-016` e `017`.
 - Wind Waker Style: [branch wind-waker-style-cel-shading](https://github.com/roborich/Shipwright/tree/wind-waker-style-cel-shading),
   commit `cbcd3e719d` (2026-09-19); trilha `CEL-001` a `CEL-005` (§11A).
 
@@ -659,6 +661,38 @@ inteiro; cenas sem os campos rolam como antes.
 - a seleção lembrada continua visível quando a lista muda de tamanho.
 
 **Aceite:** as cenas do registro aparecem no debug warp e levam à entrada `main`.
+
+As tarefas 016 e 017 cobrem o Unbound 0.8 (`0c31899007..97e8893`, registrado em 2026-09-26; [inventário](inventory-unbound-001.md),
+"Delta de 2026-09-26"). Dos 83 commits, uns 60 são do port para navegador e não se aplicam. O formato continua na
+versão 2. Nenhuma das duas muda header do layout id: a 017 recompila só `.cpp`/`.c` do host, e o id fica `0d86df42`.
+
+#### `UNBOUND-016` — formato do Unbound 0.8 no framework
+
+- `sceneId` e `entrances.*.index` passam a ser ignorados com nota, e o jogo numera cena e entrada na ordem do
+  registro;
+- saída numérica entre `ENTR_MAX` (1556) e `0x7FF8` recusa o documento: entrada de mod só pelo nome;
+- nomes `ENTR_RETURN_*` (`0x7FF9`–`0x7FFF`) aceitos;
+- `sound.seq` fora de 0–109/127 e `sound.natureAmbience` fora de 0–19 viram "nenhum" com nota; `song` com `seq` 127
+  ganha nota;
+- framework 0.5.0. Passam a aceitá-lo a Scene Demo 0.1.2 (`>=0.2.0 <0.6.0`), a Field Demo 0.1.1 (`>=0.3.0 <0.6.0`)
+  e as E-fixtures 0.1.1 (`>=0.4.0 <0.6.0`).
+
+**Aceite:** testes do framework cobrindo cada regra; nenhuma cena vanilla da base recusada nem com nota de som.
+
+#### `UNBOUND-017` — rodada de host do Unbound 0.8
+
+- save grava pelo nome a cena salva, a entrada e os dois pontos do Farore's Wind (bloco `linkspan.entrances`);
+  entrada que sumiu leva ao spawn padrão, e Farore's Wind que sumiu é apagado;
+- `Audio_PlayNatureAmbienceSequence` ignora id fora da tabela;
+- `SetMeshFactory` reserva pelo número de polígonos e não sobrescreve `single.unk_0C`;
+- Grave Hole Jumps remenda a cena que o jogo carrega (override da base), com trava para colisão trocada por mod;
+- correções gerais do mesmo delta: combobox com valor fora da lista e `global.sav` ilegível no boot;
+- registro de cenas: o último grupo de entradas começa em `0x7FF4`, antes das entradas de retorno dinâmico. O
+  `oot_scenes.h` segue com 32764, porque entra no layout id;
+- NEI 0.3.1, escape demo e overlay reempacotados para o `soh.exe` novo.
+
+**Aceite:** save numa cena de mod volta à mesma cena depois de mudar a ordem dos mods, e cai no spawn padrão sem o
+mod; `global.sav` ilegível não derruba o boot nem esconde os slots; layout id inalterado.
 
 ### 10.3 Matriz pública de limites do Prelude
 

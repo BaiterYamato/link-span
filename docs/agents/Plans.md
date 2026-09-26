@@ -942,3 +942,47 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
   - decisão sobre o escape hatch em lote;
   - push.
 
+## UPDATE OOT-COREMODS-001 — UNBOUND-016 e UNBOUND-017: Unbound 0.8
+
+- Status: review
+- **Referência:** tag `9.2.3-unbound0.8` (`97e8893`). Dos 83 commits sobre o `0c31899` do port, uns 60 são do port
+  para navegador. O formato continua na versão 2.
+- **Framework 0.5.0 (UNBOUND-016):**
+  - `sceneId` e `entrances.*.index` são ignorados com nota; o jogo numera cenas e entradas na ordem de chave;
+  - saída numérica entre 1556 e `0x7FF8` recusa o documento (entrada de mod só pelo nome); `ENTR_RETURN_*` vale;
+  - `sound` fora da faixa vira "nenhum" (127/19) com nota;
+  - Scene Demo 0.1.2, Field Demo 0.1.1 e E-fixtures 0.1.1 (só local) aceitam `<0.6.0`;
+  - `ctest` 3/3.
+- **Host (UNBOUND-017):**
+  - save por nome no bloco `linkspan.entrances`: entrada, cena salva de mod e os dois pontos do Farore's Wind;
+    mod ausente leva ao spawn padrão e apaga o FW;
+  - ambiência fora da tabela ignorada; `SetMeshFactory` pelo número de polígonos;
+  - Grave Hole Jumps na cena que o jogo carrega, conferindo tipo, comandos nulos e colisão;
+  - combobox fora da lista e `global.sav` ilegível ou com tipo errado não derrubam o boot;
+  - último grupo de entradas em `0x7FF4`, antes das entradas de retorno dinâmico.
+- **Revisão independente** do Codex (`gpt-5.6-sol`, esforço alto) nas duas tarefas. Corrigido o que era real:
+  - Grave Hole Jumps com comando nulo ou recurso de outro tipo;
+  - campo de tipo errado no `global.sav`;
+  - teto do grupo;
+  - testes de limite.
+  O resto ficou como risco documentado.
+- **Host final:** `soh.exe` `9DDBC766…`, layout `0d86df42` mantido. Testes nativos passaram.
+- **Provas em jogo** (`evidence/unbound-017`):
+  - o save em `lab_b` volta em `lab_b` com a ordem dos mods mudada (`0x84` → `0x85`);
+  - mod ausente cai na casa do Link com aviso;
+  - `global.sav` truncado ou com tipo errado é reconstruído, e o slot continua visível;
+  - NEI 0.3.1 com 314/314 desvios.
+- **Overlay** `...-DMR-0.2.9-Mic-0.1.4-NEI-0.3.1-Win64-overlay.zip` (`D496F912`): instalação limpa com `-ResourceLogging`, 3 mods, PROVA OK.
+- **Riscos:**
+  - NEI e escape demo juntos: o NEI perde `Interface_Draw`;
+  - o `oot_scenes.h` ainda anuncia 32764, e o limite novo fica para o próximo bump de layout;
+  - o descarte do Farore's Wind está coberto pelo código, sem prova em jogo;
+  - as 12 gravações no load depois de `reset` com Autosave são do check tracker do SoH (antigas).
+- **Pendências:**
+  - release do usuário, só a pedido (o NEI 0.3.0 de lá não casa com o host novo);
+  - escape hatch em lote;
+  - warp point por nome;
+  - licença;
+  - push.
+- **Commits host:** `e77f09d17` (UNBOUND-016) e `6fa3f2a2a` (UNBOUND-017).
+

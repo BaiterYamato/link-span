@@ -1,0 +1,34 @@
+# UNBOUND-017
+
+- Status: review
+- Agent: Claude (Opus 5.5)
+- Platform: Windows
+- Branch: agent/OOT-UPSTREAM-001-78dc6d970-integration
+- Started: 2026-09-26T12:00:00Z
+- Depends on: UNBOUND-016
+- Files:
+  - soh/soh/native/OotNativeScenes.cpp
+  - soh/soh/native/OotNativeSaveGame.cpp
+  - soh/native-sdk/tests/SceneRegistryTests.cpp
+  - soh/src/code/code_800EC960.c
+  - soh/soh/resource/importer/scenecommand/SetMeshFactory.cpp
+  - soh/soh/Enhancements/Restorations/GraveHoleJumps.cpp
+  - soh/soh/SohGui/UIWidgets.hpp
+  - soh/soh/SaveManager.cpp
+  - tools/package-nei-core.ps1
+- Goal:
+  - Levar ao host a parte do Unbound 0.8 que não cabe no framework:
+    - o save grava pelo nome a entrada, a cena salva e os dois pontos do Farore's Wind;
+    - trava no motor de áudio para ambiência fora da tabela;
+    - `SetMeshFactory` reserva pelo número de polígonos e não sobrescreve `single.unk_0C`;
+    - Grave Hole Jumps usa a cena que o jogo carrega.
+  - Duas correções gerais que vieram no mesmo delta:
+    - combobox com valor fora da lista;
+    - `global.sav` ilegível no boot.
+  - Registro de cenas: o último grupo de entradas começa em `0x7FF4`; grupos sobre `0x7FF9`–`0x7FFF` são recusados.
+  - Nenhum header do layout id muda: o id fica `0d86df42`.
+  - NEI e escape demo são reempacotados para o `soh.exe` novo, e sai um overlay novo.
+- Overlap:
+  - `OotNativeScenes.cpp` e `OotNativeSaveGame.cpp` foram tocados pelas UNBOUND-013/015 e pelas NEI-HOST-002/003
+    (mesmo agente).
+  - `tools/package-nei-core.ps1` vem das NEI-007/016 (mesmo agente): aqui só a versão 0.3.1.
