@@ -1033,6 +1033,15 @@ sobrescrever por cópia esse arquivo o desliga, de modo que o próximo save daqu
 
 **Aceite:** seed de teste concede e persiste itens NEI sem corromper inventário.
 
+**Estado (2026-09-26): review.**
+
+- O randomizer ficou no modloader (pedido do usuário): a NEI-HOST-002 dá ao host o serviço
+  `linkspan.oot.randomizer` e a opção de seed "Link-Span Mod Items". O NEI só oferece os itens dele.
+- Seed com 23 itens NEI no spoiler, pelo nome do registro. Baú de randomizer entrega a Roc's Feather, e ela
+  persiste depois de salvar e recarregar. Sem o mod, a check dá uma rupia azul.
+- Itens sem peso de lógica; o nome em loja e dica é "No Hint".
+- Ver `coordination/handoffs/NEI-013.md` e `NEI-HOST-002.md`.
+
 #### `NEI-014` — Anchor
 
 - adapter opcional;

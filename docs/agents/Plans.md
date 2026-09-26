@@ -861,3 +861,22 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
 - **Guarda de atores:** ator recriado no mesmo endereço sai da tabela.
 - Commit host `9a3ad53cb`.
 
+## UPDATE OOT-COREMODS-001 — NEI-013 e NEI-HOST-002: randomizer no modloader
+
+- Status: review
+- **Host (NEI-HOST-002)**, pelo pedido do usuário de manter o randomizer no modloader:
+  - serviço `linkspan.oot.randomizer` v1;
+  - opção de seed "Link-Span Mod Items" e faixa `RG_LINKSPAN_ITEM_0..63`;
+  - nome do registro no spoiler e bloco `linkspan.randomizer` no save;
+  - entrega pelo get-item sintético, que agora dispara o `OnItemReceive` (a fila do randomizer entregava de
+    novo sem isso).
+- **NEI (NEI-013):** oferece 23 itens "core"; ficam de fora as expansões e os adiados do fork.
+  `Registry::ArmGetItem` grava o get-item sem entregar.
+- **Em jogo** (`evidence/nei-013`):
+  - seed com os 23 itens;
+  - baú da casa do Mido entrega a Roc's Feather;
+  - persiste depois de salvar e recarregar;
+  - sem o mod, a check dá uma rupia azul.
+- Layout id `d2aece6b`: Unbound, DMR, Mic e demos precisam de rebuild.
+- Commits host `e5a0a4836` e `796023860`.
+
