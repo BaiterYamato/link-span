@@ -989,6 +989,16 @@ Sistemas globais e experimentais:
 **Aceite:** todos os itens catalogados em `NEI-001` estão implementados ou
 marcados explicitamente como desativados com motivo verificável.
 
+**Estado (2026-09-25): review.**
+
+- Os 62 itens do catálogo têm estado e motivo no handoff: ativos provados em jogo, parciais, ou desativados com o
+  arquivo que falta na DLL. Desativados: máscaras MM (página 3, C++ fora da DLL), garrafas MM, Net, Bottomless
+  Bottle e as expansões, que vão para a NEI-015.
+- Time Gate, Zonai, Minish Cap, Hylia's Grace e Sheikah Slate provados (`evidence/nei-011`).
+- O Time Gate derrubava o jogo: o fork monta textos por hook C++. A DLL agora os grava pelo `linkspan.oot.text`
+  antes de abrir a caixa.
+- Ver `coordination/handoffs/NEI-011.md`.
+
 #### `NEI-012` — save e migração
 
 - bloco NEI versionado por slot;

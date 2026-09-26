@@ -843,3 +843,21 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
 - **Pendências:** planar, pendurar, escalar, voo guiado e primeira pessoa (cena própria).
 - Commit host `97e3e1372`.
 
+## UPDATE OOT-COREMODS-001 — NEI-011: onda D e catálogo completo
+
+- Status: review
+- **Crash corrigido:** o Time Gate abria o texto `0x9216`, que o fork monta por hook C++ fora da DLL. As caixas
+  do fork passam por `resource_guard.c`, e o `text.cpp` grava os textos (Time Gate, Lantern por cor, Pictobox,
+  trade MM) pelo `linkspan.oot.text`.
+- **Em jogo** (`evidence/nei-011`):
+  - Time Gate: pergunta, "No" não viaja;
+  - Zonai: para o tempo, magia -13;
+  - Minish Cap: encolhe;
+  - Hylia's Grace: fada, magia -24;
+  - Sheikah Slate: runa fere.
+- **Parciais:** Lantern, Elemental Wand, Phantom Hourglass, Rod of Seasons.
+- **Catálogo:** os 62 itens com estado e motivo no handoff. Desativados (NEI-015): máscaras e formas MM, garrafas
+  MM e expansões.
+- **Guarda de atores:** ator recriado no mesmo endereço sai da tabela.
+- Commit host `9a3ad53cb`.
+
