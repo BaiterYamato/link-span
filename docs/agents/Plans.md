@@ -987,3 +987,32 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
   - push.
 - **Commits host:** `e77f09d17` (UNBOUND-016) e `6fa3f2a2a` (UNBOUND-017).
 
+## UPDATE OOT-COREMODS-001 — COREEXT-010 escape hatch em lote, MENU-001 menu declarativo e NEI 0.3.3
+
+- Status: review
+- **COREEXT-010:** o core abre um lote de desvios em volta do init e do unload de um provider com escape hatch; o
+  host OoT aplica a fila da MinHook num `MH_ApplyQueued`. NEI com 319 desvios em 59 ms no boot e 67 ms no
+  fechamento (antes ~19 s e ~20 s); a prova fecha pela janela.
+  - A RFC 0023 ganhou a seção "Lote de ativação".
+  - O layout troca para o intermediário `07cb0af3`, levando as sobras: limite `0x7FF4` no `oot_scenes.h` e
+    comentário de threads no `oot_resources.h`.
+- **MENU-001 (W-1):** `ship.menu.register`, API 0.5.0 preview com capability `core.menu` (RFC 0025).
+  - Widgets com valor só no `ship.storage`; o input do menu é aplicado no pump da thread do jogo.
+  - Seção `Mods > Installed Mods` no SoH.
+  - `shiplua_open_file` recusa slot vazio.
+  - Provado em jogo: registro, predicados, sliders, choice, callback desligado após 3 falhas, reset, persistência
+    depois de reiniciar e nenhuma chave no `shipofharkinian.json`. Layout inalterado.
+- **NEI 0.3.3:** o 0.3.2 derrubava o fechamento com o host fora do `host_fingerprints`, porque lia imports nulos
+  do fork. Corrigido; fechou pela janela com o fork desligado (0,6 s) e ligado (0,5 s).
+- **Validação:** core 60/61 no `ctest` (o vermelho `api_contract_tests` é antigo); host `soh.exe` `7F1094A3…` com
+  testes nativos passando.
+- **Pendências:**
+  - pontos de extensão da CEL-004 na mesma rodada de host;
+  - reempacote de todos os mods nativos no layout final e prova limpa do overlay;
+  - revisão externa (Codex) das duas tarefas quando a cota voltar;
+  - licença;
+  - push.
+- **Commits:**
+  - core `6731d60` (COREEXT-010) e `8110748` (MENU-001);
+  - host `5c4138b80` (COREEXT-010), `6ba757d7b` (MENU-001) e `48c858c01` (NEI 0.3.3).
+

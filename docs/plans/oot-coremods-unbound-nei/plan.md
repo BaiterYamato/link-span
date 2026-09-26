@@ -1340,6 +1340,13 @@ ficam na DLL do mod; sem ele instalado, o jogo renderiza como hoje.
 aprovadas em jogo com um só `soh.exe`, e os mods já publicados reempacotados para
 o layout novo.
 
+**2026-09-26:** a rodada de host foi reaberta antes do reempacote. Entraram a
+`COREEXT-010` (escape hatch em lote) e a `MENU-001` (W-1, `ship.menu.register`,
+que recebe as páginas do Wind Waker Style em Lua). O plano da `CEL-004` pediu
+quatro pontos de extensão, que entram na mesma rodada: render V3,
+`linkspan.oot.lights`, `oot.light.point_color` V2 e `oot.light.fairy`. O layout
+final sai depois deles.
+
 ### Fase G — integração e release OoT
 
 - matriz combinada completa;
