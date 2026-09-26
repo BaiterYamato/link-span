@@ -971,12 +971,13 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
   - o save em `lab_b` volta em `lab_b` com a ordem dos mods mudada (`0x84` → `0x85`);
   - mod ausente cai na casa do Link com aviso;
   - `global.sav` truncado ou com tipo errado é reconstruído, e o slot continua visível;
-  - NEI 0.3.1 com 314/314 desvios.
+  - NEI 0.3.1 com 314/314 desvios;
+  - o Farore's Wind volta pelo nome com a ordem mudada (`0x624` → `0x628`; reserva na camada 1, `0x629`) e é
+    apagado sem o mod.
 - **Overlay** `...-DMR-0.2.9-Mic-0.1.4-NEI-0.3.1-Win64-overlay.zip` (`D496F912`): instalação limpa com `-ResourceLogging`, 3 mods, PROVA OK.
 - **Riscos:**
   - NEI e escape demo juntos: o NEI perde `Interface_Draw`;
   - o `oot_scenes.h` ainda anuncia 32764, e o limite novo fica para o próximo bump de layout;
-  - o descarte do Farore's Wind está coberto pelo código, sem prova em jogo;
   - as 12 gravações no load depois de `reset` com Autosave são do check tracker do SoH (antigas).
 - **Pendências:**
   - release do usuário, só a pedido (o NEI 0.3.0 de lá não casa com o host novo);

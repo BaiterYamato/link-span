@@ -135,6 +135,17 @@ evidência build/oot-upstream-001/evidence/unbound-017 e unbound-017-diag
     reconstructing it.`, seguido de `Init Meta - fileNum: 0`;
   - `i-1-arquivos.png` mostra o arquivo 1, e o `global.sav` volta com os padrões;
   - `host: 314/314 desvios`.
+- **Sessão j** (host final, framework + E-fixtures + Scene Demo, Farore's Wind com número velho):
+  - o save chega com `fw.set=1` em `0x624` e `backupFW.set=1` em `0x625`, números da ordem sem a Scene Demo;
+  - o bloco nomeia `linkspan_e/lab_b/main`, camada 0 no FW e camada 1 na reserva (`fw_prep.py` no scratchpad
+    da sessão);
+  - depois do load e do `reset`, o save tem `fw` em `0x628` e `backupFW` em `0x629` (grupo novo + camada), os
+    dois ainda ativos (`file1.before-j.sav`, `file1.after-j.sav`).
+- **Sessão k** (host final, só o framework; E-fixtures e Scene Demo ausentes):
+  - quatro avisos: cena salva, entrada, `o Farore's Wind (fwEntrance) está na entrada 'linkspan_e/lab_b/main',
+    que não está registrada; apagado` e o mesmo para `backupFwEntrance`;
+  - spawn padrão em `Scene Init - sceneNum: 0x34, entranceIndex: 0xbb`;
+  - o save gravado depois tem `fw.set=0` e `backupFW.set=0`, com o bloco todo em `null` (`file1.after-k.sav`).
 - **Prova limpa do overlay** (base 9.2.3 oficial + `oot.o2r` FD11AD51, `-ResourceLogging`, host `9DDBC766`):
   - 7.709 arquivos preservados byte a byte e 20.362 entradas de `checksums.sha256` conferidas;
   - `ShipLua carregou 3 mod(s)` (NEI 0.3.1, DMR 0.2.9, Mic 0.1.4) e 371 comandos de cena em XML;
@@ -149,8 +160,8 @@ evidência build/oot-upstream-001/evidence/unbound-017 e unbound-017-diag
   gravação com este host.
 - **Bloco com versão desconhecida:** um save gravado por um host futuro, com bloco v2, carrega pelos números da
   seção base. Se a ordem dos mods mudou, pode abrir outra cena de mod. Uma v2 deve manter os campos da v1 legíveis.
-- **Farore's Wind:** nomeado e ausente é descartado (`set = 0`), de propósito. As sessões não tinham FW ativo, então
-  isso está coberto pelo código, não por prova em jogo.
+- **Farore's Wind:** nomeado e ausente é descartado (`set = 0`), de propósito (sessão k). O número velho fica no
+  campo, inativo.
 - **Contrato do registro:** o `oot_scenes.h` ainda declara e documenta 32764 como índice máximo (linhas 12 e 35),
   mas o host recusa grupo acima de `0x7FF4`. Um mod nativo que peça `0x7FF8` ou `0x7FFC` recebe
   `SHIP_NATIVE_INVALID_ARGUMENT`. Mudar o header muda o layout id, então o limite novo fica para o próximo bump de
@@ -160,8 +171,12 @@ evidência build/oot-upstream-001/evidence/unbound-017 e unbound-017-diag
 - **Scene Demo:** logo depois do load, ela leva o jogador para `linkspan_demo/field_copy` pelo nome. Um `reset` em
   seguida grava lá (sessão c). Não use essa demo em testes de save.
 - **E-fixtures 0.1.1:** tem dados do jogo; fica só local.
-- **Cópia de teste:** `RELEASE-UNIFICADA\OOT-teste-cenas-20260914` ficou com o host `9DDBC766`, só o NEI 0.3.1 em
-  `mods` e o `global.sav` reconstruído. O `288FA208` (exe e símbolos) está em `host-anteriores`.
+- **Cópia de teste:** `RELEASE-UNIFICADA\OOT-teste-cenas-20260914` ficou com:
+  - o host `9DDBC766` e só o framework 0.5.0 em `mods`;
+  - o `global.sav` reconstruído;
+  - o `file1.sav` da sessão k (casa do Link, FW apagado).
+  O `288FA208` (exe e símbolos) está em `host-anteriores`. O `file1.before-j.sav` da evidência é um save pronto
+  com cena, entrada e FW nomeados.
 
 ## Pendências
 
