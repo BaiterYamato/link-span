@@ -12,6 +12,10 @@
   - OOT-UPSTREAM-78DC-001/extern/ship-lua/tests/native/NativeProviderTests.cpp
   - OOT-UPSTREAM-78DC-001/extern/ship-lua/rfcs/0023-native-escape-hatch.md
   - OOT-UPSTREAM-78DC-001/extern/ship-lua/docs/native-providers.md
+  - OOT-UPSTREAM-78DC-001/extern/ship-lua/tests/native/ThrowFixture.cpp (rodada 2)
+  - OOT-UPSTREAM-78DC-001/extern/ship-lua/tests/native/EscapeFixture.c (rodada 2)
+  - OOT-UPSTREAM-78DC-001/extern/ship-lua/src/host/ModHost.cpp (rodada 2)
+  - OOT-UPSTREAM-78DC-001/extern/ship-lua/include/shiplua/host/ModHost.h (rodada 2)
   - OOT-UPSTREAM-78DC-001/extern/ship-lua
   - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeEscapeWin.cpp
   - OOT-UPSTREAM-78DC-001/soh/soh/native/oot_scenes.h

@@ -1043,3 +1043,31 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
   - reempacote no layout final;
   - licença;
   - push.
+
+## UPDATE OOT-COREMODS-001 — CEL-004 (B–F), CEL-005, COREEXT-010 r2 e MENU-001 r2: rodada final do host
+
+- Status: review (CEL-004, CEL-005, COREEXT-010, MENU-001)
+- **Mod `linkspan.ww_style` 0.1.0** (`soh/native-sdk/ww-style`), port do fork Wind Waker Style (`cbcd3e719d`) sem
+  Unbound nem NEI: menu de quatro páginas por `ship.menu.register`; cel shading e sombras (B/C); luzes do mundo,
+  chama e Deku Stick (D); céu com gradiente, 1000 estrelas, nuvens geradas na DLL e fiapos de vento (E); Light Source
+  Viewer (F). Docs e aviso de licença no pacote (CEL-005).
+- **NEI:** a queda do START no título era o thunk do import de `FileChoose_Init` gravado em `gameState->init`
+  (`94e7fc76d`); pacote 0.3.4.
+- **COREEXT-010 rodada 2:** unload nativo em quarentena (`PrepareUnload` antes de extrair o mod, retry, recusa de
+  `install_patch`/`register_hook` na desmontagem, finalizadores Lua ainda chamam a DLL) e desvios por dono no host
+  (core `f29505c`, host `7d26819bb`).
+- **MENU-001:** correções de duas revisões do Codex (core `e38ecc1`, host `600f83b06`).
+- **Rodada final do host:** comentários de contrato nos headers (`d1b76ff56`) e layout id com EOL normalizado
+  (`75a420414`) → layout **`b459725c`**, `soh.exe` `4EE072B2…`. Todos os mods nativos reempacotados.
+- **Provas:**
+  - `cel-005` s1 (cópia de teste): NEI 0.3.4 + WW Style; 319 desvios em lote no boot e no fechamento (65 ms);
+    cel e céu desligados e religados pelo menu, confirmados no log;
+  - instalação limpa com o overlay `6DB23C18` (DMR, Mic, NEI, WW Style): `PROVA OK`, 4 mods, 371 comandos de cena
+    em XML;
+  - `cel-005` f2 (instalação fresca): céu vanilla ↔ céu WW pelo menu na mesma tomada do título, sem reiniciar.
+- **Pendências:** licença do WW Style (decisão do mantenedor); push; revisão Codex dos marcos B–D/F e das correções
+  de integração (cota de 5 h em 91% até 07:05); comparação lado a lado com uma build do fork (aceite da CEL-004)
+  não feita; release do usuário só a pedido.
+- **Commits (locais):** host `845b771a9`, `bf6039bdc`, `94e7fc76d`, `4a434d895`, `bba145d73`, `6a54c9d62`,
+  `600f83b06`, `5844dd4aa`, `226afc3f6`, `7d26819bb`, `d1b76ff56`, `75a420414`, `568a2daf0`; core `e38ecc1`,
+  `f29505c`.

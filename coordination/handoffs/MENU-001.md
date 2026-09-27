@@ -33,6 +33,21 @@ review
   importado, nulo sem o escape hatch. Corrigido em commit separado; o descarregamento de atores só roda depois
   do `nei_host_resolve`.
 - **Layout id inalterado** (`07cb0af3`): `MenuRegistry.h` fica em `include/shiplua/menu`, fora do glob.
+- **Rodada de revisão (2026-09-27, Codex `rev-menu001` e `rev-fixmenu`, duas passadas estáticas).** Corrigido:
+  - **core** (`e38ecc1`): faixa, step e casts dos sliders validados (faixa vazia, fora de `int64_t`, step
+    fracionário ou fora da faixa recusados); id de widget duplicado recusado antes de capturar o segundo callback,
+    com rollback das referências Lua; predicados relidos do storage antes de cada input do pump; predicado sobre
+    chave nunca gravada usa o default do widget dono da chave, e dois widgets do mesmo mod com a mesma
+    `storage_key` e defaults diferentes são recusados (o default não depende mais da ordem das páginas, RFC 0025);
+    republicação com erro mantém o dirty; `core.menu` exige os adaptadores de menu e storage; chaves validadas
+    com os limites do backend; comparação inteiro×double só com double finito e integral; `set/delete/clear` só
+    marcam dirty quando o conteúdo muda. Testes independentes por caso e sonda de coleta da closure recusada;
+  - **host** (`600f83b06`): quantização do slider inteiro em `uint64_t` (sem overflow em nenhuma faixa aceita);
+    `Change` do mesmo widget coalescido no fim da fila, preservando a ordem com `Activate`, também com a fila
+    cheia; edição em andamento com geração e expiração, podada pelo snapshot no `Draw`. O `RemoveMod` não toca
+    mais o `mEditing`, que só a thread de UI acessa (a revisão achou a corrida com o unload).
+  - **Recheck em jogo** do callback segurado por `shared_ptr`: a página real do Wind Waker Style (CEL-004B/C)
+    liga a sombra de ator pelo menu, com o host que já inclui a correção.
 
 ## Commits
 
@@ -40,6 +55,8 @@ review
   `ship.menu.register`, schema e gerados, testes, harness de contrato e RFC 0025.
 - host `6ba757d7b` — `SohMenuModRegistry`, `SohMenu`, `ShipLuaBootstrap` e ponteiro do submódulo.
 - host `48c858c01` — NEI 0.3.3, fechamento sem fork ativo.
+- core `e38ecc1` — correções da revisão do `ship.menu`.
+- host `600f83b06` — correções da revisão no `SohMenuModRegistry`; host `5844dd4aa` — submódulo em `e38ecc1`.
 
 ## Arquivos alterados
 
@@ -102,10 +119,8 @@ powershell -File tools/package-nei-core.ps1
 - O campo `sidebar` só aparece no título do cabeçalho: o menu do SoH monta as barras laterais no início.
 - Os rótulos ficam à direita do widget (padrão do ImGui), diferente dos widgets do SoH. É cosmético.
 - O host MM não tem adaptador: não anuncia `core.menu`, e `register` dá `unsupported`.
-- A revisão externa (Codex) não rodou: a cota de 5 h só volta às 19:45. O pedido está pronto em
-  `scratchpad/codex/rev-menu001/PROMPT.md`.
-- A cópia de teste ficou com o host `7F1094A3`; em `mods` estão NEI 0.3.3 e a sonda. Os hosts anteriores estão em
-  `host-anteriores\soh-b0e853d0.*`.
+- A revisão externa (Codex) rodou em duas passadas; os achados estão corrigidos (ver Resultado). Não houve
+  terceira passada sobre `e38ecc1`/`600f83b06`: a cota de 5 h ficou em 91% até 07:05 de 2026-09-27.
 
 ## Riscos
 
