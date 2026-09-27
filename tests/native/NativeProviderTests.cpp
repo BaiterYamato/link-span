@@ -2,6 +2,9 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <map>
+#include <set>
+#include <stdexcept>
 #include <thread>
 #include <utility>
 
@@ -11,6 +14,8 @@
 #include "shiplua/native/NativeDiagnostics.h"
 #ifdef _WIN32
 #include <windows.h>
+#else
+#include <dlfcn.h>
 #endif
 #include "FixtureService.h"
 
@@ -53,6 +58,20 @@ void Package(const fs::path& dir, const fs::path& target) {
     }
     Check(mz_zip_writer_finalize_archive(&zip) != 0, "finalize package");
     mz_zip_writer_end(&zip);
+}
+bool IsLibraryLoaded(const fs::path& path) {
+    const auto absolute = fs::absolute(path);
+#ifdef _WIN32
+    HMODULE module = nullptr;
+    if (!GetModuleHandleExW(0, absolute.c_str(), &module)) return false;
+    FreeLibrary(module);
+    return true;
+#else
+    void* module = dlopen(absolute.string().c_str(), RTLD_NOW | RTLD_NOLOAD);
+    if (!module) return false;
+    dlclose(module);
+    return true;
+#endif
 }
 }
 
@@ -191,7 +210,8 @@ int main(int argc, char** argv) {
                 *address = 0x1000;
                 return SHIP_NATIVE_OK;
             };
-            hatch->install = [&patches](uintptr_t target, void*, void** original, uint64_t* id) -> ShipNativeStatus {
+            hatch->install = [&patches](std::string_view, uintptr_t target, void*, void** original,
+                                        uint64_t* id) -> ShipNativeStatus {
                 if (target != 0x1000) return SHIP_NATIVE_INVALID_ARGUMENT;
                 ++patches.installed;
                 *original = reinterpret_cast<void*>(target);
@@ -256,64 +276,228 @@ int main(int argc, char** argv) {
                 )lua");
             }
             {
-                // COREEXT-010: lote de ativação em volta do init e do unload; fora dele, cada desvio vale na
-                // hora. Minúscula = dentro do lote.
+                // COREEXT-010: fake stateful por alvo. Minúscula = operação dentro do lote.
+                struct FakePatch {
+                    uint64_t id = 0;
+                    std::string owner;
+                    bool created = false;
+                    bool enabled = false;
+                    bool queueEnable = false;
+                    bool pendingRemoval = false;
+                };
                 std::string log;
+                std::map<uintptr_t, FakePatch> targets;
+                std::map<uint64_t, uintptr_t> ids;
+                std::set<uintptr_t> persistentRemovalFailures;
+                std::string batchOwner;
+                uintptr_t selectedTarget = 0x1000;
+                uint64_t nextPatch = 1000;
+                int alreadyCreated = 0;
                 int depth = 0;
                 bool failInit = false;
-                bool failCommit = false;
-                auto batched = std::make_shared<NativeEscapeHatch>(*hatch);
-                batched->resolve = [&failInit](const char* name, uintptr_t* address) -> ShipNativeStatus {
+                bool noPatch = false;
+                bool throwBegin = false;
+                int failCommits = 0;
+                int throwCommits = 0;
+                auto batched = std::make_shared<NativeEscapeHatch>();
+                batched->fingerprint = hatch->fingerprint;
+                batched->resolve = [&](const char* name, uintptr_t* address) -> ShipNativeStatus {
                     const std::string text(name);
+                    if (noPatch && text == "NoPatch") {
+                        *address = 0x3000;
+                        return SHIP_NATIVE_OK;
+                    }
                     if (text != "Target" && !(failInit && text == "FailAfterPatch")) return SHIP_NATIVE_UNSUPPORTED;
-                    *address = 0x1000;
+                    *address = selectedTarget;
                     return SHIP_NATIVE_OK;
                 };
-                batched->install = [&](uintptr_t target, void*, void** original, uint64_t* id) -> ShipNativeStatus {
-                    if (target != 0x1000) return SHIP_NATIVE_INVALID_ARGUMENT;
+                batched->install = [&](std::string_view owner, uintptr_t target, void*, void** original,
+                                       uint64_t* id) -> ShipNativeStatus {
+                    auto existing = targets.find(target);
+                    if (existing != targets.end() && existing->second.created) {
+                        if (!existing->second.pendingRemoval) {
+                            ++alreadyCreated;
+                            return SHIP_NATIVE_LIMIT;
+                        }
+                        if (persistentRemovalFailures.contains(target)) return SHIP_NATIVE_FAILURE;
+                        ids.erase(existing->second.id);
+                        targets.erase(existing);
+                    }
                     log += depth ? 'i' : 'I';
+                    const uint64_t created = nextPatch++;
+                    targets.emplace(target, FakePatch{created, std::string(owner), true, depth == 0, true, false});
+                    ids.emplace(created, target);
                     *original = reinterpret_cast<void*>(target);
-                    *id = patches.next++;
+                    *id = created;
                     return SHIP_NATIVE_OK;
                 };
-                batched->remove = [&](uint64_t) -> ShipNativeStatus {
+                batched->remove = [&](uint64_t id) -> ShipNativeStatus {
+                    const auto mapped = ids.find(id);
+                    if (mapped == ids.end()) return SHIP_NATIVE_INVALID_ARGUMENT;
+                    auto& target = targets.at(mapped->second);
                     log += depth ? 'r' : 'R';
+                    if (depth > 0) {
+                        target.queueEnable = false;
+                        target.pendingRemoval = true;
+                        return SHIP_NATIVE_OK;
+                    }
+                    if (persistentRemovalFailures.contains(mapped->second)) return SHIP_NATIVE_FAILURE;
+                    targets.erase(mapped->second);
+                    ids.erase(mapped);
                     return SHIP_NATIVE_OK;
                 };
-                batched->beginBatch = [&] {
-                    ++depth;
+                batched->beginBatch = [&](std::string_view owner) {
+                    if (throwBegin) {
+                        log += 'b';
+                        throw std::runtime_error("beginBatch test");
+                    }
+                    if (depth++ == 0) batchOwner = owner;
                     log += '[';
                 };
                 batched->commitBatch = [&]() -> ShipNativeStatus {
                     --depth;
                     log += ']';
-                    return failCommit ? SHIP_NATIVE_FAILURE : SHIP_NATIVE_OK;
+                    if (throwCommits > 0) {
+                        --throwCommits;
+                        throw std::runtime_error("commitBatch test");
+                    }
+                    if (failCommits > 0) {
+                        --failCommits;
+                        return SHIP_NATIVE_FAILURE;
+                    }
+                    bool clean = true;
+                    for (auto found = targets.begin(); found != targets.end();) {
+                        auto& target = found->second;
+                        if (target.owner != batchOwner) {
+                            ++found;
+                            continue;
+                        }
+                        if (target.pendingRemoval) {
+                            if (persistentRemovalFailures.contains(found->first)) {
+                                target.queueEnable = target.enabled; // neutraliza a fila global do fake
+                                clean = false;
+                                ++found;
+                            } else {
+                                ids.erase(target.id);
+                                found = targets.erase(found);
+                            }
+                            continue;
+                        }
+                        target.enabled = target.queueEnable;
+                        ++found;
+                    }
+                    return clean ? SHIP_NATIVE_OK : SHIP_NATIVE_FAILURE;
                 };
                 auto batchPolicy = policy;
                 batchPolicy.escapeHatch = batched;
-                batchPolicy.onProviderUnload = [&](std::string_view) { log += 'u'; };
+                batchPolicy.hooks = std::make_shared<NativeHookRegistry>();
+                ShipNativeHookPointSpec shutdownPoint{
+                    sizeof(ShipNativeHookPointSpec), "test.shutdown", 1u, 0u, SHIP_NATIVE_HOOK_OBSERVE
+                };
+                uint64_t shutdownPointId = 0;
+                Check(batchPolicy.hooks->DeclarePoint({}, shutdownPoint, &shutdownPointId) == SHIP_NATIVE_OK,
+                      "shutdown hook point declared");
+                batchPolicy.onProviderUnload = [&](std::string_view owner) { log += 'u'; };
                 ModHost host(context, {}, batchPolicy);
                 Check(host.LoadModFromDirectory((escapeRoot / "allowed").string()).isOk() && log == "[i]",
                       "init patches activate in one batch");
+                selectedTarget = 0x1001;
                 Run(host, "test.escape.allowed", R"lua(
                     local r=require('ship').native.call('patch_now','')
                     assert(r=='0', r)
                 )lua");
                 Check(log == "[i]I", "patch after init is not batched");
+                const int callsBeforeShutdown = service.calls;
                 Check(host.UnloadMod("test.escape.allowed").isOk() && log == "[i]I[rr]u",
                       "unload removes every patch in one batch before notifying the host");
+                Check(service.calls == callsBeforeShutdown + 100 + 11 * SHIP_NATIVE_FAILURE &&
+                          batchPolicy.hooks->HookCount() == 0,
+                      "patch and register_hook are rejected during shutdown");
+
+                // Caracterização: estes casos preservam fallback e rollback anteriores à segunda rodada.
+                log.clear();
+                noPatch = true;
+                selectedTarget = 0x1000;
+                Check(host.LoadModFromDirectory((escapeRoot / "allowed").string()).isOk() && log == "[]",
+                      "authorized provider without patches still closes its init batch");
+                const int callsBeforePatchlessShutdown = service.calls;
+                Check(host.UnloadMod("test.escape.allowed").isOk() && log == "[]u",
+                      "provider without patches opens no unload batch");
+                Check(service.calls == callsBeforePatchlessShutdown + 100 + 11 * SHIP_NATIVE_FAILURE,
+                      "patch and hook remain rejected in patchless shutdown");
+                noPatch = false;
                 log.clear();
                 failInit = true;
                 Check(!host.LoadModFromDirectory((escapeRoot / "allowed").string()).isOk() && log == "[ir]u",
                       "failed init removes its patches before the batch commits");
+                failInit = false;
+                log.clear();
+                const auto throwing = escapeRoot / "throwing";
+                MakeMod(throwing, argv[6], "test.escape.throwing", "loaded=true", core, "1.3");
+                {
+                    std::ofstream manifest(throwing / "manifest.toml", std::ios::app);
+                    manifest << "host_fingerprints=['" << std::string(64, 'a') << "']\n";
+                }
+                const auto threw = host.LoadModFromDirectory(throwing.string());
+                Check(!threw.isOk() && threw.message.find("exception implemented inside provider DLL") != std::string::npos &&
+                          log == "[ir]u",
+                      "throwing init removes its patch and balances the batch");
                 log.clear();
                 Check(host.LoadModFromDirectory((escapeRoot / "denied").string()).isOk() && log.empty(),
                       "no batch without permission");
+                Check(host.UnloadMod("test.escape.denied").isOk(), "denied provider unloads without a batch");
                 log.clear();
-                failInit = false;
-                failCommit = true;
+                throwBegin = true;
+                Check(host.LoadModFromDirectory((escapeRoot / "allowed").string()).isOk() && log == "bI",
+                      "beginBatch exception falls back to immediate install");
+                Check(host.UnloadMod("test.escape.allowed").isOk() && log == "bIbRu" && depth == 0,
+                      "beginBatch exception does not cross core unload");
+                throwBegin = false;
+                log.clear();
+                throwCommits = 1;
+                Check(!host.LoadModFromDirectory((escapeRoot / "allowed").string()).isOk() && log == "[i][r]u" &&
+                          depth == 0,
+                      "commitBatch exception fails activation and is contained");
+                log.clear();
+                failCommits = 1;
                 Check(!host.LoadModFromDirectory((escapeRoot / "allowed").string()).isOk() && log == "[i][r]u",
                       "failed activation fails the load and removes the patch in another batch");
+
+                // Provas da correção: falha real por alvo, ownership, retry e isolamento entre providers.
+                log.clear();
+                selectedTarget = 0x1000;
+                Check(host.LoadModFromDirectory((escapeRoot / "allowed").string()).isOk(),
+                      "provider loads before persistent removal failure");
+                const auto loadedLibrary = escapeRoot / "allowed/provider/module.bin";
+                const int callsBeforeUnsafeUnload = service.calls;
+                persistentRemovalFailures.insert(0x1000);
+                const auto failedUnload = host.UnloadMod("test.escape.allowed");
+                Check(!failedUnload.isOk() && failedUnload.code == ErrorCode::HostFailure &&
+                          host.IsLoaded("test.escape.allowed") && host.Count() == 1 &&
+                          targets.at(0x1000).created && targets.at(0x1000).enabled &&
+                          targets.at(0x1000).queueEnable && targets.at(0x1000).pendingRemoval &&
+                          service.calls == callsBeforeUnsafeUnload && IsLibraryLoaded(loadedLibrary),
+                      "failed removal quarantines the owned provider without shutdown");
+
+                const auto other = escapeRoot / "other";
+                MakeMod(other, argv[11], "test.escape.other", "loaded=true", core, "1.3");
+                {
+                    std::ofstream manifest(other / "manifest.toml", std::ios::app);
+                    manifest << "host_fingerprints=['" << std::string(64, 'a') << "']\n";
+                }
+                selectedTarget = 0x2000;
+                Check(host.LoadModFromDirectory(other.string()).isOk() &&
+                          host.UnloadMod("test.escape.other").isOk() && host.IsLoaded("test.escape.allowed"),
+                      "another provider does not inherit an old pending removal");
+
+                persistentRemovalFailures.clear();
+                Check(host.UnloadMod("test.escape.allowed").isOk() && !host.IsLoaded("test.escape.allowed") &&
+                          !targets.contains(0x1000),
+                      "retry completes quarantine after the target recovers");
+                selectedTarget = 0x1000;
+                Check(host.LoadModFromDirectory((escapeRoot / "allowed").string()).isOk() && alreadyCreated == 0,
+                      "same target reloads without ALREADY_CREATED");
+                Check(host.UnloadMod("test.escape.allowed").isOk(), "reloaded provider unloads cleanly");
             }
         }
         {

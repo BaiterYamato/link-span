@@ -2,6 +2,8 @@
 #include "shiplua/native/NativeDiagnostics.h"
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdio>
 #include <cstring>
 #include <exception>
 #include <set>
@@ -23,16 +25,17 @@ constexpr size_t kMaxPatchesPerProvider = 1024;
 // desligado (~60 ms); o lote junta os desvios de um init ou de um unload num congelamento só.
 class EscapeBatch {
   public:
-    explicit EscapeBatch(NativeEscapeHatch* hatch) noexcept {
+    EscapeBatch(NativeEscapeHatch* hatch, std::string_view owner) noexcept {
         if (!hatch || !hatch->beginBatch || !hatch->commitBatch) return;
         try {
-            hatch->beginBatch();
+            hatch->beginBatch(owner);
             mHatch = hatch;
         } catch (...) { /* Sem lote: cada desvio vale no retorno. */ }
     }
     ~EscapeBatch() { Commit(); }
     EscapeBatch(const EscapeBatch&) = delete;
     EscapeBatch& operator=(const EscapeBatch&) = delete;
+    bool Active() const noexcept { return mHatch != nullptr; }
     ShipNativeStatus Commit() noexcept {
         auto* hatch = std::exchange(mHatch, nullptr);
         if (!hatch) return SHIP_NATIVE_OK;
@@ -149,6 +152,7 @@ Result<std::unique_ptr<NativeProvider>> NativeProvider::Load(
     if (!resolved.isOk()) return R::err(resolved.code, resolved.message);
     // Vive além dos handlers: exceções do DLL devem morrer antes de dlclose.
     std::unique_ptr<NativeProvider> instance;
+    std::string failure;
     try {
         if (policy.authorize && !policy.authorize(manifest, *resolved.value)) {
             return R::err(ErrorCode::PermissionDenied, "native library authorization denied");
@@ -206,50 +210,122 @@ Result<std::unique_ptr<NativeProvider>> NativeProvider::Load(
         {
             // Os desvios instalados no init ativam juntos quando ele retorna. Init que falha (ou lança) tira os
             // seus antes de fechar o lote, e nenhum chega a rodar.
-            EscapeBatch batch(instance->EscapeHatchAllowed() ? instance->mEscapeHatch.get() : nullptr);
+            EscapeBatch batch(instance->EscapeHatchAllowed() ? instance->mEscapeHatch.get() : nullptr,
+                              instance->mOwnerId);
+            const bool deferred = batch.Active();
+            bool removed = true;
             try {
                 const NativeActivityScope activity(instance->mOwnerId.c_str(), "init", nullptr);
                 result = descriptor->init(&instance->mRuntime, &instance->mInstance);
             } catch (...) {
                 instance->mInitializing = false;
-                instance->RemovePatches();
+                removed = instance->RemovePatches(deferred);
+                activated = batch.Commit();
+                if (deferred && removed && activated == SHIP_NATIVE_OK) instance->mPatches.clear();
                 throw;
             }
             instance->mInitializing = false;
-            if (result != SHIP_NATIVE_OK || instance->mRegistrationFailed) instance->RemovePatches();
+            if (result != SHIP_NATIVE_OK || instance->mRegistrationFailed) {
+                removed = instance->RemovePatches(deferred);
+            }
             activated = batch.Commit();
+            if (deferred && removed && activated == SHIP_NATIVE_OK &&
+                (result != SHIP_NATIVE_OK || instance->mRegistrationFailed)) {
+                instance->mPatches.clear();
+            }
         }
         if (result != SHIP_NATIVE_OK || instance->mRegistrationFailed) {
+            const auto unloaded = instance->Unload();
+            if (!unloaded.isOk()) {
+                std::fprintf(stderr, "[ERROR][%s] native provider rollback remains pending; state kept alive\n",
+                             instance->mOwnerId.c_str());
+                instance.release();
+            }
             return R::err(ErrorCode::HostFailure, "native provider initialization/registration failed");
         }
         if (activated != SHIP_NATIVE_OK) {
+            const auto unloaded = instance->Unload();
+            if (!unloaded.isOk()) {
+                std::fprintf(stderr, "[ERROR][%s] native provider rollback remains pending; state kept alive\n",
+                             instance->mOwnerId.c_str());
+                instance.release();
+            }
             return R::err(ErrorCode::HostFailure, "native provider patches could not be activated");
         }
         return R::ok(std::move(instance));
     } catch (const std::exception& exception) {
-        return R::err(ErrorCode::HostFailure, std::string("native provider exception: ") + exception.what());
+        failure = std::string("native provider exception: ") + exception.what();
     } catch (...) {
-        return R::err(ErrorCode::HostFailure, "native provider initialization threw an exception");
+        failure = "native provider initialization threw an exception";
     }
+    // Fora dos handlers, com a exceção já destruída: o rollback segue a mesma quarentena dos outros caminhos.
+    if (instance && !instance->Unload().isOk()) {
+        std::fprintf(stderr, "[ERROR][%s] native provider rollback remains pending; state kept alive\n",
+                     instance->mOwnerId.c_str());
+        instance.release();
+    }
+    return R::err(ErrorCode::HostFailure, failure);
 }
 
 NativeProvider::~NativeProvider() {
-    mInitializing = false;
-    mFunctions.clear();
-    // Antes do shutdown: nenhum callback pode chegar a uma instância desmontando.
-    if (mHooks) mHooks->RemoveOwner(mOwnerId);
-    // Patches saem na ordem inversa, também antes do shutdown, num lote só: o commit desliga todos antes do
-    // aviso ao host e do shutdown da DLL.
-    {
-        EscapeBatch batch(mPatches.empty() ? nullptr : mEscapeHatch.get());
-        RemovePatches();
+    const auto unloaded = Unload();
+    if (!unloaded.isOk()) {
+        std::fprintf(stderr, "[ERROR][%s] native provider unload remains pending; owner must keep state alive\n",
+                     mOwnerId.c_str());
     }
+}
+
+Result<void> NativeProvider::PrepareUnload() noexcept {
+    if (mUnloadComplete) return Result<void>::ok();
+    mInitializing = false;
+    mUnloading = true;
+    // Antes do shutdown: nenhum callback pode chegar a uma instância desmontando.
+    if (mHooks) {
+        try { mHooks->RemoveOwner(mOwnerId); } catch (...) { /* Repetir como defesa depois do shutdown. */ }
+    }
+    // Patches saem na ordem inversa, também antes do shutdown, num lote só. Sem confirmação completa, a DLL
+    // fica carregada: um detour não pode apontar para código liberado.
+    bool patchesRemoved = true;
+    if (!mPatches.empty() || mPatchCleanupNeeded) {
+        EscapeBatch batch(mEscapeHatch.get(), mOwnerId);
+        const bool deferred = batch.Active();
+        patchesRemoved = RemovePatches(deferred);
+        const auto committed = batch.Commit();
+        if (deferred && patchesRemoved && committed == SHIP_NATIVE_OK) {
+            mPatches.clear();
+            mPatchCleanupNeeded = false;
+        }
+        patchesRemoved = patchesRemoved && committed == SHIP_NATIVE_OK && mPatches.empty() &&
+                         !mPatchCleanupNeeded;
+    }
+    if (!patchesRemoved) {
+        return Result<void>::err(ErrorCode::HostFailure,
+                                 "native provider patches remain installed; unload quarantined");
+    }
+    return Result<void>::ok();
+}
+
+Result<void> NativeProvider::Unload() noexcept {
+    if (mUnloadComplete) return Result<void>::ok();
+    const auto prepared = PrepareUnload();
+    if (!prepared.isOk()) return prepared;
+    mFunctions.clear();
     if (mOnProviderUnload) {
         try { mOnProviderUnload(mOwnerId); } catch (...) { /* O unload continua seguro. */ }
     }
     if (mShutdown) {
+        const auto shutdown = std::exchange(mShutdown, nullptr);
         const NativeActivityScope activity(mOwnerId.c_str(), "shutdown", nullptr);
-        try { mShutdown(mInstance); } catch (...) { /* Não atravessar a fronteira do host. */ }
+        try { shutdown(mInstance); } catch (...) { /* Não atravessar a fronteira do host. */ }
+        mInstance = nullptr;
+    }
+    // Defesa contra providers que tentem registrar callbacks durante shutdown.
+    if (mHooks) {
+        try { mHooks->RemoveOwner(mOwnerId); } catch (...) { /* O bloqueio em RegisterHook é a garantia primária. */ }
+    }
+    if (!mPatches.empty()) {
+        return Result<void>::err(ErrorCode::HostFailure,
+                                 "native provider installed a patch during shutdown; unload quarantined");
     }
     if (mLibrary) {
         UnregisterNativeModule(mLibrary);
@@ -258,16 +334,27 @@ NativeProvider::~NativeProvider() {
 #else
         dlclose(mLibrary);
 #endif
+        mLibrary = nullptr;
     }
+    mUnloadComplete = true;
+    return Result<void>::ok();
 }
 
-void NativeProvider::RemovePatches() noexcept {
-    if (mEscapeHatch && mEscapeHatch->remove) {
-        for (auto patch = mPatches.rbegin(); patch != mPatches.rend(); ++patch) {
-            try { mEscapeHatch->remove(*patch); } catch (...) { /* Seguir removendo os demais. */ }
+bool NativeProvider::RemovePatches(bool deferred) noexcept {
+    if (mPatches.empty()) return true;
+    if (!mEscapeHatch || !mEscapeHatch->remove) return false;
+    bool clean = true;
+    for (size_t index = mPatches.size(); index > 0; --index) {
+        ShipNativeStatus status = SHIP_NATIVE_FAILURE;
+        try { status = mEscapeHatch->remove(mPatches[index - 1]); }
+        catch (...) { /* Seguir removendo os demais. */ }
+        if (status == SHIP_NATIVE_OK) {
+            if (!deferred) mPatches.erase(mPatches.begin() + static_cast<std::ptrdiff_t>(index - 1));
+        } else {
+            clean = false;
         }
     }
-    mPatches.clear();
+    return clean;
 }
 
 ShipNativeStatus SHIP_NATIVE_CALL NativeProvider::Register(
@@ -335,6 +422,7 @@ ShipNativeStatus SHIP_NATIVE_CALL NativeProvider::RegisterHook(
     void* context, const ShipNativeHookSpec* spec, uint64_t* handle) noexcept {
     auto* self = static_cast<NativeProvider*>(context);
     if (!self || self->mThread != std::this_thread::get_id()) return SHIP_NATIVE_FAILURE;
+    if (self->mUnloading) return SHIP_NATIVE_FAILURE;
     if (!self->mHooks) return SHIP_NATIVE_UNSUPPORTED;
     if (!spec) return SHIP_NATIVE_INVALID_ARGUMENT;
     try {
@@ -439,6 +527,7 @@ ShipNativeStatus SHIP_NATIVE_CALL NativeProvider::InstallPatch(
     void* context, uintptr_t target, void* detour, void** original, uint64_t* patch) noexcept {
     auto* self = static_cast<NativeProvider*>(context);
     if (!self || self->mThread != std::this_thread::get_id()) return SHIP_NATIVE_FAILURE;
+    if (self->mUnloading) return SHIP_NATIVE_FAILURE;
     if (!self->EscapeHatchAllowed() || !self->mEscapeHatch->install || !self->mEscapeHatch->remove) {
         return SHIP_NATIVE_UNSUPPORTED;
     }
@@ -447,12 +536,16 @@ ShipNativeStatus SHIP_NATIVE_CALL NativeProvider::InstallPatch(
     try {
         self->mPatches.reserve(self->mPatches.size() + 1);
         uint64_t id = 0;
-        const auto status = self->mEscapeHatch->install(target, detour, original, &id);
-        if (status != SHIP_NATIVE_OK) return status;
+        const auto status = self->mEscapeHatch->install(self->mOwnerId, target, detour, original, &id);
+        if (status != SHIP_NATIVE_OK) {
+            self->mPatchCleanupNeeded = self->mEscapeHatch->beginBatch && self->mEscapeHatch->commitBatch;
+            return status;
+        }
         self->mPatches.push_back(id);
         *patch = id;
         return SHIP_NATIVE_OK;
     } catch (...) {
+        self->mPatchCleanupNeeded = self->mEscapeHatch->beginBatch && self->mEscapeHatch->commitBatch;
         return SHIP_NATIVE_FAILURE;
     }
 }

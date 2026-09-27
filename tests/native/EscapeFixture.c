@@ -5,14 +5,28 @@
 
 /* ABI 1.3: no init tenta fingerprint, símbolo "Target" e patch nele; "report"
    devolve os status para o teste conferir permissões. "patch_now" instala de novo
-   depois do init, e o símbolo "FailAfterPatch" faz o init falhar depois do patch
+   depois do init, "NoPatch" pula a instalação, "FailAfterPatch" falha depois
+   dela e o shutdown tenta instalar e registrar hook para conferir o bloqueio de desmontagem
    (lote de ativação, COREEXT-010). */
+typedef struct FixtureProbe {
+    int initialized;
+    int shutdown;
+    int calls;
+} FixtureProbe;
+
 typedef struct EscapeState {
     const ShipNativeRuntime* runtime;
+    FixtureProbe* probe;
     char report[160];
 } EscapeState;
 
 static void SHIP_NATIVE_CALL Detour(void) {
+}
+
+static ShipNativeStatus SHIP_NATIVE_CALL ShutdownHook(void* user, const ShipNativeHookCall* call) {
+    (void)user;
+    (void)call;
+    return SHIP_NATIVE_OK;
 }
 
 static ShipNativeStatus SHIP_NATIVE_CALL Report(void* user, const char* request, uint32_t length,
@@ -51,6 +65,7 @@ static ShipNativeStatus SHIP_NATIVE_CALL Init(const ShipNativeRuntime* runtime, 
     uint32_t size = 0;
     uintptr_t address = 0;
     uintptr_t fail = 0;
+    uintptr_t noPatch = 0;
     void* original = NULL;
     uint64_t patch = 0;
     ShipNativeStatus fp, resolved, installed = 99;
@@ -61,12 +76,17 @@ static ShipNativeStatus SHIP_NATIVE_CALL Init(const ShipNativeRuntime* runtime, 
     if (!state) return SHIP_NATIVE_FAILURE;
     *output = state;
     state->runtime = runtime;
+    state->probe = (FixtureProbe*)runtime->get_service(runtime->context, "test.lifecycle", 1,
+                                                       (uint32_t)sizeof(FixtureProbe));
     fp = runtime->get_host_fingerprint(runtime->context, fingerprint, 64, &size);
-    resolved = runtime->resolve_symbol(runtime->context, "Target", &address);
-    if (resolved == SHIP_NATIVE_OK) {
-        installed = runtime->install_patch(runtime->context, address, (void*)Detour, &original, &patch);
-    } else {
-        installed = runtime->install_patch(runtime->context, 1, (void*)Detour, &original, &patch);
+    resolved = runtime->resolve_symbol(runtime->context, "NoPatch", &noPatch);
+    if (resolved != SHIP_NATIVE_OK) {
+        resolved = runtime->resolve_symbol(runtime->context, "Target", &address);
+        if (resolved == SHIP_NATIVE_OK) {
+            installed = runtime->install_patch(runtime->context, address, (void*)Detour, &original, &patch);
+        } else {
+            installed = runtime->install_patch(runtime->context, 1, (void*)Detour, &original, &patch);
+        }
     }
     snprintf(state->report, sizeof(state->report), "fp=%u:%u:%.4s res=%u ins=%u orig=%d", (unsigned)fp,
              (unsigned)size, fingerprint, (unsigned)resolved, (unsigned)installed, original != NULL);
@@ -81,7 +101,23 @@ static ShipNativeStatus SHIP_NATIVE_CALL Init(const ShipNativeRuntime* runtime, 
 }
 
 static void SHIP_NATIVE_CALL Shutdown(void* instance) {
-    free(instance);
+    EscapeState* state = (EscapeState*)instance;
+    uintptr_t address = 0;
+    void* original = NULL;
+    uint64_t patch = 0;
+    uint64_t hook = 0;
+    ShipNativeStatus patchStatus = SHIP_NATIVE_FAILURE;
+    ShipNativeStatus hookStatus;
+    ShipNativeHookSpec spec = {
+        sizeof(ShipNativeHookSpec), "test.shutdown", 1u, 0u, SHIP_NATIVE_HOOK_OBSERVE,
+        SHIP_NATIVE_HOOK_BEFORE, 0, ShutdownHook, state
+    };
+    if (state && state->runtime->resolve_symbol(state->runtime->context, "Target", &address) == SHIP_NATIVE_OK) {
+        patchStatus = state->runtime->install_patch(state->runtime->context, address, (void*)Detour, &original, &patch);
+    }
+    hookStatus = state ? state->runtime->register_hook(state->runtime->context, &spec, &hook) : SHIP_NATIVE_FAILURE;
+    if (state && state->probe) state->probe->calls += 100 + (int)patchStatus + 10 * (int)hookStatus;
+    free(state);
 }
 
 SHIP_NATIVE_EXPORT const ShipNativeDescriptor* SHIP_NATIVE_CALL ShipNative_Query(void) {

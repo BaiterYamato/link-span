@@ -31,12 +31,13 @@ struct NativeEscapeHatch {
     // SHA-256 hex minúsculo do executável; vazio = desconhecido.
     std::function<std::string()> fingerprint;
     std::function<ShipNativeStatus(const char* name, uintptr_t* address)> resolve;
-    std::function<ShipNativeStatus(uintptr_t target, void* detour, void** original, uint64_t* patch)> install;
+    std::function<ShipNativeStatus(std::string_view owner, uintptr_t target, void* detour,
+                                   void** original, uint64_t* patch)> install;
     std::function<ShipNativeStatus(uint64_t patch)> remove;
-    // Opcional (COREEXT-010): lote de ativação. O core abre um lote em volta do init de um provider e da
-    // remoção no unload; dentro dele o host pode só enfileirar install/remove, e commitBatch aplica tudo de
-    // uma vez e devolve o primeiro erro. Ausentes = cada install/remove vale no retorno.
-    std::function<void()> beginBatch;
+    // Opcional (COREEXT-010): lote de ativação identificado pelo dono. O core abre um lote em volta do init e da
+    // remoção no unload; dentro dele o host pode só enfileirar install/remove. commitBatch só devolve OK quando
+    // as remoções desse dono saíram do mecanismo de desvio. Ausentes = cada operação vale no retorno.
+    std::function<void(std::string_view owner)> beginBatch;
     std::function<ShipNativeStatus()> commitBatch;
 };
 
@@ -75,6 +76,12 @@ class NativeProvider {
     NativeProvider& operator=(const NativeProvider&) = delete;
     bool Has(std::string_view name) const noexcept;
     bool IsCalling() const noexcept { return mCalling; }
+    bool IsUnloading() const noexcept { return mUnloading; }
+    // Primeira metade, a que pode falhar: tira hooks e desvios sem desligar a DLL, que segue atendendo as
+    // funções para os finalizadores Lua. Falha deixa o provider em quarentena e ainda possuído pelo ModHost.
+    Result<void> PrepareUnload() noexcept;
+    // Desmontagem completa (PrepareUnload, shutdown, liberação da DLL). Pode ser repetida depois de uma falha.
+    Result<void> Unload() noexcept;
     const std::vector<NativeHostService>& PublishedServices() const noexcept {
         return mPublishedServices;
     }
@@ -101,7 +108,7 @@ class NativeProvider {
     static ShipNativeStatus SHIP_NATIVE_CALL InstallPatch(void*, uintptr_t, void*, void**, uint64_t*) noexcept;
     static ShipNativeStatus SHIP_NATIVE_CALL RemovePatch(void*, uint64_t) noexcept;
     bool EscapeHatchAllowed() noexcept;
-    void RemovePatches() noexcept;
+    bool RemovePatches(bool deferred) noexcept;
     void* mLibrary = nullptr;
     void* mInstance = nullptr;
     void (SHIP_NATIVE_CALL *mShutdown)(void*) = nullptr;
@@ -114,11 +121,14 @@ class NativeProvider {
     std::function<void(std::string_view owner)> mOnProviderUnload;
     std::vector<std::string> mHostFingerprints;
     std::vector<uint64_t> mPatches;
+    bool mPatchCleanupNeeded = false;
     bool mEscapeChecked = false;
     bool mEscapeAllowed = false;
     std::string mOwnerId;
     std::thread::id mThread = std::this_thread::get_id();
     bool mInitializing = true;
+    bool mUnloading = false;
+    bool mUnloadComplete = false;
     bool mCanPublishServices = false;
     bool mRegistrationFailed = false;
     bool mCalling = false;

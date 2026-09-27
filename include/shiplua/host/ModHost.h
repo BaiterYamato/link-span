@@ -84,8 +84,8 @@ class ModHost {
     // Consome input do adaptador de menu e executa callbacks na thread Lua.
     void PumpMenu() noexcept;
 
-    // Destroys the mod's LuaRuntime (releasing all of its resources) and
-    // removes it. ErrorCode::InvalidHandle if no such mod is loaded.
+    // Desmonta e remove o mod. Se a limpeza nativa falhar, devolve HostFailure
+    // e mantém o mod carregado em quarentena para outra tentativa.
     Result<void> UnloadMod(const std::string& id);
 
     void UnloadAll();
@@ -105,6 +105,7 @@ class ModHost {
 
     Result<void> LoadMod(const Manifest&, const std::string&, std::size_t,
                          const std::filesystem::path& directory);
+    void AbandonPendingProviders() noexcept;
 
     Logger mLogger;
     LuaApiHostContext mHostContext;

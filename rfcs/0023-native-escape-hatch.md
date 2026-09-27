@@ -70,11 +70,29 @@ fechamento. O `NativeEscapeHatch` ganhou dois campos opcionais, `beginBatch` e
 - **init de um provider com escape hatch liberado.** Os desvios instalados no
   init ativam juntos quando ele retorna. O `install_patch` continua devolvendo
   o trampolim na hora, mas o desvio só passa a rodar depois do init. Um init que
-  falha, ou lança, remove os seus desvios ainda dentro do lote, e nenhum chega a
-  rodar. Se o commit falhar, a carga falha e o unload remove o que tiver sido
-  aplicado.
-- **unload.** A remoção em ordem inversa vira um lote só, aplicado antes do
-  aviso ao host (`onProviderUnload`) e do `shutdown` da DLL.
+  falha, ou lança, tenta remover os seus desvios ainda dentro do lote, e nenhum
+  chega a rodar quando o rollback é confirmado. Se o commit falhar, a carga falha
+  e o unload tenta remover o que tiver sido aplicado.
+- **unload.** A remoção em ordem inversa vira um lote só e ocorre antes de o
+  `ModHost` retirar o mod do mapa (`PrepareUnload`, a metade que pode falhar,
+  que também tira os hooks do dono). O aviso ao host (`onProviderUnload`), o
+  `shutdown` e a liberação da DLL só acontecem depois de o host confirmar que
+  todos os desvios saíram da MinHook, no destrutor do provider, depois do
+  `lua_close`: finalizadores Lua do mod ainda chamam funções da DLL, como antes
+  do lote. Se a remoção falhar, o mod continua carregado,
+  mas em quarentena: o provider, seu runtime, contexto e instância permanecem
+  possuídos pelo host, e outra chamada de unload repete a limpeza. Na saída do
+  processo, uma pendência persistente vaza esse estado intencionalmente, com
+  diagnóstico, para nunca deixar um desvio vivo apontar para DLL ou contexto
+  destruído. Entradas que guardam ponteiros da DLL, como `install_patch` e
+  `register_hook`, são recusadas desde o início da desmontagem; os hooks do dono
+  são removidos outra vez depois do `shutdown` como defesa.
+
+Cada lote leva o id do provider. Remoções que falham continuam associadas a
+esse dono, têm a fila global neutralizada e não fazem o commit de outro provider
+falhar. Antes de criar um desvio num alvo com remoção pendente, o host tenta
+concluir essa remoção; por isso o retry seguido de reload não deixa um
+`MH_ERROR_ALREADY_CREATED` residual.
 
 Fora desses pontos, `install_patch` e `remove_patch` valem no retorno, como
 antes. Host sem os dois campos mantém o comportamento antigo.
@@ -85,10 +103,13 @@ ativo. Em troca, some a janela em que o desvio rodava antes de o mod guardar o
 
 ## Testes
 
-`native_provider_tests` usa um host falso de patches. Ele cobre o fingerprint
+`native_provider_tests` usa um host falso stateful de patches. Ele cobre o fingerprint
 aceito (patch instalado e removido no unload), o fingerprint recusado, mod comum
 e host sem escape hatch, além das recusas do parser. O lote de ativação tem um
 host falso que registra a ordem de begin, install, remove, commit e aviso de
 unload: lote no init, patch depois do init fora do lote, unload num lote só,
 init que falha removendo antes do commit, commit que falha derrubando a carga
-e nenhum lote sem permissão.
+e nenhum lote sem permissão. O fake registra `created`, `enabled` e
+`queueEnable` por alvo, injeta falha persistente de remoção e prova quarentena,
+retry, reload no mesmo alvo e isolamento entre providers. Uma fixture também
+tenta registrar hook no `shutdown` e confirma a recusa.

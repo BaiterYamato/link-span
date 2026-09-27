@@ -190,6 +190,7 @@ ModHost::ModHost(LuaApiHostContext hostContext, Logger logger, NativeProviderPol
 
 ModHost::~ModHost() {
     UnloadAll();
+    AbandonPendingProviders();
 }
 
 ModHost::ModHost(ModHost&& other) noexcept
@@ -205,6 +206,7 @@ ModHost::ModHost(ModHost&& other) noexcept
 ModHost& ModHost::operator=(ModHost&& other) noexcept {
     if (this != &other) {
         UnloadAll();
+        AbandonPendingProviders();
         mLogger = std::move(other.mLogger);
         mHostContext = std::move(other.mHostContext);
         mNativePolicy = std::move(other.mNativePolicy);
@@ -628,19 +630,33 @@ Result<void> ModHost::UnloadMod(const std::string& id) {
         return Result<void>::err(ErrorCode::InvalidHandle,
                                  "mod '" + modId + "' is not loaded");
     }
+    const bool retryingNativeUnload = it->second.provider && it->second.provider->IsUnloading();
     if (it->second.provider && it->second.provider->IsCalling()) {
         return Result<void>::err(ErrorCode::InvalidState, "cannot unload a mod during its native callback");
     }
-    for (const auto& [otherId, other] : mMods) {
-        if (otherId == modId) continue;
-        const bool declaredDependency = std::any_of(
-            other.manifest.dependencies.begin(), other.manifest.dependencies.end(),
-            [&modId](const auto& dependency) { return dependency.first == modId; });
-        const bool nativeConsumer = other.provider && other.provider->CanAccessServiceFrom(modId);
-        if (declaredDependency || nativeConsumer) {
-            return Result<void>::err(ErrorCode::InvalidState,
-                                     "cannot unload mod '" + modId +
-                                         "' while dependent '" + otherId + "' is loaded");
+    if (!retryingNativeUnload) {
+        for (const auto& [otherId, other] : mMods) {
+            if (otherId == modId) continue;
+            const bool declaredDependency = std::any_of(
+                other.manifest.dependencies.begin(), other.manifest.dependencies.end(),
+                [&modId](const auto& dependency) { return dependency.first == modId; });
+            const bool nativeConsumer = other.provider && other.provider->CanAccessServiceFrom(modId);
+            if (declaredDependency || nativeConsumer) {
+                return Result<void>::err(ErrorCode::InvalidState,
+                                         "cannot unload mod '" + modId +
+                                             "' while dependent '" + otherId + "' is loaded");
+            }
+        }
+    }
+    if (it->second.provider) {
+        const auto unloaded = it->second.provider->PrepareUnload();
+        if (!unloaded.isOk()) {
+            std::erase_if(mExtensionServices, [&modId](const NativeHostService& service) {
+                return service.owner == modId;
+            });
+            mLogger.error(modId, "native unload quarantined: " + unloaded.message);
+            return Result<void>::err(ErrorCode::HostFailure,
+                                     "mod '" + modId + "' native unload is pending: " + unloaded.message);
         }
     }
     const std::filesystem::path ownedDirectory = std::move(it->second.ownedDirectory);
@@ -649,7 +665,7 @@ Result<void> ModHost::UnloadMod(const std::string& id) {
     });
     std::erase(mLoadOrder, modId);
     {
-        // Retirar do mapa antes de shutdown/finalizadores chamarem serviços do host.
+        // Hooks e desvios já saíram; os finalizadores Lua ainda chamam a DLL, que só desliga no destrutor.
         auto unloaded = mMods.extract(it);
     } // binding -> lua_close -> native shutdown -> dlclose
     if (!ownedDirectory.empty()) {
@@ -667,7 +683,20 @@ Result<void> ModHost::UnloadMod(const std::string& id) {
 
 void ModHost::UnloadAll() {
     const auto ids = mLoadOrder;
-    for (auto it = ids.rbegin(); it != ids.rend(); ++it) UnloadMod(*it);
+    for (auto it = ids.rbegin(); it != ids.rend(); ++it) {
+        const auto unloaded = UnloadMod(*it);
+        if (!unloaded.isOk()) mLogger.error(*it, "unload failed: " + unloaded.message);
+    }
+}
+
+void ModHost::AbandonPendingProviders() noexcept {
+    for (auto& [id, mod] : mMods) {
+        if (!mod.provider) continue;
+        try {
+            mLogger.error(id, "native provider still quarantined at host destruction; state intentionally leaked");
+        } catch (...) { /* O vazamento seguro não depende do logger. */ }
+        (void)mod.provider.release();
+    }
 }
 
 LuaRuntime* ModHost::GetRuntime(const std::string& id) {
