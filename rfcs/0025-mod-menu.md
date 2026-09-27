@@ -63,6 +63,10 @@ de mesmo `(mod, id)`, ganha uma geração nova e devolve `true`.
   Sem `default`, valem `false`, o `min` (arredondado para cima no `slider_int`) ou
   a primeira opção. Um `default` fora do widget (tipo errado, fora da faixa,
   opção inexistente) recusa o registro.
+- Widgets do mesmo mod que compartilham uma `storage_key` devem ter defaults
+  efetivos equivalentes, inclusive quando o default é implícito. Mesmo tipo e
+  mesmo valor são equivalentes; inteiro e número também são equivalentes quando
+  representam exatamente o mesmo valor inteiro. Um conflito recusa o registro.
 - **Sliders** exigem `min < max` e `step >= 0` (0 = contínuo).
 - **`choice`:** de 1 a 64 opções; o valor pode ser booleano, inteiro, número ou
   texto.

@@ -6,6 +6,7 @@
 #include <exception>
 #include <limits>
 #include <optional>
+#include <set>
 #include <stdexcept>
 #include <string_view>
 #include <type_traits>
@@ -149,14 +150,19 @@ Result<MenuValue> ReadMenuValue(lua_State* state, int index) {
 
 bool MenuValuesEqual(const MenuValue& left, const MenuValue& right) {
     if (left.index() == right.index()) return left == right;
-    const auto number = [](const MenuValue& value) -> std::optional<double> {
-        if (const auto* integer = std::get_if<std::int64_t>(&value)) return static_cast<double>(*integer);
-        if (const auto* real = std::get_if<double>(&value)) return *real;
-        return std::nullopt;
+    const auto integerEqualsNumber = [](std::int64_t integer, double number) {
+        constexpr double kInt64Limit = 0x1p63;
+        return std::isfinite(number) && std::trunc(number) == number &&
+               number >= -kInt64Limit && number < kInt64Limit &&
+               integer == static_cast<std::int64_t>(number);
     };
-    const auto a = number(left);
-    const auto b = number(right);
-    return a.has_value() && b.has_value() && *a == *b;
+    if (const auto* integer = std::get_if<std::int64_t>(&left)) {
+        if (const auto* number = std::get_if<double>(&right)) return integerEqualsNumber(*integer, *number);
+    }
+    if (const auto* number = std::get_if<double>(&left)) {
+        if (const auto* integer = std::get_if<std::int64_t>(&right)) return integerEqualsNumber(*integer, *number);
+    }
+    return false;
 }
 
 // Valor aceito por um widget: tipo certo, número dentro da faixa, opção existente. Fora disso, nullopt.
@@ -194,6 +200,35 @@ std::optional<MenuValue> NormalizeMenuValue(const MenuWidget& widget, const Menu
         default:
             return value;
     }
+}
+
+bool MenuWidgetHasValue(const MenuWidget& widget) {
+    return widget.type == MenuWidgetType::Checkbox || widget.type == MenuWidgetType::SliderInteger ||
+           widget.type == MenuWidgetType::SliderNumber || widget.type == MenuWidgetType::Choice;
+}
+
+const MenuValue* FindMenuDefault(const std::map<std::string, MenuPage>& pages,
+                                 const std::string& storageKey) {
+    for (const auto& [id, page] : pages) {
+        (void)id;
+        for (const MenuWidget& widget : page.widgets) {
+            if (MenuWidgetHasValue(widget) && widget.storageKey == storageKey) return &widget.defaultValue;
+        }
+    }
+    return nullptr;
+}
+
+bool EvaluateMenuPredicate(const KeyValueStorage& storage, const std::string& owner,
+                           const std::map<std::string, MenuPage>& pages, const std::string& key,
+                           const MenuValue& equals, bool negate) {
+    if (key.empty()) return true;
+    const auto stored = storage.Get(owner, key);
+    const MenuValue* value = nullptr;
+    if (stored.isOk()) {
+        value = stored.value->has_value() ? &**stored.value : FindMenuDefault(pages, key);
+    }
+    const bool equal = value != nullptr && MenuValuesEqual(*value, equals);
+    return negate ? !equal : equal;
 }
 
 bool ReadMenuStringField(lua_State* state, int table, const char* name, std::string& value,
@@ -477,6 +512,13 @@ Result<void> ValidateLuaApiHostContext(const LuaApiHostContext& context) {
         return Result<void>::err(
             ErrorCode::InvalidState,
             "host registered actor capabilities without an actor provider");
+    }
+    if (context.capabilityRegistry != nullptr &&
+        (context.menu == nullptr || context.storage == nullptr) &&
+        context.capabilityRegistry->Has("core.menu", context.gameId)) {
+        return Result<void>::err(
+            ErrorCode::InvalidState,
+            "host registered core.menu without menu and storage adapters");
     }
     return Result<void>::ok();
 }
@@ -1539,6 +1581,14 @@ int LuaApiBinding::RegisterMenu(lua_State* state, const char*& error) {
     lua_pop(state, 1);
     page.generation = mNextMenuGeneration++;
 
+    std::map<std::string, MenuValue> menuDefaults;
+    for (const auto& [id, existingPage] : mMenuPages) {
+        if (id == page.id) continue;
+        for (const MenuWidget& widget : existingPage.widgets) {
+            if (MenuWidgetHasValue(widget)) menuDefaults.try_emplace(widget.storageKey, widget.defaultValue);
+        }
+    }
+
     std::map<std::string, std::shared_ptr<MenuCallback>> newCallbacks;
     struct PendingMenuReferences {
         lua_State* state;
@@ -1560,6 +1610,7 @@ int LuaApiBinding::RegisterMenu(lua_State* state, const char*& error) {
     const int widgets = lua_gettop(state);
     const std::size_t count = lua_rawlen(state, widgets);
     if (count > 256) { lua_pop(state, 1); error = "menu page exceeds 256 widgets"; return 0; }
+    std::set<std::string> widgetIds;
     for (std::size_t index = 1; index <= count; ++index) {
         lua_geti(state, widgets, static_cast<lua_Integer>(index));
         if (!lua_istable(state, -1)) { lua_pop(state, 2); error = "menu widget must be a table"; return 0; }
@@ -1575,6 +1626,9 @@ int LuaApiBinding::RegisterMenu(lua_State* state, const char*& error) {
             lua_pop(state, 2); return 0;
         }
         if (!IsValidHotkeyId(widget.id)) { lua_pop(state, 2); error = "menu widget id is invalid"; return 0; }
+        if (!widgetIds.insert(widget.id).second) {
+            lua_pop(state, 2); error = "menu widget id is duplicated"; return 0;
+        }
         if (type == "checkbox") widget.type = MenuWidgetType::Checkbox;
         else if (type == "slider_int") widget.type = MenuWidgetType::SliderInteger;
         else if (type == "slider_number") widget.type = MenuWidgetType::SliderNumber;
@@ -1647,15 +1701,35 @@ int LuaApiBinding::RegisterMenu(lua_State* state, const char*& error) {
 
         const bool slider =
             widget.type == MenuWidgetType::SliderInteger || widget.type == MenuWidgetType::SliderNumber;
-        const bool valued = slider || widget.type == MenuWidgetType::Checkbox || widget.type == MenuWidgetType::Choice;
+        const bool valued = MenuWidgetHasValue(widget);
         if (slider && (!(widget.minimum < widget.maximum) || widget.step < 0.0)) {
             lua_pop(state, 2); error = "menu slider needs min < max and step >= 0"; return 0;
+        }
+        if (widget.type == MenuWidgetType::SliderInteger) {
+            constexpr double kInt64Limit = 0x1p63;
+            const double minimum = std::ceil(widget.minimum);
+            const double maximum = std::floor(widget.maximum);
+            if (minimum > maximum || minimum < -kInt64Limit || minimum >= kInt64Limit ||
+                maximum < -kInt64Limit || maximum >= kInt64Limit ||
+                std::trunc(widget.step) != widget.step || widget.step >= kInt64Limit) {
+                lua_pop(state, 2); error = "menu integer slider range and step must fit int64"; return 0;
+            }
         }
         if (widget.type == MenuWidgetType::Choice && widget.choices.empty()) {
             lua_pop(state, 2); error = "menu choice needs at least one entry"; return 0;
         }
         if (valued && widget.storageKey.empty()) {
             lua_pop(state, 2); error = "menu widget with a value needs storage_key"; return 0;
+        }
+        const auto validateStorageKey = [&](const std::string& key) {
+            if (key.empty()) return true;
+            const auto valid = mStorage->ValidateKey(page.owner, key);
+            return valid.isOk();
+        };
+        if ((valued && !validateStorageKey(widget.storageKey)) ||
+            !validateStorageKey(widget.visibleStorageKey) ||
+            !validateStorageKey(widget.enabledStorageKey)) {
+            lua_pop(state, 2); error = "menu storage key is invalid"; return 0;
         }
         if (valued) {
             if (!hasDefault) {
@@ -1670,6 +1744,12 @@ int LuaApiBinding::RegisterMenu(lua_State* state, const char*& error) {
                 lua_pop(state, 2); error = "menu default value does not fit the widget"; return 0;
             }
             widget.defaultValue = *normalized;
+            const auto [existing, inserted] = menuDefaults.emplace(widget.storageKey, widget.defaultValue);
+            if (!inserted && !MenuValuesEqual(existing->second, widget.defaultValue)) {
+                lua_pop(state, 2);
+                error = "menu widgets sharing storage_key must use equivalent defaults";
+                return 0;
+            }
         }
         widget.value = widget.defaultValue;
 
@@ -1724,7 +1804,11 @@ void LuaApiBinding::PumpMenu() noexcept {
             if (page == mMenuPages.end() || page->second.generation != input.generation) continue;
             auto widget = std::find_if(page->second.widgets.begin(), page->second.widgets.end(),
                 [&](const MenuWidget& candidate) { return candidate.id == input.widgetId; });
-            if (widget == page->second.widgets.end() || !widget->visible || !widget->enabled) continue;
+            if (widget == page->second.widgets.end() ||
+                !EvaluateMenuPredicate(*mStorage, owner, mMenuPages, widget->visibleStorageKey,
+                                       widget->visibleEquals, widget->visibleNegate) ||
+                !EvaluateMenuPredicate(*mStorage, owner, mMenuPages, widget->enabledStorageKey,
+                                       widget->enabledEquals, widget->enabledNegate)) continue;
             MenuValue value = input.value;
             if (input.kind == MenuInputKind::Change) {
                 const auto normalized = NormalizeMenuValue(*widget, input.value);
@@ -1764,7 +1848,7 @@ void LuaApiBinding::PumpMenu() noexcept {
             }
         }
         if (!mMenuDirty) return;
-        mMenuDirty = false;
+        bool publishFailed = false;
         for (auto& [id, page] : mMenuPages) {
             (void)id;
             for (MenuWidget& widget : page.widgets) {
@@ -1777,17 +1861,20 @@ void LuaApiBinding::PumpMenu() noexcept {
                         }
                     }
                 }
-                auto evaluate = [&](const std::string& key, const MenuValue& equals, bool negate) {
-                    if (key.empty()) return true;
-                    const auto stored = mStorage->Get(owner, key);
-                    const bool equal = stored.isOk() && stored.value->has_value() && MenuValuesEqual(**stored.value, equals);
-                    return negate ? !equal : equal;
-                };
-                widget.visible = evaluate(widget.visibleStorageKey, widget.visibleEquals, widget.visibleNegate);
-                widget.enabled = evaluate(widget.enabledStorageKey, widget.enabledEquals, widget.enabledNegate);
+                widget.visible = EvaluateMenuPredicate(*mStorage, owner, mMenuPages,
+                                                       widget.visibleStorageKey, widget.visibleEquals,
+                                                       widget.visibleNegate);
+                widget.enabled = EvaluateMenuPredicate(*mStorage, owner, mMenuPages,
+                                                       widget.enabledStorageKey, widget.enabledEquals,
+                                                       widget.enabledNegate);
             }
-            (void)mMenu->Upsert(page);
+            const auto published = mMenu->Upsert(page);
+            if (!published.isOk()) {
+                publishFailed = true;
+                mLogger.error(owner, published.message);
+            }
         }
+        mMenuDirty = publishFailed;
     } catch (...) {
         mLogger.error(mRuntime.ModId(), "host exception while pumping mod menu");
     }
@@ -2082,13 +2169,15 @@ int LuaApiBinding::SetStorage(lua_State* state, const char*& error, KeyValueStor
             error = "ship.storage set aceita somente booleano, número ou texto";
             return 0;
     }
-    const auto stored =
-        storage->Set(mRuntime.ModId(), std::string(key, length), std::move(value));
+    const std::string storageKey(key, length);
+    const auto previous = storage->Get(mRuntime.ModId(), storageKey);
+    const bool changed = !previous.isOk() || !previous.value->has_value() || **previous.value != value;
+    const auto stored = storage->Set(mRuntime.ModId(), storageKey, std::move(value));
     if (!stored.isOk()) {
         error = ErrorMessage(stored.code);
         return 0;
     }
-    if (storage == mStorage.get()) mMenuDirty = true;
+    if (storage == mStorage.get() && changed) mMenuDirty = true;
     lua_pushboolean(state, 1);
     return 1;
 }
@@ -2131,7 +2220,7 @@ int LuaApiBinding::DeleteStorage(lua_State* state, const char*& error, KeyValueS
         error = ErrorMessage(removed.code);
         return 0;
     }
-    if (storage == mStorage.get()) mMenuDirty = true;
+    if (storage == mStorage.get() && *removed.value) mMenuDirty = true;
     lua_pushboolean(state, *removed.value ? 1 : 0);
     return 1;
 }
@@ -2162,7 +2251,7 @@ int LuaApiBinding::ClearStorage(lua_State* state, const char*& error, KeyValueSt
         error = ErrorMessage(cleared.code);
         return 0;
     }
-    if (storage == mStorage.get()) mMenuDirty = true;
+    if (storage == mStorage.get() && *cleared.value != 0) mMenuDirty = true;
     lua_pushinteger(state, static_cast<lua_Integer>(*cleared.value));
     return 1;
 }
