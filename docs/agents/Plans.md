@@ -1154,3 +1154,56 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
 - **Pendências do Gate:** licença; playtest físico; fixtures do Prelude (matriz em levantamento pelo Codex); resolução
   por versão (fixtures de duas famílias de ROM); playtest de todos os itens NEI; aprovação da RFC 0027 e saídas C;
   crash do `ResourceLogging`; push.
+
+### UPDATE 2026-10-03 (Claude) — UNBOUND-019 e UNBOUND-020
+
+- **UNBOUND-019** (Gate §10.5/§14.3: compatibilidade entre versões de OoT). Framework Unbound 0.6.2, host
+  `d68af6968`, sem mudar o host.
+  - No `game.ready`, cada documento de cena, sala, colisão ou path que um mod Unbound traz é mesclado e
+    transcodificado como o jogo faria. Cada recurso que o XML manda carregar é conferido no VFS: mesh, imagens,
+    colisão, salas, paths, cutscene, texturas animadas, música e `bulk.file`.
+  - Recurso ausente vira `warning` antes do gameplay. É o caso de nome de outra família de ROM, como uma display
+    list com outro offset. Documento que o jogo recusaria também vira `warning`.
+  - O resumo traz a versão do `oot.o2r` (`NTSC-US 1.1 (D43DA81F)` na cópia de teste).
+  - Revisão do Codex: 6 achados (1 alto, 5 médios), dos quais 5 foram corrigidos.
+    - Setup esparso `1e9` virava gigabytes de XML; agora setup acima de 255 é ignorado com nota.
+    - `texCycle` que a fábrica descarta agora sai descartado também no framework.
+    - `bulk.file` passa a ser conferido literal.
+    - Alias `.meta` passa a ser aceito.
+    - Versão não registrada vira recusa explicada.
+  - O sexto achado é defeito do host: o `ArchiveManager::LoadFile` de um arquivo ausente insere `nullptr` e o
+    `HasFile` passa a dizer que o arquivo existe. Fica como candidato D da RFC 0027.
+- **UNBOUND-020** (Gate §10.3/§14.3: limites do Prelude). Framework 0.6.3, host `99ef93011`.
+  - Matriz de limites levantada pelo Codex: 33 linhas, 2 cobertas, 21 parciais, 10 sem cobertura. Prioridades 1 e 2
+    feitas.
+  - Fronteiras limite-1/limite/limite+1 em teste:
+    - path;
+    - light settings;
+    - mensagem;
+    - surface types e water boxes;
+    - salas, atores e objetos;
+    - câmera fixa;
+    - frações.
+  - Notas antes do gameplay nos tetos do runtime: salas (s16), atores (u16), objetos (acima de 1 020: banco de
+    1 024 com até 4 vagas permanentes) e câmera fora de s16, que antes embrulhava em silêncio.
+  - Achado ao testar o teto: o `ordered_json` procura chave em ordem, e 65 535 surface types levavam ~9 s entre parse
+    e transcode. Parse por SAX com índice, merge indexado e listas por item resolvem sem mudar a semântica:
+    ~120 ms por documento.
+  - Fuzz diferencial do Codex (g++): 1,4 milhão de comparações contra as versões antigas, zero divergências.
+  - Revisão do Codex: 6 achados (5 médios, 1 baixo), todos corrigidos. Quatro eram caminhos ainda quadráticos:
+    overlay grande sobre base pequena, `StripDirectives`, path não objeto e o patch de atores de sala. Os outros
+    dois: a nota de objetos ignorava as vagas permanentes, e o merge indexado divergia com chave repetida.
+- **Prova em jogo** (`evidence/unbound-020`, pacote 0.6.3): 4/4 sessões com o pacote `AE99F255…`, já com as correções da revisão. A camada nos tetos (~4,4 MB de JSON) dá `documentos=3 conferidas=3 notas=4 ms=685` no boot. As fixtures da 019 e da 018 mantêm os mesmos números; sem camadas, `documentos=0`.
+- **Pendências do Gate:**
+  - licença;
+  - playtest físico;
+  - fixtures de duas famílias de ROM;
+  - playtest de todos os itens NEI;
+  - aprovação da RFC 0027 e rodada de host, com estes itens:
+    - dívidas C;
+    - `HasFile` mentindo;
+    - texto R04 sem guarda;
+    - pool de luzes M18;
+  - fixtures de recurso próprio (prioridade 5 da matriz);
+  - crash do `ResourceLogging`;
+  - push.
