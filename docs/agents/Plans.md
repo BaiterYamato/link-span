@@ -1131,3 +1131,26 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
     itens NEI, recompilações do host depois do COREEXT-GATE, atualização de pacote N→N+1;
   - crash com `ResourceLogging` na casa do Link (`LogMeshAsXML`; reproduzir no upstream limpo);
   - push.
+
+### UPDATE 2026-10-03 (Claude) — UNBOUND-018 e COREEXT-011
+
+- **UNBOUND-018 (Gate §18: conflito de cenas antes do gameplay):** framework Unbound 0.6.1, sem mudar o host.
+  - No `game.ready`, todo arquivo que dois ou mais mods Unbound trazem no mesmo caminho é comparado. Documento que o
+    Unbound mescla (cena tipada pelo conteúdo, registro, texto) vai folha a folha pela mesma regra do jogo: delta
+    mesclável só é registrado; valor que um mod sobrescreve de outro vira `warning` com mods, chaves e quem fica por
+    cima. Binário ou JSON sem tipo: conteúdo diferente é conflito de arquivo inteiro.
+  - Camadas descobertas pelo `read_file_layers("unbound.json")` e pelo diretório central de cada `.o2r` (leitor
+    próprio com ZIP64 e proteção contra registro final falso); a base sai pelo caminho que o framework montou.
+  - Corrigido junto: com 64 ou mais mods Unbound a base não ativava (o coletor de `unbound.json` usava o teto de 64
+    camadas de documento).
+  - Revisão do Codex (`gpt-6.1-sol` alto): 9 achados (3 altos, 3 médios, 3 baixos), todos tratados; os testes dele
+    entraram no `conflict_tests`.
+  - Prova em jogo (`evidence/unbound-018`): três camadas de prova (A+B+C, A+C, nenhuma) no host RC2 `E278E9A3` deram exatamente os números esperados (`abc`: 6 em comum, 2 mescláveis, 1 idêntico, 3 conflitos em `warning`, incluindo cena registrada fora de `scenes/` e um binário inteiro); três sessões válidas, exit 0.
+  - Atualização N→N+1 (Unbound 0.6.0 → 0.6.1 com NEI, save mantido, cache mantido): `ATUALIZACAO OK` — u1 em `v0.6.0` sem a linha nova, u2 em `v0.6.1` com ela, base reaproveitada do cache, cinco namespaces do save iguais, quatro sessões válidas.
+- **COREEXT-011 (Gate §18: recompilações depois do COREEXT-GATE):** RFC 0027 em rascunho no core (`d189ce1`), com o
+  inventário dos 24 commits de host desde `16c4622d5` (A=0, B=6, C=2, D=12, E=4), saída proposta para os dois itens C
+  (áudio Unbound por nome no `SetSoundSettingsFactory`; seletor do DMR no kaleido e detector de `unbound.json` no
+  bootstrap) e a regra para recompilações futuras. Falta a decisão do usuário sobre as dívidas C.
+- **Pendências do Gate:** licença; playtest físico; fixtures do Prelude (matriz em levantamento pelo Codex); resolução
+  por versão (fixtures de duas famílias de ROM); playtest de todos os itens NEI; aprovação da RFC 0027 e saídas C;
+  crash do `ResourceLogging`; push.
