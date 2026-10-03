@@ -1,7 +1,7 @@
-# Escrevendo mods para ShipLua (API 0.4)
+# Escrevendo mods para ShipLua (API 0.5)
 
 Este guia mostra como criar, testar, empacotar e instalar um mod Lua que roda no
-Shipwright (OoT) e no 2Ship (MM) com a **API 0.4.0** do ShipLua.
+Shipwright (OoT) e no 2Ship (MM) com a **API 0.5.0** do ShipLua.
 
 > Referência completa gerada dos schemas:
 > [`generated/docs/api-reference.md`](../generated/docs/api-reference.md).
@@ -28,7 +28,7 @@ Opcionalmente: `tests/` (testes no mock runtime), `README.md`.
 id = "community.meu_mod"
 name = "Meu Mod"
 version = "0.1.0"
-api = ">=0.4 <0.5"
+api = ">=0.5 <0.6"
 entrypoint = "main.lua"
 description = "Aperte K para spawnar um cachorro com a API genérica de atores."
 authors = ["Seu Nome"]
@@ -46,13 +46,10 @@ actors = 1
 
 Sobre a faixa `api`:
 
-- **`">=0.4 <0.5"`** — para mods que usam `ship.actor.*` (API genérica de atores,
-  introduzida na 0.4);
-- **`">=0.1 <0.5"`** — para mods básicos (log, eventos, hotkeys, capabilities),
-  que rodam também em hosts antigos;
-- faixas que **não cobrem a versão do host** são rejeitadas no load. Em especial,
-  pacotes velhos com `api = ">=0.1 <0.2"` ou `<0.3` **não carregam** em hosts
-  0.4 — reempacote com a faixa nova (o log diz o motivo da rejeição).
+- Use **`">=0.5 <0.6"`** para esta release. A faixa precisa cobrir a versão da
+  API que o host anuncia.
+- Faixas que não cobrem a versão do host são rejeitadas no load. Reempacote o
+  manifesto ao atualizar de uma faixa que termina em `<0.5`.
 
 ### 2.2 Escreva o `main.lua`
 
@@ -153,7 +150,7 @@ completo: [`schema/manifest.schema.json`](../schema/manifest.schema.json).
 | `id` | string | Único, estilo domínio-invertido (`community.meu_mod`) |
 | `name` | string | Nome de exibição |
 | `version` | string | SemVer do mod |
-| `api` | string | Faixa da API ShipLua suportada (`">=0.4 <0.5"`) |
+| `api` | string | Faixa da API ShipLua suportada (`">=0.5 <0.6"`) |
 | `entrypoint` | string | Arquivo Lua de entrada (`main.lua`) |
 | `description`, `authors` | string, array | Metadados opcionais |
 | `games` | array | `["oot"]`, `["mm"]` ou ambos; vazio/omitido = ambos |
@@ -190,7 +187,7 @@ armazenada em cache. Sem a sonda do host, um mod que declara esses requisitos
 
 ## 4. A API `ship`
 
-Toda função abaixo existe na superfície 0.4.0
+Toda função abaixo existe na superfície 0.5.0
 ([`schema/api.yml`](../schema/api.yml)); nada aqui é planejado ou especulativo.
 
 ### Log e identidade
@@ -201,7 +198,7 @@ ship.log.debug(msg)  ship.log.info(msg)  ship.log.warn(msg)  ship.log.error(msg)
 ship.game.id()            -- "oot" ou "mm"
 ship.game.host_version()  -- ex.: "9.2.3" (Shipwright) ou "4.0.2" (2Ship)
 ship.runtime.version()    -- versão do runtime ShipLua
-ship.api.version()        -- "0.4.0"
+ship.api.version()        -- "0.5.0"
 ```
 
 ### Capabilities (feature detection)
@@ -238,6 +235,35 @@ end)
 
 Nem todo host publica todos os eventos — cheque a capability correspondente.
 
+### Resultado de evento transform
+
+`ship.hooks.result(valor)` só vale dentro do callback de um evento de tipo
+`transform`. O valor substitui o resultado que o bridge entrega ao ponto nativo.
+Aceita booleano, número finito ou texto; fora desse callback a chamada falha.
+
+```lua
+if ship.capabilities.has("hooks.bridge") then
+    ship.events.on("hook.oot.player.speed.run", function(payload)
+        ship.hooks.result(payload.speed * 0.8)
+    end)
+end
+```
+
+Consulte `schema/events.yml` para saber se um evento é `transform`. Eventos
+`observe` não aceitam resultado.
+
+### Velocidade do jogador (capability `player.speed`)
+
+```lua
+if ship.capabilities.has("player.speed") then
+    local applied = ship.player.set_speed_multiplier(1.15)
+    -- 1.0 restaura; valores fora de 0.1 a 5.0 devolvem false.
+end
+```
+
+Sem a capability ou o handler do host, a chamada falha com `unsupported`.
+
+
 ### Hotkeys (rebindáveis)
 
 ```lua
@@ -255,6 +281,34 @@ if ship.capabilities.has("core.input") then
     ship.hotkeys.register(...)
 end
 ```
+
+
+### Página de menu declarativa (capability `core.menu`)
+
+No OoT, `ship.menu.register(page)` publica uma página por mod. Teste a
+capability: a função existe no núcleo, mas um host sem o adaptador retorna
+`unsupported`. Widgets com valor usam `ship.storage` do próprio mod.
+
+```lua
+if ship.capabilities.has("core.menu") then
+    ship.menu.register({
+        id = "meu_mod", title = "Meu Mod", sidebar = "Meu Mod",
+        widgets = {
+            { id = "toggle", type = "checkbox", label = "Ativo",
+              storage_key = "active", default = true },
+            { id = "modo", type = "action", label = "Modo",
+              icon_path = "textures/icon_item_static/gItemIconHammerTex",
+              selected = true,
+              on_activate = function() ship.log.info("modo acionado") end },
+        },
+    })
+end
+```
+
+`icon_path` é caminho relativo de recurso: não use `..`, barra invertida, `:` ou
+NUL. `selected` só é válido em `action` com `icon_path` e é apenas visual; a
+ação não é persistida automaticamente. A referência completa de widgets,
+limites, callbacks e input está em [`rfcs/0025-mod-menu.md`](../rfcs/0025-mod-menu.md).
 
 ### Atores genéricos (`ship.actor.*`)
 
@@ -328,8 +382,9 @@ end
 ### Storage (capability `core.storage`) e fallback em memória
 
 `ship.storage.get/set/delete/clear` persiste chave-valor com namespace por mod.
-**Atenção:** os hosts reais (Shipwright/2Ship) **ainda não expõem**
-`core.storage` — só o mock runtime do `shipmod test` a oferece. Use o padrão de
+No OoT, o host cria `shiplua-storage.bin` no diretório do aplicativo e anuncia
+`core.storage`. `core.storage.shared` só aparece sob o launcher Link-Span; fora
+dele, use fallback quando precisar do mesmo estado entre jogos. Use o padrão de
 fallback do [`examples/frame-counter`](../examples/frame-counter/):
 
 ```lua
@@ -391,7 +446,7 @@ manifesto + checagem em runtime + degradação com um `ship.log.warn` claro.
 
 | Sintoma | Causa | Correção |
 |---|---|---|
-| Log: `rejeitou o mod ... api` | Faixa `api` velha (`<0.3`) não cobre 0.4.0 | Atualize para `">=0.4 <0.5"` (ou `">=0.1 <0.5"` se o mod é básico) e reempacote |
+| Log: `rejeitou o mod ... api` | Faixa `api` não cobre 0.5.0 | Atualize para `">=0.5 <0.6"` e reempacote |
 | Mod não carrega, log cita capability | Capability em `[capabilities] required` ausente no host | Mova para `optional` e detecte em runtime, ou rode num host que a anuncie |
 | `ship.actor.spawn` → `permission_denied` | Falta o grant em `[permissions] grants` | Adicione `world.entities.create/destroy/read` |
 | `ship.actor.spawn` → `invalid_argument` | Nome lógico fora da allowlist do host | Use um nome da tabela acima (ou o equivalente do outro jogo) |

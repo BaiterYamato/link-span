@@ -257,3 +257,47 @@ Os hooks genéricos `oot.actor.init` e `oot.play.draw_end` permitem observar ato
 depois de sua inicialização completa e desenhar ao fim do frame de jogo. O
 segundo ocorre dentro do contexto de renderização. Ambos são notificações; não
 substituem a rotina original e não garantem suporte a uma mecânica específica.
+
+## Contrato do SDK OoT
+
+O SDK OoT é específico do host. Inclua apenas os headers públicos em
+`soh/soh/native/` e peça cada tabela com `runtime->get_service`. Confira a
+versão pedida, `size` e ponteiros antes de usar a tabela. Os contratos públicos
+são:
+
+| Serviço | Versão | Header | Uso principal |
+|---|---:|---|---|
+| `linkspan.oot.registry` | 1 e 2 | `oot_registry.h` | registros dinâmicos do OoT |
+| `linkspan.oot.randomizer` | 1 e 2 | `oot_randomizer.h` | itens e pistas da seed |
+| `linkspan.oot.actor-models` | 1 | `oot_actor_models.h` | modelos de tipos de ator do mod |
+| `linkspan.oot.lights` | 1 | `oot_lights.h` | luzes pontuais do mod |
+| `linkspan.oot.render` | 1, 2 e 3 | `oot_render.h` | desenho e estado de render no escopo permitido |
+| `linkspan.oot.scenes` | 1, 2 e 3 | `oot_scenes.h` | cenas e entradas dinâmicas |
+| `linkspan.oot.save` | 1 | `oot_save.h` | blocos JSON por namespace no save |
+| `linkspan.oot.resources` | 1, 2 e 3 | `oot_resources.h` | VFS, camadas e invalidação de recursos |
+
+Os detalhes de ownership, thread e escopo estão no header do serviço. Em
+particular, os namespaces de save pertencem ao save carregado, e operações de
+render só valem nos hooks ou callbacks de draw que o header autoriza.
+
+Os pontos nativos publicados pelo OoT estão em `oot_hooks.h`. Use
+`oot.actor.init` apenas para observar o ator depois do init completo e
+`oot.play.draw_end` apenas para desenhar no fim do frame, no contexto de render.
+Os demais pontos declaram seu modo permitido (`observe`, `transform` ou
+`replace`) e seu payload no mesmo header.
+
+## Escape hatch: lote e quarentena
+
+O core abre um lote por owner durante o `init` e durante a remoção dos patches
+no unload quando o host oferece `beginBatch` e `commitBatch`. Patches instalados
+no init só ficam ativos depois que ele retorna. Fora do lote, `install_patch` e
+`remove_patch` valem no retorno.
+
+Se o host não confirmar a remoção de todos os patches, o unload é colocado em
+quarentena: a biblioteca continua carregada e o provider não pode ser tratado
+como removido. Isso evita um detour apontar para código já descarregado. O
+provider não deve depender de patch ativo durante o próprio init e não deve
+instalar patch no `shutdown`.
+
+O escape hatch continua restrito a core extension ABI 1.3, ao fingerprint do
+executável declarado no manifesto e ao limite de 1024 patches por provider.
