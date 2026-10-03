@@ -44,8 +44,13 @@ struct LuaApiHostContext {
     // Games whose assets/hosts are available to the supervising Link-Span
     // process. Empty keeps standalone compatibility and means only gameId.
     std::vector<std::string> availableGames;
+    // Synchronous host VFS probe, called on the loading/game thread.
+    std::function<bool(const std::string&)> resourceExists;
     // Adaptador de menu declarativo. Nullable; capability core.menu ausente.
     std::shared_ptr<MenuRegistry> menu;
+    // Implementação do host para a API comum ship.player.set_speed_multiplier.
+    // Nullable quando player.speed não é anunciado.
+    std::function<Result<bool>(double)> setSpeedMultiplier;
 };
 
 // Per-mod authorization and resource policy derived from manifest.toml.
@@ -82,6 +87,7 @@ class LuaApiBinding {
         Subscription subscription;
         std::size_t consecutiveFailures = 0;
         bool active = true;
+        bool resultTransform = false;
     };
 
     struct HotkeyCallback {
@@ -109,6 +115,8 @@ class LuaApiBinding {
     static int CapabilityProviders(lua_State* state) noexcept;
     static int EventsOn(lua_State* state) noexcept;
     static int EventsOff(lua_State* state) noexcept;
+    static int HooksResult(lua_State* state) noexcept;
+    static int SetSpeedMultiplier(lua_State* state) noexcept;
     static int HotkeysRegister(lua_State* state) noexcept;
     static int MenuRegister(lua_State* state) noexcept;
     static int TimerAfter(lua_State* state) noexcept;
@@ -147,6 +155,8 @@ class LuaApiBinding {
     int CapabilityListFromLua(lua_State* state, const char*& error);
     int CapabilityInfoFromLua(lua_State* state, const char*& error);
     int CapabilityProvidersFromLua(lua_State* state, const char*& error);
+    int HooksResultFromLua(lua_State* state, const char*& error);
+    int SetSpeedMultiplierFromLua(lua_State* state, const char*& error);
     static int ScheduleTimer(lua_State* state, bool repeating) noexcept;
     int ScheduleTimerFromLua(lua_State* state, bool repeating, const char*& error);
     Result<TimerHandle> DoScheduleTimer(lua_State* state, bool repeating, std::uint64_t frames,
@@ -195,6 +205,8 @@ class LuaApiBinding {
     std::size_t mMaxTimersPerMod = 64; // plan-sdk.md [limits] timers = 64
     std::map<std::uint64_t, std::shared_ptr<LuaCallback>> mCallbacks;
     std::map<std::uint64_t, std::shared_ptr<LuaCallback>> mTimerCallbacks;
+    // Só é válido durante o callback Lua de um evento transform.
+    EventPayload* mActiveTransformPayload = nullptr;
     std::vector<Handle> mActorHandles;
     int mShipReference = -2;
     bool mInstalled = false;

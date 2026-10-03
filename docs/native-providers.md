@@ -238,3 +238,22 @@ substitui esse esboço por funções livres e acesso a serviços C. Eventos por 
 podem chamar essas funções pelo Lua sem criar novas APIs centrais.
 Core extensions e serviços entre mods são definidos em
 `rfcs/0015-core-extension-abi.md`.
+
+## Consultas de itens do randomizer OoT
+
+O adaptador OoT oferece `linkspan.oot.randomizer` v2 para consultar o catálogo de
+itens de uma seed e procurar uma localização ainda não coletada. A tabela v1
+continua disponível; o tamanho e as posições dos serviços anteriores são
+preservados. O contrato detalhado está em
+`rfcs/0026-oot-randomizer-item-hints.md`; o header é `oot_randomizer.h` no SDK OoT.
+
+As consultas exigem a thread do jogo e buffers com o tamanho declarado. A busca
+de localização exige um save normal de randomizer carregado; saves comuns
+retornam `SHIP_NATIVE_UNSUPPORTED`. A consulta não concede itens, não revela
+localizações coletadas e não aplica custos ao save. O mod decide como apresentar
+a pista e quando cobrar por ela, depois de receber uma resposta válida.
+
+Os hooks genéricos `oot.actor.init` e `oot.play.draw_end` permitem observar atores
+depois de sua inicialização completa e desenhar ao fim do frame de jogo. O
+segundo ocorre dentro do contexto de renderização. Ambos são notificações; não
+substituem a rotina original e não garantem suporte a uma mecânica específica.

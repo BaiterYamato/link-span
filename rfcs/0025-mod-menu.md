@@ -53,12 +53,19 @@ de mesmo `(mod, id)`, ganha uma geração nova e devolve `true`.
   | `slider_int` | `storage_key`, `min`, `max`, `step`, `format` | `on_change(value)` |
   | `slider_number` | `storage_key`, `min`, `max`, `step`, `format` | `on_change(value)` |
   | `choice` | `storage_key`, `choices = {{value, label}, ...}` | `on_change(value)` |
-  | `action` | nenhum | `on_activate()`, sem argumentos |
+  | `action` | `icon_path` e `selected` opcionais | `on_activate()`, sem argumentos |
   | `text` | `label` | nenhum |
   | `separator` | `label` opcional | nenhum |
 
 - **Campos comuns:** `id`, `type`, `label`, `tooltip`, `column`, `visible_if` e
   `enabled_if`.
+- **Ação com ícone:** `icon_path` aponta para uma textura do gerenciador de recursos
+  do host. O caminho deve ser relativo, sem `..`, barra invertida, `:` ou NUL.
+  `selected` é um booleano apenas visual, válido quando há `icon_path`: o host
+  mostra o ícone realçado se `true` e escurecido se `false`. O clique ainda gera
+  `on_activate()` na thread do mod; o mod decide a mudança de estado e republica
+  a página. Se a textura não puder ser carregada, aparece um botão de texto com
+  o mesmo callback. Nada é salvo automaticamente no `ship.storage`.
 - **Widgets com valor** (`checkbox`, sliders e `choice`) exigem `storage_key`.
   Sem `default`, valem `false`, o `min` (arredondado para cima no `slider_int`) ou
   a primeira opção. Um `default` fora do widget (tipo errado, fora da faixa,
@@ -105,9 +112,10 @@ no contexto é `invalid_state` na instalação da API.
 - **`SohMenuModRegistry`** guarda páginas e inputs sob mutex. A fila aceita até
   1024 inputs, e um `Change` do mesmo widget substitui o que ainda espera.
 - **Onde aparece:** o `SohMenu` ganha a entrada `Mods`, com a barra lateral
-  `Installed Mods`. Cada página vira um cabeçalho recolhível `title - sidebar`,
-  com uma tabela de `columns` colunas. Nesta versão o campo `sidebar` não cria
-  uma entrada própria na barra lateral: o menu do SoH monta as barras no início.
+  `Mods instalados`, seguida dos mods carregados. Cada mod selecionado mostra
+  apenas suas páginas, como cabeçalhos recolhíveis `sidebar` em tabelas de
+  `columns` colunas. Páginas compostas só de ações com ícone usam colunas de
+  largura fixa para formar uma grade compacta.
 - **Slider em arraste** mostra o valor local até a página publicada alcançá-lo
   (no máximo 30 quadros de UI depois de soltar), para não tremer entre o desenho
   e o pump.
@@ -135,8 +143,8 @@ nem ABI C exclusiva de MM.
 
 - `unsupported` sem os adaptadores;
 - mensagem descritiva para página inválida: tabela, id, tipo, faixa, coluna,
-  opções, predicado, callback, `default` fora do widget, mais de 256 widgets ou
-  64 opções;
+  opções, predicado, callback, `default` fora do widget, caminho de ícone inseguro,
+  `selected` sem ícone, mais de 256 widgets ou 64 opções;
 - falha ou exceção do adaptador.
 
 Um callback com erro vai para o log com o id do mod e o traceback. O pump segue

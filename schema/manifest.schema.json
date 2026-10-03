@@ -98,6 +98,20 @@
       },
       "additionalProperties": true
     },
+    "resources": {
+      "type": "object",
+      "description": "Host VFS assets required before the mod can load.",
+      "properties": {
+        "required": {
+          "type": "array",
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "maxLength": 1024 },
+          "description": "Relative VFS paths. Missing paths reject this mod before executing it."
+        }
+      },
+      "additionalProperties": true
+    },
     "dependencies": {
       "type": "object",
       "description": "Map of dependency mod id -> version range.",

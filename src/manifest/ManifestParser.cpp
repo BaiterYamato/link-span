@@ -47,6 +47,23 @@ bool IsValidPermissionId(const std::string& id) {
     return true;
 }
 
+bool IsValidResourcePath(const std::string& path) {
+    if (path.empty() || path.size() > 1024 || path.front() == '/' ||
+        path.find('\\') != std::string::npos || path.find(':') != std::string::npos) return false;
+    for (unsigned char character : path) {
+        if (character < 0x20 || character == 0x7F) return false;
+    }
+    std::size_t start = 0;
+    while (start < path.size()) {
+        const auto end = path.find('/', start);
+        const auto length = (end == std::string::npos ? path.size() : end) - start;
+        if (length == 0 || (length == 1 && path[start] == '.') ||
+            (length == 2 && path[start] == '.' && path[start + 1] == '.')) return false;
+        start = end == std::string::npos ? path.size() : end + 1;
+    }
+    return path.back() != '/';
+}
+
 // Reads a required top-level string field; appends to `missing` when absent
 // or not a string.
 std::string ReadRequiredString(const toml::table& table, std::string_view key,
@@ -203,6 +220,27 @@ Result<Manifest> ParseTable(const toml::table& table, const std::string& sourceN
     if (const toml::table* caps = table["capabilities"].as_table()) {
         ReadStringArray(*caps, "required", manifest.capabilitiesRequired);
         ReadStringArray(*caps, "optional", manifest.capabilitiesOptional);
+    }
+
+    if (table.contains("resources")) {
+        const auto* resources = table["resources"].as_table();
+        if (!resources) return Result<Manifest>::err(ErrorCode::InvalidArgument,
+            sourceName + ": resources must be a table");
+        if (resources->contains("required")) {
+            const auto* required = (*resources)["required"].as_array();
+            if (!required || required->size() > 256) return Result<Manifest>::err(
+                ErrorCode::InvalidArgument, sourceName + ": resources.required must be an array of at most 256 paths");
+            for (const auto& entry : *required) {
+                const auto path = entry.value<std::string>();
+                if (!path || !IsValidResourcePath(*path)) return Result<Manifest>::err(
+                    ErrorCode::InvalidArgument, sourceName + ": invalid resources.required path");
+                manifest.resourcesRequired.push_back(*path);
+            }
+            std::sort(manifest.resourcesRequired.begin(), manifest.resourcesRequired.end());
+            if (std::adjacent_find(manifest.resourcesRequired.begin(), manifest.resourcesRequired.end()) !=
+                manifest.resourcesRequired.end()) return Result<Manifest>::err(
+                    ErrorCode::InvalidArgument, sourceName + ": duplicate resources.required path");
+        }
     }
 
     if (const toml::table* deps = table["dependencies"].as_table()) {

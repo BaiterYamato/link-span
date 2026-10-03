@@ -1,0 +1,39 @@
+# SKIJER-001
+
+- Status: review
+- Agent: Codex
+- Platform: Windows / Codex
+- Branch: agent/MENU-001-mod-menu
+- Started: 2026-09-28T00:13:48.6617254Z
+- Depends on: SCOPE-OOT-001
+- Files:
+  - include/shiplua/manifest/Manifest.h
+  - src/manifest/ManifestParser.cpp
+  - schema/manifest.schema.json
+  - include/shiplua/api/LuaApiBinding.h
+  - src/host/ModHost.cpp
+  - tests/unit/ManifestHostTests.cpp
+  - docs/writing-mods.md
+  - docs/skijer-modapi-adoption.md
+  - OOT-UPSTREAM-78DC-001/soh/soh/ShipLuaBootstrap.cpp
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/oot_registry.h
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeRegistry.h
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeRegistry.cpp
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeEngine.cpp
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/tests/RegistryTests.cpp
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/tests/EngineTests.cpp
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/nei-core/README.md
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/nei-core/core-main.lua
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/nei-core/nei_core.cpp
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/nei-core/fork/extracted-fixes.txt
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/nei-core/fork/fork_items.c
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/nei-core/fork/nei_host_overrides.h
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/shovel-demo/**
+  - OOT-UPSTREAM-78DC-001/tools/package-shovel-demo.ps1
+  - OOT-UPSTREAM-78DC-001/tools/package-nei-core.ps1
+  - coordination/claims/SKIJER-001.md
+  - coordination/handoffs/SKIJER-001.md
+- Goal:
+  - Validar requisitos de assets no manifesto antes de carregar mods OoT
+  - Rejeitar colisões de registros com ownership e rollback
+  - Provar os serviços com um mod pequeno independente

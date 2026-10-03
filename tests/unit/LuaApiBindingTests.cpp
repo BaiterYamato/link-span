@@ -698,6 +698,90 @@ assert(not pcall(s.get, "key"))
     Check(available.isOk(), "shared deve funcionar sem storage local: " + available.message);
 }
 
+void TestHookResultTransformAndScope() {
+    for (const std::string game : {"oot", "mm"}) {
+        ShipLua::LuaApiHostContext context{game, "test-host", "0.2.0", {"hooks.bridge"}};
+        ShipLua::ModHost host(context);
+        const std::string event = game == "oot" ? "hook.oot.player.fall_damage"
+                                                 : "hook.mm.item.should_give";
+        const std::string source = "local ship = require('ship')\n"
+            "assert(not pcall(ship.hooks.result, false))\n"
+            "ship.events.on('game.frame', function()\n"
+            "  assert(not pcall(ship.hooks.result, false))\n"
+            "end)\n"
+            "ship.events.on('" + event + "', function()\n"
+            "  assert(ship.hooks.result(false))\n"
+            "  assert(not pcall(ship.hooks.result, {}))\n"
+            "end)\n";
+        const std::string modId = "test.hook_result_" + game;
+        const auto loaded = host.LoadModFromManifestAndSource(MakeManifest(modId), source);
+        Check(loaded.isOk(), "hook result script should load on " + game + ": " + loaded.message);
+        if (!loaded.isOk()) continue;
+        ShipLua::EventPayload frame{{"frame", std::int64_t{1}}};
+        const auto observed = host.DispatchEvent("game.frame", frame);
+        Check(observed.isOk() && observed.value->failures.empty() &&
+                  frame.find("__hook_result") == frame.end(),
+              "non-transform callback should reject hook result on " + game);
+        ShipLua::EventPayload payload;
+        const auto transformed = host.DispatchEvent(event, payload);
+        const auto found = payload.find("__hook_result");
+        Check(transformed.isOk() && transformed.value->failures.empty() &&
+                  found != payload.end() && std::holds_alternative<bool>(found->second.value) &&
+                  !std::get<bool>(found->second.value),
+              "hook transform should write false into host payload on " + game);
+        Check(host.GetRuntime(modId)->DoString(
+                  "assert(not pcall(require('ship').hooks.result, true))").isOk(),
+              "hook result should be unavailable after callback on " + game);
+    }
+
+    ShipLua::LuaApiHostContext inputContext{"oot", "test-host", "0.2.0", {"input.actions"}};
+    ShipLua::ModHost inputHost(inputContext);
+    const auto inputLoaded = inputHost.LoadModFromManifestAndSource(
+        MakeManifest("test.input_action_result"), R"lua(
+local ship = require("ship")
+ship.events.on("input.action", function()
+    assert(ship.hooks.result(true))
+end)
+)lua");
+    Check(inputLoaded.isOk(), "input.action transform callback should load");
+    if (inputLoaded.isOk()) {
+        ShipLua::EventPayload payload{{"action", "dpad_up"}, {"pressed", true}, {"source", "controller"}};
+        const auto dispatched = inputHost.DispatchEvent("input.action", payload);
+        const auto found = payload.find("__hook_result");
+        Check(dispatched.isOk() && dispatched.value->failures.empty() && found != payload.end() &&
+                  std::holds_alternative<bool>(found->second.value) && std::get<bool>(found->second.value),
+              "input.action should return a consumable result");
+    }
+}
+
+void TestSpeedMultiplierAvailableInEntrypoint() {
+    for (const std::string game : {"oot", "mm"}) {
+        std::vector<double> factors;
+        ShipLua::LuaApiHostContext context{game, "test-host", "0.2.0", {"player.speed"}};
+        context.setSpeedMultiplier = [&factors](double factor) {
+            factors.push_back(factor);
+            return ShipLua::Result<bool>::ok(true);
+        };
+        ShipLua::ModHost host(context);
+        const auto loaded = host.LoadModFromManifestAndSource(
+            MakeManifest("test.speed_" + game), R"lua(
+local ship = require("ship")
+assert(ship.player.set_speed_multiplier(1.25) == true)
+assert(ship.player.set_speed_multiplier(9) == false)
+assert(not pcall(ship.player.set_speed_multiplier))
+)lua");
+        Check(loaded.isOk(), "speed API should work in entrypoint on " + game + ": " + loaded.message);
+        Check(factors.size() == 1 && factors[0] == 1.25,
+              "speed handler should receive only valid factors on " + game);
+    }
+    ShipLua::LuaApiHostContext missing{"oot", "test-host", "0.2.0", {"player.speed"}};
+    ShipLua::ModHost invalid(missing);
+    const auto rejected = invalid.LoadModFromManifestAndSource(
+        MakeManifest("test.no_speed_handler"), "return true");
+    Check(!rejected.isOk() && rejected.code == ShipLua::ErrorCode::InvalidState,
+          "advertised player.speed should require a host handler");
+}
+
 } // namespace
 
 int main() {
@@ -718,6 +802,8 @@ int main() {
     TestWorldTravelCapabilityUsesHostHandler();
     TestSharedStorageAcrossGamesAndModIsolation();
     TestSharedStorageRequiresItsOwnBackend();
+    TestHookResultTransformAndScope();
+    TestSpeedMultiplierAvailableInEntrypoint();
     if (failures != 0) {
         std::cerr << failures << " check(s) failed\n";
         return 1;

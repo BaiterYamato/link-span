@@ -31,6 +31,8 @@ struct MenuWidget {
     MenuWidgetType type = MenuWidgetType::Text;
     std::string label;
     std::string tooltip;
+    std::string iconPath;
+    bool selected = false;
     std::string storageKey;
     MenuValue value = false;
     MenuValue defaultValue = false;

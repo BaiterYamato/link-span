@@ -499,6 +499,10 @@ Result<void> ValidateLuaApiHostContext(const LuaApiHostContext& context) {
                 ErrorCode::InvalidState,
                 "host advertised actor capability without an actor provider");
         }
+        if (requested == "player.speed" && !context.setSpeedMultiplier) {
+            return Result<void>::err(ErrorCode::InvalidState,
+                                     "host advertised player.speed without a speed handler");
+        }
         if (requested == "core.menu" &&
             (context.menu == nullptr || context.storage == nullptr)) {
             return Result<void>::err(ErrorCode::InvalidState,
@@ -512,6 +516,11 @@ Result<void> ValidateLuaApiHostContext(const LuaApiHostContext& context) {
         return Result<void>::err(
             ErrorCode::InvalidState,
             "host registered actor capabilities without an actor provider");
+    }
+    if (context.capabilityRegistry != nullptr && !context.setSpeedMultiplier &&
+        context.capabilityRegistry->Has("player.speed", context.gameId)) {
+        return Result<void>::err(ErrorCode::InvalidState,
+                                 "host registered player.speed without a speed handler");
     }
     if (context.capabilityRegistry != nullptr &&
         (context.menu == nullptr || context.storage == nullptr) &&
@@ -717,6 +726,108 @@ int LuaApiBinding::InstallProtected(lua_State* state) noexcept {
     return failed ? Fail(state, "exceção C++ durante instalação da API ship") : 0;
 }
 
+int LuaApiBinding::HooksResult(lua_State* state) noexcept {
+    LuaApiBinding* binding = FromUpvalue(state);
+    const char* error = nullptr;
+    int result = 0;
+    if (binding == nullptr) {
+        error = "contexto da API ship indisponível";
+    } else {
+        result = binding->HooksResultFromLua(state, error);
+    }
+    return error == nullptr ? result : Fail(state, error);
+}
+
+int LuaApiBinding::HooksResultFromLua(lua_State* state, const char*& error) {
+    if (mActiveTransformPayload == nullptr) {
+        error = "ship.hooks.result exige callback de evento transform";
+        return 0;
+    }
+    if (lua_gettop(state) < 1 || lua_isnil(state, 1)) {
+        error = "ship.hooks.result exige um valor";
+        return 0;
+    }
+    try {
+        {
+            EventValue value;
+            switch (lua_type(state, 1)) {
+                case LUA_TBOOLEAN:
+                    value = EventValue{lua_toboolean(state, 1) != 0};
+                    break;
+                case LUA_TNUMBER:
+                    if (lua_isinteger(state, 1)) {
+                        value = EventValue{static_cast<std::int64_t>(lua_tointeger(state, 1))};
+                    } else {
+                        const double number = static_cast<double>(lua_tonumber(state, 1));
+                        if (!std::isfinite(number)) {
+                            error = "ship.hooks.result exige um número finito";
+                            return 0;
+                        }
+                        value = EventValue{number};
+                    }
+                    break;
+                case LUA_TSTRING: {
+                    std::size_t length = 0;
+                    const char* text = lua_tolstring(state, 1, &length);
+                    value = EventValue{std::string(text, length)};
+                    break;
+                }
+                default:
+                    error = "ship.hooks.result aceita boolean, number ou string";
+                    return 0;
+            }
+            (*mActiveTransformPayload)["__hook_result"] = std::move(value);
+        }
+        lua_pushboolean(state, 1);
+        return 1;
+    } catch (...) {
+        error = ErrorMessage(ErrorCode::HostFailure);
+        return 0;
+    }
+}
+
+int LuaApiBinding::SetSpeedMultiplier(lua_State* state) noexcept {
+    LuaApiBinding* binding = FromUpvalue(state);
+    const char* error = nullptr;
+    int result = 0;
+    if (binding == nullptr) {
+        error = "contexto da API ship indisponível";
+    } else {
+        result = binding->SetSpeedMultiplierFromLua(state, error);
+    }
+    return error == nullptr ? result : Fail(state, error);
+}
+
+int LuaApiBinding::SetSpeedMultiplierFromLua(lua_State* state, const char*& error) {
+    if (lua_gettop(state) < 1 || !lua_isnumber(state, 1)) {
+        error = "ship.player.set_speed_multiplier exige um fator numérico";
+        return 0;
+    }
+    if (mCapabilities == nullptr ||
+        !mCapabilities->Has("player.speed", mHostContext.gameId) ||
+        !mHostContext.setSpeedMultiplier) {
+        error = ErrorMessage(ErrorCode::Unsupported);
+        return 0;
+    }
+    const double factor = static_cast<double>(lua_tonumber(state, 1));
+    if (!std::isfinite(factor) || factor < 0.1 || factor > 5.0) {
+        lua_pushboolean(state, 0);
+        return 1;
+    }
+    try {
+        const Result<bool> applied = mHostContext.setSpeedMultiplier(factor);
+        if (!applied.isOk()) {
+            error = ErrorMessage(applied.code);
+            return 0;
+        }
+        lua_pushboolean(state, *applied.value ? 1 : 0);
+        return 1;
+    } catch (...) {
+        error = ErrorMessage(ErrorCode::HostFailure);
+        return 0;
+    }
+}
+
 int LuaApiBinding::NativeHas(lua_State* state) noexcept {
     auto* provider = static_cast<NativeProvider*>(lua_touserdata(state, lua_upvalueindex(1)));
     size_t length = 0;
@@ -804,6 +915,14 @@ void LuaApiBinding::BuildModule(lua_State* state) {
     SetFunction(state, -1, "on", &LuaApiBinding::EventsOn, this);
     SetFunction(state, -1, "off", &LuaApiBinding::EventsOff, this);
     lua_setfield(state, ship, "events");
+
+    lua_newtable(state);
+    SetFunction(state, -1, "result", &LuaApiBinding::HooksResult, this);
+    lua_setfield(state, ship, "hooks");
+
+    lua_newtable(state);
+    SetFunction(state, -1, "set_speed_multiplier", &LuaApiBinding::SetSpeedMultiplier, this);
+    lua_setfield(state, ship, "player");
 
     lua_newtable(state);
     SetFunction(state, -1, "debug", &LuaApiBinding::LogDebug, this);
@@ -1228,6 +1347,12 @@ Result<Subscription> LuaApiBinding::RegisterEvent(lua_State* state,
         throw;
     }
     callback->registryReference = reference;
+    const auto event = std::find_if(Generated::kEvents.begin(), Generated::kEvents.end(),
+                                    [&](const Generated::EventBinding& binding) {
+                                        return binding.name == eventName;
+                                    });
+    callback->resultTransform = event != Generated::kEvents.end() &&
+                                event->kind == Generated::EventKind::Transform;
     auto subscription = mEvents.Subscribe(
         eventName, mRuntime.ModId(),
         {mModLoadOrder, mModPriority, callbackPriority},
@@ -1621,6 +1746,7 @@ int LuaApiBinding::RegisterMenu(lua_State* state, const char*& error) {
             !ReadMenuStringField(state, widgetTable, "type", type, true, 32, error) ||
             !ReadMenuStringField(state, widgetTable, "label", widget.label, type != "separator", 128, error) ||
             !ReadMenuStringField(state, widgetTable, "tooltip", widget.tooltip, false, 512, error) ||
+            !ReadMenuStringField(state, widgetTable, "icon_path", widget.iconPath, false, 256, error) ||
             !ReadMenuStringField(state, widgetTable, "storage_key", widget.storageKey, false, 128, error) ||
             !ReadMenuStringField(state, widgetTable, "format", widget.format, false, 32, error)) {
             lua_pop(state, 2); return 0;
@@ -1637,6 +1763,23 @@ int LuaApiBinding::RegisterMenu(lua_State* state, const char*& error) {
         else if (type == "text") widget.type = MenuWidgetType::Text;
         else if (type == "separator") widget.type = MenuWidgetType::Separator;
         else { lua_pop(state, 2); error = "unknown menu widget type"; return 0; }
+
+        if (!widget.iconPath.empty()) {
+            if (widget.type != MenuWidgetType::Action || widget.iconPath.front() == '/' ||
+                widget.iconPath.find("..") != std::string::npos ||
+                widget.iconPath.find_first_of("\\:") != std::string::npos ||
+                widget.iconPath.find('\0') != std::string::npos) {
+                lua_pop(state, 2); error = "menu icon_path must be a relative resource path on an action"; return 0;
+            }
+        }
+        lua_getfield(state, widgetTable, "selected");
+        if (!lua_isnil(state, -1)) {
+            if (!lua_isboolean(state, -1) || widget.iconPath.empty()) {
+                lua_pop(state, 3); error = "menu selected requires an action with icon_path"; return 0;
+            }
+            widget.selected = lua_toboolean(state, -1) != 0;
+        }
+        lua_pop(state, 1);
 
         bool hasDefault = false;
         lua_getfield(state, widgetTable, "default");
@@ -2590,7 +2733,10 @@ EventFlow LuaApiBinding::InvokeCallback(const std::shared_ptr<LuaCallback>& call
     const int handlerIndex = lua_gettop(state);
     lua_rawgeti(state, LUA_REGISTRYINDEX, callback->registryReference);
     PushEventPayload(state, payload);
+    EventPayload* previousTransformPayload = mActiveTransformPayload;
+    mActiveTransformPayload = callback->resultTransform ? &payload : nullptr;
     const int status = lua_pcall(state, 1, 0, handlerIndex);
+    mActiveTransformPayload = previousTransformPayload;
     if (status == LUA_OK) {
         lua_pop(state, 1);
         callback->consecutiveFailures = 0;

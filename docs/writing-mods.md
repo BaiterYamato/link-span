@@ -161,6 +161,7 @@ completo: [`schema/manifest.schema.json`](../schema/manifest.schema.json).
 | `[host]` | tabela | Faixas por host (`shipwright`, `two_ship`) |
 | `[capabilities] required` | array | Ausente no host ⇒ o mod **não carrega** |
 | `[capabilities] optional` | array | Detecte em runtime com `ship.capabilities.has` |
+| `[resources] required` | array | Caminhos do VFS exigidos; ausência impede a carga antes de executar Lua ou DLL |
 | `[dependencies]` | tabela | id de mod → faixa de versão |
 | `[load]` | tabela | `priority` (menor carrega antes), `after`, `before` |
 | `[permissions] grants` | array | Permissões pontilhadas (`world.entities.create`) |
@@ -171,6 +172,21 @@ o host *implementa* o recurso; a permissão (`world.entities.create` em
 `grants`) diz que o mod está *autorizado* a usá-lo. Para `ship.actor.*` você
 precisa dos dois — capability no host + grant no manifesto — senão a chamada
 retorna `permission_denied`.
+
+Para um mod OoT que usa um ícone e um modelo do jogo:
+
+```toml
+[resources]
+required = [
+  "textures/icon_item_static/gItemIconHammerTex",
+  "objects/object_gi_hammer/gGiHammerDL",
+]
+```
+
+Os caminhos são relativos ao VFS, sem `__OTR__`, barras invertidas ou `..`.
+O host consulta os arquivos montados em cada inicialização; a presença não é
+armazenada em cache. Sem a sonda do host, um mod que declara esses requisitos
+é recusado.
 
 ## 4. A API `ship`
 

@@ -46,6 +46,9 @@ two_ship = ">=4.0"
 required = ["scene.events"]
 optional = ["mm.cycle"]
 
+[resources]
+required = ["objects/example/gExampleDL"]
+
 [dependencies]
 "community.core" = ">=1.0 <2.0"
 
@@ -73,6 +76,9 @@ actors = 8
     Check(manifest.games.size() == 2, "games should parse");
     Check(manifest.hostShipwright == ">=9.0", "Shipwright constraint should parse");
     Check(manifest.capabilitiesRequired.size() == 1, "required capabilities should parse");
+    Check(manifest.resourcesRequired.size() == 1 &&
+              manifest.resourcesRequired[0] == "objects/example/gExampleDL",
+          "required VFS resources should parse");
     Check(manifest.dependencies.size() == 1, "dependencies should parse");
     Check(manifest.loadPriority == 10, "load priority should parse");
     Check(manifest.permStorage, "storage permission should parse");
@@ -156,6 +162,12 @@ void TestManifestErrors() {
     Check(invalid.message.find("line") != std::string::npos,
           "syntax error should include source location");
 
+    for (const std::string& path : {"../escape", "/absolute", "a\\\\b", "a//b", "a/./b"}) {
+        const auto source = std::string("id='example.path'\nname='Path'\nversion='0.1.0'\n") +
+            "api='>=0.1 <1.0'\nentrypoint='main.lua'\n[resources]\nrequired=['" + path + "']\n";
+        Check(!ShipLua::ParseManifestString(source).isOk(), "invalid resource path should fail: " + path);
+    }
+
     const std::string invalidGrant = R"toml(
 id = "example.invalid_permission"
 name = "Invalid permission"
@@ -205,6 +217,36 @@ void TestIsolatedHostLifecycle() {
     Check(!host.IsLoaded("mod.first"), "unloaded mod should disappear");
     host.UnloadAll();
     Check(host.Count() == 0, "UnloadAll should clear the host");
+}
+
+void TestRequiredResourcePreflight() {
+    ShipLua::LuaApiHostContext context;
+    context.gameId = "oot";
+    context.hostVersion = "9.2.3";
+    int probes = 0;
+    context.resourceExists = [&probes](const std::string& path) {
+        ++probes;
+        return path == "objects/example/gPresentDL";
+    };
+    ShipLua::ModHost host(context);
+    auto present = MakeManifest("mod.present");
+    present.apiRange = ">=0.5 <1.0";
+    present.resourcesRequired = {"objects/example/gPresentDL"};
+    Check(host.LoadModFromManifestAndSource(present, "return true").isOk(),
+          "mod with available resource should load");
+    auto missing = MakeManifest("mod.missing");
+    missing.apiRange = ">=0.5 <1.0";
+    missing.resourcesRequired = {"objects/example/gMissingDL"};
+    const auto rejected = host.LoadModFromManifestAndSource(missing, "error('must not run')");
+    Check(!rejected.isOk() && rejected.message.find("gMissingDL") != std::string::npos,
+          "missing resource should reject before executing entrypoint");
+    Check(!host.IsLoaded("mod.missing") && probes == 2,
+          "rejected resource must not leave a loaded mod");
+
+    context.resourceExists = {};
+    ShipLua::ModHost noProbe(context);
+    Check(!noProbe.LoadModFromManifestAndSource(present, "return true").isOk(),
+          "host without a VFS probe must reject required resources");
 }
 
 void TestDirectoryLoad() {
@@ -261,6 +303,7 @@ int main() {
     TestRequiresBothGamesField();
     TestManifestErrors();
     TestIsolatedHostLifecycle();
+    TestRequiredResourcePreflight();
     TestDirectoryLoad();
     TestDirectoryTraversalIsRejected();
 

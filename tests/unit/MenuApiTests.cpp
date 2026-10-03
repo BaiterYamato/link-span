@@ -171,6 +171,7 @@ void TestValidationAndFailures() {
     const auto loaded = host.LoadModFromManifestAndSource(Manifest(), R"lua(
 local ship = require("ship")
 activations = 0
+icon_activations = 0
 local function rejected(page)
   return not pcall(ship.menu.register, page)
 end
@@ -207,6 +208,10 @@ invalid_predicate_key = rejected({ id = "bad", title = "Bad", sidebar = "Bad",
     visible_if = { key = "123456789", equals = true } } } })
 invalid_out_of_range_default = rejected({ id = "bad", title = "Bad", sidebar = "Bad",
   widgets = { { id = "out", type = "slider_number", label = "Out", storage_key = "o", min = 0, max = 1, default = 3 } } })
+invalid_icon_path = rejected({ id = "bad", title = "Bad", sidebar = "Bad",
+  widgets = { { id = "icon", type = "action", label = "Icon", icon_path = "../outside" } } })
+invalid_selected = rejected({ id = "bad", title = "Bad", sidebar = "Bad",
+  widgets = { { id = "icon", type = "action", label = "Icon", selected = true } } })
 valid_page_registered = pcall(ship.menu.register, {
   id = "page", title = "Page", sidebar = "Page",
   widgets = {
@@ -222,6 +227,8 @@ valid_page_registered = pcall(ship.menu.register, {
       end },
     { id = "large", type = "choice", label = "Large", storage_key = "large",
       choices = { { value = 9007199254740993, label = "Exact" } } },
+    { id = "icon", type = "action", label = "Icon", icon_path = "textures/test/icon", selected = true,
+      on_activate = function() icon_activations = icon_activations + 1 end },
   }
 })
 )lua");
@@ -246,6 +253,8 @@ valid_page_registered = pcall(ship.menu.register, {
     Check(runtime->DoString("assert(invalid_predicate_key)").isOk(), "oversized predicate key should be refused");
     Check(runtime->DoString("assert(invalid_out_of_range_default)").isOk(),
           "out-of-range default should be refused");
+    Check(runtime->DoString("assert(invalid_icon_path and invalid_selected)").isOk(),
+          "icon actions reject unsafe paths and selected without an icon");
     Check(runtime->DoString("assert(valid_page_registered)").isOk(),
           "valid page should register after invalid ones are refused");
     host.PumpMenu();
@@ -261,6 +270,8 @@ valid_page_registered = pcall(ship.menu.register, {
     Check(std::holds_alternative<std::string>(page.widgets[2].value) &&
               std::get<std::string>(page.widgets[2].value) == "a",
           "choice without default takes the first entry");
+    Check(page.widgets[5].iconPath == "textures/test/icon" && page.widgets[5].selected,
+          "icon action metadata reaches the host menu");
 
     const auto generation = page.generation;
     registry->Enqueue({"test.menu", "page", "flag", generation, ShipLua::MenuInputKind::Change, std::int64_t{5}});
@@ -268,7 +279,9 @@ valid_page_registered = pcall(ship.menu.register, {
     registry->Enqueue({"test.menu", "page", "mode", generation, ShipLua::MenuInputKind::Change, std::string("z")});
     registry->Enqueue({"test.menu", "page", "large", generation, ShipLua::MenuInputKind::Change,
                        9007199254740992.0});
+    registry->Enqueue({"test.menu", "page", "icon", generation, ShipLua::MenuInputKind::Activate, false});
     host.PumpMenu();
+    Check(runtime->DoString("assert(icon_activations == 1)").isOk(), "icon action runs its callback once");
     Check(!storage->Get("test.menu", "flag").value->has_value(), "wrong type from the UI is dropped");
     const auto scale = storage->Get("test.menu", "scale");
     Check(scale.isOk() && scale.value->has_value() && std::holds_alternative<double>(**scale.value) &&

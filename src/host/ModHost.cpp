@@ -287,6 +287,15 @@ Result<void> ModHost::LoadMod(const Manifest& manifest, const std::string& luaSo
                                      "mod '" + manifest.id + "': " + compatible.message);
         }
     }
+    // Probe every boot, after the host has mounted its archives and before
+    // loading a native library or running Lua. Missing probes fail closed.
+    for (const std::string& path : manifest.resourcesRequired) {
+        if (!mHostContext.resourceExists || !mHostContext.resourceExists(path)) {
+            return Result<void>::err(ErrorCode::Unsupported,
+                                     "mod '" + manifest.id + "': required resource '" + path +
+                                         "' is unavailable");
+        }
+    }
 
     // Declaração antes de runtime/binding garante a ordem também no rollback.
     std::unique_ptr<NativeProvider> provider;
