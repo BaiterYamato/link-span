@@ -1,0 +1,43 @@
+# OOT-RELEASE-001
+
+- Status: review
+- Agent: Claude (Opus 5.5)
+- Platform: Windows
+- Branch: agent/OOT-UPSTREAM-001-78dc6d970-integration
+- Started: 2026-10-02T23:55:00-03:00
+- Depends on: CEL-004, CEL-005, CEL-006, COREEXT-010, MENU-001, BIND-002, SKIJER-001, NEI-UI-001, OOT-CI-001, OOT-NEI-017, OOT-MIC-004, OOT-MOVE-007
+- Files:
+  - OOT-UPSTREAM-78DC-001/tools/linkspan-zip.ps1
+  - OOT-UPSTREAM-78DC-001/tools/build-linkspan-release.ps1
+  - OOT-UPSTREAM-78DC-001/tools/read-linkspan-manifest.py
+  - OOT-UPSTREAM-78DC-001/tools/scan-protected-content.py
+  - OOT-UPSTREAM-78DC-001/tools/test-reproducible.ps1
+  - OOT-UPSTREAM-78DC-001/tools/package-nei-core.ps1
+  - OOT-UPSTREAM-78DC-001/tools/package-unbound-framework.ps1
+  - OOT-UPSTREAM-78DC-001/tools/package-unbound-actors-demo.ps1
+  - OOT-UPSTREAM-78DC-001/tools/package-linkspan-mod.ps1
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/ww-style/tools/package-ww-style.ps1
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/cel-render-demo/tools/package-cel-render-demo.ps1
+  - OOT-UPSTREAM-78DC-001/tools/package-*-demo.ps1 (12 scripts de demo, ZIP determinístico)
+  - OOT-UPSTREAM-78DC-001/tools/package-unbound-e-fixtures.ps1
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/README.md
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/unbound-core/schemas/**
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/example/{provider.cpp,manifest.toml,CMakeLists.txt}
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/mic-ocarina/{CMakeLists.txt,manifest.toml,provider.cpp,remake_ui_tests.cpp}
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/ww-style/manifest.toml
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/unbound-core/{README.md,actor_registry.cpp}
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeActorModels.cpp
+  - OOT-UPSTREAM-78DC-001/extern/ship-lua (ponteiro do submódulo)
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/tests/EngineTests.cpp (sonda do mod independente)
+  - OOT-UPSTREAM-78DC-001/soh/soh/ShipLuaBootstrap.cpp (remoção do gatilho de áudio MM)
+  - OOT-UPSTREAM-78DC-001/extern/ship-lua/docs/writing-mods.md
+  - OOT-UPSTREAM-78DC-001/extern/ship-lua/docs/native-providers.md
+  - OOT-UPSTREAM-78DC-001/build/release/**
+  - OOT-UPSTREAM-78DC-001/build/oot-upstream-001/evidence/release-g/**
+  - coordination/claims/OOT-RELEASE-001.md
+  - coordination/handoffs/OOT-RELEASE-001.md
+- Goal:
+  - Fase G do plano OoT (§13): candidato a release com overlay e pacotes do mesmo layout, ZIPs determinísticos,
+    SHA-256 e inventário, scanner de conteúdo protegido, documentação de autor e SDK, matriz combinada (§12.2) em
+    instalação fresca da 9.2.3 e checklist do Gate OoT (§18) com evidência por item.
+  - Inclui o fechamento da UNBOUND-012 (schemas JSON no pacote do framework).

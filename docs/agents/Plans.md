@@ -1071,3 +1071,63 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
 - **Commits (locais):** host `845b771a9`, `bf6039bdc`, `94e7fc76d`, `4a434d895`, `bba145d73`, `6a54c9d62`,
   `600f83b06`, `5844dd4aa`, `226afc3f6`, `7d26819bb`, `d1b76ff56`, `75a420414`, `568a2daf0`; core `e38ecc1`,
   `f29505c`.
+
+## UPDATE OOT-COREMODS-001 — trabalho de 27/09–01/10 commitado e fase G: candidato `oot-0.5.0-rc2`
+
+- Status: review (OOT-RELEASE-001; CEL-006, BIND-002, OOT-NEI-017, OOT-MIC-004, OOT-MOVE-007, SKIJER-001,
+  NEI-UI-001, OOT-CI-001 e SCOPE-OOT-001 com commits locais). Gate OoT ainda não verde.
+- **Trabalho do Codex commitado por área** em 2026-10-02, com autorização do usuário ("Faça o que é necessário").
+  - Host:
+    - `a76045848`: randomizer v2, hooks `oot.actor.init`/`oot.play.draw_end`, modelos de ator, registro V2, menu
+      com ícones;
+    - `178baa2eb`: Unbound Framework 0.6.0;
+    - `451c2b476`: shovel-demo;
+    - `d6ac301e4`: NEI 0.3.16;
+    - `62ea72d89`: DMR 0.2.14;
+    - `51c417edc`: Mic 0.2.1;
+    - `abb2dd7a5`: CEL-006;
+    - `26b8ca2a8`: OOT-CI-001.
+  - Core:
+    - `ffde23d`: SCOPE-OOT-001;
+    - `4a75770`: API (recursos obrigatórios, `ship.hooks.result`, velocidade, ícone de menu);
+    - `8182f84`: RFC 0026 do randomizer hints (`item_count`/`item_info` em qualquer save); a RFC entrou já como 0026
+      no `4a75770`, resolvendo a numeração duplicada.
+- **Correções de revisão e integração:**
+  - `5827e580a`: anel do microfone atômico e menu do DMR zerado;
+  - `4c45d5c3a`: camada Unbound de mod rejeitado fora do VFS;
+  - `ee97866a3`: UNBOUND-012 fechada, com os schemas JSON no pacote do framework.
+- **Ferramentas de release:**
+  - `c1dec2eb6`, `4ae2fc4ed`, `c46fcb006`, `d1983a5ba`, `aa08cd9ed`, `f1dc7eab8`: ZIP determinístico nos scripts de pacote,
+    scanner de conteúdo protegido, inventário, `SHA256SUMS`, `test-reproducible.ps1` e `build-linkspan-release.ps1`.
+    O construtor recusa versão do nome ≠ manifesto (SemVer completo) e `host_fingerprints` que não citem o `soh.exe`
+    do overlay. Desde `aa08cd9ed`/`f1dc7eab8` ele lê o manifesto com `tomllib` (ou `tomli`) pelo
+    `tools/read-linkspan-manifest.py`, achados das revisões do Codex.
+  - `75b7d1a57`: guia do SDK. Core `45d5162`: guia de autor na API 0.5.
+- **Defeitos que a fase G achou:**
+  - RC1 com manifesto velho no DMR/Mic: o manifesto é gerado no configure;
+  - gatilho de teste do áudio MM rodando no host sem mods (`fc2709989`);
+  - DMR 0.2.14 que não carregava fora do fingerprint e quebrava o `oot_native_independent_mod` (DMR 0.2.16,
+    `fea9ce74c`).
+- **RC2:**
+  - host `soh.exe` `E278E9A3…` (commit `fc27099`), layout `9a593a6e`;
+  - pacotes: overlay `f6b73007`, Unbound 0.6.0 `119853ff`, NEI 0.3.16 `4fe799bc`, DMR 0.2.16 `4636b584`, Mic 0.2.2
+    `2c2d2744`, WW 0.1.1 `1ab4ab84`, Shovel 0.1.1 `f7bec072`, Actors Demo `ff4d7e74`;
+  - reprodutível 8/8, scanner OK, CTest 67/67.
+- **Prova em jogo do RC2** (03/10, evidência em `build/oot-upstream-001/evidence/release-g`):
+  - instalação fresca sobre a 9.2.3: `PROVA OK`;
+  - matriz §12.2 com gameplay (`matrix-rc2`): 9/9 linhas e 18/18 sessões abrem o arquivo, gravam no `reset` e
+    reabrem depois de reiniciar, com os mods certos, exit 0 e nenhum erro no log;
+  - ciclo de save (`save-cycle-rc2`): o `nei.state` gravado com o NEI sobrevive intacto à desativação e volta na
+    reinstalação (`CICLO OK`);
+  - rechecagem estrita (`recheck-rc2.json`): 12/12.
+- **Harness da matriz:** duas revisões do Codex (`gpt-6.1-sol` alto) acharam prova por totais de log, falhas que não
+  reprovavam e input que seguia depois de perder o foco. Corrigido no scratchpad e no script da skill
+  `soh-runtime-playtest`. O `soh.exe` aberto gera entrada sintética contínua, o que cega o `GetLastInputInfo` com o
+  jogo rodando.
+- **Pendências:**
+  - licença (Link-Span, WW Style, assets do NEI);
+  - playtest físico;
+  - itens abertos do Gate §18: fixtures do Prelude, conflito de cenas, resolução por versão, playtest de todos os
+    itens NEI, recompilações do host depois do COREEXT-GATE, atualização de pacote N→N+1;
+  - crash com `ResourceLogging` na casa do Link (`LogMeshAsXML`; reproduzir no upstream limpo);
+  - push.
