@@ -1217,7 +1217,8 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
     32 769, com o vértice 8192 de 8 193.
   - `span`: um quad de 81 920 unidades numa DL só, desenhado sob os spawns em x = ±40 000.
   - Em jogo (`evidence/unbound-021/session`): chegada com `chao=1 piso=32768` nas duas edge. Andando para fora, o chão
-    só acaba no fim da geometria (±1 048 806), com void-out e respawn; a `span` aparece nas duas pontas.
+    só acaba no fim da geometria (borda em ±1 048 800; a sonda registra a perda de chão em ±1 048 806), com void-out
+    e respawn; a `span` aparece nas duas pontas.
   - Achado M01 (texto corrigido na revisão, ver UNBOUND-022): além de ±1 048 576 a colisão continua. O
     `BGCHECK_POS_ERROR_CHECK` só imprime nos cinco caminhos do `z_bgcheck.c`, com `osSyncPrintf` desligado no build.
     O que muda é o `EffectSs` (poeira, faíscas, respingos), apagado com |c| > 1 048 576.
@@ -1239,3 +1240,22 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
   rodada de host da RFC 0027.
 - **Codex:** agora dois em paralelo, a pedido do usuário. Um faz o rascunho R02/M12 e o outro a re-revisão das
   correções.
+
+### UPDATE 2026-10-03 (Claude) — UNBOUND-023 e re-revisão da 021/022
+
+- **UNBOUND-023** (host `23ac3e5c6`, framework 0.6.5 `EC6D7830`, e-fixtures 0.1.4 `413376B3`): mais três linhas da
+  prioridade 5 da matriz, provadas em jogo com recursos próprios, sem mudar o host.
+  - M16: 33 saídas; a superfície com `exit = 33` usa `exits[32]` e leva à `span` (`arrived por saida`). O host não
+    confere o tamanho da lista (`z_player.c:5155`).
+  - R02: num Vertex XML de 65 540 vértices, o `VertexOffset` 65 536 dá a volta para 0 (origem em 16 bits no
+    interpretador; o bit 16 ainda invade o slot de destino). Captura: verde em W, C vazio.
+  - M12: malha tipo 2 com 1 025 entradas perde a última (`SHAPE_SORT_MAX`, antes do teste de distância). Nota nova do
+    framework para esse caso.
+  - O validador de pacote recusa entrada com compressão acima de 200:1; o enchimento do R02 varia por isso.
+- **Re-revisão do Codex** (021/022): os três achados anteriores fechados. Dois resíduos (nota do limite do mundo com o
+  cast direto do double; README) corrigidos na 0.6.5.
+- **Revisão do Codex** (023): 0 altos, 2 médios, 2 baixos, tratados (estouro do `from_chars`, prova que exige a
+  chegada na `span`, agulha do teste, docstring).
+- **Codex em paralelo:** M17/M19 (rascunho e análise prontos para a UNBOUND-024), M15/M24 (harnesses g++ do
+  crescimento da DynaPoly e do cache de texturas) e a revisão do patch R04 (em andamento). A cota de 5 h chegou a 79%.
+- Faltam da prioridade 5: M15, M17, M19 e M24 em jogo.

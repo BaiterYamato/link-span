@@ -44,6 +44,11 @@ Revisão do Codex (`gpt-6.1-sol` alto) sobre a 021 e a 022: `REVIEW.md` em `code
 | 3 | No `edge_neg` o 8192 ficava no vIC, que não passa pela máscara de 13 bits; no `edge_pos`, ele ficava no vIA, mas o vértice 0 (que a máscara traria no lugar) ainda cobria o spawn. A fixture não pegaria a regressão do índice de vértice | rotação cíclica põe o 8192 no vIA nos dois cantos; vértice 0 reservado repete o vIB; `assert` da mutação no gerador |
 | 1 | O achado acima dizia que parede, teto, linha e esfera recusam a posição | texto corrigido aqui, nos comentários do gerador e na 022 |
 
+Re-revisão (`codex-rerev-021-022`): o achado 3 está resolvido. O Codex gerou o `edge_collision` sem a base e confirmou
+8 193 vértices, 32 769 polígonos e o 32768 como único chão sob o spawn nos dois cantos. Com a máscara de 13 bits em
+vIA/vIB, nenhum chão fica sob o spawn; ele conferiu isso também com as funções de interseção do `sys_math3d.c`
+compiladas em g++. Os dois achados que restaram são da 022 e do README; foram corrigidos na UNBOUND-023.
+
 ## Commits
 
 - host `e06663aa5` — `unbound: fixtures do Prelude com recursos próprios nos limites (e-fixtures 0.1.2, UNBOUND-021)`.

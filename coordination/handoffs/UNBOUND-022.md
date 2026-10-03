@@ -41,6 +41,14 @@ corrigidos por mim; re-revisão das correções em `codex-rerev-021-022`.
 | 2 | A nota comparava o double do JSON: 1 048 575,99 (f32 = 1 048 576) e bounds 1 048 575,5 (XML = 1 048 576) escapavam | compara o f32 nas posições e o `Integral` nos bounds, com o limiar estrito do `EffectSs`; testes de arredondamento |
 | 3 | (da 021) a fixture `edge_*` não pegava a regressão da máscara de 13 bits | corrigido na 021 (e-fixtures 0.1.3) |
 
+Re-revisão (`REVIEW.md` em `codex-rerev-021-022`, com harness g++ e o `FloatAttribute` real do tinyxml2): achados
+1 e 3 resolvidos, 2 parcial. Restaram dois, corrigidos por mim na UNBOUND-023 (framework 0.6.5):
+
+| # | Achado | Correção |
+|---|---|---|
+| 4 (médio, resíduo do 2) | a nota usava o cast direto do double; o XML leva o texto `%.9g`, então ±1 048 576,063 virava o f32 ±1 048 576,125 na nota, mas o jogo lê ±1 048 576 (18 falsos positivos por locale) | o f32 sai do texto do `DecimalText` via `std::from_chars`; teste `.063` nos dois sinais, três listas e três eixos |
+| 5 (baixo) | o README dizia chão provado até ±1 048 806, posição em que o log mostra perda de chão | texto corrigido: piso até a borda em ±1 048 800, perda de chão logo depois |
+
 ## Commits
 
 - host `c6c46379c` — `unbound: nota para posição além do limite do mundo (EffectSs), framework 0.6.4 (UNBOUND-022)`.
