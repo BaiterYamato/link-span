@@ -2,7 +2,7 @@
 
 ## Estado
 
-Em review. Commit local no host (`a29c0ba8c`), sem push. Re-revisão do Codex na fila.
+Em review. Commits locais no host (`a29c0ba8c` e o follow-up da re-revisão `f2e2acaa0`), sem push.
 
 ## Resultado
 
@@ -58,11 +58,27 @@ compartilhada).
 - **M2:** o alias `.meta` era ignorado em caminhos de mod e já em cache. Corrigido: conferido em toda consulta e na
   cena raiz.
 
-Re-revisão: (pendente, `codex-rerev-025`).
+Re-revisão do Codex (`codex-rerev-025`: harness com os corpos reais, 333 + 1 269 asserções; nenhuma divergência
+entre o grafo compactado e o completo):
+- A1 e M1 ficaram parciais, M2 resolvido;
+- N1 (alto): a releitura da base para a comparação não contava no orçamento;
+- N2: a comparação pelo texto agregado (contagem e primeiro exemplo) apagava um item novo do mod quando o texto
+  batia com o da base;
+- N3: lacunas de alias ou de orçamento sumiam como herdadas;
+- N4: a cena com alias guardava o DOM inteiro.
+
+Corrigido em seguida:
+- o grafo passa a dar findings por item (`GraphFindings`), e `DropInheritedFindings` tira só os itens iguais na
+  base (mesmo lugar, limite e campo=valor). `herdadas=` conta itens: 17 na `spot04`;
+- lacunas nunca saem;
+- a releitura da base conta leitura e bytes, com saldo no coletor; sem saldo, as notas ficam e sai uma lacuna;
+- o DOM da cena é liberado nos dois ramos;
+- o teste do N2 está no `TestGraphInherited`.
 
 ## Commits
 
 - Host `a29c0ba8c` (branch `agent/OOT-UPSTREAM-001-78dc6d970-integration`, sobre `517b0ac16`).
+- Host `f2e2acaa0`: re-revisão (N1–N4).
 
 ## Arquivos alterados
 
@@ -82,7 +98,7 @@ Re-revisão: (pendente, `codex-rerev-025`).
 
 ## Validação executada
 
-- Build sem avisos; CTest 7/7. Framework 0.6.7 final `C15141B1` (`evidence/unbound-025/package`; as anteriores em `package-v1..v3`).
+- Build sem avisos; CTest 7/7. Framework 0.6.7 final `632D91FA` (`evidence/unbound-025/package`; as anteriores em `package-v1..v4`).
 - Boot (`ub025-boot.ps1`, scratchpad 053dbb62), 8 sessões no RC2 (`E278E9A3`). Em cada uma, o resumo e cada nota ou
   lacuna são conferidos por regex. A lógica foi testada antes contra os logs da rodada anterior: as duas sessões
   afetadas reprovam e as outras passam.
@@ -92,34 +108,35 @@ Re-revisão: (pendente, `codex-rerev-025`).
   3. Rodada 3 (correções da revisão, `CA8DE641`): 0 falhas, mas `limites` levou 12,6 s. A primeira
      `CompactForGraph` montava objetos com `out[chave]` (busca linear do `ordered_json`), quadrático com as 65 535
      superfícies da UB020. Corrigido com `emplace_back`, e o `TestGraphCompact` passou a ter um caso no teto.
-  4. Rodada 4 (final, `C15141B1`): 0 falhas, tempos normais.
+  4. Rodada 4 (`C15141B1`): 0 falhas, tempos normais.
+  5. Rodada 5 (re-revisão, `632D91FA`): 0 falhas. `herdadas=` passa a contar itens (17), e o resto não muda.
 
 ## Resultado da validação
 
-Rodada 4 (framework 0.6.7 `C15141B1`, `evidence/unbound-025/boot-report.json`): falhas 0 nas 8 sessões, todas
-válidas, exit 0.
+Rodada 5 (framework 0.6.7 `632D91FA`, `evidence/unbound-025/boot-report.json`, cópia em `boot-report-rodada5.json`):
+falhas 0 nas 8 sessões, todas válidas, exit 0.
 
 | Sessão | Resumo (`referências:`) |
 |---|---|
-| grafo (UB025-A) | documentos=5 conferidas=27 ausentes=1 notas=5 grafos=3 incompletos=1 herdadas=10 dependencias=5 |
-| cameras (UB024-A) | notas=6 grafos=0, ms=93 |
+| grafo (UB025-A) | documentos=5 conferidas=27 ausentes=1 notas=5 grafos=3 incompletos=1 herdadas=17 dependencias=5 |
+| cameras (UB024-A) | notas=6 grafos=0, ms=114 |
 | e-fixtures 0.1.7 | documentos=0, nenhuma nota |
 | mundo (UB022-A) | notas=5 (a nova: portas com câmera 0 numa colisão sem câmeras, verdadeira) grafos=1 |
-| limites (UB020-A) | notas=4 grafos=1, ms=731 |
+| limites (UB020-A) | notas=4 grafos=1, ms=796 |
 | ub019-a | grafos=1 incompletos=1 (colisão recusada) dependencias=1 |
-| ub018-abc | 0 notas, grafos=2 incompletos=1 (`templo.json` sem colisão) herdadas=10 |
+| ub018-abc | 0 notas, grafos=2 incompletos=1 (`templo.json` sem colisão) herdadas=17 |
 | sem camadas | nada |
 
-Na `grafo`, as 5 notas são as 4 da cena custom mais a porta nova do delta na `spot04` (room 40 de 3). As 10 notas
-vanilla da `spot04` ficam em `herdadas=10`. A lacuna é a colisão inexistente de `lacuna.json`.
+Na `grafo`, as 5 notas são as 4 da cena custom mais a porta nova do delta na `spot04` (room 40 de 3). Os 17 itens
+vanilla da `spot04` (10 notas agregadas na rodada 4) ficam em `herdadas=17`. A lacuna é a colisão inexistente de `lacuna.json`.
 
 ## Riscos
 
 - Cobertura só a partir das cenas de mod (ver Limite).
 - As notas de porta valem se a porta executar o percurso de câmera; não se simula qual ator usa os lados.
 - Superfície com exit fora da lista só é lida se algum polígono a usar; o grafo não lê o bulk.
-- Nota herdada é comparada pelo texto: se o mod muda a contagem ou o exemplo de uma nota que a base já dá, ela volta
-  inteira (conservador).
+- A comparação com a base é por item (lugar, limite, campo=valor). Um item igual ao da base sai mesmo se o mod
+  mudou o contexto em volta dele (por exemplo, a lista de saídas cresceu sem alcançar o exit).
 
 ## Pendências
 
@@ -131,5 +148,4 @@ vanilla da `spot04` ficam em `herdadas=10`. A lacuna é a colisão inexistente d
 
 ## Próxima ação recomendada
 
-1. Ler a re-revisão do Codex (`codex-rerev-025`) e corrigir o que vier.
-2. Grafo a partir de colisão ou sala de mod sobre cena da base (índice reverso do VFS), se aparecer mod assim.
+1. Grafo a partir de colisão ou sala de mod sobre cena da base (índice reverso do VFS), se aparecer mod assim.
