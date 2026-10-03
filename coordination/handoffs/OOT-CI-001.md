@@ -12,7 +12,8 @@ review
 
 ## Commits
 
-- Nenhum.
+- 2026-10-02, por Claude com autorização do usuário ("Faça o que é necessário"). Locais, sem push.
+  - host `26b8ca2a8` (CTest raiz e workflow).
 
 ## Arquivos alterados
 

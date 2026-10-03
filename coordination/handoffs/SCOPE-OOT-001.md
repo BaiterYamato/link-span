@@ -2,7 +2,12 @@
 
 ## Estado
 
-Em revisão local; sem commit, push ou alteração de `coordination/STATUS.md`.
+Em revisão local; sem push nem alteração de `coordination/STATUS.md`.
+
+## Commits
+
+- 2026-10-02, por Claude com autorização do usuário ("Faça o que é necessário"). Locais, sem push.
+  - core `ffde23d` (plano e este handoff).
 
 ## Resultado
 

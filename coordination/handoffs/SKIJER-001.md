@@ -15,7 +15,9 @@ review
 
 ## Commits
 
-- Nenhum. Trabalho local sem push, merge ou instalação no runtime de produção.
+- 2026-10-02, por Claude com autorização do usuário ("Faça o que é necessário"). Locais, sem push.
+  - core `4a75770` (recursos obrigatórios, `ship.hooks.result`, velocidade, ícone em ação de menu) e `45d5162` (guia de autor);
+  - host `a76045848` (registro V2, modelos de ator, hooks) e `451c2b476` (shovel-demo).
 
 ## Arquivos alterados
 
@@ -75,4 +77,4 @@ Host OoT CTest Release após inclusão da suíte raiz: oot_native_engine_tests, 
 - O demo 0.1.1 usa o item `skijer.nei.shovel` quando o NEI está carregado e migra a pá provisória equipada em um botão C. Sem NEI, mantém o comportamento independente anterior. Pacote novo: `build/shovel-demo-inventory-20260928/LinkSpan-Shovel-Demo-0.1.1-layout-c97ff67f-a0ec2dfe.zip`, SHA-256 `14014F743C83B214E37B07413C2075ACA84BA933D0C19742F45803A69F827933`.
 - O NEI 0.3.5 publica `catalog` e `test_give` na DLL e registra a página **Mods > Installed Mods > Not Enough Items - Testar itens** por `ship.menu`. A lista inclui os itens definidos nesta sessão; o botão concede o item selecionado instantaneamente ao save aberto. Pacote novo: `build/nei-core-menu-20260928/LinkSpan-NEI-0.3.5-layout-c97ff67f.shipmod`, SHA-256 `A70A22EEBE852F49E202F74321C89B7423ED7E08F0E83B7419076C1E8E867551`.
 - Stage isolado com os cinco mods, save preservado e executável `6655B205...`: `build/oot-upstream-001/smoke-oot-shovel-inventory-20260928/`. O build Release das duas DLLs, o teste `linkspan_nei_core_tests`, os dois validadores de pacote e o boot dos cinco mods passaram. O log mostra `nei=1` no demo, `fork: ativo (23 itens)` e nenhum erro de menu/carregamento. O boot ficou na tela inicial: a concessão pela interface, a célula da pá, equipar, usar e save/reload ainda exigem conferência visual em gameplay antes de declarar o gate concluído.
-- O stage anterior `smoke-oot-combined-c97ff67f-20260927` e o runtime de produção não foram alterados. Nenhum commit, push, merge ou instalação foi feito.
+- O stage anterior `smoke-oot-combined-c97ff67f-20260927` e o runtime de produção não foram alterados. Nenhum push, merge ou instalação foi feito; os commits locais estão em "Commits".

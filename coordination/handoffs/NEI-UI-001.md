@@ -14,7 +14,9 @@ review
 
 ## Commits
 
-- Nenhum. Trabalho local, sem push, merge ou instalação na versão de produção.
+- 2026-10-02, por Claude com autorização do usuário ("Faça o que é necessário"). Locais, sem push.
+  - core `4a75770` (`icon_path`/`selected` no `ship.menu.register`);
+  - host `a76045848` (menu de mods com ícones) e `d6ac301e4` (NEI 0.3.16 com a grade no menu).
 
 ## Arquivos alterados
 
