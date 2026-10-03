@@ -26,11 +26,14 @@
   - OOT-UPSTREAM-78DC-001/soh/soh/SohGui/SohMenu.h
   - OOT-UPSTREAM-78DC-001/soh/soh/SohGui/SohMenuModRegistry.cpp
   - OOT-UPSTREAM-78DC-001/soh/soh/SohGui/SohMenuModRegistry.h
-  - OOT-UPSTREAM-78DC-001/soh/native-sdk/nei-core/fork/fork_glue.cpp
-  - OOT-UPSTREAM-78DC-001/tools/package-nei-core.ps1
   - OOT-UPSTREAM-78DC-001/build/oot-upstream-001/evidence/menu-001/**
   - RELEASE-UNIFICADA/OOT-teste-cenas-20260914/**
   - coordination/claims/MENU-001.md
   - coordination/handoffs/MENU-001.md
 - Goal:
   - W-1: ship.menu.register declarativo (API 0.5.0 preview, capability core.menu): paginas por mod com checkbox, sliders, choice, action, text e separator; valores so no ship.storage; input entregue no pump da thread do jogo, nunca no draw pass. Host OoT: secao Mods no SohMenu e registro com fila; shiplua_open_file recusa slot vazio. Sem mudanca de layout id.
+
+## Continuação autorizada em 2026-09-30
+
+- A propriedade atual de `soh/native-sdk/nei-core/fork/fork_glue.cpp` e `tools/package-nei-core.ps1` foi transferida para OOT-NEI-017, na continuação solicitada pelo usuário. As alterações de MENU-001 nesses arquivos são preservadas.
+- O estado review e os gates físicos do menu permanecem registrados no handoff original.
