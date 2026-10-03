@@ -1207,3 +1207,18 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
   - fixtures de recurso próprio (prioridade 5 da matriz);
   - crash do `ResourceLogging`;
   - push.
+
+### UPDATE 2026-10-03 (Claude) — UNBOUND-021
+
+- **UNBOUND-021** (Gate §10.3/§14.3, prioridade 5 da matriz de limites). Host `e06663aa5`, e-fixtures 0.1.2, sem
+  mudar o host nem o framework (0.6.3).
+  - Três cenas novas na e-fixtures, só com recursos nossos: DL e vértices em XML, `collision.bin` próprio.
+  - `edge_pos`/`edge_neg`: spawn a 76 unidades de ±1 048 576 nos dois eixos. O chão do spawn é o polígono 32768 de
+    32 769, com o vértice 8192 de 8 193.
+  - `span`: um quad de 81 920 unidades numa DL só, desenhado sob os spawns em x = ±40 000.
+  - Em jogo (`evidence/unbound-021/session`): chegada com `chao=1 piso=32768` nas duas edge. Andando para fora, o chão
+    só acaba no fim da geometria (±1 048 806), com void-out e respawn; a `span` aparece nas duas pontas.
+  - Achado M01: além de ±1 048 576 o chão continua valendo, mas line test, parede, teto e esfera retornam cedo
+    (`z_bgcheck.c`). O aviso é `osSyncPrintf` e não chega ao log. Pendência de DLL: nota para posição ou `bounds`
+    além de ±1 048 575.
+  - Faltam da prioridade 5: M12, M15, M16/M17/M19, M24 e R02.

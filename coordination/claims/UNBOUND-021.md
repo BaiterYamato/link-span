@@ -1,0 +1,20 @@
+# UNBOUND-021
+
+- Status: review
+- Agent: Claude (Opus 5.5)
+- Platform: Windows
+- Branch: agent/OOT-UPSTREAM-001-78dc6d970-integration
+- Started: 2026-10-03T14:40:00Z
+- Depends on: UNBOUND-020
+- Files:
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/unbound-core/e-fixtures/make_fixtures.py
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/unbound-core/e-fixtures/e_fixtures.cpp
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/unbound-core/e-fixtures/main.lua
+  - OOT-UPSTREAM-78DC-001/tools/package-unbound-e-fixtures.ps1
+  - OOT-UPSTREAM-78DC-001/build/oot-upstream-001/evidence/unbound-021/**
+- Goal:
+  - Gate OoT 10.3/14.3, prioridade 5 da matriz de limites do Prelude: fixtures so com recursos nossos (display list e vertices em XML, collision.bin proprio), provadas em jogo, sem mudar o host.
+  - M01: piso a 76 unidades de x=+-1 048 576 e z=-+1 048 576 nos dois cantos; andar para fora mostra onde a colisao acaba.
+  - M13/M14: collision.bin com exatamente 8 193 vertices e 32 769 poligonos, com o chao do spawn no poligono 32768 e no vertice 8192 (acima dos tetos vanilla de 13 bits e s16).
+  - M02: uma display list com quad de 81 920 unidades (vertices em x=+-40 960), com spawn nas duas pontas.
+  - Sonda da e-fixtures: indice do poligono de chao e mudancas do flag de chao no log.
