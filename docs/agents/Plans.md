@@ -1259,3 +1259,23 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
 - **Codex em paralelo:** M17/M19 (rascunho e análise prontos para a UNBOUND-024), M15/M24 (harnesses g++ do
   crescimento da DynaPoly e do cache de texturas) e a revisão do patch R04 (em andamento). A cota de 5 h chegou a 79%.
 - Faltam da prioridade 5: M15, M17, M19 e M24 em jogo.
+
+### UPDATE 2026-10-03 (Claude) — UNBOUND-024 (M17, M19 e câmeras da colisão)
+
+- **UNBOUND-024** (host `a51bf6a68`, framework 0.6.6 `8E302656`, e-fixtures 0.1.5 `A57628DE`): mais duas linhas da
+  prioridade 5 da matriz, provadas em jogo, sem mudar o host.
+  - M17: 301 câmeras; faixas com câmera de superfície 255, 256 e 300 dão `camDataIdx` 255/256/300 e settings
+    39/53/2 (com a máscara de 8 bits, 256 e 300 virariam 0 e 44).
+  - M19: 32 767 salas num `room.json`; água rasa nas rooms 63, 64 e 32 766 liga só na room da caixa (0 e 62 sobre as
+    mesmas caixas ficam secas: a room da água é s32, sem máscara de 6 bits).
+  - Framework 0.6.6: notas locais da colisão — câmera fora da tabela (superfície sempre; água só positiva), acima de
+    32 767, posições que não cabem (`max(count, 3)` vetores), `count` sem índice ou fora de s16. Zero notas nas 101
+    colisões do jogo base.
+- **Revisão do Codex** (024): 1 alto (estouro de `positionIndex + count`), 3 médios (janela de três vetores, água
+  0/-1 não é nota, prova sem `set` e sem posição no M19), 1 baixo (boot sem exigir as notas). Todos corrigidos.
+- **R04:** a v2 resolveu A1/M1/M2, mas a re-revisão achou 1 alto, 2 médios e 1 baixo novos (continuação TEXTID JPN
+  depois do skip, OCARINA pulada, créditos com FADE/FADE2, runner). A v3 diz corrigir todos (13 630 verificações,
+  `evidence/r04-codex/v3`); re-revisão em andamento.
+- **Codex em paralelo:** re-revisão da v3 do R04 e a checagem de grafo cena ↔ colisão (exit, room da água, câmera das portas)
+  para a UNBOUND-025.
+- Faltam da prioridade 5: M15 e M24 em jogo.
