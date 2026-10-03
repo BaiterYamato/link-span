@@ -1218,7 +1218,24 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
   - `span`: um quad de 81 920 unidades numa DL só, desenhado sob os spawns em x = ±40 000.
   - Em jogo (`evidence/unbound-021/session`): chegada com `chao=1 piso=32768` nas duas edge. Andando para fora, o chão
     só acaba no fim da geometria (±1 048 806), com void-out e respawn; a `span` aparece nas duas pontas.
-  - Achado M01: além de ±1 048 576 o chão continua valendo, mas line test, parede, teto e esfera retornam cedo
-    (`z_bgcheck.c`). O aviso é `osSyncPrintf` e não chega ao log. Pendência de DLL: nota para posição ou `bounds`
-    além de ±1 048 575.
+  - Achado M01 (texto corrigido na revisão, ver UNBOUND-022): além de ±1 048 576 a colisão continua. O
+    `BGCHECK_POS_ERROR_CHECK` só imprime nos cinco caminhos do `z_bgcheck.c`, com `osSyncPrintf` desligado no build.
+    O que muda é o `EffectSs` (poeira, faíscas, respingos), apagado com |c| > 1 048 576.
   - Faltam da prioridade 5: M12, M15, M16/M17/M19, M24 e R02.
+
+### UPDATE 2026-10-03 (Claude) — UNBOUND-022 e revisão da UNBOUND-021
+
+- **UNBOUND-022** (host `c6c46379c`, framework 0.6.4 `51389434`): nota para spawn, ator, transition actor e `bounds`
+  além de ±1 048 576 (valor que o jogo recebe: f32 nas posições, inteiro nos bounds). Lá o jogo apaga os `EffectSs`
+  em vez de desenhá-los, e a colisão continua. XML inalterado. Prova de boot 5/5: a `UB022-A` dá `notas=4`, e as
+  fixtures da 020/019/018 mantêm os números.
+- **Revisão do Codex** (021 + 022): 3 achados médios, todos corrigidos.
+  - O achado M01 da 021 estava errado: o `BGCHECK_POS_ERROR_CHECK` não interrompe nenhum caminho.
+  - A nota agora compara o valor efetivo.
+  - A fixture `edge_*` agora pega a regressão da máscara de 13 bits (host `3e3c4946f`, e-fixtures 0.1.3 `1FA50BFC`,
+    prova em jogo repetida com os mesmos números).
+- **R04:** o Codex entregou o desenho da guarda do decodificador de texto. São PAL e JPN; o harness g++ fez
+  7 698 verificações e o `git apply --check` passou. Está em `build/oot-upstream-001/evidence/r04-codex` e espera a
+  rodada de host da RFC 0027.
+- **Codex:** agora dois em paralelo, a pedido do usuário. Um faz o rascunho R02/M12 e o outro a re-revisão das
+  correções.
