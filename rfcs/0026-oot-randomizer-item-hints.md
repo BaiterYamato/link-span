@@ -20,7 +20,9 @@ genéricas; o host não implementa regras de Sensor, estações ou equipamentos 
 ## Erros e segurança
 
 Consultas só na thread proprietária. Argumento/size inválido: INVALID_ARGUMENT.
-Sem backend ou fora de save randomizer: UNSUPPORTED. Sem item ainda disponível:
+`item_count` e `item_info` leem o catálogo estático de itens (nomes, sem nada da
+seed) e respondem em qualquer save. `find_uncollected` sem backend ou fora de
+save randomizer: UNSUPPORTED. Sem item ainda disponível:
 FAILURE. Nome que excede o buffer: LIMIT. Os outputs são cópias com NUL; não há
 ponteiros a contexto, acesso a arquivos, lógica assíncrona nem API Lua nova.
 
