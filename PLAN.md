@@ -1,15 +1,17 @@
 # PLAN.md — ShipLua
 
-> Plano mestre para criação de forks do Shipwright e 2Ship2Harkinian e implementação de um modloader Lua compartilhado.
+> Plano mestre do modloader Lua: entrega inicial executável no Shipwright/OoT; suporte a 2Ship2Harkinian/MM como expansão posterior.
 >
 > Owner GitHub padrão: `BaiterYamato`  
 > Nome provisório: `ShipLua`  
 > Branches upstream observadas na elaboração: `develop`  
 > Data-base: `2026-07-12`
 
+> Decisão de escopo (2026-09-27): o primeiro lançamento exige funcionamento real no OoT. Integração com MM, compatibilidade do mesmo pacote entre jogos e viagem OoT ↔ MM são metas de expansão; nenhum desses itens bloqueia o aceite inicial.
+
 ## 1. Resultado esperado
 
-Ao final deste plano existirão:
+Os repositórios previstos para o projeto completo são:
 
 ```text
 BaiterYamato/ship-lua
@@ -17,20 +19,22 @@ BaiterYamato/Shipwright
 BaiterYamato/2ship2harkinian
 ```
 
-Com:
+O repositório do 2Ship já pode existir, mas sua integração não é requisito da entrega inicial. Na entrega inicial de OoT:
 
 - runtime Lua isolado por mod;
 - modloader com manifesto;
-- API compartilhada entre OoT e MM;
-- adaptadores baseados no `GameInteractor`;
+- API comum versionada, inicialmente validada no OoT;
+- adaptador OoT baseado no `GameInteractor`;
 - armazenamento sandboxed;
 - eventos, timers e comandos;
 - capacidades específicas por jogo;
 - hot reload de desenvolvimento;
 - documentação e definições para Lua Language Server;
-- CI para os dois forks;
-- pacote de mod comum executável nos dois jogos;
-- processo de sincronização com futuros updates upstream.
+- CI para o núcleo e o host OoT;
+- pacote de mod instalável e executável no OoT sem recompilar;
+- processo de sincronização com futuros updates upstream do Shipwright.
+
+Na expansão MM: adaptar o mesmo núcleo ao 2Ship2Harkinian, validar a API comum nos dois jogos, executar um pacote comum sem alterações e, em etapa própria, validar viagem entre mundos.
 
 ---
 
@@ -49,7 +53,7 @@ Os dois devem existir na raiz do repositório `ship-lua`. Uma cópia curta ou re
 
 ### Incluído no primeiro ciclo
 
-- forks e remotes upstream;
+- fork e remote upstream do Shipwright;
 - repositório compartilhado;
 - integração CMake;
 - Lua 5.4 PUC ou decisão equivalente documentada por RFC;
@@ -58,7 +62,7 @@ Os dois devem existir na raiz do repositório `ship-lua`. Uma cópia curta ou re
 - descoberta e carregamento de mods;
 - event bus;
 - API de capacidades;
-- adaptadores OoT e MM;
+- adaptador OoT;
 - API comum inicial;
 - console commands;
 - timers;
@@ -69,6 +73,16 @@ Os dois devem existir na raiz do repositório `ship-lua`. Uma cópia curta ou re
 - codegen de documentação e tipos;
 - testes de conformidade;
 - empacotamento `.shipmod`.
+
+### Expansão posterior: MM
+
+- integração CMake e adaptador do 2Ship2Harkinian;
+- ponte de eventos, capabilities e testes de conformidade do MM;
+- mesmo mod comum executável sem alterações nos dois jogos;
+- sessão e viagem entre OoT e MM, com validação de saves e assets de cada host;
+- builds, CI e documentação específicos do MM.
+
+Trabalho em MM já realizado pode ser preservado e aproveitado. Sua conclusão não é requisito de aceite ou lançamento da primeira entrega OoT.
 
 ### Fora do primeiro ciclo
 
@@ -86,6 +100,8 @@ Os dois devem existir na raiz do repositório `ship-lua`. Uma cópia curta ou re
 ---
 
 ## 4. Bootstrap dos repositórios
+
+Os comandos desta seção registram a preparação histórica dos dois forks. As etapas do 2Ship2Harkinian pertencem à expansão e não bloqueiam a primeira entrega em OoT.
 
 ### 4.1 Pré-requisitos
 
@@ -531,7 +547,7 @@ entrypoint = "main.lua"
 description = "Limits downward velocity."
 authors = ["Example Author"]
 
-games = ["oot", "mm"]
+games = ["oot"]
 
 [host]
 shipwright = ">=9.0"
@@ -600,7 +616,7 @@ O `GameInteractor` do host não oferece ordem pública estável suficiente para 
 
 ### Objetivo
 
-Criar os três repositórios, branches, estrutura de coordenação e builds baseline.
+Preparar o núcleo compartilhado, o fork Shipwright, a coordenação e o build baseline do OoT. O fork 2Ship e seu build entram na expansão MM.
 
 ### Tarefas
 
@@ -610,15 +626,15 @@ Criar os três repositórios, branches, estrutura de coordenação e builds base
 | GOV-002 | Criar `ship-lua` | GOV-001 | não |
 | GOV-003 | Adicionar `AGENTS.md`, `PLAN.md`, status e templates | GOV-002 | não |
 | CI-001 | Compilar Shipwright baseline | GOV-001 | sim |
-| CI-002 | Compilar 2Ship baseline | GOV-001 | sim |
+| CI-002 | Compilar 2Ship baseline (expansão MM) | GOV-001 | sim |
 | ARCH-001 | Inventariar hooks comuns e exclusivos | GOV-002 | sim |
 | ARCH-002 | Escrever RFC de arquitetura | ARCH-001 | não |
 
 ### Aceite
 
-- três repositórios existem;
-- upstream configurado;
-- baseline compila;
+- `ship-lua` e o fork Shipwright existem; o fork 2Ship pertence à expansão;
+- upstream do Shipwright configurado;
+- baseline do Shipwright compila; baseline do 2Ship é critério da expansão;
 - hashes baseline registrados;
 - nenhum arquivo protegido foi commitado;
 - tarefas podem ser reivindicadas sem conflito.
@@ -716,13 +732,13 @@ Definir o contrato comum antes de integrar profundamente os hosts.
 
 ---
 
-## Fase 4 — Bootstrap nos dois hosts
+## Fase 4 — Bootstrap no OoT; MM na expansão
 
 ### Objetivo
 
-Inicializar o mesmo núcleo nos dois jogos.
+Inicializar o núcleo no Shipwright e comprovar carregamento de mods no OoT. A adaptação ao 2Ship usa o mesmo núcleo em uma expansão posterior.
 
-### Trilhas paralelas
+### Trilhas por etapa
 
 #### Shipwright
 
@@ -735,7 +751,7 @@ Inicializar o mesmo núcleo nos dois jogos.
 | OOT-005 | localizar diretório de mods |
 | OOT-006 | menu/console mínimo |
 
-#### 2Ship
+#### 2Ship (expansão MM)
 
 | ID | Tarefa |
 |---|---|
@@ -748,7 +764,7 @@ Inicializar o mesmo núcleo nos dois jogos.
 
 ### Aceite
 
-O mesmo `hello-world.shipmod` registra mensagem nos dois hosts.
+Entrega inicial: `hello-world.shipmod` carrega, registra mensagem e descarrega sem callbacks restantes no OoT. Expansão MM: o mesmo pacote funciona também no 2Ship, sem alterações.
 
 ---
 
@@ -756,7 +772,7 @@ O mesmo `hello-world.shipmod` registra mensagem nos dois hosts.
 
 ### Objetivo
 
-Mapear `GameInteractor` para eventos estáveis.
+Mapear `GameInteractor` do OoT para eventos estáveis. A tradução dos eventos do MM e a comparação entre payloads ficam para a expansão.
 
 ### Matriz inicial
 
@@ -790,7 +806,7 @@ A assinatura real deve ser confirmada no commit atual antes da implementação.
 
 ### Aceite
 
-Um único mod `scene-logger` recebe payload compatível nos dois jogos.
+Entrega inicial: `scene-logger` recebe os eventos previstos com payload estável no OoT. Expansão MM: o mesmo mod recebe payload compatível nos dois jogos.
 
 ---
 
@@ -823,14 +839,14 @@ Disponibilizar leitura e escrita segura.
 - handle destruído retorna `invalid_handle`;
 - Lua não recebe endereço;
 - limites são validados;
-- API comum funciona nos dois jogos;
+- API comum funciona no OoT; funcionamento equivalente no MM é critério da expansão;
 - divergências são capacidades específicas.
 
-## Fase 6A — Sessão entre mundos
+## Fase 6A — Sessão entre mundos (expansão MM)
 
 ### Objetivo
 
-Permitir que uma única sessão ShipLua atravesse destinos de OoT e MM sem
+Após a entrega inicial em OoT, permitir que uma única sessão ShipLua atravesse destinos de OoT e MM sem
 descartar o estado portátil do jogador. O núcleo coordena a transação; cada
 adaptador traduz structs, IDs e assets do próprio host.
 
@@ -896,7 +912,7 @@ oot.equipment
 oot.dungeon_keys
 ```
 
-### MM
+### MM (expansão)
 
 ```text
 mm.cycle
@@ -919,7 +935,7 @@ Cada grupo exige RFC própria e capacidade correspondente.
 | DOC-001 | site/referência da API |
 | DOC-002 | tutorial primeiro mod |
 | DOC-003 | guia portando de C++ |
-| DOC-004 | guia diferenças OoT/MM |
+| DOC-004 | guia diferenças OoT/MM (expansão) |
 | TOOL-002 | `shipmod init` |
 | TOOL-003 | `shipmod validate` |
 | TOOL-004 | `shipmod pack` |
@@ -950,7 +966,7 @@ codegen-diff.yml
 package-examples.yml
 ```
 
-Nos forks:
+No host OoT da entrega inicial (e no 2Ship quando começar a expansão MM):
 
 ```text
 shiplua-host-build.yml
@@ -958,11 +974,11 @@ shiplua-conformance.yml
 upstream-drift.yml
 ```
 
-### Matriz de integração
+### Matriz de integração por etapa
 
 ```text
-Shipwright/develop + ship-lua/main
-2ship2harkinian/develop + ship-lua/main
+Entrega inicial: Shipwright/develop + ship-lua/main
+Expansão MM: 2ship2harkinian/develop + ship-lua/main
 ```
 
 ### Drift detection
@@ -991,7 +1007,7 @@ Quando houver quebra:
 
 ## 11. Sincronização com upstream
 
-Executar separadamente em cada fork.
+Executar no fork Shipwright durante a entrega inicial e, separadamente, no fork 2Ship durante a expansão MM.
 
 ```bash
 git fetch upstream origin
@@ -1028,7 +1044,7 @@ Não reescreva o histórico de `lua/main`.
 | Core Runtime | Lua, lifecycle e erros |
 | API/Codegen | schemas, bindings e docs |
 | OoT Adapter | Shipwright |
-| MM Adapter | 2Ship |
+| MM Adapter (expansão) | 2Ship |
 | Security | sandbox, pacote e storage |
 | Build/CI | CMake e workflows |
 | QA | conformance e regressão |
@@ -1038,12 +1054,11 @@ Um agente pode ocupar mais de um papel, mas uma tarefa só pode ter um responsá
 
 ### Trabalho paralelo seguro
 
-Depois da Fase 3:
+Depois da Fase 3, a entrega inicial segue o adaptador OoT; o adaptador MM entra na expansão:
 
 ```text
-                ┌─ OoT Adapter ─┐
-Core/API ───────┤               ├── Conformance
-                └─ MM Adapter ──┘
+Core/API ── OoT Adapter ── Conformance OoT ── entrega inicial
+          └─ MM Adapter ── Conformance MM/OoT ── expansão
 ```
 
 Não inicie adaptadores antes de congelar o primeiro contrato mínimo de eventos e capacidades.
@@ -1053,8 +1068,8 @@ Não inicie adaptadores antes de congelar o primeiro contrato mínimo de eventos
 A cada grupo pequeno de tarefas:
 
 1. merge no `ship-lua/main`;
-2. atualizar commit do submódulo nos dois forks;
-3. executar conformance;
+2. atualizar commit do submódulo no Shipwright; atualizar no 2Ship quando a expansão MM estiver ativa;
+3. executar conformance no host da etapa;
 4. registrar resultado em `coordination/STATUS.md`.
 
 ---
@@ -1072,9 +1087,9 @@ A cada grupo pequeno de tarefas:
 ### Baseline
 
 - [ ] `CI-001` — Shipwright Linux;
-- [ ] `CI-002` — 2Ship Linux;
+- [ ] `CI-002` — 2Ship Linux (expansão MM);
 - [ ] `CI-003` — Shipwright Windows;
-- [ ] `CI-004` — 2Ship Windows.
+- [ ] `CI-004` — 2Ship Windows (expansão MM).
 
 ### Núcleo
 
@@ -1095,6 +1110,7 @@ A cada grupo pequeno de tarefas:
 - [x] `MOD-005` — dependencies;
 - [x] `MOD-006` — load order;
 - [x] `MOD-007` — conflicts.
+- [x] `MOD-008` — descoberta, compatibilidade e carga da raiz (registrado no STATUS.md).
 
 ### API
 
@@ -1109,9 +1125,9 @@ A cada grupo pequeno de tarefas:
 ### Hosts
 
 - [ ] `OOT-001` a `OOT-006`;
-- [ ] `MM-001` a `MM-006`;
+- [ ] `MM-001` a `MM-006` (expansão MM);
 - [ ] `OOT-EVT-001` a `OOT-EVT-004`;
-- [ ] `MM-EVT-001` a `MM-EVT-004`.
+- [ ] `MM-EVT-001` a `MM-EVT-004` (expansão MM).
 
 ### Segurança e DX
 
@@ -1135,7 +1151,9 @@ Antes de ampliar a API, entregar este fluxo completo:
 6. recebe evento;
 7. escreve log com jogo e versão;
 8. descarrega sem deixar callback;
-9. mesmo arquivo funciona em OoT e MM.
+9. o pacote funciona no OoT instalado, sem recompilar o jogo.
+
+Na expansão MM, acrescentar a prova de que o mesmo pacote funciona no 2Ship sem alteração.
 
 ### Mod de teste
 
@@ -1147,7 +1165,7 @@ name = "Hello World"
 version = "0.1.0"
 api = ">=0.1 <0.2"
 entrypoint = "main.lua"
-games = ["oot", "mm"]
+games = ["oot"]
 ```
 
 `main.lua`:
@@ -1165,7 +1183,7 @@ ship.events.on("game.ready", function()
 end)
 ```
 
-Não avance para física, atores ou assets antes desse slice estar verde nos dois hosts.
+Não avance para física, atores ou assets da entrega inicial antes desse slice estar verde no OoT. A validação no MM pertence à expansão.
 
 ---
 
@@ -1188,34 +1206,39 @@ Não avance para física, atores ou assets antes desse slice estar verde nos doi
 
 ---
 
-## 16. Critérios da versão 0.1.0
+## 16. Critérios da primeira versão estável (meta original 0.1.0)
 
-A versão `0.1.0` pode ser publicada quando:
+A primeira versão estável do modloader para OoT pode ser publicada quando:
 
-- Shipwright e 2Ship compilam com ShipLua;
-- `hello-world`, `scene-logger` e um mod de player comum rodam nos dois;
+- Shipwright compila com ShipLua e o pacote é carregado em uma instalação real de OoT;
+- `hello-world`, `scene-logger` e um mod de player comum rodam no OoT;
 - manifesto e dependências funcionam;
 - runtime isola mods;
 - storage bloqueia traversal;
 - hot reload não duplica hooks;
 - documentação é gerada;
 - API possui SemVer;
-- CI Linux e Windows está verde;
+- CI do núcleo e do Shipwright em Linux e Windows está verde;
 - nenhuma ROM ou asset protegido existe nos repositórios;
 - release contém checksums;
 - limitações conhecidas estão documentadas.
 
+Compilar o 2Ship, executar esses mods no MM e validar viagem entre jogos são critérios da expansão, não deste lançamento. A numeração da próxima versão deve respeitar o histórico de versões já publicadas; `0.1.0` era a meta original deste documento.
+
 ---
 
-## 17. Critério final do projeto
+## 17. Critério de pronto da entrega inicial OoT
 
-O projeto é considerado funcional e comunitariamente utilizável quando:
+A entrega inicial é considerada funcional e comunitariamente utilizável no OoT quando:
 
-1. mods são instalados sem recompilar;
-2. o mesmo mod comum executa nos dois jogos;
-3. recursos exclusivos são detectáveis;
-4. atualizações upstream exigem mudanças concentradas nos adaptadores;
-5. erros de um mod não derrubam os outros;
-6. nenhum mod recebe acesso nativo arbitrário;
-7. a documentação deriva do mesmo esquema dos bindings;
-8. qualquer agente consegue continuar uma tarefa a partir dos arquivos de coordenação.
+1. mods são instalados e executados no OoT sem recompilar;
+2. a API comum e os recursos exclusivos do OoT são detectáveis;
+3. atualizações upstream do Shipwright exigem mudanças concentradas no adaptador;
+4. erros de um mod não derrubam os outros;
+5. nenhum mod recebe acesso nativo arbitrário;
+6. a documentação deriva do mesmo esquema dos bindings;
+7. qualquer agente consegue continuar uma tarefa a partir dos arquivos de coordenação.
+
+## 18. Critério da expansão MM
+
+A expansão MM é considerada pronta quando o 2Ship carrega mods sem recompilar, o mesmo pacote que usa apenas a API comum executa nos dois jogos sem alteração, as diferenças são expostas por capabilities e namespaces, e os testes de host e CI do MM passam. Viagem OoT ↔ MM exige ainda os critérios específicos da Fase 6A; ela não é pré-requisito da primeira entrega OoT.

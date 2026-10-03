@@ -1,6 +1,6 @@
 # AGENTS.md — ShipLua
 
-> Contrato operacional para agentes humanos e de IA trabalhando no modloader Lua compartilhado entre Shipwright e 2Ship2Harkinian.
+> Contrato operacional para agentes humanos e de IA trabalhando no modloader Lua: entrega inicial no Shipwright/OoT e expansão posterior para 2Ship2Harkinian/MM.
 >
 > Nome provisório do projeto: **ShipLua**.  
 > Owner padrão usado neste documento: **BaiterYamato**.  
@@ -24,25 +24,28 @@ Nenhum agente deve alterar a arquitetura pública da API por conta própria.
 
 ## 2. Objetivo do projeto
 
-Criar um modloader Lua modular para:
+Criar um modloader Lua modular, inicialmente executável em:
 
 - `HarbourMasters/Shipwright` — Ocarina of Time;
+
+e posteriormente expandi-lo para:
+
 - `HarbourMasters/2ship2harkinian` — Majora's Mask.
 
 O projeto deve oferecer:
 
 - um runtime Lua compartilhado;
 - uma API comum e versionada;
-- adaptadores específicos para cada jogo;
+- adaptador OoT na primeira entrega e adaptador MM na expansão;
 - manifesto, dependências, permissões e armazenamento por mod;
 - instalação de mods sem recompilar o jogo;
 - isolamento de erros;
 - documentação e tipos gerados;
-- compatibilidade contínua com futuras atualizações dos dois ports.
+- compatibilidade com atualizações do Shipwright na primeira entrega e dos dois ports após a expansão MM.
 
 ### Princípio central
 
-Um mod que utilize apenas a API comum deve executar, sem alteração, nos dois jogos.
+Na primeira entrega, um mod que utilize a API comum deve executar no OoT. Na expansão MM, o mesmo pacote deve executar sem alteração nos dois jogos. Compatibilidade com MM não bloqueia o aceite inicial do OoT.
 
 Recursos exclusivos devem ser expostos por capacidades e namespaces:
 
@@ -431,7 +434,7 @@ Nunca permita exceção C++ atravessar a fronteira C/Lua.
 - API principal em namespace `ship`.
 - Não crie globais implícitas.
 - Use LuaDoc nos exemplos.
-- Scripts de exemplo devem funcionar nos dois hosts, salvo indicação explícita.
+- Scripts de exemplo da primeira entrega devem funcionar no OoT; a execução do mesmo pacote nos dois hosts é validada na expansão MM.
 - Não distribua bytecode `.luac` como formato canônico.
 - Um mod deve possuir `manifest.toml` e entrypoint explícito.
 
@@ -465,9 +468,9 @@ Cada PR funcional deve incluir pelo menos um dos seguintes:
 |---|---:|---:|---:|
 | núcleo `ship-lua` | obrigatório | obrigatório | recomendado inicialmente |
 | Shipwright | obrigatório | obrigatório | recomendado |
-| 2Ship | obrigatório | obrigatório | recomendado |
+| 2Ship | expansão MM | expansão MM | recomendado na expansão |
 | segurança de caminhos | obrigatório | obrigatório | obrigatório |
-| mod comum de conformidade | obrigatório | obrigatório | obrigatório antes de release |
+| mod comum de conformidade | obrigatório no OoT | obrigatório no OoT | recomendado inicialmente; MM na expansão |
 
 Testes locais que exigem ativos legítimos não podem ser executados na CI pública com ROM incluída. Use fixtures sintéticas e testes sem conteúdo protegido.
 
@@ -617,7 +620,7 @@ Uma tarefa só está pronta quando:
 - riscos conhecidos declarados;
 - revisão do agente integrador concluída.
 
-A conclusão do projeto exige que o mesmo pacote de mod comum seja carregado pelos dois hosts sem alteração de código.
+A entrega inicial exige que um pacote de mod seja carregado e funcione no OoT sem recompilar o jogo. Carregar o mesmo pacote nos dois hosts sem alteração de código é critério da expansão MM, conforme `PLAN.md` §§17–18.
 
 ---
 
