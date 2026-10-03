@@ -1279,3 +1279,28 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
 - **Codex em paralelo:** re-revisão da v3 do R04 e a checagem de grafo cena ↔ colisão (exit, room da água, câmera das portas)
   para a UNBOUND-025.
 - Faltam da prioridade 5: M15 e M24 em jogo.
+
+### UPDATE 2026-10-03 (Claude) — UNBOUND-025/026/027 (grafo, M15 e M24)
+
+- **UNBOUND-026** (host `e86e643ee`, e-fixtures 0.1.6 `3D6F714B`): M15 em jogo. Com caixas grandes vanilla (10
+  polígonos e 8 vértices cada), a tabela de BgActor vai de 64 a 128 (o Link pisa na caixa de bgId 64) e as listas
+  de polígonos e vértices vão de 16 384 a 32 768 no ponto exato. Os registros DynaPoly saem na ordem inversa da lista
+  de atores.
+- **UNBOUND-027** (host `517b0ac16`, e-fixtures 0.1.7 `85E5D937`): M24 em jogo, a última linha da prioridade 5.
+  - `m24_seq`: 8 193 janelas 1×1 de um atlas num quadro, todas certas célula a célula.
+  - `m24_slots`: A retida no slot 0 enquanto 8 192 chaves passam pelo slot 1. O painel final sai com B: a 8 193ª
+    chave expulsa A e o ID dela é reaproveitado na mesma consulta (DirectX 11).
+  - Vai para a rodada de host.
+- **UNBOUND-025** (host `a29c0ba8c`, framework 0.6.7 `C15141B1`, boot 8/8): grafo cena ↔ colisão e salas no `game.ready`. Confere exit da superfície, room
+  da água, room e câmera de porta. Notas iguais às da cena só da base ficam em `herdadas=` (a `spot04` vanilla já
+  tem setups de cutscene com menos saídas que os exits da colisão). Revisão do Codex: 1 alto e 2 médios (cache e
+  orçamento, saldo antes de ler, alias `.meta`), corrigidos.
+- **R04:** a v4 fechou M5/L2. Na re-revisão: 0 altos, 0 médios e 1 baixo (L3, só com o Draw omitido por registro
+  de depuração; o HEAD também repete). Pronta para a rodada de host (`evidence/r04-codex/v4`).
+- **Rodada de host (RFC 0027), itens novos com prova pronta:**
+  - reuso de ID no cache de texturas (`m24_slots` tem de sair verde);
+  - sentinela 0x7FFF no 32 768º registro DynaPoly;
+  - `malloc` NULL das listas.
+  Os patches com harness estão em preparo pelo Codex (`codex-m24-host`, `codex-m15-host`).
+- **Família de ROM (§10.5):** exige o `oot.o2r` de uma segunda família, que não existe nesta máquina; depende do
+  usuário.
