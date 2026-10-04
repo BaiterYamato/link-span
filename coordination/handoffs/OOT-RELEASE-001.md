@@ -239,6 +239,22 @@ Legenda: ✅ comprovado no RC · 🟡 parcial ou comprovado antes do RC · ❌ a
 | documentação, exemplos, SDK e hashes | ✅ | `docs/writing-mods.md`, `docs/native-providers.md`, `soh/native-sdk/README.md`, `RELEASE.md`, `SHA256SUMS.txt`, `inventory.json` |
 | depois do COREEXT-GATE só DLLs recompiladas | ❌ | o host foi recompilado em várias rodadas (CEL-004A, NEI-HOST-*, OOT-NEI-017, rc2) sem RFC de ABI para cada uma |
 
+### Depois do RC2 (2026-10-03): o que mudou nas linhas abertas
+
+Provado em jogo na cópia de smoke do RC2 (`build/oot-upstream-001/smoke-rc2-20261003`, host `E278E9A3` sem
+recompilar), com o framework Unbound e a e-fixtures novos, ainda fora de um RC:
+
+| Critério | Antes | Agora | Evidência |
+|---|---|---|---|
+| conflito entre duas cópias da mesma cena antes do gameplay | ❌ | 🟡 | UNBOUND-018 (framework 0.6.1): delta mesclável, cópia idêntica e `conflito:` no `game.ready`, 3/3 em jogo; regressão em todas as baterias até a 028 |
+| cenas afetadas por versão resolvem recursos | ❌ | 🟡 | UNBOUND-019 (0.6.2): cada recurso do XML conferido no VFS no `game.ready`, ausente/recusado em `warning`, resumo com a versão do `oot.o2r`; 4/4 |
+| fixtures de fronteira do Prelude | ❌ | 🟡 | UNBOUND-020 a 028: salas até 32 767 (`m19`), DynaPoly 64→128 e 16 384→32 768 (`m15`, 026), água em qualquer sala (`m19`), exits/câmeras (`exits`, `m17`), 8 193 texturas (`m24`), limite do mundo (`edge_*`, `span`), notas de teto e grafo cena ↔ colisão/salas (0.6.3–0.6.8). Objetos > 128 e atores nos tetos só na checagem do `game.ready` (UB020-A), sem cena carregada em jogo |
+| saves sobrevivem a update | 🟡 | 🟡 | atualização N→N+1 do framework (0.6.0→0.6.1) provada na UNBOUND-018 (`update-cycle.ps1`, `ATUALIZACAO OK`); falta um N+1 do NEI |
+| depois do COREEXT-GATE só DLLs recompiladas | ❌ | 🟡 | desde o RC2 o host não foi recompilado (018–028 só mudam DLL/fixtures); a RFC 0027 (COREEXT-011) regulariza as rodadas anteriores e define a próxima, com os patches em `evidence/rfc0027-host` à espera da aprovação |
+
+Continua aberto: playtest de todos os itens NEI (físico), licença, segunda família de ROM e, para virar ✅, refazer
+essas provas num RC com o framework 0.6.8 (o host pode ficar o mesmo: só a DLL do Unbound muda).
+
 Fora do checklist, e bloqueando a publicação: a **licença** do Link-Span (não há `LICENSE`), do WW Style (o
 `NOTICE.md` não concede licença) e dos assets do fork NEI.
 
