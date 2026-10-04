@@ -1359,3 +1359,35 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
   - Falta: revisão adversarial do M08 (cota do Codex esgotada até 01:28), build MSVC e as provas em jogo, num RC3
     com o framework 0.6.9 e a e-fixtures 0.1.8.
 
+
+### UPDATE 2026-10-04 (Claude) — UNBOUND-031 (M18 e R08/R09 em jogo) e rodada de host da RFC 0027 provada no candidato
+
+- **UNBOUND-031** (integração `878150563` e `a564af1ac`; e-fixtures 0.1.10 `D679ABBC`).
+  - Cena `m18`: 255 luzes na cena e em duas salas, com três planos En_Holl (0x0023) que trocam de sala.
+  - Fixture do R08/R09: delta da `ddan` com a sala 32 (além dos 19 minimapas e das 32 paletas) e cenas com
+    `worldMapArea` -1, 23 e 22. A pausa é relatada por estado e por página.
+- **Rodada de host, para aprovação** (`build/oot-upstream-001/evidence/rfc0027-host/RODADA-HOST-v9.md`). O candidato
+  vive no branch local `agent/RFC0027-HOST-ROUND-candidate` (`03ef2009d`, libultraship `f2e87310`); nada foi aplicado
+  na integração.
+  - **Lote de 7 provado em jogo:**
+    - M08: 8 100 rúpias vivas;
+    - M24: os dois painéis verdes;
+    - M18: 515 → 770 e um aviso; no host antigo, 32;
+    - RoomActors: aviso e exit 0;
+    - R04: placa nova com código de cor;
+    - R08/R09: sala 32 sem minimapa; no host antigo, minimapa de outra dungeon e a bússola fora do lugar. As áreas
+      -1 e 23 viram 22.
+  - **Patches 8 a 11:**
+    - 8 v2: o savestate guarda e restaura as tabelas do DynaPoly, e a recusa continua depois de troca de cena;
+    - 9 v2: appends do crash handler limitados no libultraship, mais o orçamento de nós;
+    - 10: clamp do THA;
+    - 11: eventos antes do Init do ImGui.
+    Revisões do Codex: N1 e H1 corrigidos; F1, o áudio fora do mutex e as water boxes ficam como riscos herdados com
+    proposta de recorte próprio.
+  - **Bateria:** no `3EEE85B1`, 6/6 sessões (boot 9/9); no exe final `001E1F3D`, completa, savestate e R08/R09.
+  - O layout id não muda: nenhum mod nativo precisa ser recompilado.
+  - **Custo:** +8,02 MiB no boot e +8,78 MiB por slot de savestate.
+  - **Depois da aprovação:**
+    - cherry-pick na integração (sem conflito, conferido);
+    - nota de luzes do framework 0.6.10 em dois níveis (> 32 e > 255);
+    - RC3.
