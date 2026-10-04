@@ -1407,3 +1407,16 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
   com o 14 e a mantém em 1260 sem ele. Baterias: 3/3 no `5B9A83F3` (12-13) e 3/3 no `816A07E5` (até o 14).
 - **Nota de luzes do framework 0.6.10** em dois níveis (33-255 e > 255): diff pronto em `nota-luzes/v2`.
 - **Em preparo pelo Codex:** F2 (falta de memória ao enfileirar o pedido de savestate) e M2 (luzes da bridge).
+
+### UPDATE 2026-10-04 (Claude) — RFC 0027: F2 e patch 15 (luzes da bridge) no candidato; v10 conferida
+
+- **F2** (`576cf5712`): falta de memória ao enfileirar o pedido de savestate vira `FAIL_NO_MEMORY` em vez de encerrar o
+  jogo. Regressão 2/2 no `38279BB8`.
+- **Patch 15** (`383b0f946`, M2 v2 do Codex): geração privada da bridge de luzes, avançada só em mudanças estruturais;
+  o load recusa se ela mudou. A v1 recusava todo update, o que inutilizaria o savestate com CEL, NEI e WW Style.
+  A/B em jogo (fixture M2 + e-fixtures 0.1.12 `288665520`, sonda I): com o 15, remover e criar são recusados e a
+  lista fica certa; sem ele, remover deixa um nó fantasma e criar deixa a luz nova fora da lista. Bateria 3/3 no
+  `7191B4DE`.
+- **v10** (`RODADA-HOST-v10.md`): conferida pelo Codex contra a evidência (commits, 8 hashes, números e sessões);
+  13 correções de escopo e custo aplicadas. Parte obrigatória igual à v9; opcionais 12 a 15.
+- **Codex:** cota semanal em 91% (apertada) até 09/10 23:02; o resto fica para o RC3.

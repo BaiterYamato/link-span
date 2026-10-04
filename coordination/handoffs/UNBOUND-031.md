@@ -3,11 +3,11 @@
 ## Estado
 
 Em review.
-- A e-fixtures 0.1.9, a 0.1.10 e a 0.1.11 estão em commits locais na integração.
+- A e-fixtures 0.1.9 a 0.1.12 estão em commits locais na integração.
 - A prova da rodada de host vive no branch local `agent/RFC0027-HOST-ROUND-candidate`, que não foi aprovado e não
   entra na integração antes da aprovação do usuário.
-- Documento para aprovação: `RODADA-HOST-v10.md` (substitui a v9; a parte obrigatória não mudou, e os patches 12 a 14
-  são opcionais).
+- Documento para aprovação: `RODADA-HOST-v10.md` (substitui a v9; a parte obrigatória não mudou, e os patches 12 a 15
+  são opcionais). Fatos conferidos pelo Codex (`revisao-doc-v10`), correções aplicadas.
 - Sem push.
 
 ## Resultado
@@ -28,17 +28,23 @@ Em review.
   - Os 5 casos ficam no fim do roteiro, antes do retorno à casa.
 - **e-fixtures 0.1.11** (`7e1e5bec3`, pacote `28433C43`): função nativa de teste `water` e atalhos O (sobe 200 em
   todas as water boxes da cena) e P (lê a soma dos `ySurface`).
+- **e-fixtures 0.1.12** (`288665520`, pacote `F9A7AE21`): função nativa de teste `lights_probe` e atalho I (conta os
+  nós do `lightCtx`).
+- **Fixture M2 0.2.0** (só no scratchpad e em `rfc0027-host/m2-luzes/v2/fixture`, pacote `A63AC63A`): cria (B),
+  atualiza (N), remove (M) e consulta (Y) uma luz pelo `linkspan.oot.lights`.
 - **Rodada de host da RFC 0027 no candidato** (`RODADA-HOST-v10.md`). Todas as linhas do lote foram provadas em
-  jogo, mais os patches 8 v2, 9 v2, 10 e 11 e os opcionais 12 a 14.
-  - **Do Codex:** patches, harness, fixture do R08/R09 e revisões adversariais (8 v2, 9 v2, consolidada, 12-13, 14).
+  jogo, mais os patches 8 v2, 9 v2, 10 e 11 e os opcionais 12 a 15.
+  - **Do Codex:** patches (inclusive F2 e M2 v2), harness, fixtures do R08/R09 e do M2, revisões adversariais (8 v2,
+    9 v2, consolidada, 12-13, 14) e a conferência dos fatos da v10.
   - **Meus:** a correção N1 (captura transacional do savestate), a defesa H1 no `PrintCommon`, as mensagens em
     inglês, F1/F3 da revisão 12-13 (alocação do snapshot fora do mutex, "Save requested"), o merge manual do 14 sobre
-    o `SaveCapture` e a fixture da água.
+    o `SaveCapture`, a escolha da geração só estrutural no M2 (a v1 recusava todo update), as fixtures da água e das
+    luzes e as provas A/B.
 
 ## Commits
 
 - **Host (integração `agent/OOT-UPSTREAM-001-78dc6d970-integration`):** `878150563` e-fixtures 0.1.9, `a564af1ac`
-  e-fixtures 0.1.10 e `7e1e5bec3` e-fixtures 0.1.11.
+  e-fixtures 0.1.10, `7e1e5bec3` e-fixtures 0.1.11 e `288665520` e-fixtures 0.1.12.
 - **Host (candidato, só local):**
 
   | Commit | Conteúdo |
@@ -55,6 +61,8 @@ Em review.
   | `3db6e0a30` | patch 13, save atômico (opcional) |
   | `198adf4ca` | F1/F3 da revisão 12-13 |
   | `6d5089c6d` | patch 14, water boxes (opcional) |
+  | `576cf5712` | F2 da revisão 12-13 (complemento do 13) |
+  | `383b0f946` | patch 15, luzes da bridge nativa (opcional) |
 
 - **libultraship (candidato, só local):** `4900cbd3` M24, `65f18942` patch 11, `05d91188` patch 9 v2, `f2e87310` H1.
 
@@ -66,14 +74,15 @@ Em review.
 - `soh/native-sdk/unbound-core/e-fixtures/e_fixtures.cpp`:
   - `CountLights`, trocas de sala;
   - `MapState`, `mapReport`, linhas de pausa, mapa e bússola na viagem para a Dodongo;
-  - `Water` (0.1.11).
-- `soh/native-sdk/unbound-core/e-fixtures/main.lua`: `m18`, os 5 casos do R08/R09 e os atalhos `water_up`/`water_probe`.
-- `tools/package-unbound-e-fixtures.ps1`: 0.1.9, 0.1.10, 0.1.11.
+  - `Water` (0.1.11) e `LightsProbe` (0.1.12).
+- `soh/native-sdk/unbound-core/e-fixtures/main.lua`: `m18`, os 5 casos do R08/R09 e os atalhos `water_up`/`water_probe` e `lights_probe`.
+- `tools/package-unbound-e-fixtures.ps1`: 0.1.9 a 0.1.12.
 - **Evidência:**
   - `build/oot-upstream-001/evidence/unbound-031/`: pacotes, `m18-*`, `r0809-*`, scripts e `codex-fixture-r0809`;
   - `build/oot-upstream-001/evidence/rfc0027-host/`: `RODADA-HOST-v9.md`, `RODADA-HOST-v10.md`, `candidato/`,
     `savestate-dyna-v2`, `crash-report-v2`, `revisao-8v2`, `revisao-9v2`, `revisao-rodada-final`, `audio-mutex`,
-    `save-atomico`, `revisao-12-13`, `water-boxes`, `revisao-14`, `nota-luzes` (v1 e `v2`).
+    `save-atomico`, `revisao-12-13`, `water-boxes`, `revisao-14`, `f2-fila`, `m2-luzes` (v1 e v2), `revisao-doc-v10`,
+    `nota-luzes` (v1 e `v2`).
 
 ## Validação executada
 
@@ -87,15 +96,20 @@ Em review.
   | `5B9A83F3` | + 12 e 13 |
   | `4FD2B684` | + 12 e 13 revisados |
   | `816A07E5` | + 14 |
+  | `38279BB8` | + F2 |
+  | `7191B4DE` | + 15 |
 
-- **unbound-native:** a DLL da e-fixtures compila e o `ctest` dá 7/7 (0.1.11).
-- **Pacotes:** 0.1.10 e 0.1.11 com 0 recusados no checker (77 verificados). As notas de −1/23 são intencionais.
+- **unbound-native:** a DLL da e-fixtures compila e o `ctest` dá 7/7 (0.1.12). A DLL da fixture M2 compila contra o
+  SDK exportado.
+- **Pacotes:** 0.1.10 a 0.1.12 com 0 recusados no checker (77 verificados); fixture M2 válida. As notas de −1/23 são intencionais.
 - **Baterias:**
   - `3EEE85B1`: 6/6 (completa, savestate, m18, a8200, r04, boot 9/9);
   - `001E1F3D`: 3/3 (completa, savestate, R08/R09);
   - `5B9A83F3`: 3/3 (completa, savestate, R08/R09);
   - `816A07E5`: 3/3 (água, completa, savestate);
-  - `4FD2B684`: água sem o 14.
+  - `4FD2B684`: água sem o 14;
+  - `38279BB8`: 2/2 (água, savestate) e luzes sem o 15;
+  - `7191B4DE`: 3/3 (luzes, completa, savestate).
 - **R08/R09:** 0 falhas no candidato e no host antigo (RC2), exit 0 nos dois.
 
 ## Resultado da validação
@@ -113,6 +127,9 @@ Em review.
 - **Savestate:** a mesma cena carrega; depois da troca de cena, 1 recusa.
 - **Água (patch 14), `m19/r63` com 3 caixas:** soma no save 60, antes do load 1260; depois do load, 60 com o 14 e
   1260 sem ele.
+- **Luzes (patch 15):** com o 15, controle e update carregam, remover e criar são recusados e a lista fica certa
+  (5 e 6 nós); sem ele, tudo carrega, remover deixa um nó fantasma (6 nós, bridge sem luz) e criar deixa a luz nova
+  fora da lista.
 
 ## Riscos
 
@@ -120,11 +137,12 @@ Em review.
 - O savestate continua recusado depois de troca de cena (custo de uso documentado).
 - **Opcionais:**
   - 12: o áudio espera ~1 a 2,5 ms em save/load (microbenchmark sintético, sem medição em jogo);
-  - 13: pico extra de um snapshot inteiro (16 a 17 MiB) ao sobrescrever um slot; F2 (falta de memória ao enfileirar
-    o pedido) fica, com proposta em preparo; riscos condicionais R1 a R3 sem gatilho padrão;
-  - 14: ABA residual (identidade do recurso só por endereço) e algumas alocações pequenas com o mutex de áudio pego;
-    o NEI (Rod of Seasons) pode reescrever a água depois do load.
-- **Herdados e documentados:** savestate × luzes da bridge (M2), com análise em preparo pelo Codex.
+  - 13: pico extra de um snapshot inteiro (16 a 17 MiB) ao sobrescrever um slot; o aviso de falta de memória é best
+    effort; riscos condicionais R1 a R3 sem gatilho padrão;
+  - 14: ABA/UAF residual (identidade do recurso só por endereço, sem reter o recurso) e algumas alocações pequenas
+    com o mutex de áudio pego; o NEI (Rod of Seasons) pode reescrever a água depois do load;
+  - 15: recusa sempre que uma luz da bridge é criada ou removida entre o save e o load (acender o Deku Stick no WW,
+    ligar a lanterna do NEI); o update por frame não recusa.
 - Atalhos de mod recebem as teclas digitadas no console: o `o` de `load_state` dispara o atalho O da 0.1.11. A
   avaliação da prova da água compara os níveis, sem exigir a sequência exata.
 - Dois diálogos de erro de mutantes do harness do Codex (csrss) ficaram na tela durante sessões anteriores. O input
@@ -132,9 +150,7 @@ Em review.
 
 ## Pendências
 
-- Aprovação do usuário para a rodada: lote de 7, patches 8 a 11, os custos e, opcionalmente, 12 a 14.
-- **Em preparo pelo Codex (fora da rodada, ou como complemento do 13):** F2 da fila de pedidos e M2 das luzes da
-  bridge.
+- Aprovação do usuário para a rodada: lote de 7, patches 8 a 11, os custos e, opcionalmente, 12 a 15.
 - Nota de luzes do framework 0.6.10 em dois níveis: diff pronto em `rfc0027-host/nota-luzes/v2`, aplicar depois da
   aprovação.
 - **Depois da aprovação:** aplicar na integração e fazer um RC3.

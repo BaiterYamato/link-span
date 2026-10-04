@@ -22,5 +22,6 @@
     framework 0.6.8, exit 0), sem aplicar nada na integração antes da aprovação do usuário.
   - e-fixtures 0.1.10 com a fixture do R08/R09 (sala 32 da Dodongo, worldMapArea -1/23/22 na pausa), provada no
     candidato e no host antigo; patches 8 v2 e 9 v2 da rodada no candidato.
-  - e-fixtures 0.1.11 com os atalhos de água (O sobe, P lê) e patches opcionais 12 (áudio), 13 (save atômico) e 14
-    (water boxes) no candidato, com prova A/B da água em jogo.
+  - e-fixtures 0.1.11 com os atalhos de água (O sobe, P lê) e 0.1.12 com a sonda de luzes (I); patches opcionais 12
+    (áudio), 13 (save atômico, com o F2), 14 (water boxes) e 15 (luzes da bridge) no candidato, com prova A/B da
+    água e das luzes em jogo.
