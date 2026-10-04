@@ -1304,3 +1304,25 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
   Os patches com harness estão em preparo pelo Codex (`codex-m24-host`, `codex-m15-host`).
 - **Família de ROM (§10.5):** exige o `oot.o2r` de uma segunda família, que não existe nesta máquina; depende do
   usuário.
+
+### UPDATE 2026-10-03 (Claude) — UNBOUND-025 re-revisão, UNBOUND-028 (minimapa e mapa da pausa), patches de host
+
+- **UNBOUND-025** (host `f2e2acaa0`, framework 0.6.7 `632D91FA`, boot 8/8): re-revisão do Codex corrigida. A herança
+  da base passa a ser por item (lugar, limite, campo=valor; `herdadas=17` na `spot04`), lacunas nunca saem, a
+  releitura da base conta no orçamento e o DOM da cena é liberado nos dois ramos.
+- **UNBOUND-028** (host `5ebef3ba7`, framework 0.6.8 `B394E078`, boot 9/9): R08/R09 da matriz em duas notas locais.
+  - Minimapa: cena de dungeon vanilla, MQ ou chefe com mais salas que `min(minimapa, 32)`. A nota diz, por tabela
+    (textura, paleta, bússola), em que salas a leitura cai nas dungeons seguintes e de que sala em diante passa da
+    tabela, e que a visita para na 31.
+  - Área: `worldMapArea` fora de 0..22 depois do s16; negativo passa nas guardas `< 22` da pausa.
+  - A base não gera nenhuma das duas. Revisão e re-revisão do Codex: M1 bússola, M2 MQ, B1 visita, B2 intervalos,
+    N1 risco de escrita, N2 chefe sem MQ; todos corrigidos.
+  - Risco do host anotado: a área 22 (vanilla) já lê além das quatro tabelas da moldura da pausa.
+- **Patches de host com harness para a rodada da RFC 0027** (Codex, em `build/oot-upstream-001/evidence/rfc0027-host/`;
+  nada aplicado):
+  - M24: a LRU do cache de texturas pula as texturas ligadas aos 6 slots (libultraship);
+  - M15: falha de alocação do DynaPoly mantém a lista antiga, e o bgId para no teto;
+  - R08/R09: guardas no minimapa e na paleta, área normalizada em 0..22 e guarda na moldura;
+  - M18: 255 luzes de sala mais as 32 vagas vanilla, com aviso único.
+  O R08/R09 e o M18 v1 mexem em headers de `soh/include` e mudariam o layout id. Em preparo: versões sem isso e a
+  consolidação da rodada (ordem, conflitos, mods a recompilar) para a aprovação do usuário.
