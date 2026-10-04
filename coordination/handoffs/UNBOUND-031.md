@@ -3,9 +3,11 @@
 ## Estado
 
 Em review.
-- A e-fixtures 0.1.9 e a 0.1.10 estão em commits locais na integração.
+- A e-fixtures 0.1.9, a 0.1.10 e a 0.1.11 estão em commits locais na integração.
 - A prova da rodada de host vive no branch local `agent/RFC0027-HOST-ROUND-candidate`, que não foi aprovado e não
   entra na integração antes da aprovação do usuário.
+- Documento para aprovação: `RODADA-HOST-v10.md` (substitui a v9; a parte obrigatória não mudou, e os patches 12 a 14
+  são opcionais).
 - Sem push.
 
 ## Resultado
@@ -24,16 +26,19 @@ Em review.
     `mapTex0`/`mapName0`, `dungeonItems` e o estado da pausa. Cada mudança de estado ou de página da pausa vira uma
     linha `pausa frame N`.
   - Os 5 casos ficam no fim do roteiro, antes do retorno à casa.
-- **Rodada de host da RFC 0027 no candidato** (`RODADA-HOST-v9.md`). Todas as linhas do lote foram provadas em
-  jogo, mais os patches 8 v2, 9 v2, 10 e 11.
-  - **Do Codex:** patches, harness, fixture do R08/R09 e revisões adversariais.
-  - **Meus:** a correção N1 (captura transacional do savestate), a defesa H1 no `PrintCommon` e as mensagens em
-    inglês.
+- **e-fixtures 0.1.11** (`7e1e5bec3`, pacote `28433C43`): função nativa de teste `water` e atalhos O (sobe 200 em
+  todas as water boxes da cena) e P (lê a soma dos `ySurface`).
+- **Rodada de host da RFC 0027 no candidato** (`RODADA-HOST-v10.md`). Todas as linhas do lote foram provadas em
+  jogo, mais os patches 8 v2, 9 v2, 10 e 11 e os opcionais 12 a 14.
+  - **Do Codex:** patches, harness, fixture do R08/R09 e revisões adversariais (8 v2, 9 v2, consolidada, 12-13, 14).
+  - **Meus:** a correção N1 (captura transacional do savestate), a defesa H1 no `PrintCommon`, as mensagens em
+    inglês, F1/F3 da revisão 12-13 (alocação do snapshot fora do mutex, "Save requested"), o merge manual do 14 sobre
+    o `SaveCapture` e a fixture da água.
 
 ## Commits
 
-- **Host (integração `agent/OOT-UPSTREAM-001-78dc6d970-integration`):** `878150563` e-fixtures 0.1.9 e `a564af1ac`
-  e-fixtures 0.1.10.
+- **Host (integração `agent/OOT-UPSTREAM-001-78dc6d970-integration`):** `878150563` e-fixtures 0.1.9, `a564af1ac`
+  e-fixtures 0.1.10 e `7e1e5bec3` e-fixtures 0.1.11.
 - **Host (candidato, só local):**
 
   | Commit | Conteúdo |
@@ -45,7 +50,11 @@ Em review.
   | `50f471a01` | patch 8 v2 |
   | `8fb9253e9` | patch 9 v2 |
   | `2d4ab7176` | N1 |
-  | `03ef2009d` | H1 |
+  | `03ef2009d` | H1 (fim da parte obrigatória) |
+  | `2514406c4` | patch 12, áudio × savestate (opcional) |
+  | `3db6e0a30` | patch 13, save atômico (opcional) |
+  | `198adf4ca` | F1/F3 da revisão 12-13 |
+  | `6d5089c6d` | patch 14, water boxes (opcional) |
 
 - **libultraship (candidato, só local):** `4900cbd3` M24, `65f18942` patch 11, `05d91188` patch 9 v2, `f2e87310` H1.
 
@@ -56,13 +65,15 @@ Em review.
   - `make_r0809`.
 - `soh/native-sdk/unbound-core/e-fixtures/e_fixtures.cpp`:
   - `CountLights`, trocas de sala;
-  - `MapState`, `mapReport`, linhas de pausa, mapa e bússola na viagem para a Dodongo.
-- `soh/native-sdk/unbound-core/e-fixtures/main.lua`: `m18` e os 5 casos do R08/R09.
-- `tools/package-unbound-e-fixtures.ps1`: 0.1.9, depois 0.1.10.
+  - `MapState`, `mapReport`, linhas de pausa, mapa e bússola na viagem para a Dodongo;
+  - `Water` (0.1.11).
+- `soh/native-sdk/unbound-core/e-fixtures/main.lua`: `m18`, os 5 casos do R08/R09 e os atalhos `water_up`/`water_probe`.
+- `tools/package-unbound-e-fixtures.ps1`: 0.1.9, 0.1.10, 0.1.11.
 - **Evidência:**
   - `build/oot-upstream-001/evidence/unbound-031/`: pacotes, `m18-*`, `r0809-*`, scripts e `codex-fixture-r0809`;
-  - `build/oot-upstream-001/evidence/rfc0027-host/`: `RODADA-HOST-v9.md`, `candidato/`, `savestate-dyna-v2`,
-    `crash-report-v2`, `revisao-8v2`, `revisao-9v2`.
+  - `build/oot-upstream-001/evidence/rfc0027-host/`: `RODADA-HOST-v9.md`, `RODADA-HOST-v10.md`, `candidato/`,
+    `savestate-dyna-v2`, `crash-report-v2`, `revisao-8v2`, `revisao-9v2`, `revisao-rodada-final`, `audio-mutex`,
+    `save-atomico`, `revisao-12-13`, `water-boxes`, `revisao-14`, `nota-luzes` (v1 e `v2`).
 
 ## Validação executada
 
@@ -71,16 +82,21 @@ Em review.
   | Exe | Patches |
   |---|---|
   | `642CB8C7` | lote de 7 |
-  | `B6BDD9EC` | até o 10 |
   | `3EEE85B1` | até o 11 |
-  | `001E1F3D` | final |
+  | `001E1F3D` | parte obrigatória completa |
+  | `5B9A83F3` | + 12 e 13 |
+  | `4FD2B684` | + 12 e 13 revisados |
+  | `816A07E5` | + 14 |
 
-- **unbound-native:** a DLL da e-fixtures compila e o `ctest` dá 7/7.
-- **Pacote 0.1.10:** 0 recusados no checker. As notas de −1/23 são intencionais.
-- **Bateria final no `3EEE85B1`:** 6/6 sessões, 0 falhas (completa, savestate, m18, a8200, r04, boot 9/9).
+- **unbound-native:** a DLL da e-fixtures compila e o `ctest` dá 7/7 (0.1.11).
+- **Pacotes:** 0.1.10 e 0.1.11 com 0 recusados no checker (77 verificados). As notas de −1/23 são intencionais.
+- **Baterias:**
+  - `3EEE85B1`: 6/6 (completa, savestate, m18, a8200, r04, boot 9/9);
+  - `001E1F3D`: 3/3 (completa, savestate, R08/R09);
+  - `5B9A83F3`: 3/3 (completa, savestate, R08/R09);
+  - `816A07E5`: 3/3 (água, completa, savestate);
+  - `4FD2B684`: água sem o 14.
 - **R08/R09:** 0 falhas no candidato e no host antigo (RC2), exit 0 nos dois.
-- **Bateria no `001E1F3D`, o candidato final:** 3/3, 0 falhas (completa, savestate com a recusa nova em inglês,
-  R08/R09).
 
 ## Resultado da validação
 
@@ -95,34 +111,36 @@ Em review.
 
   - Nos dois hosts, a sala 0 desenha o minimapa e a pausa passa pelas 4 páginas.
 - **Savestate:** a mesma cena carrega; depois da troca de cena, 1 recusa.
+- **Água (patch 14), `m19/r63` com 3 caixas:** soma no save 60, antes do load 1260; depois do load, 60 com o 14 e
+  1260 sem ele.
 
 ## Riscos
 
 - O patch 9 v2 não foi exercitado em jogo, porque precisa de uma queda.
 - O savestate continua recusado depois de troca de cena (custo de uso documentado).
-- **Herdados e documentados:**
-  - o pré-buffer do áudio produz fora do mutex do savestate;
-  - as water boxes não voltam no load;
-  - savestate × luzes da bridge (M2).
-- **Revisão consolidada** (`revisao-rodada-final`):
-  - nenhuma incompatibilidade nova entre os patches;
-  - os commits aplicam limpos e o layout id fica igual;
-  - F1 (save sem memória encerra o jogo, herdado) fica como risco aceito, com recorte próprio.
-- Dois diálogos de erro de mutantes do harness do Codex (csrss, não fecham por script) ficaram na tela durante as
-  sessões R08/R09. O input não foi afetado, mas as capturas saem com o diálogo no centro.
+- **Opcionais:**
+  - 12: o áudio espera ~1 a 2,5 ms em save/load (microbenchmark sintético, sem medição em jogo);
+  - 13: pico extra de um snapshot inteiro (16 a 17 MiB) ao sobrescrever um slot; F2 (falta de memória ao enfileirar
+    o pedido) fica, com proposta em preparo; riscos condicionais R1 a R3 sem gatilho padrão;
+  - 14: ABA residual (identidade do recurso só por endereço) e algumas alocações pequenas com o mutex de áudio pego;
+    o NEI (Rod of Seasons) pode reescrever a água depois do load.
+- **Herdados e documentados:** savestate × luzes da bridge (M2), com análise em preparo pelo Codex.
+- Atalhos de mod recebem as teclas digitadas no console: o `o` de `load_state` dispara o atalho O da 0.1.11. A
+  avaliação da prova da água compara os níveis, sem exigir a sequência exata.
+- Dois diálogos de erro de mutantes do harness do Codex (csrss) ficaram na tela durante sessões anteriores. O input
+  não foi afetado.
 
 ## Pendências
 
-- Aprovação do usuário para a rodada: lote de 7, patches 8 a 11 e os custos.
-- **Propostas de recorte próprio em preparo pelo Codex** (fora da rodada):
-  - save atômico (F1 da revisão consolidada);
-  - áudio do pré-buffer fora do mutex.
-- Nota de luzes do framework 0.6.10 (proposta em `rfc0027-host/nota-luzes`): aplicar em dois níveis (> 32 e > 255)
-  depois da aprovação.
+- Aprovação do usuário para a rodada: lote de 7, patches 8 a 11, os custos e, opcionalmente, 12 a 14.
+- **Em preparo pelo Codex (fora da rodada, ou como complemento do 13):** F2 da fila de pedidos e M2 das luzes da
+  bridge.
+- Nota de luzes do framework 0.6.10 em dois níveis: diff pronto em `rfc0027-host/nota-luzes/v2`, aplicar depois da
+  aprovação.
 - **Depois da aprovação:** aplicar na integração e fazer um RC3.
 
 ## Próxima ação recomendada
 
-1. Apresentar o `RODADA-HOST-v9.md` para aprovação.
-2. Aprovado: cherry-pick dos 8 commits do candidato na integração (e dos 4 do libultraship no branch das extensões),
-   nota de luzes e RC3.
+1. Apresentar o `RODADA-HOST-v10.md` para aprovação.
+2. Aprovado: cherry-pick dos commits aprovados do candidato na integração (e dos 4 do libultraship no branch das
+   extensões), nota de luzes v2 e RC3.

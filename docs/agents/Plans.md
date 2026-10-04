@@ -1391,3 +1391,19 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
     - cherry-pick na integração (sem conflito, conferido);
     - nota de luzes do framework 0.6.10 em dois níveis (> 32 e > 255);
     - RC3.
+
+### UPDATE 2026-10-04 (Claude) — RFC 0027: patches opcionais 12 a 14 no candidato, água provada em jogo (v10)
+
+- **Documento para aprovação:** `build/oot-upstream-001/evidence/rfc0027-host/RODADA-HOST-v10.md`. A parte
+  obrigatória (lote de 7 + 8 a 11, até `03ef2009d`) não mudou desde a v9.
+- **Opcionais, cumulativos** (candidato `6d5089c6d`, só local):
+  - 12, áudio × savestate: `audio` era `static` no header, então o savestate e a thread de áudio usavam mutexes
+    diferentes; o pré-buffer também produzia sem lock;
+  - 13, save atômico: snapshot novo inteiro, publicado no fim; o manager captura `bad_alloc` e mantém o slot
+    anterior. Com F1/F3 da revisão, a alocação fica fora do mutex e o F5 diz "Save requested";
+  - 14, water boxes: o load restaura o nível da água, com o guard conferindo o recurso. Revisão: merge fiel, ABA
+    residual documentado.
+- **Prova em jogo** (e-fixtures 0.1.11, `7e1e5bec3`, atalhos O/P na `m19/r63`): o load traz a soma de 1260 para 60
+  com o 14 e a mantém em 1260 sem ele. Baterias: 3/3 no `5B9A83F3` (12-13) e 3/3 no `816A07E5` (até o 14).
+- **Nota de luzes do framework 0.6.10** em dois níveis (33-255 e > 255): diff pronto em `nota-luzes/v2`.
+- **Em preparo pelo Codex:** F2 (falta de memória ao enfileirar o pedido de savestate) e M2 (luzes da bridge).
