@@ -1442,3 +1442,23 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
 - **Decisão pendente:** aprovar a fase 1 (próxima rodada de host) ou remover o seletor.
 - **RC3:** instalação fresca `PROVA OK` (0 mods, 371 comandos de cena em XML, commit `0ff8f2f`); bateria completa em
   andamento.
+
+### UPDATE 2026-10-04 (Claude) — OOT-RELEASE-001: RC3 `oot-0.5.0-rc3` validado em jogo
+
+- **RC3:** host `F645976A` (`0ff8f2ff4`, rodada da RFC 0027 aprovada), Unbound 0.6.10, NEI 0.3.17, DMR 0.2.17 e
+  Mic 0.2.3. Os 8 pacotes saem reprodutíveis e foram verificados; CTest 67/67.
+- **Em jogo:**
+  - instalação fresca `PROVA OK`;
+  - matriz §12.2 com 9/9 linhas;
+  - `CICLO OK` no ciclo de save;
+  - atualização do NEI de 0.3.16 (RC2) para 0.3.17 (RC3): `ATUALIZACAO OK`;
+  - 9/9 E-fixtures com o framework do RC.
+  - A a8200 passou a aceitar o corte do framework 0.6.9+ em 8 192 atores.
+  - Com o `ResourceLogging` ligado, a casa do Link não cai mais.
+- **Gate §18:** passam a ✅ as linhas saves/update, limites do Unbound, fronteiras do Prelude, resolução por versão e
+  conflito de cenas. A linha "só DLLs" sobe a 🟡 (rodada aprovada).
+- **Auditoria "sem mods = vanilla"** (Codex, só leitura): não há equivalência estrita. Há diferenças de precisão
+  (`lroundf` na colisão dinâmica, matrizes em float, colliders em float), de memória e do motor de texto, com função
+  igual na matriz. Decisão pendente do mantenedor.
+- **Crash do `ResourceLogging`:** a causa é o `6fa3f2a2a` com o `LogMeshAsXML` do upstream. A correção é a mudança
+  sem commit em `SceneCommandLoggers.cpp`, que já está compilada no `soh.exe` do RC3; o commit fica a cargo do usuário.

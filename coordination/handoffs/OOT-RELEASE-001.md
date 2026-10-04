@@ -2,11 +2,87 @@
 
 ## Estado
 
-review — candidato a release **`oot-0.5.0-rc2`** montado, reprodutível e verificado; instalação fresca, matriz §12.2
-e ciclo de save rodados em jogo. O Gate OoT (§18) **não** está verde: os itens abertos estão no fim de
-"Resultado da validação". Nada foi publicado; commits locais, sem push.
+review — candidato a release **`oot-0.5.0-rc3`** (2026-10-04) montado, reprodutível e verificado, com a rodada de
+host da RFC 0027 aprovada pelo usuário. Rodados em jogo:
+- instalação fresca;
+- matriz §12.2;
+- ciclo de save;
+- atualização do NEI de 0.3.16 para 0.3.17;
+- as fixtures do Unbound.
+
+O Gate OoT (§18) **não** está verde: a tabela do RC3 está logo abaixo. Nada foi publicado; commits locais, sem push.
+O RC2 (seções seguintes) fica como histórico.
 
 ## Resultado
+
+### Release `oot-0.5.0-rc3` (2026-10-04)
+
+Pasta `OOT-UPSTREAM-78DC-001/build/release/oot-0.5.0-rc3`. Host `soh.exe` `F645976A…`, construído na integração
+`0ff8f2ff4`, com layout `9a593a6e`.
+
+| Pacote | SHA-256 (16) |
+|---|---|
+| `LinkSpan-Shipwright-9.2.3-Upstream-78dc6d970-layout-9a593a6e-Win64-overlay.zip` | `fa94476ee8445b8b` |
+| `LinkSpan-Unbound-Framework-0.6.10-layout-9a593a6e.shipmod` | `6afcb8d2928945c7` |
+| `LinkSpan-NEI-0.3.17-layout-9a593a6e.shipmod` | `c73dd7a75253aea0` |
+| `Dynamic-Movement-Remake-0.2.17-layout-9a593a6e.zip` | `7b919c0dbc527a0b` |
+| `LinkSpan-Mic-Ocarina-0.2.3-layout-9a593a6e.zip` | `9584bc77dee65fe7` |
+| `LinkSpan-WindWakerStyle-0.1.1.shipmod` | `1ab4ab84c753a1e4` (igual ao RC2) |
+| `LinkSpan-Shovel-Demo-0.1.1-layout-9a593a6e-9f1e44e0.zip` | `f7bec07217b8457f` (igual ao RC2) |
+| `LinkSpan-Unbound09-Actors-Demo.o2r` | `ff4d7e74b0d7a2b2` (igual ao RC2) |
+
+**O que muda contra o RC2:**
+- a rodada de host da RFC 0027 inteira: lote de 7, patches 8 a 11 e os opcionais 12 a 15, com o F2;
+- o framework Unbound 0.6.10 (nota de luzes em dois níveis e as correções 0.6.1 a 0.6.9 das UNBOUND-018 a 030);
+- NEI, DMR e Mic reempacotados com o fingerprint `f645976a…`.
+
+**Validação:**
+- **Build e testes:** CTest 67/67. Dois empacotamentos completos saíram idênticos byte a byte (8/8). O scanner de
+  conteúdo protegido passou e o `-Verify` conferiu os 8 pacotes.
+- **Instalação fresca** (`evidence/release-g/rc3/fresh-install`): `PROVA OK`, 0 mods, 371 comandos de cena em XML,
+  commit embutido `0ff8f2f`.
+- **Matriz §12.2** (`rc3/matrix`): as 9 linhas passaram, sem falhas, da 01 (sem mods) à 09 (WW + Unbound + NEI).
+- **Ciclo de save** (`rc3/save-cycle`): `CICLO OK`.
+- **Atualização do NEI de 0.3.16 para 0.3.17** (`rc3/update-nei`): `ATUALIZACAO OK`.
+  - Fluxo: u1 no host do RC2 (`E278E9A3`, Unbound 0.6.0 + NEI 0.3.16) grava o save; u2 no RC3 (Unbound 0.6.10 +
+    NEI 0.3.17) carrega esse save.
+  - O `fork: active` e as duas versões aparecem nos logs, e o `nei.state` (`83741ffd1c4a`) chega idêntico.
+  - A primeira tentativa (`update-nei-tentativa1`) reprovou só na u1: o arquivo abriu às 10:08:51, antes do primeiro
+    input do roteiro. Houve input externo durante o teste.
+- **Fixtures do Unbound, com o framework do RC** (`rc3/fixtures`): completa, boot, savestate, m18, a8200, r04,
+  r0809, água e luzes, todas com 0 falhas.
+  - A a8200 reprovou na bateria (`a8200-checagem-068`) porque a checagem esperava o aviso do host para 8 200 atores.
+  - Desde o framework 0.6.9, o próprio framework grava só os primeiros 8 192 e deixa uma nota (`transcode.cpp:851`),
+    então o aviso do host não é mais alcançável.
+  - A checagem passou a aceitar também a nota do framework com a chegada em `atores=8192`, e a fixture refeita passou.
+- **`ResourceLogging` ligado, sem mods, casa do Link** (`rc3/resourcelogging`): 2/2 sessões, 870 polígonos logados,
+  6 deles no formato 1, e nenhum crash. No RC2, esse caminho caía no `LogMeshAsXML` (ver Riscos).
+- **Auditoria "sem mods = vanilla"** (`rc3/vanilla-audit/AUDITORIA.md`, Codex só leitura, conferida por amostragem):
+  o host sem mods **não** é equivalente estrito ao upstream.
+  - colisão dinâmica arredonda com `lroundf`, onde o upstream truncava;
+  - colliders e luzes passam a float;
+  - matrizes em float (`GBI_FLOAT_MTX ON`) no lugar do ponto fixo s16.16;
+  - mudanças no motor de texto (quicktext, B mantido, próxima mensagem);
+  - heap +8 MiB;
+  - savestate recusado depois de trocar a colisão da cena.
+  - A matriz sem mods passa; a diferença é de precisão, memória e casos de borda, não de função visível comprovada.
+
+### Gate OoT (§18) — situação no RC3
+
+Só as linhas que mudaram contra a tabela do RC2 (mais abaixo); as demais seguem iguais.
+
+| Critério | RC2 | RC3 | Evidência / motivo |
+|---|---|---|---|
+| overlay instala sobre 9.2.3 fresco | ✅ | ✅ | `rc3/fresh-install` |
+| sem mods = vanilla | 🟡 | ❌ estrito, 🟡 funcional | auditoria de código acima; a linha 01 da matriz passa. Decisão do mantenedor: aceitar o alargamento do motor ou restringir as diferenças D ao caso com mod |
+| nenhuma onda de itens exige função específica no host | 🟡 | 🟡 | RFC 0028 (rascunho, COREEXT-012) propõe o setting `linkspan.pause.equip_selector` no lugar do `LinkSpan_DynamicMovementInventoryMenuEnabled` |
+| saves sobrevivem a update, desativação e reinstalação | 🟡 | ✅ | ciclo de save e atualização do NEI de 0.3.16 para 0.3.17, com Unbound de 0.6.0 para 0.6.10 junto |
+| playtest real dos limites do Unbound | 🟡 | ✅ | E-fixtures refeitas no RC3 (9/9) |
+| fixtures de fronteira do Prelude | ❌ | ✅ | fixture completa no RC3: m08, m09, m12, m15, m17, m19, m24, exits, edge, span |
+| cenas afetadas por versão resolvem recursos | ❌ | ✅ | fixture boot, sessão `ub019-a` (`ausentes=3 recusados=1`) |
+| conflito entre duas cópias da mesma cena antes do gameplay | ❌ | ✅ | fixture boot, sessão `ub018-abc` |
+| depois do COREEXT-GATE só DLLs recompiladas | ❌ | 🟡 | rodada de host agrupada e aprovada pelo usuário (RFC 0027 v10); a RFC segue em rascunho na regularização dos 24 commits antigos e nas dívidas C |
+| playtest real de todos os itens NEI | ❌ | ❌ | só harness; falta o playtest físico |
 
 ### Release `oot-0.5.0-rc2`
 
@@ -66,6 +142,16 @@ no core). A RFC duplicada foi resolvida: o randomizer hints entrou no core já c
 ## Commits
 
 Locais, sem push; autorizados pelo usuário em 2026-10-02 ("Faça o que é necessário").
+
+RC3, no host (`agent/OOT-UPSTREAM-001-78dc6d970-integration`):
+- `7e1e5bec3` e `288665520`: e-fixtures 0.1.11 e 0.1.12;
+- `14d240116`..`33f3c7c6f`: cherry-pick `-x` dos 14 commits do candidato da rodada da RFC 0027 (aprovada em
+  2026-10-04);
+- `2a074fe60`: framework 0.6.10;
+- `0ff8f2ff4`: NEI 0.3.17, DMR 0.2.17 e Mic 0.2.3.
+
+No libultraship, `agent/OOT-UPSTREAM-001-linkspan-extensions` foi avançado direto até `f2e87310`. No core, `55ece4b`
+traz a RFC 0028 em rascunho.
 
 - host `OOT-UPSTREAM-78DC-001`, branch `agent/OOT-UPSTREAM-001-78dc6d970-integration`:
   - `5827e580a` DMR 0.2.15 e Mic 0.2.2 (correções da revisão do Codex);
@@ -260,6 +346,17 @@ Fora do checklist, e bloqueando a publicação: a **licença** do Link-Span (nã
 
 ## Pendências
 
+**No RC3 (2026-10-04)**, decisões do mantenedor:
+- licença;
+- playtest físico;
+- segunda família de ROM;
+- push;
+- "sem mods = vanilla": aceitar o alargamento do motor ou restringir as diferenças D;
+- RFC 0027 inteira e RFC 0028.
+
+Além disso, **commitar a correção de `SceneCommandLoggers.cpp`**, que está no `soh.exe` do RC3 (ver Riscos). As
+pendências abaixo são do RC2 e seguem valendo quando não foram resolvidas acima.
+
 - **Licença:** não há `LICENSE` do Link-Span. O `NOTICE.md` do WW Style não concede licença, e os assets do fork NEI
   vêm de fonte sem licença. Bloqueia qualquer publicação; a decisão é do mantenedor.
 - **Playtest físico** com controle e microfone (Mic Ocarina, DMR, itens NEI): só o usuário pode fazer.
@@ -273,6 +370,17 @@ Fora do checklist, e bloqueando a publicação: a **licença** do Link-Span (nã
 
 ## Riscos
 
+- **RC3: o `soh.exe` tem uma mudança sem commit.** É `soh/soh/resource/logging/SceneCommandLoggers.cpp`, gravada em
+  2026-10-03 às 10:25, cujo `.obj` foi recompilado às 10:28 e entrou nos builds seguintes. Ela corrige o crash do
+  `ResourceLogging`:
+  - o `6fa3f2a2a` (UNBOUND-017) deixou de gravar `polygon1.multi.list` no formato 1, porque gravar ali sobrescrevia
+    o `single` da union;
+  - o `LogMeshAsXML` do upstream ainda lia `multi.list->unk_00/id` nesse formato, e o ponteiro inválido derrubava o
+    jogo;
+  - a mudança passa a logar o formato 1 pelo `single`.
+
+  Assim, o crash do RC2 não era bug do upstream, e no RC3 a prova com a opção ligada passou. Até o commit, o host do
+  RC3 é o `0ff8f2ff4` mais essa mudança, e a modificação é do usuário (não commitada por mim).
 - **Fingerprint do host:** NEI, DMR e Mic fixam o SHA do `soh.exe`. Toda recompilação do host exige reempacotar os
   três (o construtor da release agora recusa se esquecer). Fora do fingerprint, o DMR 0.2.16 carrega sem ícones nem
   sincronia de câmera, e o NEI desliga o fork.
@@ -290,6 +398,15 @@ Fora do checklist, e bloqueando a publicação: a **licença** do Link-Span (nã
   Link-Span anteriores à fase G. Falta reproduzir no upstream limpo; tarefa à parte sugerida.
 
 ## Próxima ação recomendada
+
+No RC3:
+
+1. Commitar a correção do logger. Se o commit não for igual ao arquivo atual, o host tem de ser recompilado e
+   reempacotado.
+2. Playtest físico com `build/release/oot-0.5.0-rc3`.
+3. Decidir a licença, a linha "sem mods = vanilla" e as RFCs 0027/0028.
+
+Histórico do RC2:
 
 1. O usuário decide a licença e faz o playtest físico no RC2: instalação em cópia nova da 9.2.3 com o overlay e os
    pacotes de `build/release/oot-0.5.0-rc2`.

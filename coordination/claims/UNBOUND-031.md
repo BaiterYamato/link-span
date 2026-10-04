@@ -4,9 +4,9 @@
 - Agent: Claude (Opus 5.5)
 - Platform: Windows
 - Branch: agent/OOT-UPSTREAM-001-78dc6d970-integration
-- Candidate branch: agent/RFC0027-HOST-ROUND-candidate (build candidato da rodada, só local, não aprovado)
+- Candidate branch: agent/RFC0027-HOST-ROUND-candidate (rodada aprovada em 2026-10-04 e aplicada na integração)
 - Started: 2026-10-04T04:30:00Z
-- Depends on: UNBOUND-030, rodada de host da RFC 0027 (candidato `b98d3c285`, não aprovado)
+- Depends on: UNBOUND-030, rodada de host da RFC 0027 (aprovada em 2026-10-04; RC3 `oot-0.5.0-rc3`)
 - Files:
   - OOT-UPSTREAM-78DC-001/soh/native-sdk/unbound-core/e-fixtures/make_fixtures.py
   - OOT-UPSTREAM-78DC-001/soh/native-sdk/unbound-core/e-fixtures/e_fixtures.cpp
