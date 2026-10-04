@@ -1326,3 +1326,36 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
   - M18: 255 luzes de sala mais as 32 vagas vanilla, com aviso único.
   O R08/R09 e o M18 v1 mexem em headers de `soh/include` e mudariam o layout id. Em preparo: versões sem isso e a
   consolidação da rodada (ordem, conflitos, mods a recompilar) para a aprovação do usuário.
+
+### UPDATE 2026-10-04 (Claude) — UNBOUND-029 (M09 e M08 em jogo), UNBOUND-030 (framework 0.6.9) e rodada de host com 7 patches
+
+- **UNBOUND-029** (host `1a825be0f`; e-fixtures 0.1.8 `38089277`; framework 0.6.8; sessão
+  `ub029-20261003-224214`: falhas 0, exit 0).
+  - **M09 fechado em jogo.** O banco tem 3 objetos permanentes antes da lista da sala.
+    - 1 020 → `objetos=1023`, com caixa;
+    - 1 021 → `objetos=1024`, com caixa;
+    - 1 022 → `objetos=1024`, sem caixa, e um único `object list exceeds the bank (1024 slots); dropping 1 objects`.
+  - **M08.** A ZeldaArena acaba antes do teto: cabem 4 132 rúpias (En_Item00), e cada uma das outras falha com
+    "Cannot allocate actor". Nenhum "Actor number max exceeded". O caminho de 8 192 espera a arena maior.
+  - **Achado de host.** `LinkSpan_RoomActors` monta um vetor de no máximo 8 192 entradas para o `oot.room.actors` e
+    copia a lista inteira da sala. Com 8 200 atores, o processo caiu no carregamento (0xC0000374, 2 em 2) e, na
+    sessão longa, ao fechar. A sala de 8 200 saiu do roteiro e ficou no pacote para provar a correção.
+  - A revisão do Codex endureceu o roteiro: erros inesperados reprovam, o exit vira falha, os campos são estritos.
+- **UNBOUND-030** (host `9cd2db2c9`; framework 0.6.9 `A88C17DC`).
+  - O transcode grava no máximo 8 192 atores por sala, com nota. É o teto de atores vivos e o tamanho do vetor do
+    hook. Com o 0.6.9, a sala de 8 200 carrega e o jogo fecha com exit 0.
+  - Uma lista `lights` com mais de 32 entradas sai em nota (pool do `z_lights.c`).
+  - Boot: 9/9 sessões. Revisão do Codex: 1 alto (lista XML/binária direta, que é o patch RoomActors do host),
+    1 médio (texto da nota de luzes) e 1 baixo (cabeçalho da fixture); os dois últimos corrigidos.
+- **Rodada de host da RFC 0027, para aprovação** (`build/oot-upstream-001/evidence/rfc0027-host/RODADA-HOST-v7.md`;
+  nada aplicado).
+  - Lote: R04 v4 → M24 → M15 → R08/R09 v2 → M18 v3 → RoomActors → M08.
+  - Os sete aplicam juntos sem conflito (`lote7_apply.py`, 17 arquivos).
+  - Nenhum header do layout id muda, então nenhum mod nativo precisa ser recompilado.
+  - M18 v3 resolve o A1 da revisão: o DestroyList recusa e avisa enquanto houver dono vivo nas 32 vagas. O risco
+    M2 (savestate × luzes nativas) fica documentado.
+  - M08 reserva 1 KiB por vaga de ator: o heap do sistema vai de 4 para 12 MiB, o THA do Play sobe 8 MiB e cada
+    slot de savestate cresce 8 MiB.
+  - Falta: revisão adversarial do M08 (cota do Codex esgotada até 01:28), build MSVC e as provas em jogo, num RC3
+    com o framework 0.6.9 e a e-fixtures 0.1.8.
+
