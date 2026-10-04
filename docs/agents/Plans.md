@@ -1420,3 +1420,14 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
 - **v10** (`RODADA-HOST-v10.md`): conferida pelo Codex contra a evidência (commits, 8 hashes, números e sessões);
   13 correções de escopo e custo aplicadas. Parte obrigatória igual à v9; opcionais 12 a 15.
 - **Codex:** cota semanal em 91% (apertada) até 09/10 23:02; o resto fica para o RC3.
+
+### UPDATE 2026-10-04 (Claude) — RFC 0027: rodada de host aprovada e aplicada; RC3 em andamento
+
+- **Aprovação do usuário:** rodada `RODADA-HOST-v10.md` inteira, até o patch 15.
+- **Integração do host:** cherry-pick dos 14 commits do candidato (`14d240116`..`33f3c7c6f`), libultraship em avanço
+  direto até `f2e87310`, framework Unbound 0.6.10 com a nota de luzes em dois níveis (`2a074fe60`) e versões do RC3
+  (`0ff8f2ff4`: NEI 0.3.17, DMR 0.2.17, Mic 0.2.3, porque os três fixam o SHA do `soh.exe`). Layout id igual. Sem push.
+- **Pendente de decisão:** a RFC 0027 como um todo (regularização dos 24 commits antigos e as duas dívidas C) segue em
+  rascunho; a aprovação cobriu a rodada.
+- **Próximo:** RC3 `oot-0.5.0-rc3` (build do host, CTest, pacotes reprodutíveis, construtor, instalação fresca, matriz
+  §12.2, ciclo de save, N→N+1 do NEI 0.3.16→0.3.17 e as fixtures do Unbound num RC).

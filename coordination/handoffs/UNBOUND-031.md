@@ -4,8 +4,9 @@
 
 Em review.
 - A e-fixtures 0.1.9 a 0.1.12 estão em commits locais na integração.
-- A prova da rodada de host vive no branch local `agent/RFC0027-HOST-ROUND-candidate`, que não foi aprovado e não
-  entra na integração antes da aprovação do usuário.
+- A rodada de host foi **aprovada pelo usuário em 2026-10-04 (tudo até o 15)** e aplicada na integração: cherry-pick
+  `14d240116`..`33f3c7c6f`, libultraship `f2e87310`, nota de luzes 0.6.10 em `2a074fe60` (detalhe no handoff da
+  COREEXT-011). O RC3 segue na OOT-RELEASE-001.
 - Documento para aprovação: `RODADA-HOST-v10.md` (substitui a v9; a parte obrigatória não mudou, e os patches 12 a 15
   são opcionais). Fatos conferidos pelo Codex (`revisao-doc-v10`), correções aplicadas.
 - Sem push.

@@ -4,6 +4,13 @@
 
 Review. RFC 0027 em rascunho commitada no core (`d189ce1`, branch `agent/MENU-001-mod-menu`, sem push).
 
+**2026-10-04: o usuário aprovou a rodada de host da RFC** (`RODADA-HOST-v10.md`, tudo até o patch 15: lote de 7,
+patches 8 a 11 e os opcionais 12 a 15). Aplicada na integração do host (`agent/OOT-UPSTREAM-001-78dc6d970-integration`)
+por cherry-pick dos 14 commits do candidato (`14d240116`..`33f3c7c6f`) e avanço direto do libultraship
+(`agent/OOT-UPSTREAM-001-linkspan-extensions` → `f2e87310`); nota de luzes do framework 0.6.10 em `2a074fe60`. Layout
+id igual (`9a593a6e`). Sem push. A aprovação cobre a rodada; a regularização dos 24 commits antigos e as duas dívidas
+C continuam como decisão pendente, e a RFC segue com status de rascunho.
+
 ## Resultado
 
 O Gate OoT (§18 do plano) marcava em aberto "recompilações do host depois do COREEXT-GATE". O §4 proíbe chamada
