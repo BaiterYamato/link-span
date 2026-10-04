@@ -1431,3 +1431,14 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
   rascunho; a aprovação cobriu a rodada.
 - **Próximo:** RC3 `oot-0.5.0-rc3` (build do host, CTest, pacotes reprodutíveis, construtor, instalação fresca, matriz
   §12.2, ciclo de save, N→N+1 do NEI 0.3.16→0.3.17 e as fixtures do Unbound num RC).
+
+### UPDATE 2026-10-04 (Claude) — COREEXT-012: RFC 0028 (rascunho) para o seletor do kaleido
+
+- **RFC 0028** (core `55ece4b`): saída da dívida `LinkSpan_DynamicMovementInventoryMenuEnabled` (item C `a76045848`
+  da RFC 0027, parte do kaleido). O host mantém um ponto no kaleido, porque o escape hatch daria `LIMIT` ao DMR ao
+  lado do NEI, mas o contrato passa a ser genérico: setting transitório `linkspan.pause.equip_selector` (bit 8),
+  separado do HUD do D-pad, e helper sem nome de mod. O fork do NEI troca de nome no mesmo commit, sem alias, porque
+  resolve os símbolos pelo `soh.symbols` de cada build. Lease por provider só numa mudança de ABI.
+- **Decisão pendente:** aprovar a fase 1 (próxima rodada de host) ou remover o seletor.
+- **RC3:** instalação fresca `PROVA OK` (0 mods, 371 comandos de cena em XML, commit `0ff8f2f`); bateria completa em
+  andamento.
