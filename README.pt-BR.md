@@ -138,4 +138,4 @@ Leia [`AGENTS.md`](AGENTS.md) (contrato de trabalho) e [`PLAN.md`](PLAN.md) (rot
 
 ## Licença
 
-Núcleo do Link-Span sob a licença do repositório. **Nunca** versione ROMs, `.z64`/`.n64`/`.o2r` ou qualquer asset protegido.
+O Link-Span está em domínio público pela CC0 1.0 ([LICENSE](LICENSE)); componentes de terceiros e hosts mantêm os próprios termos ([NOTICE.md](NOTICE.md)). **Nunca** versione ROMs, `.z64`/`.n64`/`.o2r` ou qualquer asset protegido.
