@@ -1,6 +1,7 @@
 #include "shiplua/manifest/PackageExtractor.h"
 
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <chrono>
 #include <cctype>
@@ -8,6 +9,7 @@
 #include <map>
 #include <string>
 #include <system_error>
+#include <thread>
 #include <vector>
 
 #include <miniz.h>
@@ -279,12 +281,36 @@ Result<void> ExtractShipmod(const std::filesystem::path& package,
         }
     }
 
+    Result<void> committed = CommitExtractedDirectory(staging, destination);
+    if (!committed.isOk()) {
+        return committed;
+    }
+    guard.Commit();
+    return Result<void>::ok();
+}
+
+Result<void> CommitExtractedDirectory(const std::filesystem::path& staging,
+                                      const std::filesystem::path& destination) {
+    // About 2.3 s in total; a short hold costs only the first few milliseconds.
+    constexpr std::array<int, 8> retryDelaysMs = {10, 20, 40, 80, 160, 320, 640, 1000};
+    std::error_code error;
     std::filesystem::rename(staging, destination, error);
+    for (const int delayMs : retryDelaysMs) {
+        if (!error) {
+            break;
+        }
+        std::error_code existsError;
+        if (std::filesystem::exists(destination, existsError)) {
+            break;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(delayMs));
+        error.clear();
+        std::filesystem::rename(staging, destination, error);
+    }
     if (error) {
         return Result<void>::err(ErrorCode::HostFailure,
                                  "cannot commit extracted package: " + error.message());
     }
-    guard.Commit();
     return Result<void>::ok();
 }
 

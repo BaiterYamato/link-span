@@ -23,4 +23,11 @@ Result<void> ExtractShipmod(const std::filesystem::path& package,
                             const std::filesystem::path& destination,
                             const PackageLimits& limits = {});
 
+// Moves a finished staging directory to `destination`. On Windows another process
+// (antivirus, search indexer) can briefly hold a freshly written file, and the
+// directory rename then fails with "access denied"; the move is retried for about
+// two seconds before the error is reported. An existing destination fails at once.
+Result<void> CommitExtractedDirectory(const std::filesystem::path& staging,
+                                      const std::filesystem::path& destination);
+
 } // namespace ShipLua
