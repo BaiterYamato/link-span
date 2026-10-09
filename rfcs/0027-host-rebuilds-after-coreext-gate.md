@@ -1,6 +1,20 @@
 # RFC 0027 — Recompilações do host após COREEXT-GATE (Link-Span OoT)
 
-Status: **rascunho para revisão**, 2026-10-03. Não aprovado, não implementado e sem fechamento do Gate OoT.
+Status: **aceita pelo mantenedor em 2026-10-09** (rascunho de 2026-10-03). Ver "Decisão do mantenedor" logo abaixo.
+
+## Decisão do mantenedor (2026-10-09)
+
+- A regularização do passado fica aceita como enumerada no apêndice B: as peças B, as correções D e o tooling E são
+  exceções históricas registradas. A rodada de host dos patches 1 a 15 (UNBOUND-031) já tinha sido aprovada em
+  2026-10-04.
+- **Ownership do menu de equipamento (`a76045848`):** sai pela RFC 0028, fase 1, no candidato `oot-0.5.0-rc5`:
+  setting transitório genérico `linkspan.pause.equip_selector`, helper `LinkSpan_PauseEquipSelectorEnabled` e
+  remoção do símbolo com nome de mod. O lease (fase 2) entra junto da próxima mudança que já altere o layout id.
+- **Áudio de cena por caminho (`b13913077`)** e **montagem de camadas declarada por provider
+  (`IsUnboundLayerArchive`, `a76045848`):** dívida C aceita. Dono: o mantenedor do Link-Span. Marco de saída: a
+  próxima rodada de host que mude o layout id e, no mais tardar, antes de abrir a Fase H (Majora's Mask). Critério de
+  saída: o "Aceite" de cada seção abaixo.
+- O requisito correspondente do §18 do plano passa a usar a redação proposta em "Regularização do passado".
 
 Escopo: regularização documental proposta dos 24 commits do host entre `16c4622d5` e `fc2709989` que tocam `soh/soh`, `soh/src`, `soh/include`, `libultraship` ou CMake (`git log --stat 16c4622d5..fc2709989 -- soh/soh soh/src soh/include libultraship CMakeLists.txt soh/CMakeLists.txt`), após o baseline solicitado `16c4622d5` (2026-09-18), e contrato para futuras recompilações. Não autoriza publicar, instalar ou alterar hosts. Número 0027 reservado pela tarefa COREEXT-011. Levantamento feito pelo Codex (gpt-6.1-sol) e conferido por amostragem no git (Claude); os achados históricos continuam sujeitos à revisão.
 

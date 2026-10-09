@@ -1,7 +1,8 @@
 # RFC 0028 — Seletor de equipamento do pause sem nome de mod no host (OoT)
 
-Status: **rascunho para revisão**, 2026-10-04. Não aprovado, não implementado. Número reservado pela tarefa
-COREEXT-012. Detalha a saída que a RFC 0027 esboça para a parte "seletor do DMR no kaleido" do commit `a76045848`.
+Status: **aceita pelo mantenedor em 2026-10-09; fase 1 implementada** no candidato `oot-0.5.0-rc5` (host, DMR
+0.2.19 e NEI 0.3.19). A fase 2 (lease) continua para a próxima mudança que já altere o layout id. Rascunho de
+2026-10-04, número reservado pela tarefa COREEXT-012. Detalha a saída que a RFC 0027 esboça para a parte "seletor do DMR no kaleido" do commit `a76045848`.
 As outras duas frentes C da RFC 0027 (áudio por caminho em `b13913077` e `IsUnboundLayerArchive` no bootstrap)
 ficam fora daqui.
 
