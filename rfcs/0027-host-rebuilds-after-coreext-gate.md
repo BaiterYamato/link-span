@@ -118,6 +118,12 @@ Para fechar C, propõem-se os contratos abaixo. Nomes/versões são propostas su
 
 **Saída proposta:** mecanismo genérico de camadas do VFS declaradas/solicitadas por provider aceito, com escopo de montagem, fase, ordem e ownership. O framework inspeciona seu próprio manifesto de archive e pede montagem; o bootstrap não conhece `unbound.json` ou versões Unbound. Aproveitar `linkspan.oot.resources`/VFS existentes antes de criar outro serviço.
 
+**Correção do RC5 (2026-10-09), dentro desta mesma dívida:** sem o mod `linkspan.unbound.framework` carregado, o
+bootstrap ignora toda camada Unbound, solta em `mods/` ou dentro da pasta de um mod, e grava `ShipLua ignorou a camada
+Unbound '…': o framework Unbound ('linkspan.unbound.framework') não carregou`. Antes, a camada solta entrava na raiz
+mesmo sem ninguém para ler os documentos dela, sem diagnóstico (plano §10.4 e §18: recusa com diagnóstico em vez de
+carga parcial). O host passa a conhecer também o id do framework; a saída proposta acima remove os dois.
+
 Preservar a correção `4c45d5c3a`: provider rejeitado nunca sombreia o VFS. Ordenação deve ser determinística; erro/init parcial desfaz montagem do dono; unload invalida/retira camadas com tratamento explícito do cache e dos recursos vivos. Arquivo solto sem manifesto mantém uma política de data mod documentada; compatibilidade Unbound antiga pode ser reconhecida pelo framework, sem detector permanente no host.
 
 **Aceite:** camada de dois providers genéricos respeita prioridade; camada de provider rejeitado/ausente não entra na raiz; init falho não deixa sombra residual; JSON mescla no caminho/fase esperados; unload/reload e fallback vanilla são exercitados. Não prometer descarregamento seguro de recursos ainda usados sem contrato e teste.
