@@ -181,6 +181,7 @@ lives in [`coordination/`](coordination/).
 
 ## License
 
-The Link-Span core is under the repository license. **Never** commit ROMs,
+Link-Span is dedicated to the public domain under CC0 1.0 ([LICENSE](LICENSE)); third-party
+components and hosts keep their own terms ([NOTICE.md](NOTICE.md)). **Never** commit ROMs,
 `.z64`/`.n64`/`.v64`, user-derived `oot.o2r`/`oot.otr`/`mm.o2r`, or copyrighted
 game assets. Redistributable port runtime archives are release artifacts only.
