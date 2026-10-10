@@ -1,51 +1,53 @@
-# Contrato dos schemas da API
+**English** · [Português (Brasil)](schema-contract.pt-BR.md)
 
-Os arquivos `schema/api.yml`, `schema/events.yml` e `schema/capabilities.yml` são a fonte canônica da API pública ShipLua. Eles usam sintaxe JSON, que também é YAML 1.2 válido, para permitir validação sem dependências Python externas.
+# API schema contract
 
-## Responsabilidades
+The files `schema/api.yml`, `schema/events.yml`, and `schema/capabilities.yml` are the canonical source of the ShipLua public API. They use JSON syntax, which is also valid YAML 1.2, to allow validation without external Python dependencies.
 
-- `api.yml`: tipos públicos, funções e códigos de erro;
-- `events.yml`: nomes, tipos, payloads, suporte por host e fase;
-- `capabilities.yml`: catálogo comum e específico, incluindo recursos apenas planejados.
+## Responsibilities
 
-Uma capability com status `planned` é documentação de roadmap e não pode ser referenciada por função ou evento público. Somente status `contract` integra a API `0.1.0`.
+- `api.yml`: public types, functions and error codes;
+- `events.yml`: names, types, payloads, support by host and phase;
+- `capabilities.yml`: common and specific catalog, including planned-only features.
 
-## IDL declarativa
+A capability with status `planned` is roadmap documentation and cannot be referenced by function or public event. Only status `contract` integrates the `0.1.0` API.
 
-Cada função de `api.yml` carrega, além de nome, argumentos, retorno e erros:
+## Declarative IDL
 
-- `version`: SemVer da API em que a função entrou no contrato (nunca posterior à `api_version` do documento);
-- `stability`: `experimental`, `preview`, `stable` ou `deprecated` (taxonomia do plan-sdk.md §15.5; símbolos `internal` não fazem parte da IDL pública).
+Each function in `api.yml` carries, besides name, arguments, return and errors:
 
-## Artefatos gerados
+- `version`: SemVer of the API in which the function entered the contract (never later than the document's `api_version`);
+- `stability`: `experimental`, `preview`, `stable` or `deprecated` (plan-sdk.md §15.5 taxonomy; `internal` symbols are not part of the public IDL).
 
-| Ferramenta | Artefato |
+## Generated artifacts
+
+| Tool | Artifact |
 |---|---|
-| `tools/generate_cpp_api.py` | `generated/include/shiplua/generated/ApiBindings.h` (stubs/bindings C++) |
-| `tools/generate_api_docs.py` | `generated/lua/shiplua.lua` (LuaDoc/autocomplete) e `generated/docs/api-reference.md` |
-| `tools/generate_api_contracts.py` | `generated/lua/shiplua_validate.lua` (validadores), `generated/lua/shiplua_mock.lua` (mock runtime), `generated/tests/api_contract.lua` e `generated/tests/mock_contract.lua` (testes de contrato), `generated/docs/compatibility-matrix.md` (matriz OoT/MM) |
+| `tools/generate_cpp_api.py` | `generated/include/shiplua/generated/ApiBindings.h` (C++ stubs/bindings) |
+| `tools/generate_api_docs.py` | `generated/lua/shiplua.lua` (LuaDoc/autocomplete) and `generated/docs/api-reference.md` |
+| `tools/generate_api_contracts.py` | `generated/lua/shiplua_validate.lua` (validators), `generated/lua/shiplua_mock.lua` (mock runtime), `generated/tests/api_contract.lua` and `generated/tests/mock_contract.lua` (contract tests), `generated/docs/compatibility-matrix.md` (OoT/MM matrix) |
 
-Todos possuem gate de drift no ctest (`--check`): editar os schemas sem regenerar quebra o build de testes.
+All of them have a drift gate in ctest (`--check`): editing the schemas without regenerating breaks the test build.
 
-## Invariantes automáticos
+## Automatic invariants
 
-O comando abaixo valida os três documentos em conjunto:
+The command below validates the three documents together:
 
 ```powershell
 python tools/validate_api_schemas.py
 ```
 
-O validador rejeita:
+The validator rejects:
 
-- versões divergentes;
-- nomes duplicados ou inválidos;
-- funções sem `version` SemVer ou com `stability` inválida;
-- `version` de função posterior à `api_version`;
-- tipos e códigos de erro inexistentes;
-- ponteiros, endereços e layouts internos;
-- capabilities órfãs ou ainda planejadas;
-- recurso específico sem capability;
-- suporte por host incompatível com a capability;
-- evento `observe` marcado como cancelável.
+- divergent versions;
+- duplicate or invalid names;
+- functions without SemVer `version` or with invalid `stability`;
+- function `version` later than `api_version`;
+- non-existent error types and codes;
+- pointers, addresses and internal layouts;
+- orphan or still planned capabilities;
+- specific resource without capability;
+- support for a host incompatible with the capability;
+- event `observe` marked as cancelable.
 
-Bindings C++, LuaDoc e documentação Markdown devem ser gerados somente destes arquivos. Alterações contratuais exigem RFC e incremento SemVer apropriado.
+C++ bindings, LuaDoc and Markdown documentation should be generated from these files only. Contract changes require RFC and appropriate SemVer increment.

@@ -524,8 +524,8 @@ Result<ModLoadReport> ModHost::LoadModsFromRoot(const std::filesystem::path& roo
         }
         const auto disabled = disabledMods.find(parsed.value->id);
         if (disabled != disabledMods.end()) {
-            report.rejected[parsed.value->id] = "desativado pela proteção de boot (" + disabled->second +
-                "); apague a linha do mod em " + kDisabledListName + " para reativar";
+            report.rejected[parsed.value->id] = "disabled by boot protection (" + disabled->second +
+                "); delete the mod's line in " + kDisabledListName + " to re-enable it";
             if (!ownedDirectory.empty()) {
                 std::error_code ignored;
                 std::filesystem::remove_all(ownedDirectory, ignored);

@@ -1,40 +1,42 @@
-# Timers por frame
+**English** · [Português (Brasil)](frame-timers.pt-BR.md)
 
-O `FrameTimerScheduler` implementa a base interna de `ship.timer.after` e
-`ship.timer.every`. Ele não conhece Lua nem estruturas dos jogos; cada host
-avança o scheduler uma vez ao publicar seu evento comum `game.frame`.
+# Timers per frame
 
-## Semântica
+`FrameTimerScheduler` implements the internal basis of `ship.timer.after` and
+`ship.timer.every`. He doesn't know Lua or game structures; each host
+advances the scheduler once when publishing its common event `game.frame`.
 
-- `after(mod, frames, callback)` executa uma vez;
-- `every(mod, frames, callback)` executa novamente no mesmo período;
-- `frames` deve ser maior que zero;
-- `frames = 1` significa o próximo tick;
-- o período recorrente parte do vencimento anterior, evitando deriva;
-- cancelamento por handle e cancelamento de todos os timers de um mod são
-  idempotentes no ciclo de vida, mas um handle já inativo retorna
-  `InvalidHandle` quando cancelado outra vez.
+## Semantics
 
-## Ordem
+- `after(mod, frames, callback)` executes once;
+- `every(mod, frames, callback)` runs again in the same period;
+- `frames` must be greater than zero;
+- `frames = 1` means the next tick;
+- the recurring period starts from the previous maturity, avoiding drift;
+- cancellation by handle and cancellation of all timers in a mod are
+  idempotent in the lifecycle, but an already inactive handle returns
+  `InvalidHandle` when canceled again.
 
-Timers vencidos no mesmo tick são ordenados por:
+## Order
 
-1. frame de vencimento;
-2. ordem de carregamento do mod;
-3. prioridade do mod;
-4. ID do mod;
-5. ID crescente do timer.
+Timers expiring on the same tick are ordered by:
 
-Valores menores executam primeiro. Um timer criado durante um tick nunca entra
-na lista já coletada para aquele tick.
+1. due date frame;
+2. mod load order;
+3. mod priority;
+4. Mod ID;
+5. Increasing timer ID.
 
-## Falhas e thread
+Smaller values ​​run first. A timer created during a tick never enters
+in the list already collected for that tick.
 
-Exceções não atravessam o scheduler. A falha registra handle, ID do mod e
-mensagem; um timer único com falha é removido e um timer recorrente é desativado
-após três falhas consecutivas por padrão. Uma execução bem-sucedida zera o
-contador consecutivo.
+## Faults and thread
 
-O scheduler pertence à thread em que foi criado. `Tick`, agendamento e
-cancelamento em outra thread retornam `InvalidState`; ticks reentrantes também
-são recusados.
+Exceptions do not traverse the scheduler. The crash logs handle, mod ID and
+message; a failed one-time timer is removed and a recurring timer is disabled
+after three consecutive failures by default. A successful execution resets the
+consecutive counter.
+
+The scheduler belongs to the thread in which it was created. `Tick`, scheduling and
+cancellation in another thread return `InvalidState`; re-entrant ticks too
+are refused.

@@ -1,34 +1,36 @@
-# Geração do contrato C++
+**English** · [Português (Brasil)](cpp-codegen.pt-BR.md)
 
-`tools/generate_cpp_api.py` transforma os três schemas canônicos em
+# Generation of the C++ contract
+
+`tools/generate_cpp_api.py` transforms the three canonical schemas into
 `generated/include/shiplua/generated/ApiBindings.h`.
 
-O header contém:
+The header contains:
 
-- tipos públicos materializáveis em C++;
-- versão da API e do schema;
-- códigos de erro;
-- IDs e descritores de funções, argumentos e retornos;
-- descritores de eventos e payloads;
-- capabilities e suporte por host.
+- public types materializable in C++;
+- API and schema version;
+- error codes;
+- IDs and descriptors of functions, arguments and returns;
+- event and payload descriptors;
+- capabilities and support per host.
 
-Ele é metadado de binding, não uma exposição automática dos headers dos jogos.
-Nenhum ponteiro, ABI C arbitrária ou layout interno pode ser gerado.
+It is binding metadata, not an automatic exposure of game headers.
+No pointers, arbitrary ABI C or internal layout can be generated.
 
-## Atualização
+## Update
 
-Após alterar um schema validado:
+After changing a validated schema:
 
 ```powershell
 rtk python tools/generate_cpp_api.py
 ```
 
-O arquivo gerado é versionado para permitir revisão. O gate reproduzível é:
+The generated file is versioned to allow review. The reproducible gate is:
 
 ```powershell
 rtk python tools/generate_cpp_api.py --check
 ```
 
-O CTest executa esse gate e os testes do gerador. Alterar manualmente o header
-sem alterar os schemas, ou esquecer de regenerá-lo após uma mudança, falha a
-validação.
+CTest performs this gate and generator tests. Manually change the header
+without changing the schemas, or forgetting to regenerate it after a change, it fails
+validation.

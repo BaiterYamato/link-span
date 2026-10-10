@@ -1,0 +1,24 @@
+# UNBOUND-019
+
+- Status: review
+- Agent: Claude (Opus 5.5)
+- Platform: Windows
+- Branch: agent/OOT-UPSTREAM-001-78dc6d970-integration
+- Started: 2026-10-03T11:20:00Z
+- Depends on: UNBOUND-018
+- Files:
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/unbound-core/transcode.h
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/unbound-core/transcode.cpp
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/unbound-core/scene_references.h
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/unbound-core/scene_references.cpp
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/unbound-core/unbound_core.cpp
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/unbound-core/CMakeLists.txt
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/unbound-core/reference_tests.cpp
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/unbound-core/README.md
+  - OOT-UPSTREAM-78DC-001/tools/package-unbound-framework.ps1
+  - OOT-UPSTREAM-78DC-001/tools/make-unbound-reference-fixtures.py
+  - OOT-UPSTREAM-78DC-001/build/oot-upstream-001/evidence/unbound-019/**
+- Goal:
+  - Gate OoT 10.5/14.3 (resolucao por versao): cena de mod que aponta para recurso que o oot.o2r do usuario nao tem (nome de outra familia de ROM) vira diagnostico deterministico no game.ready, antes do gameplay, em vez de falha ao entrar na cena.
+  - No framework Unbound (DLL), sem mudar o host: cada documento Unbound tipado que um mod traz e mesclado e transcodificado como o jogo faria; cada recurso do XML (mesh, imagem, colisao, salas, paths, cutscene, texturas animadas, musica) conferido com has_file; documento que o jogo recusaria tambem aparece.
+  - Versao do oot.o2r (get_game_versions) no resumo do ready.

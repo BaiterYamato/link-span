@@ -1,0 +1,45 @@
+# OOT-UNBOUND-003C
+
+- Status: review
+- Agent: Claude (Opus 5)
+- Platform: Windows
+- Branch: agent/OOT-UPSTREAM-001-78dc6d970-integration
+- Started: 2026-09-14T22:30:12.5626657Z
+- Depends on: OOT-UNBOUND-003B, OOT-CORE-002, OOT-UNBOUND-002B
+- Files:
+  - OOT-UPSTREAM-78DC-001/soh/include/z64.h
+  - OOT-UPSTREAM-78DC-001/soh/include/variables.h
+  - OOT-UPSTREAM-78DC-001/soh/src/code/z_scene_table.c
+  - OOT-UPSTREAM-78DC-001/soh/src/code/z_play.c
+  - OOT-UPSTREAM-78DC-001/soh/src/code/z_actor.c
+  - OOT-UPSTREAM-78DC-001/soh/soh/z_play_otr.cpp
+  - OOT-UPSTREAM-78DC-001/soh/soh/util.cpp
+  - OOT-UPSTREAM-78DC-001/soh/soh/CrashHandlerExt.cpp
+  - OOT-UPSTREAM-78DC-001/soh/soh/ShipLuaBootstrap.cpp
+  - OOT-UPSTREAM-78DC-001/soh/soh/Enhancements/game-interactor/GameInteractor_RawAction.cpp
+  - OOT-UPSTREAM-78DC-001/soh/soh/Enhancements/debugger/debugSaveEditor.cpp
+  - OOT-UPSTREAM-78DC-001/soh/soh/Enhancements/randomizer/randomizer_check_tracker.cpp
+  - OOT-UPSTREAM-78DC-001/soh/soh/Enhancements/randomizer/randomizer_grotto.c
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeScenesGame.cpp
+  - OOT-UPSTREAM-78DC-001/build/oot-upstream-001/evidence/unbound003c-*/**
+  - RELEASE-UNIFICADA/OOT-teste-cenas-20260914/**
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/oot_scenes.h
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeScenes.h
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeScenes.cpp
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeEngine.cpp
+  - OOT-UPSTREAM-78DC-001/soh/soh/unbound/UnboundLayoutChecks.cpp
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/ExportSdk.cmake
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/tests/SceneRegistryTests.cpp
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/unbound-core/**
+  - OOT-UPSTREAM-78DC-001/tools/package-unbound-scene-demo.ps1
+  - OOT-UPSTREAM-78DC-001/docs/native-mods.md
+  - OOT-UPSTREAM-78DC-001/docs/architecture/unbound-scene-registry.md
+  - OOT-UPSTREAM-78DC-001/build/unbound-scene-demo/**
+  - NATIVE-001/rfcs/0020-oot-scene-registry.md
+  - docs/agents/Plans.md
+  - coordination/claims/OOT-UNBOUND-003C.md
+  - coordination/handoffs/OOT-UNBOUND-003C.md
+- Goal:
+  - Substrato de cena/entrance no host: EntranceInfo.scene em 16 bits, gEntranceTable como ponteiro para tabela que cresce, cena resolvida por id customizado (128 a 32767) e flags de cena customizada fora do array fixo de 124.
+  - Servico linkspan.oot.scenes v1 para registrar cenas e entradas por nome namespaced, com busca por nome vanilla e viagem por entrada.
+  - Adapter no linkspan.unbound.framework que le unbound/scenes.json mesclado e registra cenas e entradas; demo que viaja por nome a uma copia de cena vanilla, com prova em jogo.

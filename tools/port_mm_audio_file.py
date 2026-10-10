@@ -73,6 +73,19 @@ FOOTER = '''
 TRANSFORMS = [
     ('void* AudioScript_AudioListPopBack(', 'AnyPtr AudioScript_AudioListPopBack('),
 
+    # AudioPlayback_SeqLayerDecayRelease protege contra NO_LAYER (-1) mas NAO
+    # contra NULL, e logo em seguida faz `layer->bit3 = false`. No MM isso e
+    # seguro porque as camadas nunca sao nulas; no nosso contexto — montado a
+    # mao, sem o AudioHeap_Init completo — podem ser, e a desreferencia derruba.
+    # Bate com os registradores do crash de 25/07 (RAX=0, RDX=0) e com a pilha
+    # AudioScript_SeqLayerProcessScript -> SeqLayerNoteDecay.
+    ('''    if (layer == NO_LAYER) {
+        return;
+    }''',
+     '''    if (layer == NO_LAYER || layer == NULL) {
+        return;
+    }'''),
+
     # As sete restantes são todas o mesmo caso: atribuir um `void*` (parâmetro
     # ou cast explícito do decomp) a um ponteiro tipado. C aceita, C++ não.
     # Anotar o tipo de destino é a mudança mínima — não muda semântica nenhuma,
@@ -90,6 +103,22 @@ TRANSFORMS = [
      'channel->dynTable = (u8(*)[][2]) & seqPlayer->seqData['),
     ('scriptState->pc = (void*)&seqPlayer->seqData[cmdArgU16];',
      'scriptState->pc = (u8*)&seqPlayer->seqData[cmdArgU16];'),
+
+    # gWaveSamples tem 9 entradas e o decomp clampa waveId so POR BAIXO. Um
+    # instOrWave invalido faz `gWaveSamples[waveId - 128]` ler fora do array e
+    # derrubar o processo. No N64 o valor nunca passava de 136 porque o dado
+    # vinha da ROM; aqui pode vir de um lookup que falhou. O limite superior e
+    # defensivo — se disparar, o problema real esta na resolucao de instrumento.
+    ('''    if (waveId < 128) {
+        waveId = 128;
+    }''',
+     '''    if (waveId < 128) {
+        waveId = 128;
+    }
+    if (waveId > 136) { // ARRAY_COUNT(gWaveSamples) - 1 + 128
+        MmSeq_ReportBadWaveId((s32)waveId);
+        waveId = 128;
+    }'''),
 ]
 
 

@@ -1,41 +1,195 @@
-# Escrevendo mods para ShipLua (API 0.5)
+**English** · [Português (Brasil)](writing-mods.pt-BR.md)
 
-Este guia mostra como criar, testar, empacotar e instalar um mod Lua que roda no
-Shipwright (OoT) e no 2Ship (MM) com a **API 0.5.0** do ShipLua.
+# Writing Lua mods for Link-Span
 
-> Referência completa gerada dos schemas:
-> [`generated/docs/api-reference.md`](../generated/docs/api-reference.md).
-> Instalação dos hosts e layout de pastas: [getting-started.md](getting-started.md).
-> Assets de um jogo dentro do outro: [cross-world-assets.md](cross-world-assets.md).
+Create a mod, test its behavior without a game, then install it in a Link-Span host. This guide targets **Lua API 0.5.0**. The same common API can be used in Shipwright (OoT) and 2Ship2Harkinian (MM); individual features depend on the host's advertised capabilities.
 
-## 1. Anatomia de um mod
+Start with [hello-world](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/hello-world). Continue with [frame-counter](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/frame-counter) for timers, hotkeys, storage and tests. These examples live in a separate repository and are not bundled with Link-Span. The core's `tests/fixtures/mods/` directories are test fixtures.
 
-Um mod é uma pasta (ou um `.shipmod`, que é essa pasta em ZIP) com no mínimo:
+See the [API reference](../generated/docs/api-reference.md), [LuaDoc definitions](../generated/lua/shiplua.lua) and [manifest reference](manifest.md). Native mods also exist; see [native-mods.md](native-mods.md).
+
+## 1. Create a folder and manifest
+
+A loose mod needs two files. `tests/` is optional and contains the mock runner's Lua tests.
 
 ```text
-meu-mod/
-├── manifest.toml   # metadados: id, versão, faixa de API, capabilities, limites
-└── main.lua        # ponto de entrada
+my-mod/
+  manifest.toml
+  main.lua
+  tests/
+    my_mod_test.lua
 ```
 
-Opcionalmente: `tests/` (testes no mock runtime), `README.md`.
-
-## 2. Passo a passo: um mod do zero
-
-### 2.1 Crie a pasta e o manifesto
+Minimal `manifest.toml` for a new mod using the current API:
 
 ```toml
-id = "community.meu_mod"
-name = "Meu Mod"
+id = "community.my_mod"
+name = "My Mod"
 version = "0.1.0"
 api = ">=0.5 <0.6"
 entrypoint = "main.lua"
-description = "Aperte K para spawnar um cachorro com a API genérica de atores."
-authors = ["Seu Nome"]
-games = ["oot", "mm"]
+```
 
+All five fields are required, nonempty strings. Choose a stable, unique id; reverse-DNS style is recommended. Omitting `games` means either host. Add `games = ["oot"]` for an OoT-only mod or `games = ["mm"]` for MM only, before any TOML table headers.
+
+The `api` range describes the Lua API, not the game's version. `>=0.5 <0.6` includes 0.5.0. The basic examples use `>=0.1 <0.6`, and the actor example uses `>=0.4 <0.6`; use a wider range only when you have checked every supported API. A range ending in `<0.5` excludes the current runtime.
+
+You can generate a scaffold from the core checkout with `python tools/shipmod.py new my-mod --dir mods --author "Your Name"`. See [shipmod-cli.md](shipmod-cli.md) for the exact options.
+
+## 2. Write the entrypoint
+
+Put this in `main.lua`, following `hello-world`:
+
+```lua
+local ship = require("ship")
+
+ship.events.on("game.ready", function(event)
+    ship.log.info("Hello from " .. ship.game.id()
+        .. " host=" .. ship.game.host_version()
+        .. " API=" .. event.api_version)
+end)
+```
+
+The entrypoint executes once **per load**. Register callbacks at its top level. The runtime does not call a Lua function named `init`, and returning an `init` table does not initialize a mod. If you prefer an `init` helper, call it yourself.
+
+`game.ready` reports that the host is ready; it does not mean a save or playable scene has been loaded. Use `save.loaded`, `scene.enter` or an available gameplay-state feature when your action needs a player in a scene. The host dispatches `game.shutdown` on its shutdown path; do not depend on it for crash recovery. Unloading releases owned subscriptions, hotkeys, timers and actors. Reloading runs the entrypoint again.
+
+The runtime provides a restricted `require("ship")`. It does not load arbitrary Lua files or third-party modules from your mod folder. Keep a small mod in its entrypoint, or assemble your Lua source before distributing it.
+
+## 3. Discover features before using them
+
+`ship.game.id()` returns `"oot"` or `"mm"`. `ship.game.host_version()`, `ship.runtime.version()` and `ship.api.version()` report distinct versions. Log with `ship.log.debug`, `info`, `warn` or `error`.
+
+Put essential features in `[capabilities].required`; loading fails when the current host does not advertise one. Put enhancements in `optional` and check them at runtime. An optional declaration does not implement or enable a feature.
+
+```toml
 [capabilities]
-required = ["actor.spawn", "actor.destroy", "actor.exists"]
+required = ["core.events"]
+optional = ["core.timers", "core.input", "core.storage", "hud.draw"]
+```
+
+```lua
+for _, name in ipairs(ship.capabilities.list()) do
+    ship.log.debug(name)
+end
+
+if ship.capabilities.has("oot.player.jump")
+    and ship.oot and ship.oot.player
+    and type(ship.oot.player.jump) == "function" then
+    -- Register an action that calls ship.oot.player.jump() in gameplay.
+end
+```
+
+The schema lists API contracts, including planned capabilities; it is not a promise that every host build implements them. Check both the capability and the namespace/function for host-specific bindings. The [jump example](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/jump) follows this pattern.
+
+A **capability** describes host support. A **permission** authorizes the calling mod. Actor operations need both. See [manifest.md](manifest.md) for permissions and defaults.
+
+## 4. Subscribe to events
+
+`ship.events.on(name, callback)` returns a subscription handle. The overload `ship.events.on(name, { priority = 10 }, callback)` sets callback priority. Lower priorities run first within the same mod; cross-mod ordering also considers mod load order and priority. Call `ship.events.off(handle)` to unsubscribe an active subscription owned by your mod.
+
+```lua
+local frames = 0
+local subscription = ship.events.on("game.frame", { priority = 10 }, function(event)
+    frames = frames + 1
+    if frames % 300 == 0 then
+        ship.log.info("Observed frames=" .. frames .. ", host frame=" .. event.frame)
+    end
+end)
+```
+
+Common observation events:
+
+| Event | Payload fields | Feature to check |
+| --- | --- | --- |
+| `game.ready` | `game_id`, `host_version`, `runtime_version`, `api_version` | Core lifecycle |
+| `game.frame` | `frame` | Core lifecycle |
+| `game.shutdown` | None | Core lifecycle |
+| `input.hotkey` | `action`, `key` | Input bridge; prefer `core.input` |
+| `scene.enter` | `scene_id` | `scene.events` |
+| `actor.init`, `actor.update` | `actor` snapshot: `handle`, `actor_id`, `category` | `actor.events` |
+| `actor.destroy` | `handle` | `actor.events` |
+| `save.loaded` | `slot` | `save.events` |
+| `text.open` | `text_id` | `text.events` |
+| `audio.sequence_started` | `player_index`, `sequence_id` | `audio.sequence.events` |
+
+Observation events do not cancel engine behavior. For transform hooks, the host defines which result is meaningful; use `ship.hooks.result(value)` inside the callback rather than assuming a Lua return value or payload edit controls the engine. The OoT `input.action` contract uses `input.actions` and has `action`, `pressed`, `source`. Consult the [event schema](../schema/events.yml) and API reference for the complete hook list.
+
+## 5. Add timers and hotkeys
+
+Timers use **host frames**, not milliseconds. Delays and intervals must be positive integers. `after` runs once; `every` repeats. Keep the returned handle if you need to cancel the timer before unload.
+
+```lua
+if ship.capabilities.has("core.timers") then
+    local timer = ship.timer.every(10, function()
+        ship.log.debug("ten more frames")
+    end)
+    ship.timer.after(60, function()
+        ship.timer.cancel(timer)
+    end)
+end
+
+if ship.capabilities.has("core.input") then
+    ship.hotkeys.register("count", { default = "C", label = "Increment counter" }, function()
+        ship.log.info("Counter hotkey pressed")
+    end)
+end
+```
+
+Use a stable hotkey id and a readable label. `default` is the initial binding; the host may let the player rebind it. Do not hard-code assumptions about the active binding or conflicts with other mods. `ship.hotkeys.register` returns a boolean; registration requires an input provider.
+
+## 6. Store values with a fallback
+
+`ship.storage.get(key, default)` returns the value, the supplied default, or `nil` if absent. `set(key, value)` accepts **booleans, numbers and strings**, not tables, functions or actor handles. `delete(key)` returns whether a key was removed; `clear()` returns the number removed. Keys are namespaced by manifest id.
+
+Storage is provided by the host. The mock offers `core.storage` in memory; disk persistence in a game requires a configured storage backend. Detect it instead of assuming either that every game supports it or that no real host does. This adaptation of `frame-counter` keeps working without persistence:
+
+```lua
+local ship = require("ship")
+local persistent = ship.capabilities.has("core.storage")
+local memory = {}
+
+local function read_number(key)
+    if persistent then
+        return tonumber(ship.storage.get(key)) or 0
+    end
+    return memory[key] or 0
+end
+
+local function increment(key)
+    local value = read_number(key) + 1
+    if persistent then
+        ship.storage.set(key, value)
+    else
+        memory[key] = value
+    end
+    return value
+end
+
+ship.events.on("game.ready", function()
+    ship.log.info(persistent and "Counter has storage" or "Counter is in memory")
+end)
+
+if ship.capabilities.has("core.timers") then
+    ship.timer.every(10, function() increment("ticks") end)
+end
+
+if ship.capabilities.has("core.input") then
+    ship.hotkeys.register("count", { default = "C", label = "Increment counter" }, function()
+        ship.log.info("count=" .. increment("count"))
+    end)
+end
+```
+
+For state shared between OoT and MM, separately detect `core.storage.shared` and use `ship.storage.shared.get/set/delete/clear`. The same mod id supplies the namespace in both games. Local storage does not imply shared storage. Declaring a storage permission does not create a backend. Keep writes small; storage operations can raise Lua errors on invalid values, missing support or resource limits.
+
+## 7. Spawn and manage actors
+
+Follow [actor-spawn](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/actor-spawn). Its manifest adds these tables:
+
+```toml
+[capabilities]
+required = ["actor.spawn", "actor.destroy", "actor.exists", "core.input"]
 
 [permissions]
 grants = ["world.entities.create", "world.entities.destroy", "world.entities.read"]
@@ -44,426 +198,133 @@ grants = ["world.entities.create", "world.entities.destroy", "world.entities.rea
 actors = 1
 ```
 
-Sobre a faixa `api`:
-
-- Use **`">=0.5 <0.6"`** para esta release. A faixa precisa cobrir a versão da
-  API que o host anuncia.
-- Faixas que não cobrem a versão do host são rejeitadas no load. Reempacote o
-  manifesto ao atualizar de uma faixa que termina em `<0.5`.
-
-### 2.2 Escreva o `main.lua`
-
-O `main.lua` roda uma vez quando o mod carrega. Este exemplo é o
-[`link-span-examples/lua/actor-spawn`](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/actor-spawn) real, levemente comentado:
+Replace existing tables rather than declaring the same TOML table twice. The grants respectively authorize spawning, destroying and checking an owned actor. Add this to an entrypoint:
 
 ```lua
-local ship = require("ship")
+local actor_type = ship.game.id() == "oot" and "oot.en_dog" or "mm.en_dg"
+local active = nil
 
--- O mesmo mod roda nos dois jogos: escolhe o ator lógico pelo host.
-local logical_actor = ship.game.id() == "oot" and "oot.en_dog" or "mm.en_dg"
-local active_actor = nil
-
-local function spawn_demo_actor()
-    if active_actor then
-        if ship.actor.exists(active_actor) then
-            ship.actor.destroy(active_actor)
+ship.hotkeys.register("spawn_actor", { default = "K", label = "Toggle actor" }, function()
+    if active then
+        local alive, err = ship.actor.exists(active)
+        if err then ship.log.warn(err.code .. ": " .. err.message); return end
+        if alive then
+            local ok, destroy_err = ship.actor.destroy(active)
+            if not ok then
+                ship.log.warn(destroy_err.code .. ": " .. destroy_err.message)
+                return
+            end
+            active = nil
+            return
         end
-        active_actor = nil
+        active = nil
     end
 
-    -- Posição (0,0,0) = "na frente do player" (convenção do host até existir
-    -- ship.transform.relative_to_player, plan-sdk §8.4).
-    local actor, err = ship.actor.spawn(logical_actor, {
+    local handle, err = ship.actor.spawn(actor_type, {
         position = { x = 0, y = 0, z = 0 },
         rotation = { x = 0, y = 0, z = 0 },
     })
-    if not actor then
-        ship.log.warn("actor spawn failed [" .. err.code .. "]: " .. err.message)
+    if not handle then
+        ship.log.warn(err.code .. ": " .. err.message)
         return
     end
-    active_actor = actor
-    ship.log.info("spawned " .. logical_actor)
-end
-
-ship.hotkeys.register("spawn_actor", {
-    default = "K",
-    label = "Spawn generic actor",
-}, spawn_demo_actor)
-```
-
-Cada mod roda num **estado Lua isolado** com sandbox: `io`, `os.execute`,
-`debug`, `package`, `dofile`/`loadfile` **não** estão disponíveis. Um erro num
-mod não afeta os outros.
-
-### 2.3 Valide e teste sem o jogo (opcional)
-
-```powershell
-python tools/shipmod.py validate meu-mod          # valida o manifesto
-python tools/shipmod.py test meu-mod --game oot   # roda tests/*.lua no mock runtime
-```
-
-Detalhes em [shipmod-cli.md](shipmod-cli.md) e
-[manifest-validator.md](manifest-validator.md).
-
-### 2.4 Empacote como `.shipmod`
-
-Um `.shipmod` é um ZIP com `manifest.toml` e `main.lua` **na raiz do arquivo**
-(não dentro de uma subpasta). Com PowerShell:
-
-```powershell
-Compress-Archive -Path meu-mod\manifest.toml, meu-mod\main.lua `
-  -DestinationPath meu-mod.shipmod
-```
-
-Ou com Python:
-
-```python
-import zipfile
-with zipfile.ZipFile("meu-mod.shipmod", "w", zipfile.ZIP_DEFLATED) as z:
-    z.write("meu-mod/manifest.toml", "manifest.toml")
-    z.write("meu-mod/main.lua", "main.lua")
-```
-
-### 2.5 Instale e confira o log
-
-Coloque o `.shipmod` (ou a pasta descompactada) em `mods/` ao lado do executável
-do jogo e abra o jogo. No log (`logs/*.log`):
-
-```text
-ShipLua inicializando para oot 9.2.3 (...)
-ShipLua carregou 5 mod(s) de '...mods'
-```
-
-Se um mod for recusado, o log diz o motivo, sem derrubar os outros:
-
-```text
-ShipLua rejeitou o mod 'community.meu_mod': api range ">=0.1 <0.2" não cobre 0.4.0
-```
-
-## 3. Referência do manifesto
-
-Campos obrigatórios: `id`, `name`, `version`, `api`, `entrypoint`. Schema
-completo: [`schema/manifest.schema.json`](../schema/manifest.schema.json).
-
-| Campo | Tipo | Descrição |
-|---|---|---|
-| `id` | string | Único, estilo domínio-invertido (`community.meu_mod`) |
-| `name` | string | Nome de exibição |
-| `version` | string | SemVer do mod |
-| `api` | string | Faixa da API ShipLua suportada (`">=0.5 <0.6"`) |
-| `entrypoint` | string | Arquivo Lua de entrada (`main.lua`) |
-| `description`, `authors` | string, array | Metadados opcionais |
-| `games` | array | `["oot"]`, `["mm"]` ou ambos; vazio/omitido = ambos |
-| `requires_both_games` | bool | Exclusivo do Link-Span: exige assets dos dois jogos |
-| `[host]` | tabela | Faixas por host (`shipwright`, `two_ship`) |
-| `[capabilities] required` | array | Ausente no host ⇒ o mod **não carrega** |
-| `[capabilities] optional` | array | Detecte em runtime com `ship.capabilities.has` |
-| `[resources] required` | array | Caminhos do VFS exigidos; ausência impede a carga antes de executar Lua ou DLL |
-| `[dependencies]` | tabela | id de mod → faixa de versão |
-| `[load]` | tabela | `priority` (menor carrega antes), `after`, `before` |
-| `[permissions] grants` | array | Permissões pontilhadas (`world.entities.create`) |
-| `[limits] actors` | int | Máximo de atores vivos do mod (padrão 16; 0 desativa) |
-
-**Capability ≠ permissão** (plan-sdk §3.7): a capability (`actor.spawn`) diz que
-o host *implementa* o recurso; a permissão (`world.entities.create` em
-`grants`) diz que o mod está *autorizado* a usá-lo. Para `ship.actor.*` você
-precisa dos dois — capability no host + grant no manifesto — senão a chamada
-retorna `permission_denied`.
-
-Para um mod OoT que usa um ícone e um modelo do jogo:
-
-```toml
-[resources]
-required = [
-  "textures/icon_item_static/gItemIconHammerTex",
-  "objects/object_gi_hammer/gGiHammerDL",
-]
-```
-
-Os caminhos são relativos ao VFS, sem `__OTR__`, barras invertidas ou `..`.
-O host consulta os arquivos montados em cada inicialização; a presença não é
-armazenada em cache. Sem a sonda do host, um mod que declara esses requisitos
-é recusado.
-
-## 4. A API `ship`
-
-Toda função abaixo existe na superfície 0.5.0
-([`schema/api.yml`](../schema/api.yml)); nada aqui é planejado ou especulativo.
-
-### Log e identidade
-
-```lua
-ship.log.debug(msg)  ship.log.info(msg)  ship.log.warn(msg)  ship.log.error(msg)
-
-ship.game.id()            -- "oot" ou "mm"
-ship.game.host_version()  -- ex.: "9.2.3" (Shipwright) ou "4.0.2" (2Ship)
-ship.runtime.version()    -- versão do runtime ShipLua
-ship.api.version()        -- "0.5.0"
-```
-
-### Capabilities (feature detection)
-
-```lua
-if ship.capabilities.has("core.storage") then ... end
-for _, cap in ipairs(ship.capabilities.list()) do ship.log.debug(cap) end
-```
-
-### Eventos
-
-```lua
-local sub = ship.events.on("game.ready", function(payload) ... end)
-ship.events.off(sub)
-
--- com opções (prioridade menor executa primeiro):
-ship.events.on("game.frame", { priority = 10 }, function(payload)
-    -- payload.frame
+    active = handle
 end)
 ```
 
-| Evento | Payload | Capability |
-|---|---|---|
-| `game.ready` | `game_id, host_version, runtime_version, api_version` | — |
-| `game.frame` | `frame` | — |
-| `game.shutdown` | — | — |
-| `input.hotkey` | `action, key` | — |
-| `scene.enter` | `scene_id` | `scene.events` |
-| `actor.init` / `actor.update` | `actor` (snapshot) | `actor.events` |
-| `actor.destroy` | `handle` | `actor.events` |
-| `save.loaded` | `slot` | `save.events` |
-| `text.open` | `text_id` | `text.events` |
-| `audio.sequence_started` | `player_index, sequence_id` | `audio.sequence.events` |
+The API takes a logical actor name registered by the host and a finite world position, with optional XYZ rotation in degrees. The example hosts use `{0,0,0}` as a placement convention near the player; this is not a universal relative-position API. Actor availability also depends on the current scene and loaded objects.
 
-Nem todo host publica todos os eventos — cheque a capability correspondente.
+Handles are opaque and owned by the calling mod. Do not manufacture, edit or serialize them. Scene changes invalidate old handles. `exists` returns `false` for an expired owned handle; check its second return for other failures. Spawn returns `nil, err` on failure; destroy/exists return a boolean plus an optional error table. Errors have `code` and `message`.
 
-### Resultado de evento transform
+The default manifest actor limit is 16; `actors = 1` allows one live owned actor. Zero disables spawning, and the manifest cannot exceed the host/provider limit. Destroy actors you no longer need. Unload cleans up owned actors. The catalog and any numeric actor aliases are host-specific; avoid assuming that an actor id or name from one game works in the other.
 
-`ship.hooks.result(valor)` só vale dentro do callback de um evento de tipo
-`transform`. O valor substitui o resultado que o bridge entrega ao ponto nativo.
-Aceita booleano, número finito ou texto; fora desse callback a chamada falha.
+## 8. Draw a small HUD
+
+HUD drawing is an OoT contract. Detect `hud.draw` and the binding, then draw inside `hook.oot.hud.draw`, not a timer or arbitrary frame callback:
 
 ```lua
-if ship.capabilities.has("hooks.bridge") then
-    ship.events.on("hook.oot.player.speed.run", function(payload)
-        ship.hooks.result(payload.speed * 0.8)
+if ship.capabilities.has("hud.draw") and ship.hud
+    and type(ship.hud.draw_text) == "function" then
+    ship.events.on("hook.oot.hud.draw", function()
+        ship.hud.draw_rect(8, 8, 120, 24, 0, 0, 0, 160)
+        ship.hud.draw_text("Counter", 12, 12, 255, 255, 255, 255, 1.0)
     end)
 end
 ```
 
-Consulte `schema/events.yml` para saber se um evento é `transform`. Eventos
-`observe` não aceitam resultado.
+`draw_rect(x, y, w, h, r, g, b, a)` and `draw_text(text, x, y, r, g, b, a, scale)` use screen coordinates and color components. `draw_ring` is another `hud.draw` primitive. Textures use the separate `hud.icons` capability and `draw_icon(path, x, y, w, h, { alpha = 255 })`. Drawing needs the host's active HUD context; consult the API reference for signatures and errors. The mock runner does not render a HUD.
 
-### Velocidade do jogador (capability `player.speed`)
+## 9. Handle errors and respect the sandbox
 
-```lua
-if ship.capabilities.has("player.speed") then
-    local applied = ship.player.set_speed_multiplier(1.15)
-    -- 1.0 restaura; valores fora de 0.1 a 5.0 devolvem false.
-end
+Each Lua mod has its own state. The sandbox supplies base, coroutine, table, string, math, UTF-8 and a restricted `os` table (`time`, `clock`, `date`, `difftime`). It omits `io`, `debug`, `package`, `dofile`, `loadfile` and dangerous `os` operations. Use the supplied APIs for host operations and persistence.
+
+An entrypoint error rejects that load. Callback errors are logged and isolated; repeated failures can disable the failing subscription, hotkey or repeating timer. Fix the first traceback instead of relying on repeated retries. Actor operations use structured errors; many other functions raise Lua errors. Use `pcall` only when you can handle the failure deliberately, and check `false` results where documented. Keep callbacks short and avoid unbounded loops; isolation does not make an infinite loop safe for gameplay.
+
+| Symptom | Action |
+| --- | --- |
+| API range excludes 0.5.0 | Update the tested range and rebuild the package |
+| Required capability unavailable | Use a supporting host, or make the enhancement optional and detect it |
+| `permission_denied` from an actor call | Add the corresponding `world.entities.*` grant |
+| Actor `invalid_argument` | Check the host's logical name and transform |
+| Actor `invalid_state` | Wait for valid gameplay/scene and required objects |
+| Actor `resource_limit` | Release old actors; respect the manifest and host limits |
+| Storage `unsupported` | Use a memory fallback or require a supporting backend |
+| Hotkey not firing | Check input support, current binding and conflicting mods |
+| `require` rejects a module | Only the built-in `ship` module is available in normal mod code |
+
+Structured error codes include `unsupported`, `invalid_argument`, `invalid_handle`, `invalid_state`, `permission_denied`, `resource_limit`, `host_failure` and `script_failure`.
+
+## 10. Test without the game
+
+Validate the manifest, then run behavior tests on the mock. From the core checkout, using your copied mod:
+
+```powershell
+python tools/shipmod.py validate mods/my-mod
+python tools/shipmod.py test mods/my-mod --game oot
+python tools/shipmod.py test mods/my-mod --game mm
 ```
 
-Sem a capability ou o handler do host, a chamada falha com `unsupported`.
-
-
-### Hotkeys (rebindáveis)
+For the storage counter above, put this in `tests/my_mod_test.lua`:
 
 ```lua
-ship.hotkeys.register("meu_atalho", { default = "K", label = "Meu atalho" }, function()
-    ship.log.info("apertou!")
+local ship = require("ship")
+
+describe("counter", function()
+    it("increments on the hotkey", function()
+        mock.reset()
+        assert.equals(1, mock.input.press("C"))
+        assert.equals(1, ship.storage.get("count"))
+    end)
+
+    it("ticks every ten frames", function()
+        mock.reset()
+        mock.timer.advance(9)
+        assert.is_nil(ship.storage.get("ticks"))
+        mock.timer.advance(1)
+        assert.equals(1, ship.storage.get("ticks"))
+    end)
 end)
 ```
 
-A tecla `default` vale até o jogador remapear nas configurações do ShipLua no
-host — por isso sempre informe um `label` legível. Registre condicionalmente
-quando quiser rodar em hosts sem input:
+The runner loads the entrypoint and emits `game.ready` before each test file. `mock` and the `describe`/`it`/extended `assert` DSL exist only in tests. It creates a fresh mock for each file, not each `it`. `mock.reset()` clears test state without reloading the entrypoint; use it deliberately. A successful run with “no tests found” has not tested behavior.
 
-```lua
-if ship.capabilities.has("core.input") then
-    ship.hotkeys.register(...)
-end
+The mock covers core events, timers, hotkeys, storage and generic actors. It does not prove rendering, scene/object availability, physical input, disk persistence or travel between real processes. Complete those checks in each supported game. See [shipmod-cli.md](shipmod-cli.md).
+
+## 11. Package and install
+
+A `.shipmod` is a ZIP with `manifest.toml` and the entrypoint **at its root**. The CLI has no `pack` command. For a two-file mod, use the core's deterministic conformance packager:
+
+```powershell
+python tests/conformance/PackageHelloWorld.py mods/my-mod dist/my-mod.shipmod
+python tools/shipmod.py validate dist/my-mod.shipmod
 ```
 
+That script packages **only** `main.lua` and `manifest.toml`. To include tests or additional assets, follow the explicit ZIP recipe in [shipmod-cli.md](shipmod-cli.md). With PowerShell, create a `.zip` using `Compress-Archive`, then rename it to `.shipmod`; do not pass a `.shipmod` destination directly to `Compress-Archive`.
 
-### Página de menu declarativa (capability `core.menu`)
+Under the launcher, install in the shared `mods/` next to `link-span.exe`. For standalone hosts, use that host's configured mods directory. Copy either the complete mod folder or its package, and avoid installing both with the same manifest id. The [examples README](https://github.com/BaiterYamato/link-span-examples/blob/main/README.md) documents installing Lua examples as folders.
 
-No OoT, `ship.menu.register(page)` publica uma página por mod. Teste a
-capability: a função existe no núcleo, mas um host sem o adaptador retorna
-`unsupported`. Widgets com valor usam `ship.storage` do próprio mod.
+Restart the host, check its log for `loaded mod` and any rejection message, then trigger the feature in the required gameplay context. Manifest validation alone does not execute Lua. See [manifest-validator.md](manifest-validator.md) and [host-integration.md](host-integration.md).
 
-```lua
-if ship.capabilities.has("core.menu") then
-    ship.menu.register({
-        id = "meu_mod", title = "Meu Mod", sidebar = "Meu Mod",
-        widgets = {
-            { id = "toggle", type = "checkbox", label = "Ativo",
-              storage_key = "active", default = true },
-            { id = "modo", type = "action", label = "Modo",
-              icon_path = "textures/icon_item_static/gItemIconHammerTex",
-              selected = true,
-              on_activate = function() ship.log.info("modo acionado") end },
-        },
-    })
-end
-```
+## 12. Add cross-world features only when available
 
-`icon_path` é caminho relativo de recurso: não use `..`, barra invertida, `:` ou
-NUL. `selected` só é válido em `action` com `icon_path` e é apenas visual; a
-ação não é persistida automaticamente. A referência completa de widgets,
-limites, callbacks e input está em [`rfcs/0025-mod-menu.md`](../rfcs/0025-mod-menu.md).
-
-### Atores genéricos (`ship.actor.*`)
-
-Nomes **lógicos** allowlisted e **handles seguros** (nunca ponteiros nem IDs
-nativos). As falhas esperadas retornam `nil, err` em vez de lançar erro:
-
-```lua
-local actor, err = ship.actor.spawn("oot.en_dog", {
-    position = { x = 0, y = 0, z = 0 },   -- (0,0,0) = na frente do player
-    rotation = { x = 0, y = 90, z = 0 },  -- graus; rotation é opcional
-})
-if not actor then
-    ship.log.warn(err.code .. ": " .. err.message)
-    return
-end
-
-local alive = ship.actor.exists(actor)     -- boolean
-local ok    = ship.actor.destroy(actor)    -- boolean
-```
-
-Atores lógicos registrados hoje:
-
-| Nome lógico | Host | O que é |
-|---|---|---|
-| `oot.en_dog` | OoT | Cachorro (En_Dog) |
-| `oot.en_torch2` | OoT | Dark Link (En_Torch2) |
-| `oot.link_child_puppet` | OoT | Puppet com esqueleto do Young Link; replacers `.otr` de `objects/object_link_child` (ex.: Kafei) trocam a aparência |
-| `oot.mm_elegy_statue` | OoT | Estátua da Elegia do Vazio, lida do `mm.o2r` do MM ([cross-world](cross-world-assets.md)) |
-| `mm.en_dg` | MM | Cachorro de Clock Town (En_Dg) |
-| `mm.oot_rauru` | MM | Rauru esquelético, lido do `oot.o2r` do OoT ([cross-world](cross-world-assets.md)) |
-
-**Spawn genérico por id** — qualquer ator do jogo, sem esperar entrar no
-catálogo: use a chave `oot.id.<actorId>[.<params>]` (no OoT) ou
-`mm.id.<actorId>[.<params>]` (no MM), com números em decimal ou `0x`-hex:
-
-```lua
--- Estátua da Elegia NATIVA do MM (En_Torch2, actor 0x021), forma humana:
-local statue = ship.actor.spawn("mm.id.0x021", { position = { x = 0, y = 0, z = 0 } })
-
--- Cucco do OoT (En_Niw, 0x0019):
-local cucco = ship.actor.spawn("oot.id.0x0019", { position = { x = 0, y = 0, z = 0 } })
-```
-
-Regras do spawn genérico:
-
-- o **engine valida o objeto da cena**: se o modelo do ator não está carregado
-  na cena atual, o spawn falha com erro limpo (`invalid_state`) — nada de crash;
-- `ACTOR_PLAYER` é proibido (um segundo player corrompe o jogo);
-- `params` é o parâmetro nativo do ator (variante/comportamento) — consulte o
-  `actor_table.h` do decomp para ids e o significado dos params;
-- posição `{0,0,0}` = na frente do player, virado para ele.
-
-Regras dos handles:
-
-- o handle vale só na sessão/cena atual — **não** serialize nem guarde em storage;
-- troca de cena invalida handles; `ship.actor.exists` responde `false` depois;
-- o runtime destrói os atores do mod no unload;
-- `[limits] actors` do manifesto limita quantos ficam vivos ao mesmo tempo
-  (`resource_limit` ao exceder).
-
-### Timers (capability `core.timers`)
-
-```lua
-if ship.capabilities.has("core.timers") then
-    local t = ship.timer.every(10, function() ... end)  -- a cada 10 frames
-    ship.timer.after(60, function() ... end)            -- uma vez, após 60 frames
-    ship.timer.cancel(t)
-end
-```
-
-### Storage (capability `core.storage`) e fallback em memória
-
-`ship.storage.get/set/delete/clear` persiste chave-valor com namespace por mod.
-No OoT, o host cria `shiplua-storage.bin` no diretório do aplicativo e anuncia
-`core.storage`. `core.storage.shared` só aparece sob o launcher Link-Span; fora
-dele, use fallback quando precisar do mesmo estado entre jogos. Use o padrão de
-fallback do [`link-span-examples/lua/frame-counter`](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/frame-counter):
-
-```lua
-local hasStorage = ship.capabilities.has("core.storage")
-local memoryCount = 0
-
-local function bump()
-    if hasStorage then
-        local count = (tonumber(ship.storage.get("count")) or 0) + 1
-        ship.storage.set("count", count)
-        return count
-    end
-    memoryCount = memoryCount + 1
-    return memoryCount
-end
-```
-
-Assim o mod persiste onde há storage e continua funcionando (sem persistir)
-onde não há.
-
-### Cross-world travel (capability `world.travel`)
-
-```lua
-ship.world.travel("mm", "mm.clock_tower.entrance")
-```
-
-Só é anunciada quando o processo roda sob o launcher Link-Span com os dois
-jogos disponíveis — veja [link-span-process.md](link-span-process.md) e
-[`link-span-examples/lua/link-home-to-clock-tower`](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/link-home-to-clock-tower).
-
-### Namespaces específicos de jogo (`ship.oot.*` / `ship.mm.*`)
-
-| Função | Capability | Host |
-|---|---|---|
-| `ship.oot.player.jump()` | `oot.player.jump` | OoT |
-| `ship.oot.spawn_dog()` | `oot.spawn_dog` | OoT |
-| `ship.mm.player.jump()` | `mm.player.jump` | MM |
-| `ship.mm.spawn_dog()` | `mm.spawn_dog` | MM |
-
-São instalados pelo adaptador do host — **cheque capability e existência** antes
-de usar, como no [`link-span-examples/lua/jump`](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/jump):
-
-```lua
-local function resolveJump()
-    if ship.capabilities.has("oot.player.jump") and ship.oot and ship.oot.player then
-        return ship.oot.player.jump
-    end
-    if ship.capabilities.has("mm.player.jump") and ship.mm and ship.mm.player then
-        return ship.mm.player.jump
-    end
-    return nil
-end
-```
-
-Esse é o padrão recomendado de **feature detection**: capabilities opcionais no
-manifesto + checagem em runtime + degradação com um `ship.log.warn` claro.
-
-## 5. Erros comuns
-
-| Sintoma | Causa | Correção |
-|---|---|---|
-| Log: `rejeitou o mod ... api` | Faixa `api` não cobre 0.5.0 | Atualize para `">=0.5 <0.6"` e reempacote |
-| Mod não carrega, log cita capability | Capability em `[capabilities] required` ausente no host | Mova para `optional` e detecte em runtime, ou rode num host que a anuncie |
-| `ship.actor.spawn` → `permission_denied` | Falta o grant em `[permissions] grants` | Adicione `world.entities.create/destroy/read` |
-| `ship.actor.spawn` → `invalid_argument` | Nome lógico fora da allowlist do host | Use um nome da tabela acima (ou o equivalente do outro jogo) |
-| `ship.actor.spawn` → `invalid_state` | Fora de jogo (menu/título) ou objeto do ator não carregável na cena | Spawne em jogo, numa cena válida |
-| `ship.actor.spawn` → `resource_limit` | Estourou `[limits] actors` | Destrua atores antigos ou aumente o limite |
-| `ship.storage.*` → erro `unsupported` | Host sem `core.storage` (hosts reais hoje) | Fallback em memória (ver §4) |
-| Hotkey não responde | Tecla remapeada ou colisão de default com outro mod | Confira as configurações do ShipLua no host; defaults são só sugestões |
-
-Códigos de erro estruturado (`err.code`): `unsupported`, `invalid_argument`,
-`invalid_handle`, `invalid_state`, `permission_denied`, `resource_limit`,
-`host_failure`, `script_failure`.
-
-## Boas práticas
-
-- Verifique `ship.capabilities.has(...)` antes de usar recursos não universais.
-- Não assuma que `ship.mm`/`ship.oot` existem — cheque com `~= nil`.
-- Um mod que usa só a API comum deve rodar nos dois jogos sem alteração
-  (`games = ["oot", "mm"]` + nome lógico escolhido por `ship.game.id()`).
-- Prefira `required` mínimo no manifesto e `optional` + detecção para o resto.
-- Nunca guarde handles de ator entre cenas ou sessões.
+Assets from another game and travel into that game are different features. See [cross-world-assets.md](cross-world-assets.md) for resource paths. Travel uses `world.travel` and `ship.world.travel(world, destination)`; the [launcher](launcher.md) supervises process switching. A mod that needs both games declares `requires_both_games = true`; `games = ["oot", "mm"]` only means it supports either host. Follow [link-home-to-clock-tower](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/link-home-to-clock-tower) and test on an installation that advertises travel.

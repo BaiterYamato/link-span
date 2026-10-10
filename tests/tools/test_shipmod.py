@@ -93,7 +93,7 @@ class NewCommandTests(unittest.TestCase):
             for invalid in ("MeuMod", "mod_name", "1mod"):
                 code, _, err = run_cli(["new", invalid, "--dir", temporary])
                 self.assertEqual(code, shipmod.EXIT_USAGE, invalid)
-                self.assertIn("inválido", err)
+                self.assertIn("invalid", err)
             # "-mod" é interceptado pelo argparse como opção desconhecida (uso inválido)
             code, _, _ = run_cli(["new", "--", "-mod", "--dir", temporary])
             self.assertEqual(code, shipmod.EXIT_USAGE)
@@ -105,7 +105,7 @@ class NewCommandTests(unittest.TestCase):
             (target / "ocupado.txt").write_text("x", encoding="utf-8")
             code, _, err = run_cli(["new", "kafei-puppet", "--dir", temporary])
             self.assertEqual(code, shipmod.EXIT_FAILURE)
-            self.assertIn("não está vazio", err)
+            self.assertIn("not empty", err)
 
 
 class ValidateFallbackTests(unittest.TestCase):
@@ -132,12 +132,12 @@ class ValidateFallbackTests(unittest.TestCase):
         fixture = REPO_ROOT / "tests" / "fixtures" / "manifest" / "invalid-version.toml"
         code, _, err = run_cli(["validate", str(fixture)])
         self.assertEqual(code, shipmod.EXIT_FAILURE)
-        self.assertIn("Inválido", err)
+        self.assertIn("Invalid", err)
 
     def test_missing_path(self) -> None:
         code, _, err = run_cli(["validate", "caminho/inexistente"])
         self.assertEqual(code, shipmod.EXIT_FAILURE)
-        self.assertIn("Inválido", err)
+        self.assertIn("Invalid", err)
 
     def test_mod_packages(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -208,7 +208,7 @@ class TestCommandTests(unittest.TestCase):
             code, _, err = run_cli(["test", "tests/fixtures/mods/hello-runtime"])
         self.assertEqual(code, shipmod.EXIT_MISSING_TOOL)
         self.assertIn("shiplua_mod_test_runner", err)
-        self.assertIn("MODSDK-004", err)
+        self.assertIn("SHIPLUA_MOD_TEST_RUNNER", err)
 
     def test_delegates_with_game_and_capabilities(self) -> None:
         fake = Path("C:/fake/shiplua_mod_test_runner.exe")
@@ -242,7 +242,7 @@ class DoctorTests(unittest.TestCase):
     def test_doctor_runs_all_checks_and_summarizes(self) -> None:
         code, out, _ = run_cli(["doctor"])
         self.assertIn(code, (shipmod.EXIT_OK, shipmod.EXIT_FAILURE))
-        for expected in ("Python", "git", "CMake", "Schemas", "Resumo"):
+        for expected in ("Python", "git", "CMake", "schemas", "Summary"):
             self.assertIn(expected, out)
 
 
@@ -353,7 +353,7 @@ class NativeDoctorTests(unittest.TestCase):
             package = self.make_mod(temporary, build_pe(["ShipNative_Query"], ["KERNEL32.dll"]), as_zip=True)
             code, out, _ = run_cli(["doctor", str(package)])
         self.assertEqual(code, shipmod.EXIT_OK, out)
-        self.assertIn("0 falha(s)", out)
+        self.assertIn("0 failure(s)", out)
 
     def test_missing_query_export_fails(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -365,7 +365,7 @@ class NativeDoctorTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             mod = self.make_mod(temporary, build_pe(["ShipNative_Query"], ["soh.exe"], machine=0x14C))
             checks = self.statuses(shipmod.check_native_mod(mod))
-        self.assertEqual(checks["Biblioteca win64"], "falha")
+        self.assertEqual(checks["win64 library"], "falha")
         self.assertEqual(checks["Imports"], "falha")
 
     def test_debug_crt_is_a_warning(self) -> None:
@@ -377,7 +377,7 @@ class NativeDoctorTests(unittest.TestCase):
     def test_missing_library_and_traversal_fail(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             mod = self.make_mod(temporary, None)
-            self.assertEqual(self.statuses(shipmod.check_native_mod(mod))["Biblioteca win64"], "falha")
+            self.assertEqual(self.statuses(shipmod.check_native_mod(mod))["win64 library"], "falha")
         self.assertFalse(shipmod._safe_relative("../fora.dll"))
         self.assertFalse(shipmod._safe_relative("C:/fora.dll"))
         self.assertTrue(shipmod._safe_relative("provider/ok.dll"))
@@ -386,7 +386,7 @@ class NativeDoctorTests(unittest.TestCase):
         dll = build_pe(["ShipNative_Query"], ["KERNEL32.dll"])
         with tempfile.TemporaryDirectory() as temporary:
             mod = self.make_mod(temporary, dll, abi="1.0", extra='kind = "core_extension"\nload_phase = "pre_game"')
-            self.assertEqual(self.statuses(shipmod.check_native_mod(mod))["Tipo"], "falha")
+            self.assertEqual(self.statuses(shipmod.check_native_mod(mod))["Kind"], "falha")
         with tempfile.TemporaryDirectory() as temporary:
             mod = self.make_mod(temporary, dll, abi="9.9")
             self.assertEqual(self.statuses(shipmod.check_native_mod(mod))["ABI"], "falha")
@@ -405,7 +405,7 @@ class NativeDoctorTests(unittest.TestCase):
     def test_lua_mod_has_nothing_to_validate(self) -> None:
         code, out, _ = run_cli(["doctor", str(REPO_ROOT / "tests" / "fixtures" / "mods" / "hello-runtime")])
         self.assertEqual(code, shipmod.EXIT_OK, out)
-        self.assertIn("sem [provider]", out)
+        self.assertIn("no [provider]", out)
 
 
 if __name__ == "__main__":

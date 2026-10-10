@@ -1,37 +1,39 @@
-# Binding Lua mínimo
+**English** · [Português (Brasil)](lua-binding.pt-BR.md)
 
-`LuaApiBinding` instala o módulo interno `ship` em cada `LuaRuntime`. O binding
-é criado antes do entrypoint e destruído antes do `lua_State`.
+# Minimal Lua Binding
 
-## Importação segura
+`LuaApiBinding` installs the internal module `ship` in each `LuaRuntime`. The binding
+is created before entrypoint and destroyed before `lua_State`.
 
-O sandbox continua sem a biblioteca `package`. Um `require` restrito aceita
-somente `require("ship")` e devolve a mesma tabela por identidade de módulo.
-Não há busca em disco, `package.loadlib`, DLL/SO ou módulos externos.
+## Secure import
 
-## Superfície disponível
+The sandbox is still missing the `package` library. A restricted `require` accepts
+only `require("ship")` and returns the same table by module identity.
+There is no searching for disk, `package.loadlib`, DLL/OS or external modules.
 
-- `ship.game.id()` e `ship.game.host_version()` usam contexto injetado pelo host;
-- `ship.runtime.version()` e `ship.api.version()` mantêm versões separadas;
-- `ship.capabilities.has/list` usam uma lista ordenada e sem duplicatas;
-- `ship.events.on/off` conectam callbacks ao `EventDispatcher`;
-- `ship.log.debug/info/warn/error` preservam o ID proprietário do mod.
+## Available surface
 
-Se o bootstrap ainda não forneceu jogo ou versão do host, apenas essas funções
-falham de forma protegida; o restante do módulo continua disponível.
-Capabilities desconhecidas, ainda planejadas ou incompatíveis com o jogo são
-recusadas durante a instalação do binding.
+- `ship.game.id()` and `ship.game.host_version()` use host-injected context;
+- `ship.runtime.version()` and `ship.api.version()` maintain separate versions;
+- `ship.capabilities.has/list` use an ordered list without duplicates;
+- `ship.events.on/off` connect callbacks to `EventDispatcher`;
+- `ship.log.debug/info/warn/error` preserve the mod's proprietary ID.
 
-## Eventos e lifecycle
+If bootstrap has not yet provided game or host version, only these functions
+fail in a protected manner; the rest of the module remains available.
+Capabilities that are unknown, yet planned, or incompatible with the game are
+refused during binding installation.
 
-Payloads são convertidos recursivamente em valores Lua: nil, booleano, inteiro,
-número, texto, array e objeto. Nenhum ponteiro ou layout interno é exposto.
+## Events and lifecycle
 
-Callbacks usam `lua_pcall` com traceback. Uma falha é devolvida ao dispatcher e
-não interrompe outros mods. Após três falhas consecutivas, a inscrição é
-removida. `ship.events.off` e unload liberam tanto a inscrição quanto a
-referência no registry Lua.
+Payloads are recursively converted to Lua values: nil, boolean, integer,
+number, text, array and object. No pointers or internal layout are exposed.
 
-O `ModHost` define os eventos do schema gerado, instala o binding e oferece
-`DispatchEvent`. O mesmo script `hello-world` é exercitado em memória com
-contextos OoT e MM, sem ROM.
+Callbacks use `lua_pcall` with traceback. A fault is returned to the dispatcher and
+does not interrupt other mods. After three consecutive failures, registration is
+removed. `ship.events.off` and unload release both registration and
+reference in the Lua registry.
+
+`ModHost` defines the generated schema events, installs the binding and offers
+`DispatchEvent`. The same script `hello-world` is exercised in memory with
+OoT and MM contexts, without ROM.

@@ -1,0 +1,25 @@
+# UNBOUND-020
+
+- Status: review
+- Agent: Claude (Opus 5.5)
+- Platform: Windows
+- Branch: agent/OOT-UPSTREAM-001-78dc6d970-integration
+- Started: 2026-10-03T12:30:00Z
+- Depends on: UNBOUND-019
+- Files:
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/unbound-core/unbound_format.h
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/unbound-core/unbound_format.cpp
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/unbound-core/transcode.cpp
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/unbound-core/unbound_docs.cpp
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/unbound-core/scene_registry.cpp
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/unbound-core/scene_conflicts.cpp
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/unbound-core/room_actors.cpp
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/unbound-core/limits_tests.cpp
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/unbound-core/CMakeLists.txt
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/unbound-core/README.md
+  - OOT-UPSTREAM-78DC-001/tools/package-unbound-framework.ps1
+  - OOT-UPSTREAM-78DC-001/tools/make-unbound-limit-fixtures.py
+  - OOT-UPSTREAM-78DC-001/build/oot-upstream-001/evidence/unbound-020/**
+- Goal:
+  - Gate OoT 10.3/14.3 (limites do Prelude), prioridades 1 e 2 da matriz do Codex (scratchpad 053dbb62/codex-prelude-limits/MATRIZ.md): fronteiras limite-1/limite/limite+1 de path, light settings, mensagem, surface types e water boxes como teste do framework; nota em vez de wrap silencioso nas posicoes de camera; nota antes do gameplay para salas, atores e objetos acima do teto do runtime.
+  - Custo: o ordered_json procura chave em ordem e uma lista posicional de 65 535 entradas levava ~9 s (parse + transcode). Parse por SAX com indice, MergeJson indexado e listas percorridas sem lookup por chave, sem mudar a semantica.

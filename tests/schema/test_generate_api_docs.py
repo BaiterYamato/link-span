@@ -43,13 +43,37 @@ class ApiDocsCodegenTests(unittest.TestCase):
         self.assertIn("---@param event ShipLuaEventName", luadoc)
         self.assertIn("---@class ShipLuaActorHandle", luadoc)
 
-    def test_markdown_is_pt_br_and_covers_all_sections(self):
+    def test_portuguese_markdown_matches_its_versioned_artifact(self):
+        markdown = MODULE.generate_markdown(
+            copy.deepcopy(self.api), copy.deepcopy(self.events),
+            copy.deepcopy(self.capabilities), "pt-BR")
+        self.assertEqual(markdown, (ROOT / "generated/docs/api-reference.pt-BR.md").read_text(
+            encoding="utf-8"))
+
+    def test_markdown_is_english_and_covers_all_sections(self):
         _, markdown = self.generate()
+        for heading in ("## Types", "## Functions", "## Events", "## Capabilities",
+                        "## Error codes"):
+            self.assertIn(heading, markdown)
+        self.assertIn("Cancellable", markdown)
+        self.assertIn("[Português (Brasil)](api-reference.pt-BR.md)", markdown)
+        self.assertNotIn("Sem descrição adicional.", markdown)
+
+    def test_portuguese_markdown_covers_all_sections(self):
+        markdown = MODULE.generate_markdown(
+            copy.deepcopy(self.api), copy.deepcopy(self.events),
+            copy.deepcopy(self.capabilities), "pt-BR")
         for heading in ("## Tipos", "## Funções", "## Eventos", "## Capabilities",
                         "## Códigos de erro"):
             self.assertIn(heading, markdown)
         self.assertIn("Cancelável", markdown)
         self.assertIn("não", markdown)
+
+    def test_every_schema_description_has_an_english_version(self):
+        for item in (self.api["types"] + self.api["functions"] + self.events["events"]
+                     + self.capabilities["capabilities"]):
+            self.assertTrue(item.get("description"), item["name"])
+            self.assertTrue(item.get("description_en"), item["name"])
 
     def test_invalid_schema_is_rejected(self):
         events = copy.deepcopy(self.events)
@@ -61,11 +85,14 @@ class ApiDocsCodegenTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             luadoc = Path(directory) / "shiplua.lua"
             markdown = Path(directory) / "api-reference.md"
+            markdown_pt = Path(directory) / "api-reference.pt-BR.md"
             luadoc.write_text("antigo\n", encoding="utf-8")
             markdown.write_text("antigo\n", encoding="utf-8")
+            markdown_pt.write_text("antigo\n", encoding="utf-8")
             result = subprocess.run(
                 [sys.executable, str(ROOT / "tools/generate_api_docs.py"), "--check",
-                 "--luadoc-output", str(luadoc), "--markdown-output", str(markdown)],
+                 "--luadoc-output", str(luadoc), "--markdown-output", str(markdown),
+                 "--markdown-pt-output", str(markdown_pt)],
                 cwd=ROOT,
                 capture_output=True,
                 check=False,
@@ -73,6 +100,7 @@ class ApiDocsCodegenTests(unittest.TestCase):
         self.assertEqual(1, result.returncode)
         self.assertIn("LuaDoc diverge".encode("utf-8"), result.stderr)
         self.assertIn("Markdown diverge".encode("utf-8"), result.stderr)
+        self.assertIn("Markdown pt-BR diverge".encode("utf-8"), result.stderr)
 
 
 if __name__ == "__main__":

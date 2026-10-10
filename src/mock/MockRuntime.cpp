@@ -159,7 +159,7 @@ Result<void> MockRuntime::LoadModFromDirectory(const std::string& dir) {
     if (IsLoaded()) {
         return Result<void>::err(
             ErrorCode::InvalidState,
-            "mock já hospeda um mod; crie um MockRuntime novo por arquivo de teste");
+            "the mock already hosts a mod; create a new MockRuntime per test file");
     }
     auto parsed = ParseManifestFile((std::filesystem::path(dir) / "manifest.toml").string());
     if (!parsed.isOk()) {
@@ -179,7 +179,7 @@ Result<void> MockRuntime::LoadModFromManifestAndSource(const Manifest& manifest,
     if (IsLoaded()) {
         return Result<void>::err(
             ErrorCode::InvalidState,
-            "mock já hospeda um mod; crie um MockRuntime novo por arquivo de teste");
+            "the mock already hosts a mod; create a new MockRuntime per test file");
     }
     auto loaded = mHost.LoadModFromManifestAndSource(manifest, luaSource,
                                                      mOptions.memoryLimitBytes);

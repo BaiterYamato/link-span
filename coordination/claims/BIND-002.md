@@ -1,0 +1,22 @@
+# BIND-002
+
+- Status: review
+- Agent: Codex (Windows)
+- Platform: Windows 11 / PowerShell / MSVC 14.44
+- Branch: `agent/MENU-001-mod-menu` (core), `agent/OOT-UPSTREAM-001-78dc6d970-integration` (host)
+- Started: 2026-09-27
+- Depends on: BIND-001, COREEXT-010, CEL-004
+- Files:
+  - `OOT-UPSTREAM-78DC-001/extern/ship-lua/include/shiplua/api/LuaApiBinding.h`
+  - `OOT-UPSTREAM-78DC-001/extern/ship-lua/src/api/LuaApiBinding.cpp`
+  - `OOT-UPSTREAM-78DC-001/extern/ship-lua/tests/contract/ApiContractTests.cpp`
+  - `OOT-UPSTREAM-78DC-001/extern/ship-lua/tests/unit/LuaApiBindingTests.cpp`
+  - `OOT-UPSTREAM-78DC-001/soh/soh/ShipLuaBootstrap.cpp`
+  - `coordination/claims/BIND-002.md`
+  - `coordination/handoffs/BIND-002.md`
+- Goal:
+  - Implementar as entradas comuns já descritas no schema: `ship.hooks.result` em eventos transform e `ship.player.set_speed_multiplier` no núcleo, disponíveis antes do entrypoint do mod.
+  - Ligar a velocidade ao serviço existente do host OoT e preservar `ship.player.get/set` específicos do jogo.
+  - Corrigir o contrato de testes OoT/MM e validar núcleo e host.
+- Overlap:
+  - `ShipLuaBootstrap.cpp` pertence também à CEL-004; esta correção é uma revisão limitada à ponte da API de velocidade. A reivindicação CEL-004 registra Codex como revisor. Nenhuma outra seção do arquivo será alterada.

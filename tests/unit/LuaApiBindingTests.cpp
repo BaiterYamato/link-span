@@ -372,7 +372,7 @@ end))
     Check(host.GetRuntime("test.broken_hotkey")->DoString("assert(ATTEMPTS == 3)").isOk(),
           "hotkey callback should become inactive after three failures");
     Check(ContainsLog(logs, "test.broken_hotkey",
-                      "hotkey 'broken' desativada após falhas repetidas"),
+                      "hotkey 'broken' disabled after repeated failures"),
           "failure threshold should be logged with the mod id");
     host.UnloadAll();
 }
@@ -682,7 +682,7 @@ for _, invoke in ipairs({
     function() s.shared.clear() end,
 }) do
     local ok, err = pcall(invoke)
-    assert(not ok and tostring(err):find("recurso não suportado", 1, true))
+    assert(not ok and tostring(err):find("feature not supported", 1, true))
 end
 assert(s.get("key") == "local")
 )lua");
