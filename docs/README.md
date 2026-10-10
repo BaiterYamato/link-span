@@ -63,4 +63,4 @@ Research pages remain in Portuguese and are not rewritten as modder guides.
 
 ## Legal
 
-[CC0 1.0](../LICENSE) · [Third-party notices](../NOTICE.md) · [Credits](../CREDITS.md)
+[CC0 1.0](../LICENSE) · [Third-party notices](../NOTICE.md)

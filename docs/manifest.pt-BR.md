@@ -81,6 +81,24 @@ Essas são restrições de exemplo, não uma declaração de builds de host test
 
 Ambos têm listas vazias como padrão. Nomes de capabilities são strings, não um enum no schema do manifesto. Confira o [schema de capabilities](../schema/capabilities.yml) e chame `ship.capabilities.has(name)` em runtime. Capabilities obrigatórias desconhecidas não são erros locais de TOML; causam rejeição no carregamento quando indisponíveis. Declarar `optional` não concede acesso nem instala um provider.
 
+## `[resources]`
+
+| Campo | Tipo | Significado |
+| --- | --- | --- |
+| `required` | Array de caminhos do VFS | Todos os recursos precisam existir antes de executar Lua ou DLL |
+
+Omita a tabela quando o mod não exigir recursos montados. Por exemplo:
+
+```toml
+[resources]
+required = [
+  "textures/icon_item_static/gItemIconHammerTex",
+  "objects/object_gi_hammer/gGiHammerDL",
+]
+```
+
+Os caminhos são relativos ao VFS, sem `__OTR__`, barras invertidas ou `..`. O host consulta os arquivos montados em cada inicialização; a presença não é armazenada em cache. Um recurso obrigatório ausente impede a carga antes de executar Lua ou DLL. Sem a sonda de recursos do host, um mod que declara esses requisitos é recusado.
+
 ## `[dependencies]`
 
 Uma tabela que mapeia **id do mod para string de faixa de versão**. Coloque ids pontilhados entre aspas para que o TOML trate cada um como uma única chave:
@@ -132,14 +150,17 @@ Mods só Lua normalmente omitem esses campos. Estão listados para completar a r
 
 | Campo | Requisito do schema |
 | --- | --- |
-| `[provider].abi_version` | Obrigatório quando existe `provider`; `"1.0"` ou `"1.1"` |
+| `[provider].abi_version` | Obrigatório quando existe `provider`; `"1.0"`, `"1.1"`, `"1.2"` ou `"1.3"` |
 | `[provider].win64` | String opcional de caminho por plataforma |
 | `[provider].linux64` | String opcional de caminho por plataforma |
 | `[provider].macos` | String opcional de caminho por plataforma |
+| `[provider].host_fingerprints` | Array opcional de 1 a 32 hashes SHA-256 hexadecimais de 64 caracteres; exige `core_extension` com ABI `"1.3"` |
 
 Pelo menos um caminho de plataforma é obrigatório. Caminhos têm 1–1024 caracteres, são relativos, usam barras normais e excluem raízes absolutas, barras invertidas, dois-pontos, NUL, componentes `.`/`..`, separadores duplicados e barra final. Campos desconhecidos em provider são rejeitados. Um manifesto com provider precisa exigir API **pelo menos 0.5.0**; uma faixa como `>=0.1 <0.6` não basta.
 
-`kind = "core_extension"` exige `load_phase = "pre_game"` e ABI de provider `"1.1"`. Um `kind = "mod"` normal não pode usar `pre_game`. Essas condições são restrições do schema/parser, não instruções para mods Lua escolherem uma fase nativa de carregamento.
+`kind = "core_extension"` exige `load_phase = "pre_game"` e ABI de provider `"1.1"`, `"1.2"` ou `"1.3"`. Um `kind = "mod"` normal não pode usar `pre_game`. Essas condições são restrições do schema/parser, não instruções para mods Lua escolherem uma fase nativa de carregamento.
+
+`host_fingerprints` é a lista de executáveis autorizados para o escape hatch ABI 1.3. Um mod comum não pode declará-la. Um fingerprint não correspondente faz as chamadas do escape hatch retornarem `UNSUPPORTED`; compatibilidade de layout não substitui o SHA-256 do executável. Consulte [native-providers.pt-BR.md](native-providers.pt-BR.md#escape-hatch-abi-13).
 
 ## Schema, parser e loader fazem verificações diferentes
 

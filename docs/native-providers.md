@@ -36,14 +36,14 @@ Use the host's `package-linkspan-mod.ps1` for Windows packages. It writes ZIP en
 
 ## ABI versions: use the headers shipped with your target
 
-The ABI header is `shiplua/native/ship_native_abi.h`. `SHIP_NATIVE_ABI_MAJOR` is 1. The supplied generic core checkout has `SHIP_NATIVE_ABI_MINOR = 1` and its loader accepts manifest versions **1.0 and 1.1**. The core integrated into the supplied OoT host has minor **3**, accepts **1.0–1.3**, and is the source used to build the OoT release SDK. Do not combine headers from these different snapshots.
+The ABI header is `shiplua/native/ship_native_abi.h`. The core implements C ABI **1.0 through 1.3**, including hooks and the escape hatch: `SHIP_NATIVE_ABI_MAJOR` is 1 and `SHIP_NATIVE_ABI_MINOR` is 3. ABI 1.0 remains valid for ordinary native mods. Use the headers shipped with your target runtime and SDK; do not combine snapshots.
 
 | ABI | Contract |
 | --- | --- |
 | 1.0 | `register_function` and `get_service`: private functions and host C services. |
 | 1.1 | Adds `register_service` for core extensions during init. |
-| 1.2 | In the OoT-integrated core: native hooks, including observe, transform and replace where the host permits them. |
-| 1.3 | In the OoT-integrated core: executable fingerprint and gated symbol resolution/detours. |
+| 1.2 | Native hooks, including observe, transform and replace where the host permits them. |
+| 1.3 | Executable fingerprint and gated symbol resolution/detours. |
 
 The manifest declares the required minor version. The descriptor reports the ABI actually compiled into the provider. The loader checks descriptor size, major/minor compatibility and init/shutdown callbacks. A manifest version alone cannot make an older runtime expose newer fields. Check the runtime's size and version before accessing appended members. The OoT SDK's `linkspan-sdk.json` records its native ABI and toolchain.
 
@@ -88,11 +88,79 @@ runtime->register_service(runtime->context, "author.framework.items", 1,
 
 On an ABI 1.2 runtime, a core extension can also declare and dispatch its own hook points; accepted modes and payload contracts belong to the point owner. On the OoT ABI 1.3 runtime, `resolve_symbol`, `install_patch` and `remove_patch` require a core extension with `abi_version = "1.3"` and matching `[provider].host_fingerprints`. See the [host escape-hatch reference](https://github.com/BaiterYamato/Shipwright/blob/agent/OOT-UPSTREAM-001-78dc6d970-integration/docs/native-mods.md#escape-hatch-coreext-008). A matching layout is insufficient for these operations.
 
+## Native hooks (ABI 1.2)
+
+With `abi_version = "1.2"`, a provider enters the game flow without adding a new host function. The host (or a core extension during init) declares named points with a version and payload size; any provider can register hooks on them:
+
+```c
+ShipNativeHookSpec spec = {sizeof(spec), "oot.actor.update", 1, sizeof(ShipOotActorHookV1),
+                           SHIP_NATIVE_HOOK_REPLACE, 0, 0, MyUpdate, state};
+uint64_t handle;
+runtime->register_hook(runtime->context, &spec, &handle);
+```
+
+- `observe` (`BEFORE`/`AFTER` phase) reads; `transform` modifies the payload in a chain; `replace` is exclusive and decides whether to invoke `call->call_original(call)`.
+- Higher priority runs first; ties follow load order.
+- `UNSUPPORTED` refuses without counting a failure; three consecutive failures disable the hook.
+- The mod's hooks are removed automatically on unload, before `shutdown`.
+
+A core extension publishes its own points with `declare_hook_point` and triggers them with `dispatch_hook`. See [RFC 0021](../rfcs/0021-native-hooks.md).
+
+## Escape hatch (ABI 1.3)
+
+For changes no service or hook covers, a core extension with `load_phase = "pre_game"` and `abi_version = "1.3"` can resolve executable functions by name and detour them:
+
+```toml
+[provider]
+abi_version = "1.3"
+win64 = "provider/framework.dll"
+host_fingerprints = ["<executable SHA-256>"]
+```
+
+Replace the fingerprint placeholder with the executable's 64-character hexadecimal SHA-256.
+
+```c
+uintptr_t target;
+void* original;
+uint64_t patch;
+if (runtime->resolve_symbol(runtime->context, "z_player.c!Player_Action_Roll", &target) == SHIP_NATIVE_OK)
+    runtime->install_patch(runtime->context, target, MyRoll, &original, &patch);
+```
+
+- `get_host_fingerprint` reports which SHA-256 to declare.
+- Outside the fingerprint list, or in an ordinary mod, these calls return `UNSUPPORTED`.
+- A provider can install up to 1024 patches; beyond this, `install_patch` returns `LIMIT`.
+- Patches are removed automatically on unload, before `shutdown`.
+- In the OoT host, detours installed during init become active together only after init returns; init cannot depend on them. After init, each `install_patch` and `remove_patch` takes effect when it returns.
+- Rebuild and republish the mod for every new executable. See [RFC 0023](../rfcs/0023-native-escape-hatch.md).
+
+## Crash and boot protection
+
+- **Crash log:** the host records which mod was in `init`, `call`, `hook` or `shutdown`, and which mod libraries appear in the stack (`WriteNativeCrashReport`).
+- **Boot protection:** with `ModHost::EnableBootGuard`, a native mod that crashes startup is recorded in `mods/.shiplua-disabled` and skipped on subsequent starts.
+- **Re-enable:** delete the mod's line from that file.
+- **Protection window:** `ConfirmBoot()` ends protection after the game runs normally.
+- See [RFC 0024](../rfcs/0024-native-crash-attribution.md).
+
+Rejection message in the log:
+
+```text
+disabled by boot protection (...); delete the mod's line in .shiplua-disabled to re-enable it
+```
+
 ## Unload and failure recovery
 
 Failed init or entrypoint loading rolls back the instance. The generic unload sequence removes binding subscriptions, closes Lua while the provider is still available to finalizers, calls shutdown, unloads the library, then removes extracted files. Native hooks and patches in the newer runtime are removed before provider shutdown. If a patch cannot be removed safely, the runtime can quarantine the library instead of unloading code still in use.
 
 The host must not destroy or move itself from inside a native callback. Unloading an actively executing provider is refused. Restore your own state changes and release resources according to each service's contract. C++ exceptions handled by the loader are destroyed before the library defining their types is unloaded.
+
+## Escape hatch: batching and quarantine
+
+The core opens a batch per owner during `init` and during patch removal on unload when the host offers `beginBatch` and `commitBatch`. Patches installed during init become active only after it returns. Outside a batch, `install_patch` and `remove_patch` take effect when they return.
+
+If the host does not confirm removal of every patch, unload is quarantined: the library stays loaded and the provider cannot be treated as removed. This prevents a detour from pointing to unloaded code. A provider must not depend on an active patch during its own init or install patches in `shutdown`.
+
+The escape hatch remains restricted to ABI 1.3 core extensions, the executable fingerprint declared in the manifest and the limit of 1024 patches per provider.
 
 ## Trust, policy and isolation
 
@@ -101,6 +169,33 @@ The host must not destroy or move itself from inside a native callback. Unloadin
 DLL/SO constructors and `DllMain` execute when the library is mapped, before `ShipNative_Query` and ABI validation. Transitive library dependencies are also trusted code. Native providers inherit the process's OS access; there is no process sandbox or isolation against memory errors, loops or crashes. The policy does not prevent a local process from replacing a file between approval and loading.
 
 The loader requires library paths to remain within the mod and rejects traversal and links/reparse points. Windows uses local/system DLL lookup; POSIX uses `RTLD_LOCAL`. These reduce loading mistakes; they are not malicious-code containment. Do not promise hot reload with live references or arbitrary engine transformation from the generic ABI.
+
+## OoT randomizer item queries
+
+The OoT adapter offers `linkspan.oot.randomizer` v2 to query a seed's item catalogue and find an uncollected location. The v1 table remains available; previous service sizes and offsets are preserved. The detailed contract is in [RFC 0026](../rfcs/0026-oot-randomizer-item-hints.md); the OoT SDK header is `oot_randomizer.h`.
+
+Queries require the game thread and buffers of the declared size. Location lookup requires a normal randomizer save to be loaded; ordinary saves return `SHIP_NATIVE_UNSUPPORTED`. The query does not grant items, reveal collected locations or charge the save. The mod decides how to present the hint and when to charge for it, after receiving a valid response.
+
+The generic hooks `oot.actor.init` and `oot.play.draw_end` let you observe actors after complete initialization and draw at the end of the gameplay frame. The latter runs inside the rendering context. Both are notifications; they do not replace the original routine or guarantee support for a particular mechanic.
+
+## OoT SDK contract
+
+The OoT SDK is host-specific. For the service tables below, include the public headers in `soh/soh/native/` and request each table with `runtime->get_service`. Check the requested version, `size` and pointers before using it. The public contracts are:
+
+| Service | Version | Header | Main use |
+| --- | --- | --- | --- |
+| `linkspan.oot.registry` | 1 and 2 | `oot_registry.h` | Dynamic OoT registrations |
+| `linkspan.oot.randomizer` | 1 and 2 | `oot_randomizer.h` | Seed items and hints |
+| `linkspan.oot.actor-models` | 1 | `oot_actor_models.h` | Models for the mod's actor types |
+| `linkspan.oot.lights` | 1 | `oot_lights.h` | The mod's point lights |
+| `linkspan.oot.render` | 1, 2 and 3 | `oot_render.h` | Drawing and rendering state within the permitted scope |
+| `linkspan.oot.scenes` | 1, 2 and 3 | `oot_scenes.h` | Dynamic scenes and entrances |
+| `linkspan.oot.save` | 1 | `oot_save.h` | Namespaced JSON blocks in the save |
+| `linkspan.oot.resources` | 1, 2 and 3 | `oot_resources.h` | VFS, layers and resource invalidation |
+
+Ownership, thread and scope rules are in each service header. Save namespaces belong to the loaded save, and rendering operations are valid only in the hooks or draw callbacks that the header permits.
+
+OoT native points are in `oot_hooks.h`. Use `oot.actor.init` only to observe an actor after complete init, and `oot.play.draw_end` only to draw at the end of the frame inside the rendering context. The same header declares each other point's permitted mode (`observe`, `transform` or `replace`) and payload.
 
 ## Tests and examples
 

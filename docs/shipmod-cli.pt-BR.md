@@ -106,7 +106,45 @@ cmake --build build --config Release --target shiplua_manifest_validator shiplua
 
 ## Diagnostique: `doctor`
 
-Execute `python tools/shipmod.py doctor` no ambiente de desenvolvimento. Ele verifica Python, Git, CMake >=3.20, disponibilidade de Ninja e compilador C++; ferramentas Python do repositório; descoberta do validador/runner compilados; validade dos schemas; arquivos gerados da API com `--check`; e manifestos de fixtures do core. Informa `ok`, `aviso` ou `falha` e retorna 1 se alguma verificação falhar. Não inicia nem certifica uma instalação de jogo. Ferramentas opcionais ausentes podem ser avisos, mesmo quando necessárias para determinado comando.
+Execute `python tools/shipmod.py doctor` no ambiente de desenvolvimento. Ele verifica Python, Git, CMake >=3.20, disponibilidade de Ninja e compilador C++; ferramentas Python do repositório; descoberta do validador/runner compilados; validade dos schemas; arquivos gerados da API com `--check`; e manifestos de fixtures do core. Informa `[ok]`, `[warn]` ou `[fail]` e retorna 1 se alguma verificação falhar. Não inicia nem certifica uma instalação de jogo. Ferramentas opcionais ausentes podem ser avisos, mesmo quando necessárias para determinado comando.
+
+### Valide mods nativos: `doctor [path ...] [--host HOST]`
+
+Com um ou mais caminhos, `doctor` inspeciona a biblioteca do `[provider]` sem carregá-la. Cada caminho pode ser uma pasta, `.zip` ou `.shipmod`. Use `--host` para conferir fingerprints ABI 1.3 contra um executável de jogo:
+
+```powershell
+python tools/shipmod.py doctor build/my-mod.shipmod --host x64/Release/soh.exe
+python tools/shipmod.py doctor mods/my-native-mod build/my-mod.zip
+python tools/shipmod.py doctor --help
+```
+
+Os nomes dos checks são em inglês nos dois idiomas:
+
+| Check | O que inspeciona |
+| --- | --- |
+| `Manifest` | Manifesto do mod |
+| `Provider` | Presença de `[provider]`; mods sem ele passam sem checks nativos |
+| `ABI` | `abi_version` entre 1.0 e o minor do `ship_native_abi.h` deste core (1.3) |
+| `Kind` | Regras de `kind` / `load_phase` de core extension |
+| `Fingerprints` | Regras de `host_fingerprints`; com `--host`, avisa se o SHA-256 do executável não está na lista |
+| `win64 library` | Biblioteca `win64` relativa, contida no mod e existente; PE x86-64 marcado como DLL |
+| `Exports` | `ShipNative_Query` exportado |
+| `Imports` | Falha ao linkar o executável, Lua ou shiplua; aviso para CRT de debug |
+
+Os marcadores de status são `[ok]`, `[warn]` e `[fail]`, e a execução termina com `Summary: N failure(s), N warning(s)`. Checks que não se aplicam são omitidos. Saída para o pacote do NEI 0.3.20 (lista de imports encurtada):
+
+```text
+shipmod doctor — LinkSpan-NEI-0.3.20-layout-9a593a6e.shipmod
+[ok]   ABI: 1.3 (core accepts up to 1.3)
+[ok]   Kind: core_extension, pre_game
+[ok]   Fingerprints: 1 host(s); use --host to check
+[ok]   win64 library: provider/linkspan_nei_core.dll: x86-64 DLL, 4758016 bytes
+[ok]   Exports: ShipNative_Query (1 export(s))
+[ok]   Imports: KERNEL32.dll, MSVCP140.dll, VCRUNTIME140.dll, VCRUNTIME140_1.dll, api-ms-win-crt-runtime-l1-1-0.dll, ...
+Summary: 0 failure(s), 0 warning(s)
+```
+
+A inspeção estática não executa init, Lua ou gameplay.
 
 ## Empacote um `.shipmod`
 

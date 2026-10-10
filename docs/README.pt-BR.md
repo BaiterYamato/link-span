@@ -63,4 +63,4 @@ As páginas de pesquisa permanecem em português e não são reescritas como gui
 
 ## Legal
 
-[CC0 1.0](../LICENSE) · [Avisos de terceiros](../NOTICE.md) · [Créditos](../CREDITS.md)
+[CC0 1.0](../LICENSE) · [Avisos de terceiros](../NOTICE.md)
