@@ -149,17 +149,17 @@ Use os tipos pretendidos acima, valide o manifesto e teste e carregue o mod. Só
 
 ## Mensagens comuns do validador
 
-O executável informa mensagens em português mesmo ao seguir o guia em inglês. Ele abrevia deliberadamente os detalhes do parser:
+O executável responde em inglês e abrevia deliberadamente os detalhes do parser:
 
 | Trecho da saída | Significado / correção |
 | --- | --- |
-| `campo obrigatório ausente` | Adicione uma string não vazia para cada campo listado; tipo incorreto também conta como ausente |
-| `campo inválido 'version'` | Use SemVer completo e válido |
-| `campo inválido 'api'` | Use a sintaxe suportada de comparadores |
-| `campo inválido 'host.shipwright'` / `'host.two_ship'` | Corrija a faixa do host |
-| `range inválido para a dependência` | Corrija a faixa da dependência indicada |
-| `erro de sintaxe TOML na linha ..., coluna ...` | Corrija aspas, arrays, declarações de tabela ou atribuições |
-| `estrutura ou conteúdo inválido` | Pode indicar grants inválidos, limites de atores, restrições nativas, manifesto inacessível ou ausência de manifesto na raiz do ZIP; confira campos e estrutura |
+| `missing required field` | Adicione uma string não vazia para cada campo listado; tipo incorreto também conta como ausente |
+| `invalid field 'version'` | Use SemVer completo e válido |
+| `invalid field 'api'` | Use a sintaxe suportada de comparadores |
+| `invalid field 'host.shipwright'` / `'host.two_ship'` | Corrija a faixa do host |
+| `invalid range for dependency` | Corrija a faixa da dependência indicada |
+| `TOML syntax error at line ..., column ...` | Corrija aspas, arrays, declarações de tabela ou atribuições |
+| `invalid structure or content` | Pode indicar grants inválidos, limites de atores, restrições nativas, manifesto inacessível ou ausência de manifesto na raiz do ZIP; confira campos e estrutura |
 | `o pacote contém um caminho inseguro ou não permitido` | Remova caminhos inseguros ou links; confirme que a entrada está acessível |
 | `o pacote excede os limites de segurança` | Reduza quantidade de entradas, tamanhos ou compressão extrema |
 | `falha do sistema ao acessar ou preparar o pacote` | Confira acesso à entrada e à pasta temporária |

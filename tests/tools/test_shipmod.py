@@ -93,7 +93,7 @@ class NewCommandTests(unittest.TestCase):
             for invalid in ("MeuMod", "mod_name", "1mod"):
                 code, _, err = run_cli(["new", invalid, "--dir", temporary])
                 self.assertEqual(code, shipmod.EXIT_USAGE, invalid)
-                self.assertIn("inválido", err)
+                self.assertIn("invalid", err)
             # "-mod" é interceptado pelo argparse como opção desconhecida (uso inválido)
             code, _, _ = run_cli(["new", "--", "-mod", "--dir", temporary])
             self.assertEqual(code, shipmod.EXIT_USAGE)
@@ -105,7 +105,7 @@ class NewCommandTests(unittest.TestCase):
             (target / "ocupado.txt").write_text("x", encoding="utf-8")
             code, _, err = run_cli(["new", "kafei-puppet", "--dir", temporary])
             self.assertEqual(code, shipmod.EXIT_FAILURE)
-            self.assertIn("não está vazio", err)
+            self.assertIn("not empty", err)
 
 
 class ValidateFallbackTests(unittest.TestCase):
@@ -132,12 +132,12 @@ class ValidateFallbackTests(unittest.TestCase):
         fixture = REPO_ROOT / "tests" / "fixtures" / "manifest" / "invalid-version.toml"
         code, _, err = run_cli(["validate", str(fixture)])
         self.assertEqual(code, shipmod.EXIT_FAILURE)
-        self.assertIn("Inválido", err)
+        self.assertIn("Invalid", err)
 
     def test_missing_path(self) -> None:
         code, _, err = run_cli(["validate", "caminho/inexistente"])
         self.assertEqual(code, shipmod.EXIT_FAILURE)
-        self.assertIn("Inválido", err)
+        self.assertIn("Invalid", err)
 
     def test_mod_packages(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -208,7 +208,7 @@ class TestCommandTests(unittest.TestCase):
             code, _, err = run_cli(["test", "tests/fixtures/mods/hello-runtime"])
         self.assertEqual(code, shipmod.EXIT_MISSING_TOOL)
         self.assertIn("shiplua_mod_test_runner", err)
-        self.assertIn("MODSDK-004", err)
+        self.assertIn("SHIPLUA_MOD_TEST_RUNNER", err)
 
     def test_delegates_with_game_and_capabilities(self) -> None:
         fake = Path("C:/fake/shiplua_mod_test_runner.exe")
@@ -242,7 +242,7 @@ class DoctorTests(unittest.TestCase):
     def test_doctor_runs_all_checks_and_summarizes(self) -> None:
         code, out, _ = run_cli(["doctor"])
         self.assertIn(code, (shipmod.EXIT_OK, shipmod.EXIT_FAILURE))
-        for expected in ("Python", "git", "CMake", "Schemas", "Resumo"):
+        for expected in ("Python", "git", "CMake", "schemas", "Summary"):
             self.assertIn(expected, out)
 
 

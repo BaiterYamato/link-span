@@ -39,9 +39,9 @@ LABELS: dict[str, dict[str, str]] = {
         "types": "Types", "type_header": "| Name | Kind | Contract | Description |",
         "functions": "Functions",
         "function_header": ("| Function | Arguments | Returns | Availability | Stability | Since | "
-                            "Capability | Errors |"),
+                            "Capability | Errors | Description |"),
         "events": "Events",
-        "event_header": "| Event | Kind | Phase | Hosts | Cancellable | Capability | Payload |",
+        "event_header": "| Event | Kind | Phase | Hosts | Cancellable | Capability | Payload | Description |",
         "yes": "yes", "no": "no",
         "capabilities": "Capabilities", "capability_header": "| Capability | Status | Hosts | Description |",
         "error_codes": "Error codes", "no_description": "No additional description.",
@@ -55,9 +55,9 @@ LABELS: dict[str, dict[str, str]] = {
         "types": "Tipos", "type_header": "| Nome | Tipo | Contrato | Descrição |",
         "functions": "Funções",
         "function_header": ("| Função | Argumentos | Retorno | Disponibilidade | Estabilidade | Desde | "
-                            "Capability | Erros |"),
+                            "Capability | Erros | Descrição |"),
         "events": "Eventos",
-        "event_header": "| Evento | Tipo | Fase | Hosts | Cancelável | Capability | Payload |",
+        "event_header": "| Evento | Tipo | Fase | Hosts | Cancelável | Capability | Payload | Descrição |",
         "yes": "sim", "no": "não",
         "capabilities": "Capabilities", "capability_header": "| Capability | Estado | Hosts | Descrição |",
         "error_codes": "Códigos de erro", "no_description": "Sem descrição adicional.",
@@ -113,6 +113,7 @@ def generate_luadoc(api: dict[str, Any], events: dict[str, Any],
 
     for event in events["events"]:
         payload_name = "ShipLuaEvent" + cpp_identifier(event["name"])
+        lines.append(f"--- `{event['name']}`: " + description(event))
         lines.append(f"---@class {payload_name}")
         for field in event.get("payload", []):
             optional = "?" if not field.get("required", True) else ""
@@ -136,6 +137,7 @@ def generate_luadoc(api: dict[str, Any], events: dict[str, Any],
         capability = function.get("capability") or "common"
         error_list = ", ".join(function.get("errors", [])) or "none"
         lines.extend([
+            "--- " + description(function),
             f"--- API {function['availability']}; stability: {function['stability']}; "
             f"since: {function['version']}; capability: {capability}; errors: {error_list}.",
         ])
@@ -201,7 +203,7 @@ def generate_markdown(api: dict[str, Any], events: dict[str, Any],
     lines.extend([
         "", f"## {labels['functions']}", "",
         labels["function_header"],
-        "|---|---|---|---|---|---|---|---|",
+        "|---|---|---|---|---|---|---|---|---|",
     ])
     for function in api["functions"]:
         errors_text = ", ".join(f"`{code}`" for code in function.get("errors", [])) or "—"
@@ -212,19 +214,20 @@ def generate_markdown(api: dict[str, Any], events: dict[str, Any],
         lines.append(f"| `{function['name']}` | {field_list(function.get('arguments', []))} | "
                      f"`{return_text}` | `{function['availability']}` | "
                      f"`{function['stability']}` | `{function['version']}` | {capability} | "
-                     f"{errors_text} |")
+                     f"{errors_text} | {md_escape(description(function, language))} |")
 
     lines.extend([
         "", f"## {labels['events']}", "",
         labels["event_header"],
-        "|---|---|---|---|---:|---|---|",
+        "|---|---|---|---|---:|---|---|---|",
     ])
     for event in events["events"]:
         capability = f"`{event['capability']}`" if event.get("capability") else "—"
         hosts = ", ".join(f"`{host}`" for host in event["support"])
         lines.append(f"| `{event['name']}` | `{event['kind']}` | `{event['phase']}` | {hosts} | "
                      f"{labels['yes'] if event['cancellable'] else labels['no']} | {capability} | "
-                     f"{field_list(event.get('payload', []))} |")
+                     f"{field_list(event.get('payload', []))} | "
+                     f"{md_escape(description(event, language))} |")
 
     lines.extend([
         "", f"## {labels['capabilities']}", "",

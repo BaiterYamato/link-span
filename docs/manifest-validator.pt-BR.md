@@ -39,7 +39,7 @@ Sem o executável compilado, `shipmod validate` usa uma **verificação básica*
 
 ## Mensagens e códigos de saída
 
-A saída usa `Válido:` ou `Inválido:`. Os diagnósticos são em português e podem abreviar mensagens do parser. Trechos típicos são `campo obrigatório ausente`, `campo inválido 'api'`, `campo inválido 'version'`, `range inválido para a dependência` e `erro de sintaxe TOML na linha ..., coluna ...`. Outros problemas semânticos podem aparecer como `estrutura ou conteúdo inválido`. A [referência do manifesto](manifest.pt-BR.md) relaciona mensagens e correções.
+A saída usa `Valid:` ou `Invalid:` (as mensagens do validador são em inglês) e pode abreviar mensagens do parser. Trechos típicos são `missing required field`, `invalid field 'api'`, `invalid field 'version'`, `invalid range for dependency` e `TOML syntax error at line ..., column ...`. Outros problemas semânticos podem aparecer como `invalid structure or content`. A [referência do manifesto](manifest.pt-BR.md) relaciona mensagens e correções.
 
 | Código de saída | Significado |
 | --- | --- |

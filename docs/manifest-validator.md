@@ -39,7 +39,7 @@ When the compiled tool is missing, `shipmod validate` uses a visibly labeled Pyt
 
 ## Messages and exit codes
 
-Output uses `Válido:` or `Inválido:`. Diagnostics are in Portuguese and may shorten the underlying parser message. Typical fragments are `campo obrigatório ausente`, `campo inválido 'api'`, `campo inválido 'version'`, `range inválido para a dependência`, and `erro de sintaxe TOML na linha ..., coluna ...`. Other semantic problems can appear as `estrutura ou conteúdo inválido`. The [manifest reference](manifest.md) maps these messages to corrections.
+Output uses `Valid:` or `Invalid:`. Diagnostics may shorten the underlying parser message. Typical fragments are `missing required field`, `invalid field 'api'`, `invalid field 'version'`, `invalid range for dependency`, and `TOML syntax error at line ..., column ...`. Other semantic problems can appear as `invalid structure or content`. The [manifest reference](manifest.md) maps these messages to corrections.
 
 | Exit code | Meaning |
 | --- | --- |

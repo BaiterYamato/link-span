@@ -149,17 +149,17 @@ Use the intended types above, validate the manifest, then test and load the mod.
 
 ## Common validator messages
 
-The executable reports messages in Portuguese even when you follow the English guide. It intentionally shortens parser details:
+The executable intentionally shortens parser details:
 
 | Output fragment | Meaning / correction |
 | --- | --- |
-| `campo obrigatório ausente` | Add a nonempty string for each listed required field; wrong types also count as missing |
-| `campo inválido 'version'` | Use a full, valid SemVer |
-| `campo inválido 'api'` | Use the supported comparator syntax |
-| `campo inválido 'host.shipwright'` / `'host.two_ship'` | Fix the host range |
-| `range inválido para a dependência` | Fix the quoted dependency's range |
-| `erro de sintaxe TOML na linha ..., coluna ...` | Fix quotes, arrays, table declarations or assignment syntax |
-| `estrutura ou conteúdo inválido` | May cover bad grants, actor limits, native constraints, inaccessible manifest or missing root manifest in a ZIP; inspect the relevant fields and package structure |
+| `missing required field` | Add a nonempty string for each listed required field; wrong types also count as missing |
+| `invalid field 'version'` | Use a full, valid SemVer |
+| `invalid field 'api'` | Use the supported comparator syntax |
+| `invalid field 'host.shipwright'` / `'host.two_ship'` | Fix the host range |
+| `invalid range for dependency` | Fix the quoted dependency's range |
+| `TOML syntax error at line ..., column ...` | Fix quotes, arrays, table declarations or assignment syntax |
+| `invalid structure or content` | May cover bad grants, actor limits, native constraints, inaccessible manifest or missing root manifest in a ZIP; inspect the relevant fields and package structure |
 | `o pacote contém um caminho inseguro ou não permitido` | Remove unsafe paths or links; confirm the input is accessible |
 | `o pacote excede os limites de segurança` | Reduce entry count, file sizes or extreme compression |
 | `falha do sistema ao acessar ou preparar o pacote` | Check input and temporary-directory access |
