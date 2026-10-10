@@ -103,6 +103,6 @@ Read [AGENTS.en.md](AGENTS.en.md) and [PLAN.en.md](PLAN.en.md). Public API chang
 
 ## License and credits
 
-Link-Span's own work is dedicated to the public domain under **CC0 1.0** ([LICENSE](LICENSE)). Dependencies, hosts and ported code retain their own terms: see [NOTICE.md](NOTICE.md). [CREDITS.md](CREDITS.md) distinguishes ported code from research and architectural influences.
+Link-Span's own work is dedicated to the public domain under **CC0 1.0** ([LICENSE](LICENSE)). Dependencies, hosts and ported code retain their own terms: see [NOTICE.md](NOTICE.md).
 
 Do not distribute ROMs, player-derived `oot.o2r`, `oot.otr`, `mm.o2r`, dumps or extracted copyrighted game assets. Redistributable port runtime archives belong in release artifacts under their applicable terms.

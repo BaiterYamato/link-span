@@ -16,6 +16,7 @@
 #include "shiplua/manifest/ModDiscovery.h"
 #include "shiplua/manifest/PackageFormat.h"
 #include "shiplua/manifest/SemVersion.h"
+#include "shiplua/native/NativeDiagnostics.h"
 
 namespace ShipLua {
 
@@ -189,6 +190,7 @@ ModHost::ModHost(LuaApiHostContext hostContext, Logger logger, NativeProviderPol
 
 ModHost::~ModHost() {
     UnloadAll();
+    AbandonPendingProviders();
 }
 
 ModHost::ModHost(ModHost&& other) noexcept
@@ -204,6 +206,7 @@ ModHost::ModHost(ModHost&& other) noexcept
 ModHost& ModHost::operator=(ModHost&& other) noexcept {
     if (this != &other) {
         UnloadAll();
+        AbandonPendingProviders();
         mLogger = std::move(other.mLogger);
         mHostContext = std::move(other.mHostContext);
         mNativePolicy = std::move(other.mNativePolicy);
@@ -258,9 +261,10 @@ Result<void> ModHost::LoadMod(const Manifest& manifest, const std::string& luaSo
     }
     if (manifest.kind == ModKind::CoreExtension &&
         (manifest.loadPhase != ModLoadPhase::PreGame || !manifest.provider ||
-         manifest.provider->abiVersion != "1.1")) {
+         (manifest.provider->abiVersion != "1.1" && manifest.provider->abiVersion != "1.2" &&
+          manifest.provider->abiVersion != "1.3"))) {
         return Result<void>::err(ErrorCode::InvalidArgument,
-                                 "core_extension requires pre_game and provider ABI 1.1");
+                                 "core_extension requires pre_game and provider ABI 1.1, 1.2 or 1.3");
     }
     if (manifest.kind == ModKind::Mod && manifest.loadPhase == ModLoadPhase::PreGame) {
         return Result<void>::err(ErrorCode::InvalidArgument,
@@ -281,6 +285,15 @@ Result<void> ModHost::LoadMod(const Manifest& manifest, const std::string& luaSo
         if (!compatible.isOk()) {
             return Result<void>::err(compatible.code,
                                      "mod '" + manifest.id + "': " + compatible.message);
+        }
+    }
+    // Probe every boot, after the host has mounted its archives and before
+    // loading a native library or running Lua. Missing probes fail closed.
+    for (const std::string& path : manifest.resourcesRequired) {
+        if (!mHostContext.resourceExists || !mHostContext.resourceExists(path)) {
+            return Result<void>::err(ErrorCode::Unsupported,
+                                     "mod '" + manifest.id + "': required resource '" + path +
+                                         "' is unavailable");
         }
     }
 
@@ -391,10 +404,70 @@ Result<void> ModHost::LoadModFromPackage(const std::string& package,
     return Result<void>::ok();
 }
 
+namespace {
+constexpr const char* kBootMarkerName = ".shiplua-boot";
+constexpr const char* kDisabledListName = ".shiplua-disabled";
+
+std::map<std::string, std::string> ReadDisabledMods(const std::filesystem::path& file) {
+    std::map<std::string, std::string> disabled;
+    std::ifstream input(file, std::ios::binary);
+    std::string line;
+    while (std::getline(input, line)) {
+        if (!line.empty() && line.back() == '\r') line.pop_back();
+        if (line.empty() || line.front() == '#') continue;
+        const auto tab = line.find('\t');
+        disabled[line.substr(0, tab)] = tab == std::string::npos ? "" : line.substr(tab + 1);
+    }
+    return disabled;
+}
+} // namespace
+
+void ModHost::EnableBootGuard(const std::filesystem::path& directory) {
+    mBootGuardDirectory = directory;
+}
+
+void ModHost::ConfirmBoot() {
+    if (mBootGuardDirectory.empty()) return;
+    ClearNativeBootMarker();
+    std::error_code ignored;
+    std::filesystem::remove(mBootGuardDirectory / kBootMarkerName, ignored);
+}
+
 Result<ModLoadReport> ModHost::LoadModsFromRoot(const std::filesystem::path& root,
                                                 const std::filesystem::path& extractionRoot,
                                                 const PackageLimits& limits,
                                                 std::size_t memoryLimitBytes) {
+    std::map<std::string, std::string> disabledMods;
+    std::vector<std::pair<std::string, std::string>> newlyDisabled;
+    const bool bootGuard = !mBootGuardDirectory.empty();
+    if (bootGuard) {
+        const auto marker = mBootGuardDirectory / kBootMarkerName;
+        const auto disabledFile = mBootGuardDirectory / kDisabledListName;
+        {
+            std::ifstream input(marker, std::ios::binary);
+            std::string line;
+            if (std::getline(input, line)) {
+                if (!line.empty() && line.back() == '\r') line.pop_back();
+                const auto tab = line.find('\t');
+                const auto state = line.substr(0, tab);
+                const auto id = tab == std::string::npos ? std::string() : line.substr(tab + 1);
+                if (!id.empty() && (state == "loading" || state == "crashed")) {
+                    newlyDisabled.emplace_back(id, state == "loading"
+                        ? "o jogo fechou durante o init deste mod nativo"
+                        : "o crash handler atribuiu a este mod um crash antes do boot confirmado");
+                }
+            }
+        }
+        std::error_code ignored;
+        std::filesystem::remove(marker, ignored);
+        if (!newlyDisabled.empty()) {
+            std::ofstream output(disabledFile, std::ios::binary | std::ios::app);
+            for (const auto& [id, reason] : newlyDisabled) output << id << '\t' << reason << '\n';
+        }
+        disabledMods = ReadDisabledMods(disabledFile);
+        SetNativeBootMarker(marker);
+    }
+
     auto discovered = DiscoverMods(root);
     if (!discovered.isOk()) {
         return Result<ModLoadReport>::err(discovered.code, discovered.message);
@@ -449,6 +522,16 @@ Result<ModLoadReport> ModHost::LoadModsFromRoot(const std::filesystem::path& roo
             }
             continue;
         }
+        const auto disabled = disabledMods.find(parsed.value->id);
+        if (disabled != disabledMods.end()) {
+            report.rejected[parsed.value->id] = "disabled by boot protection (" + disabled->second +
+                "); delete the mod's line in " + kDisabledListName + " to re-enable it";
+            if (!ownedDirectory.empty()) {
+                std::error_code ignored;
+                std::filesystem::remove_all(ownedDirectory, ignored);
+            }
+            continue;
+        }
         auto compatible = ValidateCompatibility(*parsed.value, mHostContext);
         if (!compatible.isOk()) {
             report.rejected[parsed.value->id] = compatible.message;
@@ -495,7 +578,10 @@ Result<ModLoadReport> ModHost::LoadModsFromRoot(const std::filesystem::path& roo
             continue;
         }
 
+        const bool native = bootGuard && candidate->manifest.provider.has_value();
+        if (native) WriteNativeBootMarker("loading", id.c_str());
         auto loaded = LoadModFromDirectory(candidate->directory.string(), memoryLimitBytes);
+        if (native) WriteNativeBootMarker("running", "");
         if (!loaded.isOk()) {
             report.rejected[id] = loaded.message;
             continue;
@@ -537,6 +623,15 @@ Result<DispatchOutcome> ModHost::DispatchEvent(const std::string& name,
     return mEvents->Dispatch(name, payload);
 }
 
+void ModHost::PumpMenu() noexcept {
+    for (const std::string& id : mLoadOrder) {
+        const auto found = mMods.find(id);
+        if (found != mMods.end() && found->second.binding != nullptr) {
+            found->second.binding->PumpMenu();
+        }
+    }
+}
+
 Result<void> ModHost::UnloadMod(const std::string& id) {
     const std::string modId = id;
     auto it = mMods.find(modId);
@@ -544,19 +639,33 @@ Result<void> ModHost::UnloadMod(const std::string& id) {
         return Result<void>::err(ErrorCode::InvalidHandle,
                                  "mod '" + modId + "' is not loaded");
     }
+    const bool retryingNativeUnload = it->second.provider && it->second.provider->IsUnloading();
     if (it->second.provider && it->second.provider->IsCalling()) {
         return Result<void>::err(ErrorCode::InvalidState, "cannot unload a mod during its native callback");
     }
-    for (const auto& [otherId, other] : mMods) {
-        if (otherId == modId) continue;
-        const bool declaredDependency = std::any_of(
-            other.manifest.dependencies.begin(), other.manifest.dependencies.end(),
-            [&modId](const auto& dependency) { return dependency.first == modId; });
-        const bool nativeConsumer = other.provider && other.provider->CanAccessServiceFrom(modId);
-        if (declaredDependency || nativeConsumer) {
-            return Result<void>::err(ErrorCode::InvalidState,
-                                     "cannot unload mod '" + modId +
-                                         "' while dependent '" + otherId + "' is loaded");
+    if (!retryingNativeUnload) {
+        for (const auto& [otherId, other] : mMods) {
+            if (otherId == modId) continue;
+            const bool declaredDependency = std::any_of(
+                other.manifest.dependencies.begin(), other.manifest.dependencies.end(),
+                [&modId](const auto& dependency) { return dependency.first == modId; });
+            const bool nativeConsumer = other.provider && other.provider->CanAccessServiceFrom(modId);
+            if (declaredDependency || nativeConsumer) {
+                return Result<void>::err(ErrorCode::InvalidState,
+                                         "cannot unload mod '" + modId +
+                                             "' while dependent '" + otherId + "' is loaded");
+            }
+        }
+    }
+    if (it->second.provider) {
+        const auto unloaded = it->second.provider->PrepareUnload();
+        if (!unloaded.isOk()) {
+            std::erase_if(mExtensionServices, [&modId](const NativeHostService& service) {
+                return service.owner == modId;
+            });
+            mLogger.error(modId, "native unload quarantined: " + unloaded.message);
+            return Result<void>::err(ErrorCode::HostFailure,
+                                     "mod '" + modId + "' native unload is pending: " + unloaded.message);
         }
     }
     const std::filesystem::path ownedDirectory = std::move(it->second.ownedDirectory);
@@ -565,7 +674,7 @@ Result<void> ModHost::UnloadMod(const std::string& id) {
     });
     std::erase(mLoadOrder, modId);
     {
-        // Retirar do mapa antes de shutdown/finalizadores chamarem serviços do host.
+        // Hooks e desvios já saíram; os finalizadores Lua ainda chamam a DLL, que só desliga no destrutor.
         auto unloaded = mMods.extract(it);
     } // binding -> lua_close -> native shutdown -> dlclose
     if (!ownedDirectory.empty()) {
@@ -583,7 +692,20 @@ Result<void> ModHost::UnloadMod(const std::string& id) {
 
 void ModHost::UnloadAll() {
     const auto ids = mLoadOrder;
-    for (auto it = ids.rbegin(); it != ids.rend(); ++it) UnloadMod(*it);
+    for (auto it = ids.rbegin(); it != ids.rend(); ++it) {
+        const auto unloaded = UnloadMod(*it);
+        if (!unloaded.isOk()) mLogger.error(*it, "unload failed: " + unloaded.message);
+    }
+}
+
+void ModHost::AbandonPendingProviders() noexcept {
+    for (auto& [id, mod] : mMods) {
+        if (!mod.provider) continue;
+        try {
+            mLogger.error(id, "native provider still quarantined at host destruction; state intentionally leaked");
+        } catch (...) { /* O vazamento seguro não depende do logger. */ }
+        (void)mod.provider.release();
+    }
 }
 
 LuaRuntime* ModHost::GetRuntime(const std::string& id) {

@@ -148,6 +148,7 @@ probe("ship.storage.clear", {  }, "integer")
 probe("ship.storage.shared.set", { "probe", "probe" }, "boolean")
 probe("ship.storage.shared.delete", { "probe" }, "boolean")
 probe("ship.storage.shared.clear", {  }, "integer")
+probe("ship.menu.register", { "probe" }, "boolean")
 probe("ship.native.has", { "probe" }, "boolean")
 probe("ship.native.call", { "probe", "probe" }, "string")
 check(resolve(ship_mod, "mm.player.jump") == nil, "ship.mm.player.jump não deveria existir no host oot")
@@ -452,6 +453,13 @@ do
   check(not ok, "ship.storage.shared.delete sem argumentos deveria falhar")
   check(type(err) == "string" and err:find("invalid_argument", 1, true) ~= nil,
     "erro de ship.storage.shared.delete deveria carregar invalid_argument")
+end
+do
+  local fn = resolve(ship_mod, "menu.register")
+  local ok, err = pcall(fn)
+  check(not ok, "ship.menu.register sem argumentos deveria falhar")
+  check(type(err) == "string" and err:find("invalid_argument", 1, true) ~= nil,
+    "erro de ship.menu.register deveria carregar invalid_argument")
 end
 do
   local fn = resolve(ship_mod, "native.has")

@@ -17,7 +17,7 @@ extern "C" {
 #endif
 
 #define SHIP_NATIVE_ABI_MAJOR 1u
-#define SHIP_NATIVE_ABI_MINOR 1u
+#define SHIP_NATIVE_ABI_MINOR 3u
 #define SHIP_NATIVE_MAX_BYTES 65536u
 
 typedef uint32_t ShipNativeStatus;
@@ -33,6 +33,64 @@ typedef ShipNativeStatus (SHIP_NATIVE_CALL *ShipNativeWriteFn)(
 typedef ShipNativeStatus (SHIP_NATIVE_CALL *ShipNativeFunction)(
     void* user, const char* request, uint32_t length,
     ShipNativeWriteFn write, void* writer);
+
+/* ABI 1.2: hooks nativos. Um ponto de hook é declarado pelo host ou por uma
+   core extension com nome, versão e tamanho do payload. Na chamada, o dono do
+   ponto executa: observe BEFORE, transform em cadeia, replace (ou a operação
+   original) e observe AFTER. Tudo roda na thread do jogo, sem sandbox. */
+#define SHIP_NATIVE_HOOK_OBSERVE 1u
+#define SHIP_NATIVE_HOOK_TRANSFORM 2u
+#define SHIP_NATIVE_HOOK_REPLACE 4u
+#define SHIP_NATIVE_HOOK_BEFORE 0u
+#define SHIP_NATIVE_HOOK_AFTER 1u
+#define SHIP_NATIVE_MAX_HOOK_NAME 128u
+
+struct ShipNativeHookCall;
+/* Executa a operação original. Só é não-NULL para REPLACE; pode ser chamada
+   no máximo uma vez por chamada do hook, com o payload já alterado. */
+typedef ShipNativeStatus (SHIP_NATIVE_CALL *ShipNativeHookOriginalFn)(
+    const struct ShipNativeHookCall* call);
+
+/* Válido somente durante o callback. OBSERVE não deve escrever no payload.
+   original_context pertence a quem despachou; não interpretar. */
+typedef struct ShipNativeHookCall {
+    uint32_t size;
+    uint32_t mode;
+    uint32_t phase;
+    uint32_t payload_size;
+    void* payload;
+    const char* point;
+    uint32_t point_version;
+    ShipNativeHookOriginalFn call_original;
+    void* original_context;
+} ShipNativeHookCall;
+
+/* OK = concluiu. UNSUPPORTED = recusa sem falha. Qualquer outro retorno conta
+   como falha; três seguidas desativam o hook. TRANSFORM que não retorna OK tem
+   o payload restaurado; REPLACE que não retorna OK e não chamou o original faz
+   o host executar o original. */
+typedef ShipNativeStatus (SHIP_NATIVE_CALL *ShipNativeHookFn)(
+    void* user, const ShipNativeHookCall* call);
+
+typedef struct ShipNativeHookSpec {
+    uint32_t size;
+    const char* point;
+    uint32_t version;
+    uint32_t minimum_payload_size;
+    uint32_t mode;      /* exatamente um SHIP_NATIVE_HOOK_* */
+    uint32_t phase;     /* só OBSERVE: BEFORE ou AFTER */
+    int32_t priority;   /* maior executa antes; empate segue a ordem de registro */
+    ShipNativeHookFn callback;
+    void* user;
+} ShipNativeHookSpec;
+
+typedef struct ShipNativeHookPointSpec {
+    uint32_t size;
+    const char* point;
+    uint32_t version;
+    uint32_t payload_size;
+    uint32_t modes;     /* máscara de SHIP_NATIVE_HOOK_* aceitos */
+} ShipNativeHookPointSpec;
 
 typedef struct ShipNativeRuntime {
     uint32_t size;
@@ -52,6 +110,38 @@ typedef struct ShipNativeRuntime {
     ShipNativeStatus (SHIP_NATIVE_CALL *register_service)(
         void* context, const char* name, uint32_t version, uint32_t size,
         const void* table);
+    /* ABI 1.2: permitido em init ou depois, na thread do jogo. Ponto ausente ou
+       versão diferente = UNSUPPORTED. Segundo REPLACE no mesmo ponto = LIMIT.
+       O host remove os hooks do mod antes do shutdown dele. */
+    ShipNativeStatus (SHIP_NATIVE_CALL *register_hook)(
+        void* context, const ShipNativeHookSpec* spec, uint64_t* handle);
+    ShipNativeStatus (SHIP_NATIVE_CALL *unregister_hook)(void* context, uint64_t handle);
+    /* ABI 1.2, somente core extension durante init. O ponto e os hooks que
+       outros mods ligaram nele somem quando a core extension descarrega. */
+    ShipNativeStatus (SHIP_NATIVE_CALL *declare_hook_point)(
+        void* context, const ShipNativeHookPointSpec* spec, uint64_t* point);
+    /* ABI 1.2, somente o dono do ponto. `original` recebe a chamada com
+       original_context repassado. Retorna o status do replace ou do original. */
+    ShipNativeStatus (SHIP_NATIVE_CALL *dispatch_hook)(
+        void* context, uint64_t point, void* payload, uint32_t payload_size,
+        ShipNativeHookOriginalFn original, void* original_context);
+    /* ABI 1.3: escape hatch (RFC 0023). get_host_fingerprint vale para qualquer
+       provider e escreve o SHA-256 hex do executável (64 bytes, sem NUL); com
+       output NULL e capacity 0 só informa o tamanho. As outras três exigem core
+       extension com abi_version "1.3" cujo provider.host_fingerprints contém o
+       fingerprint atual; fora disso retornam UNSUPPORTED. */
+    ShipNativeStatus (SHIP_NATIVE_CALL *get_host_fingerprint)(
+        void* context, char* output, uint32_t capacity, uint32_t* output_size);
+    /* Nome "Funcao" quando único no executável, ou "arquivo.c!Funcao" para
+       funções static repetidas. Ausente ou ambíguo = UNSUPPORTED. */
+    ShipNativeStatus (SHIP_NATIVE_CALL *resolve_symbol)(
+        void* context, const char* name, uintptr_t* address);
+    /* Desvia `target` (dentro do executável) para `detour`; *original recebe o
+       trampolim para chamar a função original. Segundo patch no mesmo endereço
+       = LIMIT. O host remove os patches do mod antes do shutdown. */
+    ShipNativeStatus (SHIP_NATIVE_CALL *install_patch)(
+        void* context, uintptr_t target, void* detour, void** original, uint64_t* patch);
+    ShipNativeStatus (SHIP_NATIVE_CALL *remove_patch)(void* context, uint64_t patch);
 } ShipNativeRuntime;
 
 typedef struct ShipNativeDescriptor {

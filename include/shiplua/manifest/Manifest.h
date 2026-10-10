@@ -23,6 +23,9 @@ struct NativeProviderManifest {
     std::string win64;
     std::string linux64;
     std::string macos;
+    // ABI 1.3: SHA-256 (hex minúsculo) dos executáveis em que a core extension
+    // aceita usar o escape hatch. Vazio = escape hatch indisponível.
+    std::vector<std::string> hostFingerprints;
 };
 
 // In-memory representation of a mod's manifest.toml.
@@ -57,6 +60,9 @@ struct Manifest {
     // [capabilities]
     std::vector<std::string> capabilitiesRequired; // key: required
     std::vector<std::string> capabilitiesOptional; // key: optional
+
+    // [resources] required: host VFS paths that must exist before loading.
+    std::vector<std::string> resourcesRequired;
 
     // [dependencies] — pairs of (mod id, version range). Order preserved.
     // Dependency *resolution* is out of scope here (MOD-004..007).

@@ -2,12 +2,21 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <map>
+#include <set>
+#include <stdexcept>
 #include <thread>
 #include <utility>
 
 #include <miniz.h>
 #include "shiplua/host/ModHost.h"
 #include "shiplua/manifest/ManifestParser.h"
+#include "shiplua/native/NativeDiagnostics.h"
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <dlfcn.h>
+#endif
 #include "FixtureService.h"
 
 namespace fs = std::filesystem;
@@ -50,10 +59,24 @@ void Package(const fs::path& dir, const fs::path& target) {
     Check(mz_zip_writer_finalize_archive(&zip) != 0, "finalize package");
     mz_zip_writer_end(&zip);
 }
+bool IsLibraryLoaded(const fs::path& path) {
+    const auto absolute = fs::absolute(path);
+#ifdef _WIN32
+    HMODULE module = nullptr;
+    if (!GetModuleHandleExW(0, absolute.c_str(), &module)) return false;
+    FreeLibrary(module);
+    return true;
+#else
+    void* module = dlopen(absolute.string().c_str(), RTLD_NOW | RTLD_NOLOAD);
+    if (!module) return false;
+    dlclose(module);
+    return true;
+#endif
+}
 }
 
 int main(int argc, char** argv) {
-    if (argc != 9) return 2;
+    if (argc != 12) return 2;
     const auto root = fs::temp_directory_path() / ("shiplua-native-" +
         std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
     fs::create_directories(root);
@@ -137,6 +160,418 @@ int main(int argc, char** argv) {
                   "core unload blocked while native consumer holds its service");
             Check(host.UnloadMod("test.consumer").isOk(), "consumer unload");
             Check(host.UnloadMod("test.core").isOk(), "core unload after consumer");
+        }
+        {
+            const auto mods = root / ("hooks-" + game);
+            MakeMod(mods / "z-core", argv[9], "test.hooks.core", "loaded=true",
+                    "kind='core_extension'\nload_phase='pre_game'\n", "1.2");
+            MakeMod(mods / "a-consumer", argv[10], "test.hooks.consumer", "loaded=true", {}, "1.2");
+            auto hookPolicy = policy;
+            hookPolicy.hooks = std::make_shared<NativeHookRegistry>();
+            const auto& hooks = *hookPolicy.hooks;
+            ModHost host(context, {}, hookPolicy);
+            const auto loaded = host.LoadModsFromRoot(mods, root / ("hooks-cache-" + game));
+            Check(loaded.isOk() && loaded.value->loadedIds ==
+                      std::vector<std::string>{"test.hooks.core", "test.hooks.consumer"},
+                  "hook core and consumer load");
+            Check(hooks.HookCount() == 2, "consumer hooks registered in init");
+            Run(host, "test.hooks.core", "assert(require('ship').native.call('run','5')=='12')");
+            Run(host, "test.hooks.consumer", R"lua(
+                local n=require('ship').native
+                assert(n.call('hooks','observed')=='12')
+                assert(n.call('hooks','declared')=='2')
+                assert(n.call('hooks','replace')=='0')
+                assert(n.call('hooks','replace')=='4')
+            )lua");
+            Run(host, "test.hooks.core", "assert(require('ship').native.call('run','5')=='112')");
+            Run(host, "test.hooks.consumer", "assert(require('ship').native.call('hooks','unhook')=='0')");
+            Run(host, "test.hooks.core", "assert(require('ship').native.call('run','5')=='12')");
+            Run(host, "test.hooks.consumer", "assert(require('ship').native.call('hooks','replace')=='0')");
+            Check(host.UnloadMod("test.hooks.consumer").isOk() && hooks.HookCount() == 0,
+                  "unload removes consumer hooks");
+            Run(host, "test.hooks.core", "assert(require('ship').native.call('run','5')=='10')");
+            Check(host.LoadModFromDirectory((mods / "a-consumer").string()).isOk() && hooks.HookCount() == 2,
+                  "consumer reload registers again");
+            Check(host.UnloadMod("test.hooks.core").isOk(), "core unload with hooked point");
+            Check(hooks.HookCount() == 0 && !hooks.FindPoint("test.hooks.value", 1),
+                  "core unload drops its point and foreign hooks");
+        }
+        {
+            // Escape hatch ABI 1.3: host falso de patches, fingerprint conferido pelo manifesto.
+            struct FakePatches {
+                int installed = 0;
+                int removed = 0;
+                uint64_t next = 1;
+            } patches;
+            auto hatch = std::make_shared<NativeEscapeHatch>();
+            hatch->fingerprint = [] { return std::string(64, 'a'); };
+            hatch->resolve = [](const char* name, uintptr_t* address) -> ShipNativeStatus {
+                if (std::string(name) != "Target") return SHIP_NATIVE_UNSUPPORTED;
+                *address = 0x1000;
+                return SHIP_NATIVE_OK;
+            };
+            hatch->install = [&patches](std::string_view, uintptr_t target, void*, void** original,
+                                        uint64_t* id) -> ShipNativeStatus {
+                if (target != 0x1000) return SHIP_NATIVE_INVALID_ARGUMENT;
+                ++patches.installed;
+                *original = reinterpret_cast<void*>(target);
+                *id = patches.next++;
+                return SHIP_NATIVE_OK;
+            };
+            hatch->remove = [&patches](uint64_t) -> ShipNativeStatus {
+                ++patches.removed;
+                return SHIP_NATIVE_OK;
+            };
+            auto escapePolicy = policy;
+            escapePolicy.escapeHatch = hatch;
+            // Estado por mod nos serviços do host é devolvido depois de os patches saírem.
+            std::vector<std::string> unloadedOwners;
+            escapePolicy.onProviderUnload = [&](std::string_view owner) {
+                unloadedOwners.emplace_back(std::string(owner) + (patches.removed == 1 ? ":sem-patch" : ":com-patch"));
+            };
+            const std::string core = "kind='core_extension'\nload_phase='pre_game'\n";
+            const auto escapeRoot = root / ("escape-" + game);
+            MakeMod(escapeRoot / "allowed", argv[11], "test.escape.allowed", "loaded=true", core, "1.3");
+            {
+                std::ofstream manifest(escapeRoot / "allowed/manifest.toml", std::ios::app);
+                manifest << "host_fingerprints=['" << std::string(64, 'A') << "']\n";
+            }
+            MakeMod(escapeRoot / "denied", argv[11], "test.escape.denied", "loaded=true", core, "1.3");
+            {
+                std::ofstream manifest(escapeRoot / "denied/manifest.toml", std::ios::app);
+                manifest << "host_fingerprints=['" << std::string(64, 'b') << "']\n";
+            }
+            MakeMod(escapeRoot / "plain", argv[11], "test.escape.plain", "loaded=true", {}, "1.3");
+            {
+                ModHost host(context, {}, escapePolicy);
+                Check(host.LoadModFromDirectory((escapeRoot / "allowed").string()).isOk(), "escape allowed load");
+                Run(host, "test.escape.allowed", R"lua(
+                    local r=require('ship').native.call('report','')
+                    assert(r=='fp=0:64:aaaa res=0 ins=0 orig=1', r)
+                )lua");
+                Check(patches.installed == 1 && patches.removed == 0, "patch installed with matching fingerprint");
+                Check(host.UnloadMod("test.escape.allowed").isOk() && patches.removed == 1,
+                      "unload removes the core extension patch");
+                Check(unloadedOwners.size() == 1 && unloadedOwners[0] == "test.escape.allowed:sem-patch",
+                      "unload notifies the host after removing patches");
+                Check(host.LoadModFromDirectory((escapeRoot / "denied").string()).isOk(), "escape denied load");
+                Run(host, "test.escape.denied", R"lua(
+                    local r=require('ship').native.call('report','')
+                    assert(r=='fp=0:64:aaaa res=2 ins=2 orig=0', r)
+                )lua");
+                Check(host.LoadModFromDirectory((escapeRoot / "plain").string()).isOk(), "escape plain mod load");
+                Run(host, "test.escape.plain", R"lua(
+                    local r=require('ship').native.call('report','')
+                    assert(r=='fp=0:64:aaaa res=2 ins=2 orig=0', r)
+                )lua");
+                Check(patches.installed == 1, "no patch without permission");
+            }
+            {
+                ModHost host(context, {}, policy);
+                MakeMod(escapeRoot / "nohatch", argv[11], "test.escape.nohatch", "loaded=true", core, "1.3");
+                Check(host.LoadModFromDirectory((escapeRoot / "nohatch").string()).isOk(), "host without hatch");
+                Run(host, "test.escape.nohatch", R"lua(
+                    local r=require('ship').native.call('report','')
+                    assert(r=='fp=2:0: res=2 ins=2 orig=0', r)
+                )lua");
+            }
+            {
+                // COREEXT-010: fake stateful por alvo. Minúscula = operação dentro do lote.
+                struct FakePatch {
+                    uint64_t id = 0;
+                    std::string owner;
+                    bool created = false;
+                    bool enabled = false;
+                    bool queueEnable = false;
+                    bool pendingRemoval = false;
+                };
+                std::string log;
+                std::map<uintptr_t, FakePatch> targets;
+                std::map<uint64_t, uintptr_t> ids;
+                std::set<uintptr_t> persistentRemovalFailures;
+                std::string batchOwner;
+                uintptr_t selectedTarget = 0x1000;
+                uint64_t nextPatch = 1000;
+                int alreadyCreated = 0;
+                int depth = 0;
+                bool failInit = false;
+                bool noPatch = false;
+                bool throwBegin = false;
+                int failCommits = 0;
+                int throwCommits = 0;
+                auto batched = std::make_shared<NativeEscapeHatch>();
+                batched->fingerprint = hatch->fingerprint;
+                batched->resolve = [&](const char* name, uintptr_t* address) -> ShipNativeStatus {
+                    const std::string text(name);
+                    if (noPatch && text == "NoPatch") {
+                        *address = 0x3000;
+                        return SHIP_NATIVE_OK;
+                    }
+                    if (text != "Target" && !(failInit && text == "FailAfterPatch")) return SHIP_NATIVE_UNSUPPORTED;
+                    *address = selectedTarget;
+                    return SHIP_NATIVE_OK;
+                };
+                batched->install = [&](std::string_view owner, uintptr_t target, void*, void** original,
+                                       uint64_t* id) -> ShipNativeStatus {
+                    auto existing = targets.find(target);
+                    if (existing != targets.end() && existing->second.created) {
+                        if (!existing->second.pendingRemoval) {
+                            ++alreadyCreated;
+                            return SHIP_NATIVE_LIMIT;
+                        }
+                        if (persistentRemovalFailures.contains(target)) return SHIP_NATIVE_FAILURE;
+                        ids.erase(existing->second.id);
+                        targets.erase(existing);
+                    }
+                    log += depth ? 'i' : 'I';
+                    const uint64_t created = nextPatch++;
+                    targets.emplace(target, FakePatch{created, std::string(owner), true, depth == 0, true, false});
+                    ids.emplace(created, target);
+                    *original = reinterpret_cast<void*>(target);
+                    *id = created;
+                    return SHIP_NATIVE_OK;
+                };
+                batched->remove = [&](uint64_t id) -> ShipNativeStatus {
+                    const auto mapped = ids.find(id);
+                    if (mapped == ids.end()) return SHIP_NATIVE_INVALID_ARGUMENT;
+                    auto& target = targets.at(mapped->second);
+                    log += depth ? 'r' : 'R';
+                    if (depth > 0) {
+                        target.queueEnable = false;
+                        target.pendingRemoval = true;
+                        return SHIP_NATIVE_OK;
+                    }
+                    if (persistentRemovalFailures.contains(mapped->second)) return SHIP_NATIVE_FAILURE;
+                    targets.erase(mapped->second);
+                    ids.erase(mapped);
+                    return SHIP_NATIVE_OK;
+                };
+                batched->beginBatch = [&](std::string_view owner) {
+                    if (throwBegin) {
+                        log += 'b';
+                        throw std::runtime_error("beginBatch test");
+                    }
+                    if (depth++ == 0) batchOwner = owner;
+                    log += '[';
+                };
+                batched->commitBatch = [&]() -> ShipNativeStatus {
+                    --depth;
+                    log += ']';
+                    if (throwCommits > 0) {
+                        --throwCommits;
+                        throw std::runtime_error("commitBatch test");
+                    }
+                    if (failCommits > 0) {
+                        --failCommits;
+                        return SHIP_NATIVE_FAILURE;
+                    }
+                    bool clean = true;
+                    for (auto found = targets.begin(); found != targets.end();) {
+                        auto& target = found->second;
+                        if (target.owner != batchOwner) {
+                            ++found;
+                            continue;
+                        }
+                        if (target.pendingRemoval) {
+                            if (persistentRemovalFailures.contains(found->first)) {
+                                target.queueEnable = target.enabled; // neutraliza a fila global do fake
+                                clean = false;
+                                ++found;
+                            } else {
+                                ids.erase(target.id);
+                                found = targets.erase(found);
+                            }
+                            continue;
+                        }
+                        target.enabled = target.queueEnable;
+                        ++found;
+                    }
+                    return clean ? SHIP_NATIVE_OK : SHIP_NATIVE_FAILURE;
+                };
+                auto batchPolicy = policy;
+                batchPolicy.escapeHatch = batched;
+                batchPolicy.hooks = std::make_shared<NativeHookRegistry>();
+                ShipNativeHookPointSpec shutdownPoint{
+                    sizeof(ShipNativeHookPointSpec), "test.shutdown", 1u, 0u, SHIP_NATIVE_HOOK_OBSERVE
+                };
+                uint64_t shutdownPointId = 0;
+                Check(batchPolicy.hooks->DeclarePoint({}, shutdownPoint, &shutdownPointId) == SHIP_NATIVE_OK,
+                      "shutdown hook point declared");
+                batchPolicy.onProviderUnload = [&](std::string_view owner) { log += 'u'; };
+                ModHost host(context, {}, batchPolicy);
+                Check(host.LoadModFromDirectory((escapeRoot / "allowed").string()).isOk() && log == "[i]",
+                      "init patches activate in one batch");
+                selectedTarget = 0x1001;
+                Run(host, "test.escape.allowed", R"lua(
+                    local r=require('ship').native.call('patch_now','')
+                    assert(r=='0', r)
+                )lua");
+                Check(log == "[i]I", "patch after init is not batched");
+                const int callsBeforeShutdown = service.calls;
+                Check(host.UnloadMod("test.escape.allowed").isOk() && log == "[i]I[rr]u",
+                      "unload removes every patch in one batch before notifying the host");
+                Check(service.calls == callsBeforeShutdown + 100 + 11 * SHIP_NATIVE_FAILURE &&
+                          batchPolicy.hooks->HookCount() == 0,
+                      "patch and register_hook are rejected during shutdown");
+
+                // Caracterização: estes casos preservam fallback e rollback anteriores à segunda rodada.
+                log.clear();
+                noPatch = true;
+                selectedTarget = 0x1000;
+                Check(host.LoadModFromDirectory((escapeRoot / "allowed").string()).isOk() && log == "[]",
+                      "authorized provider without patches still closes its init batch");
+                const int callsBeforePatchlessShutdown = service.calls;
+                Check(host.UnloadMod("test.escape.allowed").isOk() && log == "[]u",
+                      "provider without patches opens no unload batch");
+                Check(service.calls == callsBeforePatchlessShutdown + 100 + 11 * SHIP_NATIVE_FAILURE,
+                      "patch and hook remain rejected in patchless shutdown");
+                noPatch = false;
+                log.clear();
+                failInit = true;
+                Check(!host.LoadModFromDirectory((escapeRoot / "allowed").string()).isOk() && log == "[ir]u",
+                      "failed init removes its patches before the batch commits");
+                failInit = false;
+                log.clear();
+                const auto throwing = escapeRoot / "throwing";
+                MakeMod(throwing, argv[6], "test.escape.throwing", "loaded=true", core, "1.3");
+                {
+                    std::ofstream manifest(throwing / "manifest.toml", std::ios::app);
+                    manifest << "host_fingerprints=['" << std::string(64, 'a') << "']\n";
+                }
+                const auto threw = host.LoadModFromDirectory(throwing.string());
+                Check(!threw.isOk() && threw.message.find("exception implemented inside provider DLL") != std::string::npos &&
+                          log == "[ir]u",
+                      "throwing init removes its patch and balances the batch");
+                log.clear();
+                Check(host.LoadModFromDirectory((escapeRoot / "denied").string()).isOk() && log.empty(),
+                      "no batch without permission");
+                Check(host.UnloadMod("test.escape.denied").isOk(), "denied provider unloads without a batch");
+                log.clear();
+                throwBegin = true;
+                Check(host.LoadModFromDirectory((escapeRoot / "allowed").string()).isOk() && log == "bI",
+                      "beginBatch exception falls back to immediate install");
+                Check(host.UnloadMod("test.escape.allowed").isOk() && log == "bIbRu" && depth == 0,
+                      "beginBatch exception does not cross core unload");
+                throwBegin = false;
+                log.clear();
+                throwCommits = 1;
+                Check(!host.LoadModFromDirectory((escapeRoot / "allowed").string()).isOk() && log == "[i][r]u" &&
+                          depth == 0,
+                      "commitBatch exception fails activation and is contained");
+                log.clear();
+                failCommits = 1;
+                Check(!host.LoadModFromDirectory((escapeRoot / "allowed").string()).isOk() && log == "[i][r]u",
+                      "failed activation fails the load and removes the patch in another batch");
+
+                // Provas da correção: falha real por alvo, ownership, retry e isolamento entre providers.
+                log.clear();
+                selectedTarget = 0x1000;
+                Check(host.LoadModFromDirectory((escapeRoot / "allowed").string()).isOk(),
+                      "provider loads before persistent removal failure");
+                const auto loadedLibrary = escapeRoot / "allowed/provider/module.bin";
+                const int callsBeforeUnsafeUnload = service.calls;
+                persistentRemovalFailures.insert(0x1000);
+                const auto failedUnload = host.UnloadMod("test.escape.allowed");
+                Check(!failedUnload.isOk() && failedUnload.code == ErrorCode::HostFailure &&
+                          host.IsLoaded("test.escape.allowed") && host.Count() == 1 &&
+                          targets.at(0x1000).created && targets.at(0x1000).enabled &&
+                          targets.at(0x1000).queueEnable && targets.at(0x1000).pendingRemoval &&
+                          service.calls == callsBeforeUnsafeUnload && IsLibraryLoaded(loadedLibrary),
+                      "failed removal quarantines the owned provider without shutdown");
+
+                const auto other = escapeRoot / "other";
+                MakeMod(other, argv[11], "test.escape.other", "loaded=true", core, "1.3");
+                {
+                    std::ofstream manifest(other / "manifest.toml", std::ios::app);
+                    manifest << "host_fingerprints=['" << std::string(64, 'a') << "']\n";
+                }
+                selectedTarget = 0x2000;
+                Check(host.LoadModFromDirectory(other.string()).isOk() &&
+                          host.UnloadMod("test.escape.other").isOk() && host.IsLoaded("test.escape.allowed"),
+                      "another provider does not inherit an old pending removal");
+
+                persistentRemovalFailures.clear();
+                Check(host.UnloadMod("test.escape.allowed").isOk() && !host.IsLoaded("test.escape.allowed") &&
+                          !targets.contains(0x1000),
+                      "retry completes quarantine after the target recovers");
+                selectedTarget = 0x1000;
+                Check(host.LoadModFromDirectory((escapeRoot / "allowed").string()).isOk() && alreadyCreated == 0,
+                      "same target reloads without ALREADY_CREATED");
+                Check(host.UnloadMod("test.escape.allowed").isOk(), "reloaded provider unloads cleanly");
+            }
+        }
+        {
+            // Proteção de boot e atribuição de crash (COREEXT-009).
+            const auto guardRoot = root / ("guard-" + game);
+            const auto guardCache = root / ("guard-cache-" + game);
+            MakeMod(guardRoot / "native", argv[1], "test.guard");
+            auto readText = [](const fs::path& path) {
+                std::ifstream input(path, std::ios::binary);
+                return std::string((std::istreambuf_iterator<char>(input)), std::istreambuf_iterator<char>());
+            };
+            {
+                ModHost host(context, {}, policy);
+                host.EnableBootGuard(guardRoot);
+                const auto loaded = host.LoadModsFromRoot(guardRoot, guardCache);
+                Check(loaded.isOk() && loaded.value->loadedIds == std::vector<std::string>{"test.guard"},
+                      "guard loads healthy native mod");
+                Check(readText(guardRoot / ".shiplua-boot") == "running\t\n", "marker says running after load");
+                char report[4096];
+                size_t used = 0;
+#ifdef _WIN32
+                const auto dll = LoadLibraryW((guardRoot / "native/provider/module.bin").c_str());
+                const auto query = dll ? reinterpret_cast<uintptr_t>(GetProcAddress(dll, "ShipNative_Query")) : 0;
+                char owner[128] = {};
+                Check(query && FindNativeModuleOwner(query, owner, sizeof(owner)) && std::string(owner) == "test.guard",
+                      "module map attributes the provider DLL");
+                if (dll) FreeLibrary(dll);
+#endif
+                {
+                    const NativeActivityScope outer("test.guard", "call", "echo");
+                    const NativeActivityScope inner("test.other", "hook", "oot.actor.update");
+                    used = WriteNativeCrashReport(report, sizeof(report));
+                }
+                const std::string text(report, used);
+                Check(text.find("mod 'test.other' em hook oot.actor.update") != std::string::npos &&
+                          text.find("mod 'test.guard' em call echo") != std::string::npos &&
+                          text.find("'test.other' sera desativado") != std::string::npos,
+                      "crash report lists activity and blames the innermost owner: " + text);
+                Check(readText(guardRoot / ".shiplua-boot") == "crashed\ttest.other\n", "crash marks the blamed mod");
+                used = WriteNativeCrashReport(report, 16);
+                Check(used <= 16, "crash report respects capacity");
+            }
+            {
+                // Simula o marcador de um boot que caiu durante o init do mod.
+                std::ofstream(guardRoot / ".shiplua-boot", std::ios::binary) << "loading\ttest.guard\n";
+                ModHost host(context, {}, policy);
+                host.EnableBootGuard(guardRoot);
+                const auto loaded = host.LoadModsFromRoot(guardRoot, guardCache);
+                Check(loaded.isOk() && loaded.value->loadedIds.empty() &&
+                          loaded.value->rejected.count("test.guard") &&
+                          loaded.value->rejected.at("test.guard").find("prote") != std::string::npos,
+                      "mod that crashed the boot is disabled");
+                const auto disabled = readText(guardRoot / ".shiplua-disabled");
+                Check(disabled.find("test.guard\t") != std::string::npos &&
+                          disabled.find("test.other\t") == std::string::npos,
+                      "disabled list names the mod (the earlier crash marker was overwritten by the new boot)");
+                host.ConfirmBoot();
+                Check(!fs::exists(guardRoot / ".shiplua-boot"), "confirm removes marker");
+            }
+            {
+                fs::remove(guardRoot / ".shiplua-disabled");
+                ModHost host(context, {}, policy);
+                host.EnableBootGuard(guardRoot);
+                const auto loaded = host.LoadModsFromRoot(guardRoot, guardCache);
+                Check(loaded.isOk() && loaded.value->loadedIds == std::vector<std::string>{"test.guard"},
+                      "removing the disabled line re-enables the mod");
+                host.ConfirmBoot();
+                char report[1024];
+                const NativeActivityScope activity("test.guard", "call", "echo");
+                const auto used = WriteNativeCrashReport(report, sizeof(report));
+                Check(std::string(report, used).find("sera desativado") == std::string::npos &&
+                          !fs::exists(guardRoot / ".shiplua-boot"),
+                      "after confirm a crash is reported but no mod is disabled");
+            }
         }
         {
             const auto mods = root / ("core-duplicate-" + game);
@@ -278,6 +713,12 @@ int main(int argc, char** argv) {
     Check(!ParseManifestString(ManifestText("test.invalid")+
         "kind='core_extension'\nload_phase='pre_game'\n"+ProviderText()).isOk(),
         "core extension requires ABI 1.1");
+    Check(!ParseManifestString(ManifestText("test.invalid")+ProviderText("provider/module.bin", "1.3")+
+        "host_fingerprints=['" + std::string(64, 'a') + "']\n").isOk(),
+        "host_fingerprints only for core extensions");
+    Check(!ParseManifestString(ManifestText("test.invalid")+"kind='core_extension'\nload_phase='pre_game'\n"+
+        ProviderText("provider/module.bin", "1.3")+"host_fingerprints=['xyz']\n").isOk(),
+        "host_fingerprints must be SHA-256");
     Check(!ParseManifestString(ManifestText("test.invalid")+
         "load_phase='pre_game'\n"+ProviderText()).isOk(),
         "pre_game phase is reserved for core extensions");

@@ -16,14 +16,24 @@ add_library(native_core_fixture MODULE native/CoreFixture.c)
 target_include_directories(native_core_fixture PRIVATE "${SHIPLUA_SOURCE_DIR}/include" "${CMAKE_CURRENT_SOURCE_DIR}/native")
 add_library(native_core_consumer MODULE native/CoreConsumerFixture.c)
 target_include_directories(native_core_consumer PRIVATE "${SHIPLUA_SOURCE_DIR}/include" "${CMAKE_CURRENT_SOURCE_DIR}/native")
+add_library(native_hook_core MODULE native/HookCoreFixture.c)
+target_include_directories(native_hook_core PRIVATE "${SHIPLUA_SOURCE_DIR}/include")
+add_library(native_hook_consumer MODULE native/HookConsumerFixture.c)
+target_include_directories(native_hook_consumer PRIVATE "${SHIPLUA_SOURCE_DIR}/include")
+add_library(native_escape_fixture MODULE native/EscapeFixture.c)
+target_include_directories(native_escape_fixture PRIVATE "${SHIPLUA_SOURCE_DIR}/include")
+add_executable(native_hook_tests native/NativeHookTests.cpp)
+target_link_libraries(native_hook_tests PRIVATE shiplua)
+add_test(NAME native_hook_tests COMMAND native_hook_tests)
 add_executable(native_provider_tests native/NativeProviderTests.cpp)
 target_link_libraries(native_provider_tests PRIVATE shiplua miniz)
-add_dependencies(native_provider_tests native_fixture_0 native_fixture_1 native_fixture_2 native_fixture_3 native_missing_export native_throw native_core_fixture native_core_consumer)
+add_dependencies(native_provider_tests native_fixture_0 native_fixture_1 native_fixture_2 native_fixture_3 native_missing_export native_throw native_core_fixture native_core_consumer native_hook_core native_hook_consumer native_escape_fixture)
 add_test(NAME native_provider_tests COMMAND native_provider_tests
     $<TARGET_FILE:native_fixture_0> $<TARGET_FILE:native_fixture_1>
     $<TARGET_FILE:native_fixture_2> $<TARGET_FILE:native_fixture_3> $<TARGET_FILE:native_missing_export>
     $<TARGET_FILE:native_throw> $<TARGET_FILE:native_core_fixture>
-    $<TARGET_FILE:native_core_consumer>)
+    $<TARGET_FILE:native_core_consumer> $<TARGET_FILE:native_hook_core>
+    $<TARGET_FILE:native_hook_consumer> $<TARGET_FILE:native_escape_fixture>)
 
 add_executable(native_sdk_host native/NativeSdkHost.cpp)
 target_link_libraries(native_sdk_host PRIVATE shiplua)
@@ -129,6 +139,11 @@ add_executable(lua_api_binding_tests unit/LuaApiBindingTests.cpp)
 target_link_libraries(lua_api_binding_tests PRIVATE shiplua)
 
 add_test(NAME lua_api_binding_tests COMMAND lua_api_binding_tests)
+
+add_executable(menu_api_tests unit/MenuApiTests.cpp)
+target_link_libraries(menu_api_tests PRIVATE shiplua)
+
+add_test(NAME menu_api_tests COMMAND menu_api_tests)
 
 add_executable(key_value_storage_tests unit/KeyValueStorageTests.cpp)
 target_link_libraries(key_value_storage_tests PRIVATE shiplua)

@@ -150,7 +150,7 @@ For rollback, restore the old complete package and the matching host. Restore sa
 
 ## OoT service index
 
-Each link opens the detailed host reference. Version numbers below are service-table versions, independent of the provider ABI. Query the exact version and size you need; later versions are not always prefix-compatible (notably randomizer v2).
+Each link opens the detailed host reference. Version numbers below are service-table versions, independent of the provider ABI. Query the exact version and size you need. For randomizer, the v1 table remains available, with previous service sizes and offsets preserved.
 
 - [`linkspan.oot.engine` v1](https://github.com/BaiterYamato/Shipwright/blob/agent/OOT-UPSTREAM-001-78dc6d970-integration/docs/native-mods.md#service-engine): Layout, structure sizes, current gameplay pointers and actor spawn/kill.
 - [`linkspan.oot.movement` v1/2](https://github.com/BaiterYamato/Shipwright/blob/agent/OOT-UPSTREAM-001-78dc6d970-integration/docs/native-mods.md#service-movement): Virtual/physical input, transient settings, jumping, rolling and item shortcuts.

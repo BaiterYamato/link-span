@@ -103,6 +103,6 @@ Leia [AGENTS.md](AGENTS.md) e [PLAN.md](PLAN.md). Mudanças na API pública exig
 
 ## Licença e créditos
 
-O trabalho próprio do Link-Span está em domínio público pela **CC0 1.0** ([LICENSE](LICENSE)). Dependências, hosts e código portado mantêm seus termos: veja [NOTICE.md](NOTICE.md). [CREDITS.md](CREDITS.md) diferencia código portado de pesquisa e influências de arquitetura.
+O trabalho próprio do Link-Span está em domínio público pela **CC0 1.0** ([LICENSE](LICENSE)). Dependências, hosts e código portado mantêm seus termos: veja [NOTICE.md](NOTICE.md).
 
 Não distribua ROMs, `oot.o2r`, `oot.otr`, `mm.o2r` derivados pelo jogador, dumps ou assets protegidos extraídos do jogo. Archives redistribuíveis de runtime do port pertencem aos artefatos de release, sob seus termos aplicáveis.

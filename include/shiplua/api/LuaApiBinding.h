@@ -12,6 +12,7 @@
 #include "shiplua/capability/CapabilityRegistry.h"
 #include "shiplua/events/EventDispatcher.h"
 #include "shiplua/input/HotkeyRegistry.h"
+#include "shiplua/menu/MenuRegistry.h"
 #include "shiplua/runtime/Logger.h"
 #include "shiplua/runtime/LuaRuntime.h"
 #include "shiplua/runtime/Result.h"
@@ -40,13 +41,16 @@ struct LuaApiHostContext {
     std::shared_ptr<KeyValueStorage> sharedStorage;
     std::shared_ptr<ActorProvider> actors;         // nullable; null = host sem ship.actor
     std::function<Result<void>(const WorldDestination&)> worldTravel;
-    // Multiplicador de velocidade do jogador (capability player.speed). Existe
-    // nos dois jogos, mas quem sabe mexer no estado e o adaptador de host.
-    // Nullable: sem backend, ship.player.set_speed_multiplier retorna unsupported.
-    std::function<Result<void>(double)> playerSpeedMultiplier;
     // Games whose assets/hosts are available to the supervising Link-Span
     // process. Empty keeps standalone compatibility and means only gameId.
     std::vector<std::string> availableGames;
+    // Synchronous host VFS probe, called on the loading/game thread.
+    std::function<bool(const std::string&)> resourceExists;
+    // Adaptador de menu declarativo. Nullable; capability core.menu ausente.
+    std::shared_ptr<MenuRegistry> menu;
+    // Implementação do host para a API comum ship.player.set_speed_multiplier.
+    // Nullable quando player.speed não é anunciado.
+    std::function<Result<bool>(double)> setSpeedMultiplier;
 };
 
 // Per-mod authorization and resource policy derived from manifest.toml.
@@ -75,6 +79,7 @@ class LuaApiBinding {
 
     Result<void> Install();
     std::size_t SubscriptionCount() const;
+    void PumpMenu() noexcept;
 
   private:
     struct LuaCallback {
@@ -82,12 +87,19 @@ class LuaApiBinding {
         Subscription subscription;
         std::size_t consecutiveFailures = 0;
         bool active = true;
+        bool resultTransform = false;
     };
 
     struct HotkeyCallback {
         int registryReference = -2;
         std::size_t consecutiveFailures = 0;
         bool active = true;
+    };
+
+    struct MenuCallback {
+        int registryReference = -2;
+        bool active = true;
+        std::size_t failures = 0;
     };
 
     static LuaApiBinding* FromUpvalue(lua_State* state);
@@ -103,7 +115,10 @@ class LuaApiBinding {
     static int CapabilityProviders(lua_State* state) noexcept;
     static int EventsOn(lua_State* state) noexcept;
     static int EventsOff(lua_State* state) noexcept;
+    static int HooksResult(lua_State* state) noexcept;
+    static int SetSpeedMultiplier(lua_State* state) noexcept;
     static int HotkeysRegister(lua_State* state) noexcept;
+    static int MenuRegister(lua_State* state) noexcept;
     static int TimerAfter(lua_State* state) noexcept;
     static int TimerEvery(lua_State* state) noexcept;
     static int TimerCancel(lua_State* state) noexcept;
@@ -116,8 +131,6 @@ class LuaApiBinding {
     static int SharedStorageDelete(lua_State* state) noexcept;
     static int SharedStorageClear(lua_State* state) noexcept;
     static int WorldTravel(lua_State* state) noexcept;
-    static int HooksResult(lua_State* state) noexcept;
-    static int PlayerSetSpeedMultiplier(lua_State* state) noexcept;
     static int ActorSpawn(lua_State* state) noexcept;
     static int ActorDestroy(lua_State* state) noexcept;
     static int ActorExists(lua_State* state) noexcept;
@@ -137,10 +150,13 @@ class LuaApiBinding {
     int RegisterEventFromLua(lua_State* state, const char*& error);
     int RemoveEventFromLua(lua_State* state, const char*& error);
     int RegisterHotkey(lua_State* state, const char*& error);
+    int RegisterMenu(lua_State* state, const char*& error);
     int CapabilityHasFromLua(lua_State* state, const char*& error);
     int CapabilityListFromLua(lua_State* state, const char*& error);
     int CapabilityInfoFromLua(lua_State* state, const char*& error);
     int CapabilityProvidersFromLua(lua_State* state, const char*& error);
+    int HooksResultFromLua(lua_State* state, const char*& error);
+    int SetSpeedMultiplierFromLua(lua_State* state, const char*& error);
     static int ScheduleTimer(lua_State* state, bool repeating) noexcept;
     int ScheduleTimerFromLua(lua_State* state, bool repeating, const char*& error);
     Result<TimerHandle> DoScheduleTimer(lua_State* state, bool repeating, std::uint64_t frames,
@@ -152,8 +168,6 @@ class LuaApiBinding {
     int SetStorage(lua_State* state, const char*& error, KeyValueStorage* storage, const char* label);
     int DeleteStorage(lua_State* state, const char*& error, KeyValueStorage* storage, const char* label);
     int ClearStorage(lua_State* state, const char*& error, KeyValueStorage* storage);
-    int HooksResultFromLua(lua_State* state, const char*& error);
-    int PlayerSetSpeedMultiplierFromLua(lua_State* state, const char*& error);
     int WorldTravelFromLua(lua_State* state, const char*& error);
     int ActorSpawnFromLua(lua_State* state);
     int ActorDestroyFromLua(lua_State* state);
@@ -172,22 +186,27 @@ class LuaApiBinding {
     Logger mLogger;
     LuaApiHostContext mHostContext;
     std::shared_ptr<HotkeyRegistry> mHotkeys;
+    std::shared_ptr<MenuRegistry> mMenu;
     std::shared_ptr<CapabilityRegistry> mCapabilities;
     std::shared_ptr<FrameTimerScheduler> mTimers;
     std::shared_ptr<KeyValueStorage> mStorage;
     std::shared_ptr<KeyValueStorage> mSharedStorage;
     std::shared_ptr<ActorProvider> mActors;
-    // Payload do evento sendo entregue agora. Valido somente durante
-    // InvokeCallback; e por onde ship.hooks.result devolve o valor ao host.
-    EventPayload* mActivePayload = nullptr;
     LuaApiModPolicy mModPolicy;
     std::map<std::string, std::shared_ptr<HotkeyCallback>> mHotkeyCallbacks;
+    std::map<std::string, MenuPage> mMenuPages;
+    std::map<std::string, std::shared_ptr<MenuCallback>> mMenuCallbacks;
+    std::uint64_t mNextMenuGeneration = 1;
+    // Páginas refeitas no próximo PumpMenu: input aplicado, storage do mod alterado ou página nova.
+    bool mMenuDirty = false;
     std::size_t mModLoadOrder = 0;
     int mModPriority = 50;
     std::size_t mMaxConsecutiveFailures = 3;
     std::size_t mMaxTimersPerMod = 64; // plan-sdk.md [limits] timers = 64
     std::map<std::uint64_t, std::shared_ptr<LuaCallback>> mCallbacks;
     std::map<std::uint64_t, std::shared_ptr<LuaCallback>> mTimerCallbacks;
+    // Só é válido durante o callback Lua de um evento transform.
+    EventPayload* mActiveTransformPayload = nullptr;
     std::vector<Handle> mActorHandles;
     int mShipReference = -2;
     bool mInstalled = false;

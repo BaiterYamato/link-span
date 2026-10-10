@@ -67,14 +67,25 @@ class ModHost {
                                            const PackageLimits& limits = {},
                                            std::size_t memoryLimitBytes = 0);
 
+    // Proteção de boot (COREEXT-009). `directory` guarda `.shiplua-boot` (marcador de
+    // carga) e `.shiplua-disabled` (mods desativados, uma linha "id<TAB>motivo").
+    // O próximo LoadModsFromRoot desativa o mod nativo que estava carregando ou que
+    // o crash handler apontou antes de ConfirmBoot, e pula os ids da lista.
+    void EnableBootGuard(const std::filesystem::path& directory);
+    // O jogo rodou o suficiente: crashes posteriores não desativam mods.
+    void ConfirmBoot();
+
     bool IsLoaded(const std::string& id) const;
     std::size_t Count() const;
     std::size_t SubscriptionCount() const;
 
     Result<DispatchOutcome> DispatchEvent(const std::string& name, EventPayload& payload);
 
-    // Destroys the mod's LuaRuntime (releasing all of its resources) and
-    // removes it. ErrorCode::InvalidHandle if no such mod is loaded.
+    // Consome input do adaptador de menu e executa callbacks na thread Lua.
+    void PumpMenu() noexcept;
+
+    // Desmonta e remove o mod. Se a limpeza nativa falhar, devolve HostFailure
+    // e mantém o mod carregado em quarentena para outra tentativa.
     Result<void> UnloadMod(const std::string& id);
 
     void UnloadAll();
@@ -94,10 +105,12 @@ class ModHost {
 
     Result<void> LoadMod(const Manifest&, const std::string&, std::size_t,
                          const std::filesystem::path& directory);
+    void AbandonPendingProviders() noexcept;
 
     Logger mLogger;
     LuaApiHostContext mHostContext;
     NativeProviderPolicy mNativePolicy;
+    std::filesystem::path mBootGuardDirectory;
     std::unique_ptr<EventDispatcher> mEvents;
     std::size_t mNextModLoadOrder = 0;
     std::map<std::string, LoadedMod> mMods;

@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
@@ -7,6 +8,10 @@
 #include <iterator>
 #include <string>
 #include <vector>
+
+#ifdef _WIN32
+#include <thread>
+#endif
 
 #include <miniz.h>
 
@@ -205,6 +210,54 @@ void TestHostFailureCleansExtraction(const std::filesystem::path& root) {
     Check(cacheChildren == 0, "failed package load must remove extracted staging data");
 }
 
+#ifdef _WIN32
+// An antivirus scan holding a freshly extracted DLL made the commit fail with "access
+// denied" and the mod was rejected at boot. The commit must wait for the file instead.
+void TestCommitWaitsForBusyFile(const std::filesystem::path& root) {
+    const auto staging = root / "busy-staging";
+    const auto destination = root / "busy-output";
+    std::filesystem::create_directories(staging);
+    { std::ofstream(staging / "provider.dll") << "dll"; }
+    std::ifstream holder(staging / "provider.dll");
+    Check(holder.is_open(), "busy fixture should open its file");
+
+    std::error_code probeError;
+    std::filesystem::rename(staging, root / "busy-probe", probeError);
+    if (!probeError) {
+        std::filesystem::rename(root / "busy-probe", staging, probeError);
+        holder.close();
+        std::cout << "skip: this volume renames a directory that holds an open file\n";
+        return;
+    }
+
+    std::thread release([&holder]() {
+        std::this_thread::sleep_for(std::chrono::milliseconds(150));
+        holder.close();
+    });
+    const auto result = ShipLua::CommitExtractedDirectory(staging, destination);
+    release.join();
+    Check(result.isOk(), "commit should succeed once the file is released: " + result.message);
+    Check(std::filesystem::is_regular_file(destination / "provider.dll"),
+          "committed directory should hold the extracted file");
+    Check(!std::filesystem::exists(staging), "staging directory should be gone after the commit");
+}
+#endif
+
+void TestCommitKeepsExistingDestination(const std::filesystem::path& root) {
+    const auto staging = root / "conflict-staging";
+    const auto destination = root / "conflict-output";
+    std::filesystem::create_directories(staging);
+    std::filesystem::create_directories(destination / "existing");
+    const auto started = std::chrono::steady_clock::now();
+    const auto result = ShipLua::CommitExtractedDirectory(staging, destination);
+    const auto elapsed = std::chrono::steady_clock::now() - started;
+    Check(!result.isOk(), "an existing destination must not be replaced");
+    Check(elapsed < std::chrono::milliseconds(1500),
+          "an existing destination should fail without waiting for the retries");
+    Check(std::filesystem::is_directory(destination / "existing"),
+          "the existing destination must be preserved");
+}
+
 } // namespace
 
 int main() {
@@ -217,6 +270,10 @@ int main() {
     TestSymlinkAndLimits(root);
     TestAmbiguousPaths(root);
     TestHostFailureCleansExtraction(root);
+#ifdef _WIN32
+    TestCommitWaitsForBusyFile(root);
+#endif
+    TestCommitKeepsExistingDestination(root);
 
     std::filesystem::remove_all(root);
     if (failures != 0) {

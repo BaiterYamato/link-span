@@ -5,9 +5,8 @@
 - Platform: Windows 11 / Codex
 - Branch: agent/NATIVE-001-provider-runtime; agent/OOT-NATIVE-001-native-engine
 - Started: 2026-09-12T12:00:00-03:00
-- Reviewed: 2026-09-12 — fecho registrado a partir das evidências da sessão
-  `core-001-20260912-1155` (playtest válido) e da suíte
-  `oot_native_engine_tests` (exit 0); sem código novo no fecho.
+- Reviewed: 2026-09-12 — prova em jogo `core-001-20260912-1155` validada;
+  `oot_native_engine_tests` reexecutado com exit 0.
 - Depends on: COREEXT-001, OOT-COREEXT-001
 - Files:
   - OOT-NATIVE-001/soh/soh/native/oot_resources.h

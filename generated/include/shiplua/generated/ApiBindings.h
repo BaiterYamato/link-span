@@ -157,6 +157,7 @@ enum class FunctionId {
     ShipHudDrawText,
     ShipHudDrawRing,
     ShipHudDrawIcon,
+    ShipMenuRegister,
     ShipNativeHas,
     ShipNativeCall,
 };
@@ -589,6 +590,15 @@ inline constexpr std::array<std::string_view, 3> kShipHudDrawIconErrors{{
     "invalid_state",
     "unsupported",
 }};
+inline constexpr std::array<FieldBinding, 1> kShipMenuRegisterArguments{{
+    {"page", "any", true},
+}};
+inline constexpr std::array<std::string_view, 4> kShipMenuRegisterErrors{{
+    "unsupported",
+    "invalid_argument",
+    "resource_limit",
+    "host_failure",
+}};
 inline constexpr std::array<FieldBinding, 1> kShipNativeHasArguments{{
     {"name", "string", true},
 }};
@@ -608,7 +618,7 @@ inline constexpr std::array<std::string_view, 6> kShipNativeCallErrors{{
     "host_failure",
 }};
 
-inline constexpr std::array<FunctionBinding, 64> kFunctions{{
+inline constexpr std::array<FunctionBinding, 65> kFunctions{{
     {FunctionId::ShipGameId, "ship.game.id", "0.1.0", "stable", "game_id", "raise", {}, "common", {}, kShipGameIdArguments, kShipGameIdErrors},
     {FunctionId::ShipGameHostVersion, "ship.game.host_version", "0.1.0", "stable", "string", "raise", {}, "common", {}, kShipGameHostVersionArguments, kShipGameHostVersionErrors},
     {FunctionId::ShipGameState, "ship.game.state", "0.4.0", "experimental", "game_state", "raise", {}, "oot", "game.state", kShipGameStateArguments, kShipGameStateErrors},
@@ -671,6 +681,7 @@ inline constexpr std::array<FunctionBinding, 64> kFunctions{{
     {FunctionId::ShipHudDrawText, "ship.hud.draw_text", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "hud.draw", kShipHudDrawTextArguments, kShipHudDrawTextErrors},
     {FunctionId::ShipHudDrawRing, "ship.hud.draw_ring", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "hud.draw", kShipHudDrawRingArguments, kShipHudDrawRingErrors},
     {FunctionId::ShipHudDrawIcon, "ship.hud.draw_icon", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "hud.icons", kShipHudDrawIconArguments, kShipHudDrawIconErrors},
+    {FunctionId::ShipMenuRegister, "ship.menu.register", "0.5.0", "preview", "boolean", "raise", {}, "common", "core.menu", kShipMenuRegisterArguments, kShipMenuRegisterErrors},
     {FunctionId::ShipNativeHas, "ship.native.has", "0.5.0", "experimental", "boolean", "raise", {}, "common", {}, kShipNativeHasArguments, kShipNativeHasErrors},
     {FunctionId::ShipNativeCall, "ship.native.call", "0.5.0", "experimental", "string", "return", "operation_error", "common", {}, kShipNativeCallArguments, kShipNativeCallErrors},
 }};
@@ -844,11 +855,12 @@ struct CapabilityBinding {
     bool supportsMm;
 };
 
-inline constexpr std::array<CapabilityBinding, 45> kCapabilities{{
+inline constexpr std::array<CapabilityBinding, 46> kCapabilities{{
     {"core.events", "contract", true, true},
     {"hooks.bridge", "contract", true, true},
     {"core.timers", "contract", true, true},
     {"core.input", "contract", true, true},
+    {"core.menu", "contract", true, false},
     {"input.actions", "contract", true, false},
     {"game.state", "contract", true, false},
     {"core.storage", "contract", true, true},

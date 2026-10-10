@@ -150,7 +150,7 @@ Para rollback, restaure o pacote completo anterior e o host correspondente. Rest
 
 ## Índice de serviços do OoT
 
-Cada link abre a referência detalhada do host. As versões abaixo são das tabelas de serviço, independentes da ABI do provider. Consulte versão e tamanho exatos; versões posteriores nem sempre preservam prefixo (em particular randomizer v2).
+Cada link abre a referência detalhada do host. As versões abaixo são das tabelas de serviço, independentes da ABI do provider. Consulte versão e tamanho exatos. No randomizer, a tabela v1 continua disponível, com tamanho e posições dos serviços anteriores preservados.
 
 - [`linkspan.oot.engine` v1](https://github.com/BaiterYamato/Shipwright/blob/agent/OOT-UPSTREAM-001-78dc6d970-integration/docs/native-mods.md#service-engine): Layout, tamanhos de structs, ponteiros atuais de gameplay e spawn/kill de atores.
 - [`linkspan.oot.movement` v1/2](https://github.com/BaiterYamato/Shipwright/blob/agent/OOT-UPSTREAM-001-78dc6d970-integration/docs/native-mods.md#service-movement): Input virtual/físico, settings transitórios, pulo, rolamento e atalhos de itens.

@@ -36,6 +36,29 @@ A faixa `api` descreve a API Lua, não a versão do jogo. `>=0.5 <0.6` inclui 0.
 
 Você pode gerar uma estrutura inicial no checkout do core com `python tools/shipmod.py new my-mod --dir mods --author "Seu Nome"`. Consulte as opções exatas em [shipmod-cli.pt-BR.md](shipmod-cli.pt-BR.md).
 
+### Requisitos do manifesto em resumo
+
+| Campo ou tabela | Tipo | Finalidade |
+| --- | --- | --- |
+| `id`, `name`, `version`, `api`, `entrypoint` | Strings | Identidade, versão, faixa de API e entrypoint Lua obrigatórios |
+| `[capabilities] required` | Array | Suporte ausente no host impede a carga |
+| `[capabilities] optional` | Array | Detecte melhorias com `ship.capabilities.has` |
+| `[resources] required` | Array | Caminhos do VFS exigidos; ausência impede a carga antes de executar Lua ou DLL |
+
+Para um mod OoT que usa um ícone e um modelo do jogo:
+
+```toml
+[resources]
+required = [
+  "textures/icon_item_static/gItemIconHammerTex",
+  "objects/object_gi_hammer/gGiHammerDL",
+]
+```
+
+Os caminhos são relativos ao VFS, sem `__OTR__`, barras invertidas ou `..`. O host consulta os arquivos montados em cada inicialização; a presença não é armazenada em cache. Um recurso obrigatório ausente impede a carga antes de executar Lua ou DLL. Sem a sonda de recursos do host, um mod que declara esses requisitos é recusado.
+
+Consulte os demais campos em [manifest.pt-BR.md](manifest.pt-BR.md).
+
 ## 2. Escreva o entrypoint
 
 Coloque isto em `main.lua`, seguindo o `hello-world`:
@@ -115,6 +138,31 @@ Eventos comuns de observação:
 
 Eventos de observação não cancelam o comportamento do motor. Em hooks de transformação, o host define o resultado significativo; use `ship.hooks.result(value)` dentro do callback, sem presumir que um retorno Lua ou edição do payload controle o motor. O contrato OoT `input.action` usa `input.actions` e possui `action`, `pressed`, `source`. Consulte o [schema de eventos](../schema/events.yml) e a referência da API para a lista completa de hooks.
 
+### Resultado de evento transform
+
+`ship.hooks.result(value)` só vale dentro do callback de um evento `transform`. O valor substitui o resultado que o bridge entrega ao ponto nativo. Aceita booleano, número finito ou texto; fora desse callback a chamada falha.
+
+```lua
+if ship.capabilities.has("hooks.bridge") then
+    ship.events.on("hook.oot.player.speed.run", function(payload)
+        ship.hooks.result(payload.speed * 0.8)
+    end)
+end
+```
+
+Consulte [schema/events.yml](../schema/events.yml) para identificar eventos `transform`. Eventos `observe` não aceitam resultado.
+
+### Velocidade do jogador (capability `player.speed`)
+
+```lua
+if ship.capabilities.has("player.speed") then
+    local applied = ship.player.set_speed_multiplier(1.15)
+    -- 1.0 restaura; valores fora de 0.1 a 5.0 devolvem false.
+end
+```
+
+Sem a capability ou o handler do host, a chamada falha com `unsupported`.
+
 ## 5. Adicione timers e hotkeys
 
 Timers usam **frames do host**, não milissegundos. Atrasos e intervalos precisam ser inteiros positivos. `after` executa uma vez; `every` repete. Guarde o handle retornado para cancelar o timer antes do unload.
@@ -138,11 +186,33 @@ end
 
 Use um id estável de hotkey e um label legível. `default` é a associação inicial; o host pode permitir remapeamento pelo jogador. Não fixe suposições sobre a associação ativa ou conflitos com outros mods. `ship.hotkeys.register` retorna um booleano; o registro exige um provider de input.
 
+### Página de menu declarativa (capability `core.menu`)
+
+No OoT, `ship.menu.register(page)` publica uma página de menu do mod. Teste a capability: a função existe no núcleo, mas um host sem o adaptador levanta `unsupported`. MM ainda não anuncia `core.menu`. Widgets com valor usam `ship.storage` do próprio mod.
+
+```lua
+if ship.capabilities.has("core.menu") then
+    ship.menu.register({
+        id = "meu_mod", title = "Meu Mod", sidebar = "Meu Mod",
+        widgets = {
+            { id = "toggle", type = "checkbox", label = "Ativo",
+              storage_key = "active", default = true },
+            { id = "modo", type = "action", label = "Modo",
+              icon_path = "textures/icon_item_static/gItemIconHammerTex",
+              selected = true,
+              on_activate = function() ship.log.info("modo acionado") end },
+        },
+    })
+end
+```
+
+`icon_path` é caminho relativo de recurso: não use `..`, barra invertida, `:` ou NUL. `selected` só é válido em `action` com `icon_path` e é apenas visual; a ação não é persistida automaticamente. O registro valida a página inteira antes de publicar; um registro válido substitui a página com o mesmo `(mod, id)`. Consulte widgets, limites, callbacks e input na [RFC 0025](../rfcs/0025-mod-menu.md).
+
 ## 6. Armazene valores com fallback
 
 `ship.storage.get(key, default)` retorna o valor, o padrão fornecido ou `nil` quando ausente. `set(key, value)` aceita **booleanos, números e strings**, não tabelas, funções ou handles de atores. `delete(key)` informa se uma chave foi removida; `clear()` retorna a quantidade removida. O namespace das chaves usa o id do manifesto.
 
-Storage é fornecido pelo host. O mock oferece `core.storage` em memória; a persistência em disco no jogo exige um backend configurado. Detecte o recurso sem presumir que todo jogo o suporta ou que nenhum host real o oferece. Esta adaptação do `frame-counter` continua funcionando sem persistência:
+Storage é fornecido pelo host. No OoT, o host cria `shiplua-storage.bin` no diretório do aplicativo e anuncia `core.storage`. O mock oferece storage em memória. Detecte a capability nos demais hosts. Esta adaptação do `frame-counter` continua funcionando sem persistência:
 
 ```lua
 local ship = require("ship")
@@ -181,7 +251,7 @@ if ship.capabilities.has("core.input") then
 end
 ```
 
-Para estado compartilhado entre OoT e MM, detecte separadamente `core.storage.shared` e use `ship.storage.shared.get/set/delete/clear`. O mesmo id de mod fornece o namespace nos dois jogos. Storage local não implica storage compartilhado. Declarar permissão de storage não cria um backend. Faça gravações pequenas; operações de storage podem lançar erros Lua por valores inválidos, falta de suporte ou limites de recursos.
+`core.storage.shared` só aparece sob o launcher Link-Span; fora dele, use fallback quando precisar do mesmo estado entre jogos. Para estado compartilhado entre OoT e MM, detecte separadamente `core.storage.shared` e use `ship.storage.shared.get/set/delete/clear`. O mesmo id de mod fornece o namespace nos dois jogos. Storage local não implica storage compartilhado. Declarar permissão de storage não cria um backend. Faça gravações pequenas; operações de storage podem lançar erros Lua por valores inválidos, falta de suporte ou limites de recursos.
 
 ## 7. Crie e gerencie atores
 
@@ -262,7 +332,7 @@ Um erro no entrypoint rejeita aquele carregamento. Erros de callback são regist
 
 | Sintoma | Ação |
 | --- | --- |
-| Faixa de API exclui 0.5.0 | Atualize a faixa testada e refaça o pacote |
+| Faixa `api` não cobre 0.5.0 | Atualize para `>=0.5 <0.6` e refaça o pacote |
 | Capability obrigatória indisponível | Use um host compatível ou torne a melhoria opcional com detecção |
 | `permission_denied` em chamada de ator | Adicione o grant `world.entities.*` correspondente |
 | Ator retorna `invalid_argument` | Confira o nome lógico do host e o transform |

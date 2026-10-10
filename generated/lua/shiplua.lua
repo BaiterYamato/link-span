@@ -223,6 +223,7 @@ ship.hooks = ship.hooks or {}
 ship.hotkeys = ship.hotkeys or {}
 ship.hud = ship.hud or {}
 ship.log = ship.log or {}
+ship.menu = ship.menu or {}
 ship.mm = ship.mm or {}
 ship.native = ship.native or {}
 ship.oot = ship.oot or {}
@@ -647,6 +648,12 @@ function ship.hud.draw_ring(cx, cy, radius, thickness, fraction, r, g, b, a) end
 ---@param options? ShipLuaHudIconOptions
 ---@return boolean
 function ship.hud.draw_icon(path, x, y, w, h, options) end
+
+--- Registers a declarative menu page for the mod (checkbox, sliders, choice, action, text and separator widgets) and returns true. Values persist only in ship.storage and input arrives outside the draw pass; requires core.menu.
+--- API common; stability: preview; since: 0.5.0; capability: core.menu; errors: unsupported, invalid_argument, resource_limit, host_failure.
+---@param page any
+---@return boolean
+function ship.menu.register(page) end
 
 --- Returns whether the mod's native provider exposes the named function. Without a provider, returns false; an empty name or one longer than 128 bytes raises a Lua error.
 --- API common; stability: experimental; since: 0.5.0; capability: common; errors: invalid_argument.

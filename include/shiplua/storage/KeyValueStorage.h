@@ -41,6 +41,9 @@ class KeyValueStorage {
 
     const Limits& GetLimits() const;
 
+    // Valida uma chave sem consultar nem alterar o armazenamento.
+    Result<void> ValidateKey(const std::string& modId, const std::string& key) const;
+
     // Retorna o valor da chave ou std::nullopt quando ausente.
     Result<std::optional<Value>> Get(const std::string& modId, const std::string& key) const;
 
@@ -89,7 +92,6 @@ class KeyValueStorage {
     bool IsDirty() const;
 
   private:
-    Result<void> ValidateKey(const std::string& modId, const std::string& key) const;
     static std::size_t ValueBytes(const Value& value);
     // Marca que há mudança a gravar. Chamado ao fim de Set/Delete/Clear.
     void MarkDirty();

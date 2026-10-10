@@ -1,6 +1,7 @@
 #include "shiplua/manifest/ManifestParser.h"
 
 #include <algorithm>
+#include <cctype>
 #include <exception>
 #include <fstream>
 #include <sstream>
@@ -44,6 +45,23 @@ bool IsValidPermissionId(const std::string& id) {
         previousDot = character == '.';
     }
     return true;
+}
+
+bool IsValidResourcePath(const std::string& path) {
+    if (path.empty() || path.size() > 1024 || path.front() == '/' ||
+        path.find('\\') != std::string::npos || path.find(':') != std::string::npos) return false;
+    for (unsigned char character : path) {
+        if (character < 0x20 || character == 0x7F) return false;
+    }
+    std::size_t start = 0;
+    while (start < path.size()) {
+        const auto end = path.find('/', start);
+        const auto length = (end == std::string::npos ? path.size() : end) - start;
+        if (length == 0 || (length == 1 && path[start] == '.') ||
+            (length == 2 && path[start] == '.' && path[start + 1] == '.')) return false;
+        start = end == std::string::npos ? path.size() : end + 1;
+    }
+    return path.back() != '/';
 }
 
 // Reads a required top-level string field; appends to `missing` when absent
@@ -118,6 +136,22 @@ Result<Manifest> ParseTable(const toml::table& table, const std::string& sourceN
             sourceName + ": provider must be a table");
         NativeProviderManifest native;
         for (const auto& [key, node] : *provider) {
+            if (key.str() == "host_fingerprints") {
+                const auto* list = node.as_array();
+                if (!list || list->empty() || list->size() > 32) return Result<Manifest>::err(
+                    ErrorCode::InvalidArgument, sourceName + ": provider.host_fingerprints must be a list of 1-32 SHA-256");
+                for (const auto& item : *list) {
+                    auto text = item.value<std::string>();
+                    const auto hex = text && text->size() == 64 &&
+                        std::all_of(text->begin(), text->end(), [](char c) { return std::isxdigit(static_cast<unsigned char>(c)) != 0; });
+                    if (!hex) return Result<Manifest>::err(ErrorCode::InvalidArgument,
+                        sourceName + ": provider.host_fingerprints entries must be SHA-256 hex");
+                    std::transform(text->begin(), text->end(), text->begin(),
+                                   [](char c) { return static_cast<char>(std::tolower(static_cast<unsigned char>(c))); });
+                    native.hostFingerprints.push_back(*text);
+                }
+                continue;
+            }
             const auto value = node.value<std::string>();
             if (!value || value->empty()) return Result<Manifest>::err(ErrorCode::InvalidArgument,
                 sourceName + ": provider fields must be nonempty strings");
@@ -138,15 +172,22 @@ Result<Manifest> ParseTable(const toml::table& table, const std::string& sourceN
         }
         manifest.provider = std::move(native);
     }
+    if (manifest.provider && !manifest.provider->hostFingerprints.empty() &&
+        (manifest.kind != ModKind::CoreExtension || manifest.provider->abiVersion != "1.3")) {
+        return Result<Manifest>::err(ErrorCode::InvalidArgument,
+            sourceName + ": provider.host_fingerprints requires a core_extension with ABI 1.3");
+    }
 
     if (manifest.kind == ModKind::CoreExtension) {
         if (manifest.loadPhase != ModLoadPhase::PreGame) {
             return Result<Manifest>::err(ErrorCode::InvalidArgument,
                 sourceName + ": core_extension requires load_phase='pre_game'");
         }
-        if (!manifest.provider || manifest.provider->abiVersion != "1.1") {
+        if (!manifest.provider ||
+            (manifest.provider->abiVersion != "1.1" && manifest.provider->abiVersion != "1.2" &&
+             manifest.provider->abiVersion != "1.3")) {
             return Result<Manifest>::err(ErrorCode::InvalidArgument,
-                sourceName + ": core_extension requires provider ABI 1.1");
+                sourceName + ": core_extension requires provider ABI 1.1, 1.2 or 1.3");
         }
     } else if (manifest.loadPhase == ModLoadPhase::PreGame) {
         return Result<Manifest>::err(ErrorCode::InvalidArgument,
@@ -179,6 +220,27 @@ Result<Manifest> ParseTable(const toml::table& table, const std::string& sourceN
     if (const toml::table* caps = table["capabilities"].as_table()) {
         ReadStringArray(*caps, "required", manifest.capabilitiesRequired);
         ReadStringArray(*caps, "optional", manifest.capabilitiesOptional);
+    }
+
+    if (table.contains("resources")) {
+        const auto* resources = table["resources"].as_table();
+        if (!resources) return Result<Manifest>::err(ErrorCode::InvalidArgument,
+            sourceName + ": resources must be a table");
+        if (resources->contains("required")) {
+            const auto* required = (*resources)["required"].as_array();
+            if (!required || required->size() > 256) return Result<Manifest>::err(
+                ErrorCode::InvalidArgument, sourceName + ": resources.required must be an array of at most 256 paths");
+            for (const auto& entry : *required) {
+                const auto path = entry.value<std::string>();
+                if (!path || !IsValidResourcePath(*path)) return Result<Manifest>::err(
+                    ErrorCode::InvalidArgument, sourceName + ": invalid resources.required path");
+                manifest.resourcesRequired.push_back(*path);
+            }
+            std::sort(manifest.resourcesRequired.begin(), manifest.resourcesRequired.end());
+            if (std::adjacent_find(manifest.resourcesRequired.begin(), manifest.resourcesRequired.end()) !=
+                manifest.resourcesRequired.end()) return Result<Manifest>::err(
+                    ErrorCode::InvalidArgument, sourceName + ": duplicate resources.required path");
+        }
     }
 
     if (const toml::table* deps = table["dependencies"].as_table()) {
