@@ -24,11 +24,11 @@ class TempDirectory {
 };
 
 void PrintUsage() {
-    std::cerr << "Uso: shiplua_mod_test_runner <diretório-do-mod|pacote.zip|pacote.shipmod> "
-                 "[--game oot|mm] [--capability <nome>]...\n"
+    std::cerr << "Usage: shiplua_mod_test_runner <mod-folder|package.zip|package.shipmod> "
+                 "[--game oot|mm] [--capability <name>]...\n"
                  "\n"
-                 "Executa os testes do mod (<mod>/tests/*.lua) no mock runtime, sem jogo/ROM.\n"
-                 "Saída: 0 = todos passaram; 1 = falhas ou erros; 2 = uso inválido.\n";
+                 "Runs the mod's tests (<mod>/tests/*.lua) in the mock runtime, without the game or a ROM.\n"
+                 "Exit code: 0 = all passed; 1 = failures or errors; 2 = invalid usage.\n";
 }
 
 } // namespace
@@ -51,7 +51,7 @@ int main(int argc, char** argv) {
             }
             options.gameId = argv[++i];
             if (options.gameId != "oot" && options.gameId != "mm") {
-                std::cerr << "--game deve ser 'oot' ou 'mm'\n";
+                std::cerr << "--game must be 'oot' or 'mm'\n";
                 return 2;
             }
         } else if (argument == "--capability") {
@@ -61,14 +61,14 @@ int main(int argc, char** argv) {
             }
             options.extraCapabilities.emplace_back(argv[++i]);
         } else if (!argument.empty() && argument.front() == '-') {
-            std::cerr << "Opção desconhecida: " << argument << '\n';
+            std::cerr << "Unknown option: " << argument << '\n';
             PrintUsage();
             return 2;
         } else if (!haveInput) {
             input = argument;
             haveInput = true;
         } else {
-            std::cerr << "Apenas um caminho de mod é aceito por execução.\n";
+            std::cerr << "Only one mod path is accepted per run.\n";
             PrintUsage();
             return 2;
         }
@@ -83,16 +83,16 @@ int main(int argc, char** argv) {
     std::error_code error;
     const auto status = std::filesystem::symlink_status(input, error);
     if (error || std::filesystem::is_symlink(status)) {
-        std::cerr << "Entrada ausente, inacessível ou simbólica: " << input.string() << '\n';
+        std::cerr << "Path is missing, unreadable or a symbolic link: " << input.string() << '\n';
         return 2;
     }
     if (std::filesystem::is_regular_file(status)) {
         if (!ShipLua::HasModPackageExtension(input)) {
-            std::cerr << "Arquivo de entrada não é um pacote .zip ou .shipmod: " << input.string() << '\n';
+            std::cerr << "Input file is not a .zip or .shipmod package: " << input.string() << '\n';
             return 2;
         }
         if (!ShipLua::HasModPackageManifest(input)) {
-            std::cerr << "ZIP inválido ou sem manifest.toml regular na raiz: " << input.string() << '\n';
+            std::cerr << "Invalid ZIP or no regular manifest.toml at its root: " << input.string() << '\n';
             return 1;
         }
         const auto stamp = std::chrono::steady_clock::now().time_since_epoch().count();
@@ -102,35 +102,35 @@ int main(int argc, char** argv) {
         const std::filesystem::path extracted = temporary->Path() / "conteudo";
         const auto extraction = ShipLua::ExtractShipmod(input, extracted);
         if (!extraction.isOk()) {
-            std::cerr << "Falha ao extrair o pacote: " << extraction.message << '\n';
+            std::cerr << "Failed to extract the package: " << extraction.message << '\n';
             return 1;
         }
         modDir = extracted;
     } else if (!std::filesystem::is_directory(status)) {
-        std::cerr << "Entrada não é diretório nem arquivo regular: " << input.string() << '\n';
+        std::cerr << "Path is neither a folder nor a regular file: " << input.string() << '\n';
         return 2;
     }
 
     ShipLua::ModTestRunner runner(std::move(options));
     const auto report = runner.Run(modDir);
     if (!report.isOk()) {
-        std::cerr << "Falha ao executar os testes: " << report.message << '\n';
+        std::cerr << "Failed to run the tests: " << report.message << '\n';
         return 1;
     }
     const ShipLua::ModTestReport& result = *report.value;
 
     if (result.noTestsFound) {
-        std::cout << "Nenhum teste encontrado em " << (modDir / "tests").string()
-                  << " — nada a executar.\n";
+        std::cout << "No tests found in " << (modDir / "tests").string()
+                  << "; nothing to run.\n";
         return 0;
     }
 
-    std::cout << "Mod: " << (result.modId.empty() ? "(desconhecido)" : result.modId) << '\n';
+    std::cout << "Mod: " << (result.modId.empty() ? "(unknown)" : result.modId) << '\n';
     for (const ShipLua::ModTestCaseResult& test : result.tests) {
         if (test.ok) {
             std::cout << "[ok] " << test.file << " :: " << test.test << '\n';
         } else {
-            std::cout << "[falha] " << test.file << " :: " << test.test;
+            std::cout << "[fail] " << test.file << " :: " << test.test;
             if (!test.message.empty()) {
                 const auto newline = test.message.find('\n');
                 std::cout << " — " << test.message.substr(0, newline);
@@ -139,15 +139,15 @@ int main(int argc, char** argv) {
         }
     }
     for (const std::string& infraError : result.errors) {
-        std::cout << "[erro] " << infraError << '\n';
+        std::cout << "[error] " << infraError << '\n';
     }
 
     const std::size_t passed = result.PassedCount();
     const std::size_t failed = result.FailedCount();
-    std::cout << "Resumo: " << passed << " passaram, " << failed << " falharam ("
-              << result.tests.size() << " testes em " << result.files << " arquivo(s))\n";
+    std::cout << "Summary: " << passed << " passed, " << failed << " failed ("
+              << result.tests.size() << " test(s) in " << result.files << " file(s))\n";
     if (!result.errors.empty()) {
-        std::cout << "Erros de infraestrutura: " << result.errors.size() << '\n';
+        std::cout << "Infrastructure errors: " << result.errors.size() << '\n';
     }
     return failed == 0 && result.errors.empty() ? 0 : 1;
 }

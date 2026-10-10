@@ -32,7 +32,7 @@ constexpr int kNoReference = LUA_NOREF;
 int TracebackHandler(lua_State* state) {
     const char* message = lua_tostring(state, 1);
     if (message == nullptr) {
-        message = "erro Lua sem mensagem";
+        message = "Lua error without a message";
     }
     luaL_traceback(state, state, message, 1);
     return 1;
@@ -47,7 +47,7 @@ std::string TopToString(lua_State* state) {
     size_t length = 0;
     const char* message = lua_tolstring(state, -1, &length);
     return message != nullptr ? std::string(message, length)
-                              : "erro Lua sem mensagem textual";
+                              : "Lua error without a text message";
 }
 
 void SetFunction(lua_State* state, int tableIndex, const char* name, lua_CFunction function,
@@ -184,11 +184,11 @@ void PushStorageValue(lua_State* state, const KeyValueStorage::Value& value) {
 
 const char* ErrorMessage(ErrorCode code) {
     switch (code) {
-        case ErrorCode::InvalidArgument: return "argumento inválido para a API ship";
-        case ErrorCode::InvalidHandle: return "handle inválido para a API ship";
-        case ErrorCode::Unsupported: return "recurso não suportado pela API ship";
-        case ErrorCode::InvalidState: return "estado inválido da API ship";
-        case ErrorCode::PermissionDenied: return "permissão negada pela API ship";
+        case ErrorCode::InvalidArgument: return "invalid argument for the ship API";
+        case ErrorCode::InvalidHandle: return "invalid handle for the ship API";
+        case ErrorCode::Unsupported: return "feature not supported by the ship API";
+        case ErrorCode::InvalidState: return "invalid state in the ship API";
+        case ErrorCode::PermissionDenied: return "permission denied by the ship API";
         case ErrorCode::ResourceLimit: return "limite de recurso da API ship excedido";
         case ErrorCode::HostFailure: return "falha do host na API ship";
         case ErrorCode::ScriptFailure: return "falha de script na API ship";
@@ -605,7 +605,7 @@ Result<void> LuaApiBinding::Install() {
 int LuaApiBinding::InstallProtected(lua_State* state) noexcept {
     LuaApiBinding* binding = FromUpvalue(state);
     if (binding == nullptr) {
-        return Fail(state, "contexto da API ship indisponível");
+        return Fail(state, "ship API context unavailable");
     }
     bool failed = false;
     try {
@@ -613,7 +613,7 @@ int LuaApiBinding::InstallProtected(lua_State* state) noexcept {
     } catch (...) {
         failed = true;
     }
-    return failed ? Fail(state, "exceção C++ durante instalação da API ship") : 0;
+    return failed ? Fail(state, "C++ exception while installing the ship API") : 0;
 }
 
 int LuaApiBinding::NativeHas(lua_State* state) noexcept {
@@ -848,12 +848,12 @@ std::size_t LuaApiBinding::SubscriptionCount() const {
 int LuaApiBinding::Require(lua_State* state) noexcept {
     LuaApiBinding* binding = FromUpvalue(state);
     if (lua_type(state, 1) != LUA_TSTRING) {
-        return Fail(state, "somente o módulo interno 'ship' pode ser importado");
+        return Fail(state, "only the built-in 'ship' module can be required");
     }
     size_t length = 0;
     const char* name = lua_tolstring(state, 1, &length);
     if (binding == nullptr || name == nullptr || std::string_view(name, length) != "ship") {
-        return Fail(state, "somente o módulo interno 'ship' pode ser importado");
+        return Fail(state, "only the built-in 'ship' module can be required");
     }
     lua_rawgeti(state, LUA_REGISTRYINDEX, binding->mShipReference);
     return 1;
@@ -862,7 +862,7 @@ int LuaApiBinding::Require(lua_State* state) noexcept {
 int LuaApiBinding::GameId(lua_State* state) noexcept {
     LuaApiBinding* binding = FromUpvalue(state);
     if (binding == nullptr || binding->mHostContext.gameId.empty()) {
-        return Fail(state, "identificador do jogo host ainda não foi configurado");
+        return Fail(state, "host game id has not been configured yet");
     }
     lua_pushlstring(state, binding->mHostContext.gameId.data(), binding->mHostContext.gameId.size());
     return 1;
@@ -871,7 +871,7 @@ int LuaApiBinding::GameId(lua_State* state) noexcept {
 int LuaApiBinding::HostVersion(lua_State* state) noexcept {
     LuaApiBinding* binding = FromUpvalue(state);
     if (binding == nullptr || binding->mHostContext.hostVersion.empty()) {
-        return Fail(state, "versão do host ainda não foi configurada");
+        return Fail(state, "host version has not been configured yet");
     }
     lua_pushlstring(state, binding->mHostContext.hostVersion.data(),
                     binding->mHostContext.hostVersion.size());
@@ -881,7 +881,7 @@ int LuaApiBinding::HostVersion(lua_State* state) noexcept {
 int LuaApiBinding::RuntimeVersion(lua_State* state) noexcept {
     LuaApiBinding* binding = FromUpvalue(state);
     if (binding == nullptr || binding->mHostContext.runtimeVersion.empty()) {
-        return Fail(state, "versão do runtime ainda não foi configurada");
+        return Fail(state, "runtime version has not been configured yet");
     }
     lua_pushlstring(state, binding->mHostContext.runtimeVersion.data(),
                     binding->mHostContext.runtimeVersion.size());
@@ -907,7 +907,7 @@ int LuaApiBinding::CapabilityHas(lua_State* state) noexcept {
     const char* error = nullptr;
     const int resultCount = binding == nullptr ? 0 : binding->CapabilityHasFromLua(state, error);
     if (binding == nullptr) {
-        error = "contexto da API ship indisponível";
+        error = "ship API context unavailable";
     }
     return error == nullptr ? resultCount : Fail(state, error);
 }
@@ -916,31 +916,31 @@ SHIPLUA_NOINLINE int LuaApiBinding::CapabilityHasFromLua(lua_State* state,
                                                          const char*& error) {
     try {
         if (lua_type(state, 1) != LUA_TSTRING) {
-            error = "ship.capabilities.has exige um id textual";
+            error = "ship.capabilities.has requires a string id";
             return 0;
         }
         size_t length = 0;
         const char* id = lua_tolstring(state, 1, &length);
         if (id == nullptr || mCapabilities == nullptr) {
-            error = "contexto da API ship indisponível";
+            error = "ship API context unavailable";
             return 0;
         }
         const bool hasRange = lua_gettop(state) >= 2 && !lua_isnil(state, 2);
         if (hasRange && lua_type(state, 2) != LUA_TSTRING) {
-            error = "ship.capabilities.has exige um intervalo de versão textual";
+            error = "ship.capabilities.has requires a version range string";
             return 0;
         }
         size_t rangeLength = 0;
         const char* rangeText = hasRange ? lua_tolstring(state, 2, &rangeLength) : nullptr;
         if (hasRange && rangeText == nullptr) {
-            error = "ship.capabilities.has exige um intervalo de versão textual";
+            error = "ship.capabilities.has requires a version range string";
             return 0;
         }
         bool present = false;
         if (hasRange) {
             auto range = VersionRange::Parse(std::string(rangeText, rangeLength));
             if (!range.isOk()) {
-                error = "intervalo de versão inválido em ship.capabilities.has";
+                error = "invalid version range in ship.capabilities.has";
                 return 0;
             }
             present = mCapabilities->Has(std::string(id, length), *range.value,
@@ -961,7 +961,7 @@ int LuaApiBinding::CapabilityList(lua_State* state) noexcept {
     const char* error = nullptr;
     const int resultCount = binding == nullptr ? 0 : binding->CapabilityListFromLua(state, error);
     if (binding == nullptr) {
-        error = "contexto da API ship indisponível";
+        error = "ship API context unavailable";
     }
     return error == nullptr ? resultCount : Fail(state, error);
 }
@@ -970,12 +970,12 @@ SHIPLUA_NOINLINE int LuaApiBinding::CapabilityListFromLua(lua_State* state,
                                                           const char*& error) {
     try {
         if (mCapabilities == nullptr) {
-            error = "contexto da API ship indisponível";
+            error = "ship API context unavailable";
             return 0;
         }
         const bool hasFilter = lua_gettop(state) >= 1 && !lua_isnil(state, 1);
         if (hasFilter && !lua_istable(state, 1)) {
-            error = "ship.capabilities.list exige uma tabela de filtro";
+            error = "ship.capabilities.list requires a filter table";
             return 0;
         }
         std::string game = mHostContext.gameId;
@@ -991,7 +991,7 @@ SHIPLUA_NOINLINE int LuaApiBinding::CapabilityListFromLua(lua_State* state,
                     (std::string_view(gameText, gameLength) != "oot" &&
                      std::string_view(gameText, gameLength) != "mm")) {
                     lua_pop(state, 1);
-                    error = "filtro game de ship.capabilities.list deve ser 'oot' ou 'mm'";
+                    error = "the game filter of ship.capabilities.list must be 'oot' or 'mm'";
                     return 0;
                 }
                 game.assign(gameText, gameLength);
@@ -1005,14 +1005,14 @@ SHIPLUA_NOINLINE int LuaApiBinding::CapabilityListFromLua(lua_State* state,
                                                 : nullptr;
                 if (stabilityText == nullptr) {
                     lua_pop(state, 1);
-                    error = "filtro stability de ship.capabilities.list é inválido";
+                    error = "the stability filter of ship.capabilities.list is invalid";
                     return 0;
                 }
                 auto parsed =
                     ParseCapabilityStability(std::string(stabilityText, stabilityLength));
                 if (!parsed.isOk()) {
                     lua_pop(state, 1);
-                    error = "filtro stability de ship.capabilities.list é inválido";
+                    error = "the stability filter of ship.capabilities.list is invalid";
                     return 0;
                 }
                 stability = *parsed.value;
@@ -1033,7 +1033,7 @@ int LuaApiBinding::CapabilityInfo(lua_State* state) noexcept {
     const char* error = nullptr;
     const int resultCount = binding == nullptr ? 0 : binding->CapabilityInfoFromLua(state, error);
     if (binding == nullptr) {
-        error = "contexto da API ship indisponível";
+        error = "ship API context unavailable";
     }
     return error == nullptr ? resultCount : Fail(state, error);
 }
@@ -1042,13 +1042,13 @@ SHIPLUA_NOINLINE int LuaApiBinding::CapabilityInfoFromLua(lua_State* state,
                                                           const char*& error) {
     try {
         if (lua_type(state, 1) != LUA_TSTRING) {
-            error = "ship.capabilities.info exige um id textual";
+            error = "ship.capabilities.info requires a string id";
             return 0;
         }
         size_t length = 0;
         const char* id = lua_tolstring(state, 1, &length);
         if (id == nullptr || mCapabilities == nullptr) {
-            error = "contexto da API ship indisponível";
+            error = "ship API context unavailable";
             return 0;
         }
         const std::optional<CapabilityDescriptor> descriptor =
@@ -1071,7 +1071,7 @@ int LuaApiBinding::CapabilityProviders(lua_State* state) noexcept {
     const int resultCount =
         binding == nullptr ? 0 : binding->CapabilityProvidersFromLua(state, error);
     if (binding == nullptr) {
-        error = "contexto da API ship indisponível";
+        error = "ship API context unavailable";
     }
     return error == nullptr ? resultCount : Fail(state, error);
 }
@@ -1080,13 +1080,13 @@ SHIPLUA_NOINLINE int LuaApiBinding::CapabilityProvidersFromLua(lua_State* state,
                                                                const char*& error) {
     try {
         if (lua_type(state, 1) != LUA_TSTRING) {
-            error = "ship.capabilities.providers exige um id textual";
+            error = "ship.capabilities.providers requires a string id";
             return 0;
         }
         size_t length = 0;
         const char* id = lua_tolstring(state, 1, &length);
         if (id == nullptr || mCapabilities == nullptr) {
-            error = "contexto da API ship indisponível";
+            error = "ship API context unavailable";
             return 0;
         }
         const std::vector<std::string> providers =
@@ -1168,7 +1168,7 @@ int LuaApiBinding::EventsOn(lua_State* state) noexcept {
     int result = 0;
     try {
         if (binding == nullptr) {
-            error = "contexto da API ship indisponível";
+            error = "ship API context unavailable";
         } else {
             result = binding->RegisterEventFromLua(state, error);
         }
@@ -1180,13 +1180,13 @@ int LuaApiBinding::EventsOn(lua_State* state) noexcept {
 
 int LuaApiBinding::RegisterEventFromLua(lua_State* state, const char*& error) {
     if (lua_type(state, 1) != LUA_TSTRING) {
-        error = "ship.events.on exige um nome de evento textual";
+        error = "ship.events.on requires an event name string";
         return 0;
     }
     size_t length = 0;
     const char* name = lua_tolstring(state, 1, &length);
     if (name == nullptr) {
-        error = "ship.events.on exige um nome de evento textual";
+        error = "ship.events.on requires an event name string";
         return 0;
     }
     int callbackIndex = 0;
@@ -1199,21 +1199,21 @@ int LuaApiBinding::RegisterEventFromLua(lua_State* state, const char*& error) {
         if (!lua_isnil(state, -1)) {
             if (!lua_isinteger(state, -1)) {
                 lua_pop(state, 1);
-                error = "priority deve ser um inteiro";
+                error = "priority must be an integer";
                 return 0;
             }
             const lua_Integer rawPriority = lua_tointeger(state, -1);
             if (rawPriority < std::numeric_limits<int>::min() ||
                 rawPriority > std::numeric_limits<int>::max()) {
                 lua_pop(state, 1);
-                error = "priority está fora do intervalo inteiro suportado";
+                error = "priority is outside the supported integer range";
                 return 0;
             }
             priority = static_cast<int>(rawPriority);
         }
         lua_pop(state, 1);
     } else {
-        error = "ship.events.on exige callback ou opções e callback";
+        error = "ship.events.on requires a callback, or options and a callback";
         return 0;
     }
 
@@ -1232,7 +1232,7 @@ int LuaApiBinding::EventsOff(lua_State* state) noexcept {
     int result = 0;
     try {
         if (binding == nullptr) {
-            error = "contexto da API ship indisponível";
+            error = "ship API context unavailable";
         } else {
             result = binding->RemoveEventFromLua(state, error);
         }
@@ -1244,12 +1244,12 @@ int LuaApiBinding::EventsOff(lua_State* state) noexcept {
 
 int LuaApiBinding::RemoveEventFromLua(lua_State* state, const char*& error) {
     if (!lua_isinteger(state, 1)) {
-        error = "ship.events.off exige uma inscrição inteira";
+        error = "ship.events.off requires an integer subscription";
         return 0;
     }
     const lua_Integer raw = lua_tointeger(state, 1);
     if (raw <= 0) {
-        error = "inscrição inválida";
+        error = "invalid subscription";
         return 0;
     }
     const auto removed = RemoveEvent({static_cast<std::uint64_t>(raw)});
@@ -1264,14 +1264,14 @@ int LuaApiBinding::RemoveEventFromLua(lua_State* state, const char*& error) {
 int LuaApiBinding::HotkeysRegister(lua_State* state) noexcept {
     LuaApiBinding* binding = FromUpvalue(state);
     if (binding == nullptr) {
-        return Fail(state, "contexto da API ship indisponível");
+        return Fail(state, "ship API context unavailable");
     }
     const char* error = nullptr;
     int result = 0;
     try {
         result = binding->RegisterHotkey(state, error);
     } catch (...) {
-        error = "exceção C++ durante registro de hotkey";
+        error = "C++ exception while registering a hotkey";
     }
     return error != nullptr ? Fail(state, error) : result;
 }
@@ -1283,18 +1283,18 @@ int LuaApiBinding::RegisterHotkey(lua_State* state, const char*& error) {
         return 0;
     }
     if (lua_type(state, 1) != LUA_TSTRING) {
-        error = "ship.hotkeys.register exige um id textual";
+        error = "ship.hotkeys.register requires a string id";
         return 0;
     }
     std::size_t idLen = 0;
     const char* idRaw = lua_tolstring(state, 1, &idLen);
     if (idRaw == nullptr || idLen == 0) {
-        error = "ship.hotkeys.register exige um id não vazio";
+        error = "ship.hotkeys.register requires a non-empty id";
         return 0;
     }
     const std::string id(idRaw, idLen);
     if (!IsValidHotkeyId(id)) {
-        error = "id de hotkey deve corresponder a [a-z][a-z0-9_.-]{0,63}";
+        error = "hotkey id must match [a-z][a-z0-9_.-]{0,63}";
         return 0;
     }
 
@@ -1308,7 +1308,7 @@ int LuaApiBinding::RegisterHotkey(lua_State* state, const char*& error) {
         lua_getfield(state, 2, "default");
         if (!lua_isnil(state, -1) && lua_type(state, -1) != LUA_TSTRING) {
             lua_pop(state, 1);
-            error = "default de hotkey deve ser textual";
+            error = "hotkey default must be a string";
             return 0;
         }
         if (lua_type(state, -1) == LUA_TSTRING) {
@@ -1322,7 +1322,7 @@ int LuaApiBinding::RegisterHotkey(lua_State* state, const char*& error) {
         lua_getfield(state, 2, "label");
         if (!lua_isnil(state, -1) && lua_type(state, -1) != LUA_TSTRING) {
             lua_pop(state, 1);
-            error = "label de hotkey deve ser textual";
+            error = "hotkey label must be a string";
             return 0;
         }
         if (lua_type(state, -1) == LUA_TSTRING) {
@@ -1336,7 +1336,7 @@ int LuaApiBinding::RegisterHotkey(lua_State* state, const char*& error) {
     } else if (lua_isfunction(state, 2)) {
         callbackIndex = 2;
     } else {
-        error = "ship.hotkeys.register exige callback ou opções e callback";
+        error = "ship.hotkeys.register requires a callback, or options and a callback";
         return 0;
     }
     if (defaultKey.size() > 32) {
@@ -1354,7 +1354,7 @@ int LuaApiBinding::RegisterHotkey(lua_State* state, const char*& error) {
     lua_pushvalue(state, callbackIndex);
     const int reference = luaL_ref(state, LUA_REGISTRYINDEX);
     if (reference == LUA_NOREF) {
-        error = "não foi possível reter o callback de hotkey";
+        error = "could not retain the hotkey callback";
         return 0;
     }
 
@@ -1381,13 +1381,13 @@ int LuaApiBinding::RegisterHotkey(lua_State* state, const char*& error) {
             std::size_t n = 0;
             const char* msg = lua_tolstring(s, -1, &n);
             const std::string failure = msg != nullptr ? std::string(msg, n)
-                                                       : "callback de hotkey falhou sem mensagem";
+                                                       : "hotkey callback failed without a message";
             lua_pop(s, 2);
             logger.error(modId, failure);
             ++callback->consecutiveFailures;
             if (callback->consecutiveFailures >= maxFailures) {
                 callback->active = false;
-                logger.error(modId, "hotkey '" + id + "' desativada após falhas repetidas");
+                logger.error(modId, "hotkey '" + id + "' disabled after repeated failures");
             }
         } else {
             lua_pop(s, 1);
@@ -1444,7 +1444,7 @@ int LuaApiBinding::ScheduleTimer(lua_State* state, bool repeating) noexcept {
     int result = 0;
     try {
         if (binding == nullptr) {
-            error = "contexto da API ship indisponível";
+            error = "ship API context unavailable";
         } else {
             result = binding->ScheduleTimerFromLua(state, repeating, error);
         }
@@ -1456,18 +1456,18 @@ int LuaApiBinding::ScheduleTimer(lua_State* state, bool repeating) noexcept {
 
 int LuaApiBinding::ScheduleTimerFromLua(lua_State* state, bool repeating, const char*& error) {
     if (!lua_isinteger(state, 1)) {
-        error = repeating ? "ship.timer.every exige um intervalo em frames inteiro"
-                          : "ship.timer.after exige um atraso em frames inteiro";
+        error = repeating ? "ship.timer.every requires an integer interval in frames"
+                          : "ship.timer.after requires an integer delay in frames";
         return 0;
     }
     const lua_Integer frames = lua_tointeger(state, 1);
     if (frames < 1) {
-        error = "ship.timer exige um atraso de pelo menos 1 frame";
+        error = "ship.timer requires a delay of at least 1 frame";
         return 0;
     }
     if (!lua_isfunction(state, 2)) {
-        error = repeating ? "ship.timer.every exige um callback"
-                          : "ship.timer.after exige um callback";
+        error = repeating ? "ship.timer.every requires a callback"
+                          : "ship.timer.after requires a callback";
         return 0;
     }
     auto scheduled =
@@ -1495,7 +1495,7 @@ Result<TimerHandle> LuaApiBinding::DoScheduleTimer(lua_State* state, bool repeat
     const int reference = luaL_ref(state, LUA_REGISTRYINDEX);
     if (reference == LUA_NOREF) {
         return Result<TimerHandle>::err(ErrorCode::HostFailure,
-                                        "não foi possível reter o callback do timer");
+                                        "could not retain the timer callback");
     }
 
     auto callback = std::make_shared<LuaCallback>();
@@ -1523,7 +1523,7 @@ Result<TimerHandle> LuaApiBinding::DoScheduleTimer(lua_State* state, bool repeat
             size_t length = 0;
             const char* message = lua_tolstring(s, -1, &length);
             failure = message != nullptr ? std::string(message, length)
-                                         : "callback de timer falhou sem mensagem";
+                                         : "timer callback failed without a message";
             lua_pop(s, 2);
             logger.error(modId, failure);
         } else {
@@ -1563,7 +1563,7 @@ int LuaApiBinding::TimerCancel(lua_State* state) noexcept {
     int result = 0;
     try {
         if (binding == nullptr) {
-            error = "contexto da API ship indisponível";
+            error = "ship API context unavailable";
         } else {
             result = binding->CancelTimer(state, error);
         }
@@ -1575,12 +1575,12 @@ int LuaApiBinding::TimerCancel(lua_State* state) noexcept {
 
 int LuaApiBinding::CancelTimer(lua_State* state, const char*& error) {
     if (!lua_isinteger(state, 1)) {
-        error = "ship.timer.cancel exige um handle inteiro";
+        error = "ship.timer.cancel requires an integer handle";
         return 0;
     }
     const lua_Integer raw = lua_tointeger(state, 1);
     if (raw <= 0) {
-        error = "handle de timer inválido";
+        error = "invalid timer handle";
         return 0;
     }
     const std::uint64_t id = static_cast<std::uint64_t>(raw);
@@ -1616,10 +1616,10 @@ int LuaApiBinding::StorageGet(lua_State* state) noexcept {
     int result = 0;
     try {
         if (binding == nullptr) {
-            error = "contexto da API ship indisponível";
+            error = "ship API context unavailable";
         } else {
             result = binding->GetStorage(state, error, binding->mStorage.get(),
-                                         "ship.storage.get exige uma chave textual");
+                                         "ship.storage.get requires a string key");
         }
     } catch (...) {
         error = ErrorMessage(ErrorCode::HostFailure);
@@ -1634,7 +1634,7 @@ int LuaApiBinding::GetStorage(lua_State* state, const char*& error, KeyValueStor
         return 0;
     }
     if (lua_type(state, 1) != LUA_TSTRING) {
-        error = label; // "<label>.get exige uma chave textual" — mensagem simplificada
+        error = label; // "<label>.get requires a string key" — mensagem simplificada
         return 0;
     }
     size_t length = 0;
@@ -1666,10 +1666,10 @@ int LuaApiBinding::StorageSet(lua_State* state) noexcept {
     int result = 0;
     try {
         if (binding == nullptr) {
-            error = "contexto da API ship indisponível";
+            error = "ship API context unavailable";
         } else {
             result = binding->SetStorage(state, error, binding->mStorage.get(),
-                                         "ship.storage.set exige uma chave textual");
+                                         "ship.storage.set requires a string key");
         }
     } catch (...) {
         error = ErrorMessage(ErrorCode::HostFailure);
@@ -1712,7 +1712,7 @@ int LuaApiBinding::SetStorage(lua_State* state, const char*& error, KeyValueStor
             break;
         }
         default:
-            error = "ship.storage set aceita somente booleano, número ou texto";
+            error = "ship.storage set accepts only booleans, numbers or strings";
             return 0;
     }
     const auto stored =
@@ -1731,10 +1731,10 @@ int LuaApiBinding::StorageDelete(lua_State* state) noexcept {
     int result = 0;
     try {
         if (binding == nullptr) {
-            error = "contexto da API ship indisponível";
+            error = "ship API context unavailable";
         } else {
             result = binding->DeleteStorage(state, error, binding->mStorage.get(),
-                                            "ship.storage.delete exige uma chave textual");
+                                            "ship.storage.delete requires a string key");
         }
     } catch (...) {
         error = ErrorMessage(ErrorCode::HostFailure);
@@ -1773,7 +1773,7 @@ int LuaApiBinding::StorageClear(lua_State* state) noexcept {
     int result = 0;
     try {
         if (binding == nullptr) {
-            error = "contexto da API ship indisponível";
+            error = "ship API context unavailable";
         } else {
             result = binding->ClearStorage(state, error, binding->mStorage.get());
         }
@@ -1807,10 +1807,10 @@ int LuaApiBinding::SharedStorageGet(lua_State* state) noexcept {
     int result = 0;
     try {
         if (binding == nullptr) {
-            error = "contexto da API ship indisponível";
+            error = "ship API context unavailable";
         } else {
             result = binding->GetStorage(state, error, binding->mSharedStorage.get(),
-                                         "ship.storage.shared.get exige uma chave textual");
+                                         "ship.storage.shared.get requires a string key");
         }
     } catch (...) {
         error = ErrorMessage(ErrorCode::HostFailure);
@@ -1824,10 +1824,10 @@ int LuaApiBinding::SharedStorageSet(lua_State* state) noexcept {
     int result = 0;
     try {
         if (binding == nullptr) {
-            error = "contexto da API ship indisponível";
+            error = "ship API context unavailable";
         } else {
             result = binding->SetStorage(state, error, binding->mSharedStorage.get(),
-                                         "ship.storage.shared.set exige uma chave textual");
+                                         "ship.storage.shared.set requires a string key");
         }
     } catch (...) {
         error = ErrorMessage(ErrorCode::HostFailure);
@@ -1841,10 +1841,10 @@ int LuaApiBinding::SharedStorageDelete(lua_State* state) noexcept {
     int result = 0;
     try {
         if (binding == nullptr) {
-            error = "contexto da API ship indisponível";
+            error = "ship API context unavailable";
         } else {
             result = binding->DeleteStorage(state, error, binding->mSharedStorage.get(),
-                                            "ship.storage.shared.delete exige uma chave textual");
+                                            "ship.storage.shared.delete requires a string key");
         }
     } catch (...) {
         error = ErrorMessage(ErrorCode::HostFailure);
@@ -1858,7 +1858,7 @@ int LuaApiBinding::SharedStorageClear(lua_State* state) noexcept {
     int result = 0;
     try {
         if (binding == nullptr) {
-            error = "contexto da API ship indisponível";
+            error = "ship API context unavailable";
         } else {
             result = binding->ClearStorage(state, error, binding->mSharedStorage.get());
         }
@@ -1874,7 +1874,7 @@ int LuaApiBinding::SharedStorageClear(lua_State* state) noexcept {
 // nucleo porque quem e dono do payload em voo e o dispatcher, nao o host.
 int LuaApiBinding::HooksResultFromLua(lua_State* state, const char*& error) {
     if (lua_gettop(state) < 1) {
-        error = "ship.hooks.result exige um valor";
+        error = "ship.hooks.result requires a value";
         return 0;
     }
     if (mActivePayload == nullptr) {
@@ -1910,7 +1910,7 @@ int LuaApiBinding::HooksResult(lua_State* state) noexcept {
 // ship.capabilities.has("player.speed").
 int LuaApiBinding::PlayerSetSpeedMultiplierFromLua(lua_State* state, const char*& error) {
     if (lua_type(state, 1) != LUA_TNUMBER) {
-        error = "ship.player.set_speed_multiplier exige um fator numerico";
+        error = "ship.player.set_speed_multiplier requires a numeric factor";
         return 0;
     }
     const double factor = static_cast<double>(lua_tonumber(state, 1));
@@ -1956,7 +1956,7 @@ int LuaApiBinding::WorldTravel(lua_State* state) noexcept {
     const char* error = nullptr;
     int resultCount = 0;
     if (binding == nullptr) {
-        error = "contexto da API ship indisponível";
+        error = "ship API context unavailable";
     } else {
         resultCount = binding->WorldTravelFromLua(state, error);
     }
@@ -1967,7 +1967,7 @@ SHIPLUA_WORLD_NOINLINE int LuaApiBinding::WorldTravelFromLua(lua_State* state,
                                                              const char*& error) {
     try {
         if (lua_type(state, 1) != LUA_TSTRING || lua_type(state, 2) != LUA_TSTRING) {
-            error = "ship.world.travel exige world e destination textuais";
+            error = "ship.world.travel requires string world and destination";
             return 0;
         }
         if (mCapabilities == nullptr ||
@@ -1982,7 +1982,7 @@ SHIPLUA_WORLD_NOINLINE int LuaApiBinding::WorldTravelFromLua(lua_State* state,
         const char* world = lua_tolstring(state, 1, &worldLength);
         const char* destination = lua_tolstring(state, 2, &destinationLength);
         if (world == nullptr || destination == nullptr) {
-            error = "ship.world.travel exige world e destination textuais";
+            error = "ship.world.travel requires string world and destination";
             return 0;
         }
 
@@ -1993,7 +1993,7 @@ SHIPLUA_WORLD_NOINLINE int LuaApiBinding::WorldTravelFromLua(lua_State* state,
         } else if (worldName == "mm") {
             request.world = WorldId::Mm;
         } else {
-            error = "world deve ser 'oot' ou 'mm'";
+            error = "world must be 'oot' or 'mm'";
             return 0;
         }
         request.id.assign(destination, destinationLength);
@@ -2199,7 +2199,7 @@ EventFlow LuaApiBinding::InvokeCallback(const std::shared_ptr<LuaCallback>& call
     }
     lua_State* state = mRuntime.State();
     if (state == nullptr) {
-        throw std::runtime_error("runtime Lua indisponível durante callback");
+        throw std::runtime_error("Lua runtime unavailable during the callback");
     }
 
     lua_pushcfunction(state, TracebackHandler);
@@ -2221,7 +2221,7 @@ EventFlow LuaApiBinding::InvokeCallback(const std::shared_ptr<LuaCallback>& call
     size_t length = 0;
     const char* message = lua_tolstring(state, -1, &length);
     std::string failure = message != nullptr ? std::string(message, length)
-                                             : "callback Lua falhou sem mensagem";
+                                             : "Lua callback failed without a message";
     lua_pop(state, 2);
     ++callback->consecutiveFailures;
     if (callback->consecutiveFailures >= mMaxConsecutiveFailures) {
@@ -2232,13 +2232,13 @@ EventFlow LuaApiBinding::InvokeCallback(const std::shared_ptr<LuaCallback>& call
 
 int LuaApiBinding::WriteLog(lua_State* state, LogLevel level, const char*& error) {
     if (lua_type(state, 1) != LUA_TSTRING) {
-        error = "ship.log exige uma mensagem textual";
+        error = "ship.log requires a string message";
         return 0;
     }
     size_t length = 0;
     const char* message = lua_tolstring(state, 1, &length);
     if (message == nullptr) {
-        error = "ship.log exige uma mensagem textual";
+        error = "ship.log requires a string message";
         return 0;
     }
     mLogger.Log(level, mRuntime.ModId(), std::string(message, length));
@@ -2251,7 +2251,7 @@ int LuaApiBinding::Log(lua_State* state, LogLevel level) noexcept {
     int result = 0;
     try {
         if (binding == nullptr) {
-            error = "contexto da API ship indisponível";
+            error = "ship API context unavailable";
         } else {
             result = binding->WriteLog(state, level, error);
         }

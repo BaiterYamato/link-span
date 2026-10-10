@@ -29,7 +29,7 @@ python tools/shipmod.py new my-mod --dir mods --id community.my_mod `
 | `nome` | Slug em minúsculas como `my-mod`; começa com letra, usa letras/dígitos e hífens únicos entre segmentos |
 | `--dir` | Diretório pai; padrão `.` |
 | `--id` | Id explícito; padrão `community.my_mod` para o slug `my-mod` |
-| `--author` (ou `--autor`) | Autor; usa Git `user.name` e depois `desconhecido` como padrão |
+| `--author` (ou `--autor`) | Autor; usa Git `user.name` e depois `unknown` como padrão |
 | `--description` (ou `--desc`) | Descrição curta |
 
 O comando recusa uma pasta de destino não vazia. Cria:

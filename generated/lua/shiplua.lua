@@ -64,62 +64,80 @@
 ---@class ShipLuaHudIconOptions
 ---@field alpha? integer
 
+--- `game.ready`: Emitted after loading mods and preparing the host API; the payload identifies the game and versions. Does not guarantee a loaded save or playable scene and accepts no decision via ship.hooks.result.
 ---@class ShipLuaEventGameReady
 ---@field game_id ShipLuaGameId
 ---@field host_version string
 ---@field runtime_version string
 ---@field api_version string
 
+--- `game.frame`: Emitted on each host frame after advancing timers; frame is the scheduler counter. It is a notification, with no decision via ship.hooks.result.
 ---@class ShipLuaEventGameFrame
 ---@field frame integer
 
+--- `game.shutdown`: Notifies host shutdown, with no payload. It is not cancellable and accepts no decision via ship.hooks.result; it is not a crash recovery guarantee.
 ---@class ShipLuaEventGameShutdown
 
+--- `scene.enter`: Notifies entry into a scene; scene_id identifies the scene. It is not cancellable and accepts no decision via ship.hooks.result.
 ---@class ShipLuaEventSceneEnter
 ---@field scene_id integer
 
+--- `actor.init`: Notifies actor initialization; actor contains its handle, identifier and category. It is not cancellable and accepts no decision via ship.hooks.result.
 ---@class ShipLuaEventActorInit
 ---@field actor ShipLuaActorSnapshot
 
+--- `actor.update`: Notifies an actor update; actor contains its handle, identifier and category. It is not cancellable and accepts no decision via ship.hooks.result.
 ---@class ShipLuaEventActorUpdate
 ---@field actor ShipLuaActorSnapshot
 
+--- `actor.destroy`: Notifies actor destruction; handle identifies the destroyed actor. It is not cancellable and accepts no decision via ship.hooks.result.
 ---@class ShipLuaEventActorDestroy
 ---@field handle ShipLuaActorHandle
 
+--- `save.loaded`: In OoT, emitted after loading a save, on the first frame when the player exists; slot identifies the save. It is a notification, with no decision via ship.hooks.result.
 ---@class ShipLuaEventSaveLoaded
 ---@field slot integer
 
+--- `text.open`: Notifies a text opening; text_id identifies the message. It is not cancellable and accepts no decision via ship.hooks.result.
 ---@class ShipLuaEventTextOpen
 ---@field text_id integer
 
+--- `audio.sequence_started`: Notifies an audio sequence starting; player_index identifies the sequence player and sequence_id the sequence. Accepts no decision via ship.hooks.result.
 ---@class ShipLuaEventAudioSequenceStarted
 ---@field player_index integer
 ---@field sequence_id integer
 
+--- `input.hotkey`: Notifies activation of a registered hotkey; action is its id and key the associated key. It is not cancellable and accepts no decision via ship.hooks.result.
 ---@class ShipLuaEventInputHotkey
 ---@field action string
 ---@field key string
 
+--- `input.action`: Emitted in gameplay for D-pad or C-button presses; action identifies the direction, pressed is true and source is controller. ship.hooks.result(true) consumes the press before the game handles it.
 ---@class ShipLuaEventInputAction
 ---@field action string
 ---@field pressed boolean
 ---@field source string
 
+--- `hook.oot.player.speed.run`: Emitted when calculating target running speed; speed is its current value. ship.hooks.result with a floating-point number replaces the speed; it does not cancel movement.
 ---@class ShipLuaEventHookOotPlayerSpeedRun
 ---@field speed number
 
+--- `hook.oot.player.fall_damage`: Emitted when the game decides whether to apply fall damage, with no payload. ship.hooks.result(false) prevents that damage; a boolean result decides whether it is applied.
 ---@class ShipLuaEventHookOotPlayerFallDamage
 
+--- `hook.oot.item.receive`: Notifies item reception; item_id and get_item_id identify the received entry. It neither cancels nor replaces the item through ship.hooks.result.
 ---@class ShipLuaEventHookOotItemReceive
 ---@field item_id integer
 ---@field get_item_id integer
 
+--- `hook.oot.player.health_change`: Notifies a health change; amount is the quantity reported by the native hook. It neither cancels nor alters the change through ship.hooks.result.
 ---@class ShipLuaEventHookOotPlayerHealthChange
 ---@field amount integer
 
+--- `hook.oot.player.bonk`: Notifies a player bonk collision, with no payload. It is not cancellable and accepts no decision via ship.hooks.result.
 ---@class ShipLuaEventHookOotPlayerBonk
 
+--- `hook.oot.enemy.defeat`: Notifies an enemy defeat reported by the game; the payload carries the actor's id, category and position. It does not represent every actor destruction and accepts no decision via ship.hooks.result.
 ---@class ShipLuaEventHookOotEnemyDefeat
 ---@field actor_id integer
 ---@field category integer
@@ -127,19 +145,24 @@
 ---@field pos_y number
 ---@field pos_z number
 
+--- `hook.oot.item.give`: Emitted before giving an item; item_id and get_item_id describe the current entry. ship.hooks.result with a valid integer get_item_id replaces the entry using the vanilla table; it is not cancellation.
 ---@class ShipLuaEventHookOotItemGive
 ---@field item_id integer
 ---@field get_item_id integer
 
+--- `hook.oot.hud.draw`: Emitted after drawing the world and before the native HUD, with no payload. This is the valid window for ship.hud.draw_*; it accepts no decision via ship.hooks.result.
 ---@class ShipLuaEventHookOotHudDraw
 
+--- `hook.oot.player.first_person_control`: Emitted each frame while first-person control is active; held_item_action identifies the held item's action. It is a notification, with no decision via ship.hooks.result.
 ---@class ShipLuaEventHookOotPlayerFirstPersonControl
 ---@field held_item_action integer
 
+--- `hook.oot.player.arrow_type_select`: Emitted when selecting the arrow for magic consumption; magic_arrow_type and arrow_type are the current types. ship.hooks.result with an integer replaces arrow_type; it does not cancel firing.
 ---@class ShipLuaEventHookOotPlayerArrowTypeSelect
 ---@field magic_arrow_type integer
 ---@field arrow_type integer
 
+--- `hook.oot.player.body_anim_select`: Emitted during automatic custom body animation selection when no override owns the pose; the payload summarizes movement and actions. ship.hooks.result with a name present in anims selects the animation.
 ---@class ShipLuaEventHookOotPlayerBodyAnimSelect
 ---@field speed number
 ---@field on_ground boolean
@@ -159,18 +182,24 @@
 ---@field attacking boolean
 ---@field attack_animation integer
 
+--- `hook.mm.player.speed.walk`: Movement speed transformation point in MM; speed is the current value. The example sends the modified speed through ship.hooks.result; this is not movement cancellation.
 ---@class ShipLuaEventHookMmPlayerSpeedWalk
 ---@field speed number
 
+--- `hook.mm.player.goron_roll.consume_magic`: Decision point for consuming magic during Goron rolling, with no payload. The example uses ship.hooks.result(false) to prevent consumption.
 ---@class ShipLuaEventHookMmPlayerGoronRollConsumeMagic
 
+--- `hook.mm.player.goron_roll.disable_spike_mode`: Decision point for leaving Goron rolling spike mode, with no payload. The example uses ship.hooks.result(false) to keep the mode active.
 ---@class ShipLuaEventHookMmPlayerGoronRollDisableSpikeMode
 
+--- `hook.mm.player.goron_roll.increase_spike_level`: Decision point for increasing the Goron rolling spike level, with no payload. The example uses ship.hooks.result(true) to allow the increase.
 ---@class ShipLuaEventHookMmPlayerGoronRollIncreaseSpikeLevel
 
+--- `hook.mm.item.give`: Notifies an item being given in MM; item identifies the item. It is not cancellable and accepts no decision via ship.hooks.result.
 ---@class ShipLuaEventHookMmItemGive
 ---@field item integer
 
+--- `hook.mm.enemy.defeat`: Notifies an enemy defeat in MM; the payload carries the actor's id, category and position. It is not cancellable and accepts no decision via ship.hooks.result.
 ---@class ShipLuaEventHookMmEnemyDefeat
 ---@field actor_id integer
 ---@field category integer
@@ -178,6 +207,7 @@
 ---@field pos_y number
 ---@field pos_z number
 
+--- `hook.mm.item.should_give`: Decision point for giving an item in MM; item identifies the item being evaluated. The response uses ship.hooks.result according to the host contract.
 ---@class ShipLuaEventHookMmItemShouldGive
 ---@field item integer
 
@@ -208,35 +238,43 @@ ship.oot.env = ship.oot.env or {}
 ship.oot.player = ship.oot.player or {}
 ship.storage.shared = ship.storage.shared or {}
 
+--- Returns the current host game identifier, allowing mods to select OoT- or MM-specific behavior.
 --- API common; stability: stable; since: 0.1.0; capability: common; errors: none.
 ---@return ShipLuaGameId
 function ship.game.id() end
 
+--- Returns the host application version configured by the game adapter.
 --- API common; stability: stable; since: 0.1.0; capability: common; errors: none.
 ---@return string
 function ship.game.host_version() end
 
+--- Returns a snapshot of the current mode, such as gameplay, pause, dialog or transition, and the save slot when valid. Without an available player, the mode is unavailable.
 --- API oot; stability: experimental; since: 0.4.0; capability: game.state; errors: unsupported.
 ---@return ShipLuaGameState
 function ship.game.state() end
 
+--- Returns the Link-Span runtime version reported by the host.
 --- API common; stability: stable; since: 0.1.0; capability: common; errors: none.
 ---@return string
 function ship.runtime.version() end
 
+--- Returns the Lua API contract version generated from the schema.
 --- API common; stability: stable; since: 0.1.0; capability: common; errors: none.
 ---@return string
 function ship.api.version() end
 
+--- Returns whether the requested capability is available for the current game. Check it before relying on an optional host service.
 --- API common; stability: stable; since: 0.1.0; capability: common; errors: invalid_argument.
 ---@param name string
 ---@return boolean
 function ship.capabilities.has(name) end
 
+--- Returns the identifiers of capabilities available for the current game.
 --- API common; stability: stable; since: 0.1.0; capability: common; errors: none.
 ---@return string[]
 function ship.capabilities.list() end
 
+--- Subscribes a callback to an event, with optional priority, and returns the subscription for later removal. Unknown events raise a Lua error; the callback return value does not control the host.
 --- API common; stability: stable; since: 0.1.0; capability: common; errors: invalid_argument, unsupported.
 ---@param event ShipLuaEventName
 ---@param options_or_callback any
@@ -244,16 +282,19 @@ function ship.capabilities.list() end
 ---@return ShipLuaSubscription
 function ship.events.on(event, options_or_callback, callback) end
 
+--- Removes a subscription owned by the mod and returns true. Invalid, already removed or foreign subscriptions raise a Lua error.
 --- API common; stability: stable; since: 0.1.0; capability: common; errors: invalid_handle.
 ---@param subscription ShipLuaSubscription
 ---@return boolean
 function ship.events.off(subscription) end
 
+--- Records a response to a transform hook during its callback and returns true. The host defines the value's effect; OoT accepts a boolean, finite number or string and raises a Lua error outside this context.
 --- API common; stability: experimental; since: 0.4.0; capability: common; errors: invalid_argument.
 ---@param value any
 ---@return boolean
 function ship.hooks.result(value) end
 
+--- Registers a mod keyboard action and its callback, with an optional default key and label. Returns whether registration was accepted; registering the same id again replaces the callback.
 --- API common; stability: preview; since: 0.2.0; capability: common; errors: invalid_argument, unsupported.
 ---@param id string
 ---@param options? ShipLuaHotkeyOptions
@@ -261,6 +302,7 @@ function ship.hooks.result(value) end
 ---@return boolean
 function ship.hotkeys.register(id, options, callback) end
 
+--- Spawns an actor by its host-defined logical name and returns its handle. Requires permission and respects the mod's actor limit; returns nil and an operation_error when spawning is not possible.
 --- API common; stability: experimental; since: 0.4.0; capability: actor.spawn; errors: invalid_argument, unsupported, permission_denied, invalid_state, resource_limit, host_failure.
 ---@param actor_type string
 ---@param options ShipLuaActorSpawnOptions
@@ -268,107 +310,128 @@ function ship.hotkeys.register(id, options, callback) end
 ---@return ShipLuaOperationError? error
 function ship.actor.spawn(actor_type, options) end
 
+--- Destroys an actor owned by the mod and returns true. Requires permission; returns nil and an operation_error when the handle or operation is rejected.
 --- API common; stability: experimental; since: 0.4.0; capability: actor.destroy; errors: invalid_argument, unsupported, permission_denied, invalid_handle, host_failure.
 ---@param handle ShipLuaActorHandle
 ---@return boolean? value
 ---@return ShipLuaOperationError? error
 function ship.actor.destroy(handle) end
 
+--- Checks whether the mod's actor still exists; an expired handle returns false. Requires permission and returns nil and an operation_error for other failures.
 --- API common; stability: experimental; since: 0.4.0; capability: actor.exists; errors: invalid_argument, unsupported, permission_denied, host_failure.
 ---@param handle ShipLuaActorHandle
 ---@return boolean? value
 ---@return ShipLuaOperationError? error
 function ship.actor.exists(handle) end
 
+--- Requests travel to a logical destination in the selected world and returns true if the request is accepted. Missing support, an invalid destination or host rejection raises a Lua error.
 --- API common; stability: experimental; since: 0.3.0; capability: world.travel; errors: invalid_argument, unsupported, invalid_state, host_failure.
 ---@param world ShipLuaGameId
 ---@param destination string
 ---@return boolean
 function ship.world.travel(world, destination) end
 
+--- Requests a player jump in the MM host and returns whether the request was accepted.
 --- API mm; stability: experimental; since: 0.2.0; capability: mm.player.jump; errors: none.
 ---@return boolean
 function ship.mm.player.jump() end
 
+--- Requests spawning a dog in the MM host and returns whether spawning was accepted.
 --- API mm; stability: experimental; since: 0.3.0; capability: mm.spawn_dog; errors: none.
 ---@return boolean
 function ship.mm.spawn_dog() end
 
+--- Selects the sword appearance in MM and returns whether the change was accepted. The example switches between mm and oot and depends on the corresponding assets.
 --- API mm; stability: experimental; since: 0.4.0; capability: mm.player.sword_skin; errors: none.
 ---@param skin string
 ---@return boolean
 function ship.mm.player.set_sword_skin(skin) end
 
+--- Applies an upward impulse to the player and returns true. Returns false if no player is available, the player is dead or is off the ground.
 --- API oot; stability: experimental; since: 0.3.0; capability: oot.player.jump; errors: none.
 ---@return boolean
 function ship.oot.player.jump() end
 
+--- Equips or removes the Bunny Hood with MM running and jumping behavior, restoring previous settings on removal. Returns false without a living player and true when applied.
 --- API oot; stability: experimental; since: 0.4.0; capability: oot.player.bunny_hood; errors: none.
 ---@param equipped boolean
 ---@return boolean
 function ship.oot.player.set_bunny_hood(equipped) end
 
+--- Equips a mask by name without occupying a C button and returns true; none removes it and restores previous persistence. Returns false without a living player or for an unknown name.
 --- API oot; stability: experimental; since: 0.4.0; capability: oot.player.mask; errors: none.
 ---@param mask string
 ---@return boolean
 function ship.oot.player.set_mask(mask) end
 
+--- Starts the mask-on animation and transition and returns its duration in frames. Requires human Link idle on the ground; returns 0 if the state or assets prevent entry.
 --- API oot; stability: experimental; since: 0.4.0; capability: oot.player.mask; errors: none.
 ---@return integer
 function ship.oot.player.play_mask_on_animation() end
 
+--- Applies a movement multiplier through the host and returns whether it was accepted. OoT accepts factors from 0.1 to 5.0; 1.0 restores the previous setting. Without a host service, it raises a Lua error.
 --- API common; stability: experimental; since: 0.4.0; capability: player.speed; errors: none.
 ---@param factor number
 ---@return boolean
 function ship.player.set_speed_multiplier(factor) end
 
+--- Reads a known player field or a scratch numeric value stored by name. Returns nil for a native field without a player or an unset scratch name.
 --- API oot; stability: experimental; since: 0.4.0; capability: player.fields; errors: none.
 ---@param field string
 ---@return any
 function ship.player.get(field) end
 
+--- Updates a writable field within its allowed range and returns true; unknown names store scratch values. Returns false for a non-finite value, a read-only field or a native field without a player.
 --- API oot; stability: experimental; since: 0.4.0; capability: player.fields; errors: none.
 ---@param field string
 ---@param value number
 ---@return boolean
 function ship.player.set(field, value) end
 
+--- Attaches a display list to the player's head slot; an empty or nil path removes it. Returns false without a player, for an unsupported slot or a missing asset, and true when applied.
 --- API oot; stability: experimental; since: 0.4.0; capability: oot.player.attach_model; errors: none.
 ---@param slot string
 ---@param path string
 ---@return boolean
 function ship.oot.player.attach_model(slot, path) end
 
+--- Enables or disables clearing body flames on each player update, preventing ongoing burning damage. Returns true for fire and false for any other kind.
 --- API oot; stability: experimental; since: 0.4.0; capability: oot.player.immunity; errors: none.
 ---@param kind string
 ---@param enabled boolean
 ---@return boolean
 function ship.oot.player.set_damage_immunity(kind, enabled) end
 
+--- Applies heavy weight through iron boots mechanics; normal restores the previous boots. Returns true when applied and false without a player or for an unknown weight.
 --- API oot; stability: experimental; since: 0.4.0; capability: oot.player.weight; errors: none.
 ---@param weight string
 ---@return boolean
 function ship.oot.player.set_weight(weight) end
 
+--- Selects chain to chain and steer rolls or vanilla to disable that mode. Returns true for a recognized mode and false for any other name.
 --- API oot; stability: experimental; since: 0.4.0; capability: oot.player.roll; errors: none.
 ---@param mode string
 ---@return boolean
 function ship.oot.player.set_roll_mode(mode) end
 
+--- Enables or disables blocking the start of a player roll and returns true.
 --- API oot; stability: experimental; since: 0.4.0; capability: oot.player.roll; errors: none.
 ---@param blocked boolean
 ---@return boolean
 function ship.oot.player.set_roll_blocked(blocked) end
 
+--- Activates a custom body with a mod-provided skeleton and animations and returns true; nil restores the default body. Returns false without a player for activation or for invalid configuration or resources.
 --- API oot; stability: experimental; since: 0.4.0; capability: oot.player.custom_body; errors: none.
 ---@param spec any
 ---@return boolean
 function ship.oot.player.set_body(spec) end
 
+--- Returns the configuration and state of the active custom body, including its current animation. Returns nil when no custom body is active.
 --- API oot; stability: experimental; since: 0.4.0; capability: oot.player.custom_body; errors: none.
 ---@return any
 function ship.oot.player.get_body() end
 
+--- Plays a named custom body animation in once, loop or reverse_once mode and returns true. Returns false without an active body or for an invalid name, mode, speed or resource.
 --- API oot; stability: experimental; since: 0.4.0; capability: oot.player.custom_body; errors: none.
 ---@param name string
 ---@param mode? string
@@ -376,38 +439,45 @@ function ship.oot.player.get_body() end
 ---@return boolean
 function ship.oot.player.play_body_animation(name, mode, speed) end
 
+--- Changes the resource assigned to a custom body drawing segment and returns true. Returns false without an active body, for a segment outside 1 to 15 or a missing resource.
 --- API oot; stability: experimental; since: 0.4.0; capability: oot.player.custom_body; errors: none.
 ---@param segment integer
 ---@param path string
 ---@return boolean
 function ship.oot.player.set_body_segment(segment, path) end
 
+--- Sets a display list anchored to left_hand or right_hand; nil or an empty path removes it. Returns true when applied and false for an unsupported slot or a missing asset.
 --- API oot; stability: experimental; since: 0.4.0; capability: oot.player.held_item_model; errors: none.
 ---@param slot string
 ---@param path string
 ---@return boolean
 function ship.oot.player.set_held_item_model(slot, path) end
 
+--- Starts a camera sequence for 1 to 600 frames and returns true, optionally freezing the player. Returns false outside gameplay, if a sequence is already active or if the camera cannot be obtained.
 --- API oot; stability: experimental; since: 0.4.0; capability: oot.cutscene; errors: invalid_argument, invalid_state.
 ---@param frames integer
 ---@param options? any
 ---@return boolean
 function ship.oot.cutscene.start(frames, options) end
 
+--- Stops the camera sequence created by the API and releases the states it took over. Returns true even if no sequence is active.
 --- API oot; stability: experimental; since: 0.4.0; capability: oot.cutscene; errors: none.
 ---@return boolean
 function ship.oot.cutscene.stop() end
 
+--- Returns whether a camera sequence created by this API is active; it does not query all native game cutscenes.
 --- API oot; stability: experimental; since: 0.4.0; capability: oot.cutscene; errors: none.
 ---@return boolean
 function ship.oot.cutscene.is_active() end
 
+--- Plays a sound effect entry from an MM soundfont mounted in OoT and returns whether playback succeeded. Returns false for an index or soundfont outside the accepted range.
 --- API oot; stability: experimental; since: 0.4.0; capability: oot.audio; errors: invalid_argument.
 ---@param index integer
 ---@param font? integer
 ---@return boolean
 function ship.oot.audio.play_sfx(index, font) end
 
+--- Logs information about sound effect entries in the requested soundfont to help identify sounds. Returns true after invoking diagnostics, without confirming that every entry exists.
 --- API oot; stability: experimental; since: 0.4.0; capability: oot.audio; errors: invalid_argument.
 ---@param first? integer
 ---@param count? integer
@@ -415,100 +485,119 @@ function ship.oot.audio.play_sfx(index, font) end
 ---@return boolean
 function ship.oot.audio.dump_sfx_table(first, count, font) end
 
+--- Configures voice remapping by an offset within the block starting at base and returns true; nil base or offset 0 disables it. Returns false for out-of-range values; missing samples preserve the original voice.
 --- API oot; stability: experimental; since: 0.4.0; capability: oot.audio; errors: invalid_argument.
 ---@param base? integer
 ---@param offset? integer
 ---@return boolean
 function ship.oot.audio.set_voice_map(base, offset) end
 
+--- Reads time_of_day normalized from 0 to 1, is_night as 0 or 1, or scene_id. Returns nil for an unknown field and -1 for scene_id without an available scene.
 --- API oot; stability: experimental; since: 0.4.0; capability: oot.env; errors: none.
 ---@param field string
 ---@return any
 function ship.oot.env.get(field) end
 
+--- Spawns a dog at the player's position and returns whether it succeeded. Only accepts daytime or nighttime Market with the dog object loaded; otherwise returns false.
 --- API oot; stability: experimental; since: 0.3.0; capability: oot.spawn_dog; errors: none.
 ---@return boolean
 function ship.oot.spawn_dog() end
 
+--- Logs a debug message identified by the mod. Returns no value; a non-string message raises a Lua error.
 --- API common; stability: stable; since: 0.1.0; capability: common; errors: invalid_argument.
 ---@param message string
 ---@return nil
 function ship.log.debug(message) end
 
+--- Logs an informational message identified by the mod. Returns no value; a non-string message raises a Lua error.
 --- API common; stability: stable; since: 0.1.0; capability: common; errors: invalid_argument.
 ---@param message string
 ---@return nil
 function ship.log.info(message) end
 
+--- Logs a warning identified by the mod. Returns no value; a non-string message raises a Lua error.
 --- API common; stability: stable; since: 0.1.0; capability: common; errors: invalid_argument.
 ---@param message string
 ---@return nil
 function ship.log.warn(message) end
 
+--- Logs an error message identified by the mod. Returns no value; a non-string message raises a Lua error.
 --- API common; stability: stable; since: 0.1.0; capability: common; errors: invalid_argument.
 ---@param message string
 ---@return nil
 function ship.log.error(message) end
 
+--- Schedules a callback to run once after a delay in host frames and returns its handle. The delay must be at least one frame; unloading the mod cancels the timer.
 --- API common; stability: experimental; since: 0.3.0; capability: core.timers; errors: invalid_argument, resource_limit, unsupported.
 ---@param frames integer
 ---@param callback function
 ---@return ShipLuaTimerHandle
 function ship.timer.after(frames, callback) end
 
+--- Schedules a callback to repeat at an interval in host frames and returns its handle. The interval must be at least one frame; unloading the mod cancels the timer.
 --- API common; stability: experimental; since: 0.3.0; capability: core.timers; errors: invalid_argument, resource_limit, unsupported.
 ---@param frames integer
 ---@param callback function
 ---@return ShipLuaTimerHandle
 function ship.timer.every(frames, callback) end
 
+--- Cancels a timer registered by the mod and returns true. An invalid handle or one not registered by the mod raises a Lua error.
 --- API common; stability: experimental; since: 0.3.0; capability: core.timers; errors: invalid_argument, invalid_handle.
 ---@param handle ShipLuaTimerHandle
 ---@return boolean
 function ship.timer.cancel(handle) end
 
+--- Reads a key in the mod's local storage. Returns its saved value, the supplied default or nil if absent; without a configured backend, it raises a Lua error.
 --- API common; stability: experimental; since: 0.3.0; capability: core.storage; errors: invalid_argument, unsupported.
 ---@param key string
 ---@param default? any
 ---@return any
 function ship.storage.get(key, default) end
 
+--- Stores a boolean, number or string in the mod's local storage and returns true. Invalid values, exceeded limits or a missing backend raise a Lua error; disk persistence depends on the host.
 --- API common; stability: experimental; since: 0.3.0; capability: core.storage; errors: invalid_argument, resource_limit, unsupported.
 ---@param key string
 ---@param value any
 ---@return boolean
 function ship.storage.set(key, value) end
 
+--- Removes a key from the mod's local storage and returns whether it existed and was removed. Without a configured backend, it raises a Lua error.
 --- API common; stability: experimental; since: 0.3.0; capability: core.storage; errors: invalid_argument, unsupported.
 ---@param key string
 ---@return boolean
 function ship.storage.delete(key) end
 
+--- Removes all keys from this mod's local storage and returns the number removed. Other mods are unaffected; without a configured backend, it raises a Lua error.
 --- API common; stability: experimental; since: 0.3.0; capability: core.storage; errors: unsupported.
 ---@return integer
 function ship.storage.clear() end
 
+--- Reads a key for the same mod in the cross-game shared backend. Returns the value, the supplied default or nil if absent; without a configured shared backend, it raises a Lua error.
 --- API common; stability: experimental; since: 0.4.0; capability: core.storage.shared; errors: invalid_argument, unsupported.
 ---@param key string
 ---@param default? any
 ---@return any
 function ship.storage.shared.get(key, default) end
 
+--- Stores a boolean, number or string in the cross-game shared backend, isolated by mod id, and returns true. Invalid values, exceeded limits or a missing backend raise a Lua error.
 --- API common; stability: experimental; since: 0.4.0; capability: core.storage.shared; errors: invalid_argument, resource_limit, unsupported.
 ---@param key string
 ---@param value any
 ---@return boolean
 function ship.storage.shared.set(key, value) end
 
+--- Removes a mod key from the cross-game shared backend and returns whether it was removed. Without a configured shared backend, it raises a Lua error.
 --- API common; stability: experimental; since: 0.4.0; capability: core.storage.shared; errors: invalid_argument, unsupported.
 ---@param key string
 ---@return boolean
 function ship.storage.shared.delete(key) end
 
+--- Removes all keys for this mod in the shared backend and returns the number removed. Local storage and other mods are preserved; without a shared backend, it raises a Lua error.
 --- API common; stability: experimental; since: 0.4.0; capability: core.storage.shared; errors: unsupported.
 ---@return integer
 function ship.storage.shared.clear() end
 
+--- Draws a colored rectangle in the overlay and returns true. Only works during hook.oot.hud.draw; returns false outside the callback, for invalid dimensions or when the drawing budget is exceeded.
 --- API oot; stability: experimental; since: 0.4.0; capability: hud.draw; errors: invalid_argument, invalid_state.
 ---@param x integer
 ---@param y integer
@@ -521,6 +610,7 @@ function ship.storage.shared.clear() end
 ---@return boolean
 function ship.hud.draw_rect(x, y, w, h, r, g, b, a) end
 
+--- Draws colored, scaled text in the overlay, limited to 128 bytes. Returns true when drawn and false outside hook.oot.hud.draw or when the drawing budget is exceeded.
 --- API oot; stability: experimental; since: 0.4.0; capability: hud.draw; errors: invalid_argument, invalid_state.
 ---@param text string
 ---@param x integer
@@ -533,6 +623,7 @@ function ship.hud.draw_rect(x, y, w, h, r, g, b, a) end
 ---@return boolean
 function ship.hud.draw_text(text, x, y, r, g, b, a, scale) end
 
+--- Draws an approximate arc clockwise from the top, with its fraction clamped to 0 to 1. Only works in hook.oot.hud.draw; returns false outside it or without budget, and true also when there is no arc to draw.
 --- API oot; stability: experimental; since: 0.4.0; capability: hud.draw; errors: invalid_argument, invalid_state.
 ---@param cx number
 ---@param cy number
@@ -546,6 +637,7 @@ function ship.hud.draw_text(text, x, y, r, g, b, a, scale) end
 ---@return boolean
 function ship.hud.draw_ring(cx, cy, radius, thickness, fraction, r, g, b, a) end
 
+--- Draws a 32x32 RGBA32 texture on the HUD and returns true, scaled to 1 to 64 pixels per dimension. Returns false outside hook.oot.hud.draw, for an invalid resource or size, or without drawing budget.
 --- API oot; stability: experimental; since: 0.4.0; capability: hud.icons; errors: invalid_argument, invalid_state, unsupported.
 ---@param path string
 ---@param x integer
@@ -556,11 +648,13 @@ function ship.hud.draw_ring(cx, cy, radius, thickness, fraction, r, g, b, a) end
 ---@return boolean
 function ship.hud.draw_icon(path, x, y, w, h, options) end
 
+--- Returns whether the mod's native provider exposes the named function. Without a provider, returns false; an empty name or one longer than 128 bytes raises a Lua error.
 --- API common; stability: experimental; since: 0.5.0; capability: common; errors: invalid_argument.
 ---@param name string
 ---@return boolean
 function ship.native.has(name) end
 
+--- Sends a byte string to the mod's native function and returns its response. Returns nil and an operation_error if the function is unavailable, the state is invalid or the request or response exceeds 65536 bytes.
 --- API common; stability: experimental; since: 0.5.0; capability: common; errors: unsupported, invalid_argument, invalid_handle, invalid_state, resource_limit, host_failure.
 ---@param name string
 ---@param request string

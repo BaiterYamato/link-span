@@ -70,7 +70,9 @@ class ApiDocsCodegenTests(unittest.TestCase):
         self.assertIn("não", markdown)
 
     def test_every_schema_description_has_an_english_version(self):
-        for item in self.api["types"] + self.capabilities["capabilities"]:
+        for item in (self.api["types"] + self.api["functions"] + self.events["events"]
+                     + self.capabilities["capabilities"]):
+            self.assertTrue(item.get("description"), item["name"])
             self.assertTrue(item.get("description_en"), item["name"])
 
     def test_invalid_schema_is_rejected(self):

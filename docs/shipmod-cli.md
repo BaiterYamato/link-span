@@ -29,7 +29,7 @@ python tools/shipmod.py new my-mod --dir mods --id community.my_mod `
 | `nome` | Lowercase slug such as `my-mod`; starts with a letter, uses letters/digits and single hyphens between segments |
 | `--dir` | Parent directory; default `.` |
 | `--id` | Explicit id; default `community.my_mod` for slug `my-mod` |
-| `--author` (or `--autor`) | Author; defaults to Git `user.name`, then `desconhecido` |
+| `--author` (or `--autor`) | Author; defaults to Git `user.name`, then `unknown` |
 | `--description` (or `--desc`) | Short description |
 
 The command refuses a nonempty target folder. It creates:

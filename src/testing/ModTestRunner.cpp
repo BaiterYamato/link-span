@@ -63,7 +63,7 @@ do
 
     function describe(name, fn)
         builtin_assert(type(name) == "string", "describe exige um nome textual")
-        builtin_assert(type(fn) == "function", "describe exige uma função")
+        builtin_assert(type(fn) == "function", "describe requires a function")
         suite_stack[#suite_stack + 1] = name
         local ok, err = pcall(fn)
         suite_stack[#suite_stack] = nil
@@ -74,7 +74,7 @@ do
 
     function it(name, fn)
         builtin_assert(type(name) == "string", "it exige um nome textual")
-        builtin_assert(type(fn) == "function", "it exige uma função")
+        builtin_assert(type(fn) == "function", "it requires a function")
         local ok, err = pcall(fn)
         record(full_name(name), ok, ok and nil or tostring(err))
     end
@@ -156,7 +156,7 @@ do
 
     function test_assert.not_nil(value, message)
         if value == nil then
-            fail((message and (message .. ": ") or "") .. "esperado valor não nulo")
+            fail((message and (message .. ": ") or "") .. "expected a non-nil value")
         end
         return true
     end
@@ -164,13 +164,13 @@ do
     function test_assert.contains(haystack, needle, message)
         if type(haystack) ~= "string" or string.find(haystack, needle, 1, true) == nil then
             fail((message and (message .. ": ") or "") ..
-                 fmt(haystack) .. " não contém " .. fmt(needle))
+                 fmt(haystack) .. " does not contain " .. fmt(needle))
         end
         return true
     end
 
     function test_assert.fail(message)
-        fail(message or "falha explícita")
+        fail(message or "explicit failure")
     end
 
     setmetatable(test_assert, {
@@ -212,7 +212,7 @@ void SetMockFunction(lua_State* state, int tableIndex, const char* name, lua_CFu
 Result<EventValue> PullEventValue(lua_State* state, int index, int depth) {
     if (depth > 16) {
         return Result<EventValue>::err(ErrorCode::InvalidArgument,
-                                       "payload excede a profundidade máxima de 16 níveis");
+                                       "payload exceeds the maximum depth of 16 levels");
     }
     index = lua_absindex(state, index);
     switch (lua_type(state, index)) {
@@ -253,7 +253,7 @@ Result<EventValue> PullEventValue(lua_State* state, int index, int depth) {
             if (hasStringKeys && hasIntegerKeys) {
                 return Result<EventValue>::err(
                     ErrorCode::InvalidArgument,
-                    "payload não pode misturar chaves textuais e inteiras");
+                    "payload cannot mix string and integer keys");
             }
             if (hasIntegerKeys) {
                 EventValue::Array array;
@@ -264,7 +264,7 @@ Result<EventValue> PullEventValue(lua_State* state, int index, int depth) {
                         lua_pop(state, 1);
                         return Result<EventValue>::err(
                             ErrorCode::InvalidArgument,
-                            "array de payload não pode ter buracos");
+                            "payload array cannot have holes");
                     }
                     auto value = PullEventValue(state, -1, depth + 1);
                     lua_pop(state, 1);
@@ -293,7 +293,7 @@ Result<EventValue> PullEventValue(lua_State* state, int index, int depth) {
         default:
             return Result<EventValue>::err(
                 ErrorCode::InvalidArgument,
-                "payload aceita somente booleano, número, texto e tabelas");
+                "payload accepts only booleans, numbers, strings and tables");
     }
 }
 
@@ -344,7 +344,7 @@ int MockTimerAdvance(lua_State* state) noexcept {
         frames = static_cast<std::uint64_t>(requested);
     }
     if (mock == nullptr) {
-        return MockFail(state, "contexto do mock indisponível");
+        return MockFail(state, "mock context unavailable");
     }
     try {
         auto advanced = mock->AdvanceFrames(frames);
@@ -354,14 +354,14 @@ int MockTimerAdvance(lua_State* state) noexcept {
         lua_pushinteger(state, static_cast<lua_Integer>(*advanced.value));
         return 1;
     } catch (...) {
-        return MockFail(state, "falha do host ao avançar frames no mock");
+        return MockFail(state, "host failure while advancing frames in the mock");
     }
 }
 
 int MockTimerFrame(lua_State* state) noexcept {
     MockRuntime* mock = MockFrom(state);
     if (mock == nullptr) {
-        return MockFail(state, "contexto do mock indisponível");
+        return MockFail(state, "mock context unavailable");
     }
     lua_pushinteger(state, static_cast<lua_Integer>(mock->CurrentFrame()));
     return 1;
@@ -375,7 +375,7 @@ int MockInputPress(lua_State* state) noexcept {
     size_t length = 0;
     const char* key = lua_tolstring(state, 1, &length);
     if (key == nullptr || length == 0) {
-        return MockFail(state, "mock.input.press exige uma tecla não vazia");
+        return MockFail(state, "mock.input.press requires a non-empty key");
     }
     try {
         const std::size_t fired = mock->PressKey(std::string(key, length));
@@ -394,7 +394,7 @@ int MockInputTrigger(lua_State* state) noexcept {
     size_t length = 0;
     const char* id = lua_tolstring(state, 1, &length);
     if (id == nullptr || length == 0) {
-        return MockFail(state, "mock.input.trigger exige um id não vazio");
+        return MockFail(state, "mock.input.trigger requires a non-empty id");
     }
     try {
         lua_pushboolean(state, mock->TriggerHotkey(std::string(id, length)) ? 1 : 0);
@@ -407,7 +407,7 @@ int MockInputTrigger(lua_State* state) noexcept {
 int MockLogEntries(lua_State* state) noexcept {
     MockRuntime* mock = MockFrom(state);
     if (mock == nullptr) {
-        return MockFail(state, "contexto do mock indisponível");
+        return MockFail(state, "mock context unavailable");
     }
     const std::vector<MockLogEntry>& logs = mock->Logs();
     lua_createtable(state, static_cast<int>(logs.size()), 0);
@@ -428,7 +428,7 @@ int MockLogEntries(lua_State* state) noexcept {
 int MockLogClear(lua_State* state) noexcept {
     MockRuntime* mock = MockFrom(state);
     if (mock == nullptr) {
-        return MockFail(state, "contexto do mock indisponível");
+        return MockFail(state, "mock context unavailable");
     }
     mock->ClearLogs();
     lua_pushboolean(state, 1);
@@ -438,7 +438,7 @@ int MockLogClear(lua_State* state) noexcept {
 int MockReset(lua_State* state) noexcept {
     MockRuntime* mock = MockFrom(state);
     if (mock == nullptr) {
-        return MockFail(state, "contexto do mock indisponível");
+        return MockFail(state, "mock context unavailable");
     }
     mock->ResetSimulation();
     lua_pushboolean(state, 1);
@@ -481,7 +481,7 @@ void HarvestResults(lua_State* state, const std::string& fileLabel, ModTestRepor
     lua_getglobal(state, "__shiplua_test");
     if (!lua_istable(state, -1)) {
         lua_pop(state, 1);
-        report.errors.push_back(fileLabel + ": DSL de teste não inicializada no runtime do mod");
+        report.errors.push_back(fileLabel + ": test DSL not initialized in the mod runtime");
         return;
     }
     lua_getfield(state, -1, "results");
@@ -563,7 +563,7 @@ Result<ModTestReport> ModTestRunner::Run(const std::filesystem::path& modDir) {
     if (error || !std::filesystem::is_directory(status) || std::filesystem::is_symlink(status)) {
         return Result<ModTestReport>::err(
             ErrorCode::InvalidArgument,
-            "mod '" + modDir.string() + "' não é um diretório regular acessível");
+            "mod '" + modDir.string() + "' is not an accessible regular folder");
     }
 
     const std::vector<std::filesystem::path> files = DiscoverTestFiles(modDir);
@@ -584,14 +584,14 @@ void ModTestRunner::RunFile(const std::filesystem::path& modDir,
 
     auto created = MockRuntime::Create(mOptions);
     if (!created.isOk()) {
-        report.errors.push_back(fileLabel + ": não foi possível criar o mock: " + created.message);
+        report.errors.push_back(fileLabel + ": could not create the mock: " + created.message);
         return;
     }
     MockRuntime& mock = *created.value;
 
     auto loaded = mock.LoadModFromDirectory(modDir.string());
     if (!loaded.isOk()) {
-        report.errors.push_back(fileLabel + ": mod não carregou no mock: " + loaded.message);
+        report.errors.push_back(fileLabel + ": mod did not load in the mock: " + loaded.message);
         return;
     }
     report.modId = mock.ModId();
@@ -599,7 +599,7 @@ void ModTestRunner::RunFile(const std::filesystem::path& modDir,
     LuaRuntime* runtime = mock.Host().GetRuntime(mock.ModId());
     lua_State* state = mock.ModState();
     if (runtime == nullptr || state == nullptr) {
-        report.errors.push_back(fileLabel + ": runtime do mod indisponível no mock");
+        report.errors.push_back(fileLabel + ": mod runtime unavailable in the mock");
         return;
     }
 
@@ -615,7 +615,7 @@ void ModTestRunner::RunFile(const std::filesystem::path& modDir,
 
     auto source = ReadTextFile(testFile);
     if (!source.isOk()) {
-        report.errors.push_back(fileLabel + ": não foi possível ler o arquivo: " + source.message);
+        report.errors.push_back(fileLabel + ": could not read the file: " + source.message);
         (void)mock.EmitGameShutdown();
         return;
     }
