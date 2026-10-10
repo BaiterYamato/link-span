@@ -76,3 +76,39 @@ Documento coerente com o código. Não houve build nem prova em jogo, porque nã
 
 Revisar a RFC 0028 junto da 0027. Com a fase 1 implementada e provada, a linha do Gate "nenhuma onda de itens exige
 função específica no host" pode virar ✅.
+
+### Fechamento para o RC5 (2026-10-09)
+
+**Estado:** RFC 0028 aceita; fase 1 implementada no host do RC5. Este registro supera o estado anterior
+"Nada foi implementado no host". O fechamento da prova em jogo fica em review até preencher a bateria abaixo;
+a fase 2 continua fora desta rodada. Commits locais, sem push.
+
+**Resultado:**
+- `45530b878`: setting `linkspan.pause.equip_selector`, separado de `linkspan.hud.dpad`, e helper
+  `LinkSpan_PauseEquipSelectorEnabled` no lugar do símbolo com nome de mod, sem alias.
+- O seletor fecha sem equipar se o setting cair com ele aberto. O ponto no kaleido fica genérico; a justificativa
+  da RFC permanece: o NEI já substitui `KaleidoScope_DrawItemSelect`, então outro replace daria `LIMIT` ao DMR.
+- Layout `9a593a6e` sem mudança. Host final do RC5 embute `ddeffea` (`ddeffeadf`), SHA-256
+  `A65950B1FFB0380FD6F242E0AD22BDE3B67BDFC55D125BD83D7936DDE144850B`.
+- NEI 0.3.20, DMR 0.2.19 e Mic 0.2.5 são as versões desta rodada; o fingerprint precisa corresponder ao host final.
+
+**Rebuild do NEI** (host `10a9407cc`): `/FI` com `linkspan_vanilla.h` e chave do host por ponteiro, macros só do
+host copiadas pelo extrator, três conflitos resolvidos à mão (`Message_Decode`, `Message_DrawMain` e
+`EnMThunder_SpinAttacking`, mais `Message_DecodeChecked` em overlay-extra) e assinatura antiga da resolução de
+`KaleidoScope_DrawItemSelect` corrigida. Commit registrado; provado em jogo no RC5 com NEI 0.3.20 (OOT-RELEASE-001).
+
+**Commits:** host `45530b878` (fase 1), `bf8715832` (versões), `10a9407cc` (rebuild NEI); core `99d912a` (RFCs 0027/0028 aceitas).
+
+**Validação:** CTest 68/68 no host final. As provas anteriores desta tarefa eram documentais no `0ff8f2ff4`.
+No RC5 (bateria e gates, OOT-RELEASE-001):
+- gate-selector: sem DMR, A sobre o item segue o fluxo original e `buttonItems` não muda;
+- gate-selector: molduras abrem, Deku Nut vai ao C-right e fica após save e reinício;
+- queda do setting com o seletor aberto: não exercitada em jogo no RC5 (pendente);
+- matriz 9/9; NEI 0.3.20, DMR 0.2.19 e Mic 0.2.5 com fingerprint `a65950b1…`;
+- gate-rollback ok/completo.
+
+**Pendências e riscos:** provar em jogo a queda do setting com o seletor aberto. Na fase 1 não há lease:
+quem grava por último vence. A fase 2, `linkspan.oot.pause` com lease por provider, fica para uma mudança de ABI
+que já altere o layout id. Recompilar o host exige reempacotar os mods que fixam o fingerprint.
+
+**Próxima ação:** fase 1 provada no RC5; fica a prova da queda do setting com o seletor aberto. Fase 2 junto da próxima mudança de ABI.

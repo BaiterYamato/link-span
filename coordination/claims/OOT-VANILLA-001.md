@@ -1,6 +1,6 @@
 # OOT-VANILLA-001
 
-- Status: review (host `43cb7e01e`, libultraship `d8d5d9a4`; aguarda aprovação do usuário)
+- Status: done (aprovada em 2026-10-04; integrada por fast-forward: host `43cb7e01e`, libultraship `d8d5d9a4`)
 - Agent: Claude (Opus 5.5)
 - Platform: Windows
 - Branch: agent/OOT-VANILLA-001-sem-mods-vanilla (host `OOT-UPSTREAM-78DC-001`, a partir de `0ff8f2ff4`; candidata,

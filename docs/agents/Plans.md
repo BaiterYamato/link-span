@@ -1462,3 +1462,19 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
   igual na matriz. Decisão pendente do mantenedor.
 - **Crash do `ResourceLogging`:** a causa é o `6fa3f2a2a` com o `LogMeshAsXML` do upstream. A correção é a mudança
   sem commit em `SceneCommandLoggers.cpp`, que já está compilada no `soh.exe` do RC3; o commit fica a cargo do usuário.
+
+### UPDATE 2026-10-10 (Claude) — OOT-RELEASE-001: RC5 `oot-0.5.0-rc5` validado; Gate §18 só espera o playtest NEI
+
+- **Decisões do mantenedor (09/10):** CC0 1.0 para o trabalho próprio (host `1b9158a1c`, core `e6dd523`, coordenação
+  `7be0d33`); RFC 0027 aceita e RFC 0028 fase 1 (áudio por caminho e `IsUnboundLayerArchive` como dívida C, saída
+  antes da Fase H); segunda família de ROM coberta pela autocontenção (§10.5/§14.3); playtest NEI pelo mantenedor.
+- **RC5:** `soh.exe` `A65950B1…` (`ddeffeadf`), layout `9a593a6e`, CTest 68/68; Unbound 0.6.11, NEI 0.3.20, DMR
+  0.2.19, Mic 0.2.5, WW 0.1.2, Shovel 0.1.2, SDK em ZIP. 8/8 reprodutíveis, `-Verify` 10/10, scanner OK.
+- **NEI 0.3.20 sem recompilar o host:** pipeline do fork acompanha a chave sem mods e os conflitos novos de overlay
+  (`10a9407cc`); stubs da DLL corrigidos após revisão e auditorias do Codex: replay da ocarina, ReDead com
+  Skull/Spooky, `NightGSAlwaysSpawn`, setas do pause e foto da Pictograph Box (`b7570e79d`, `29297d7d1`, `c0fad7399`).
+- **Em jogo:** instalação fresca, sem mods, matriz 9/9, `CICLO OK`, NEI 0.3.18→0.3.20 `ATUALIZACAO OK`, fixtures
+  Unbound 9/9 (boot incluído), probe do SDK carregado, autocontenção 37/37; gates add-ons, capability, recovery,
+  seletor e rollback RC5→RC4→RC5 todos `ok=true gateComplete=true`.
+- **Gate §18:** 25 de 26 linhas marcadas no plano; resta o playtest real dos itens NEI (cópia
+  `RELEASE-UNIFICADA/OOT-playtest-nei-rc5` com checklist). Push e publicação aguardam autorização.

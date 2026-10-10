@@ -12,7 +12,7 @@
 | Formato distribuído | `.shipmod`, contêiner ZIP inspecionável |
 | Coremods-alvo | SoH: Unbound 0.6 e Not Enough Items; mod Wind Waker Style |
 | Majora's Mask | Adiado até o gate final de OoT |
-| Última atualização | 2026-09-26 |
+| Última atualização | 2026-10-09 |
 
 Este plano substitui qualquer suposição de que as duas modificações possam ser
 convertidas apenas copiando seus fontes para um ZIP. Ele define a infraestrutura
@@ -766,6 +766,10 @@ debug. O plano passa a exigir:
 - resolução ou inclusão autocontida para headers, display lists, vértices,
   texturas, colisão, actor lists, paths, cutscenes e outros recursos renomeados;
 - fixture de pelo menos duas famílias de ROM para cada cena tocada pelo port;
+  requisito satisfeito, para a cobertura da segunda família no RC5, pela
+  alternativa aceita pelo mantenedor em 2026-10-09: prova de autocontenção
+  (análise estática contra os 14 YAML de extração + linha `referências` em jogo),
+  em lugar de executar fixtures com outra família de ROM;
 - pacote autocontido para cena importada ou nova;
 - diagnóstico determinístico quando dois mods trazem cópias completas da mesma
   cena. O comportamento `último archive vence` não pode ocorrer silenciosamente;
@@ -1422,7 +1426,10 @@ Esta fase permanece sem tarefas de implementação até o Gate OoT. Quando abert
 - materiais animados por tipo;
 - save flags de cena customizada.
 - compatibilidade de recursos nas famílias NTSC, PAL, GameCube/MQ e debug que
-  estiverem disponíveis legalmente no ambiente de teste;
+  estiverem disponíveis legalmente no ambiente de teste; para a cobertura da
+  segunda família no RC5, requisito satisfeito pela alternativa de
+  autocontenção aceita em 2026-10-09, conforme §10.5, sem execução com outro
+  `oot.o2r`;
 - conflito de duas cópias completas da mesma cena detectado antes do gameplay.
 
 ### 14.4 NEI
@@ -1575,44 +1582,52 @@ Para cada nova versão do Shipwright:
 
 O trabalho de OoT estará concluído somente quando:
 
-- [ ] o overlay instala sobre Shipwright 9.2.3 fresco;
-- [ ] Shipwright sem mods mantém comportamento vanilla;
-- [ ] Unbound é um único pacote removível em `mods/`;
-- [ ] NEI é um único pacote removível em `mods/`;
-- [ ] NEI funciona sem Unbound;
-- [ ] NEI central funciona sem SM64, Pikachu, Wolf Link ou FleetShipCombo;
-- [ ] dependências opcionais usam diretório privado do pacote e não exigem DLL
+- [x] o overlay instala sobre Shipwright 9.2.3 fresco;
+- [x] Shipwright sem mods mantém comportamento vanilla;
+- [x] Unbound é um único pacote removível em `mods/`;
+- [x] NEI é um único pacote removível em `mods/`;
+- [x] NEI funciona sem Unbound;
+- [x] NEI central funciona sem SM64, Pikachu, Wolf Link ou FleetShipCombo;
+- [x] dependências opcionais usam diretório privado do pacote e não exigem DLL
       ou archive solto na raiz do Shipwright;
-- [ ] nenhuma ROM SM64 é distribuída e formatos/regiões incompatíveis são
+- [x] nenhuma ROM SM64 é distribuída e formatos/regiões incompatíveis são
       recusados antes da inicialização da biblioteca;
-- [ ] Unbound funciona sem NEI;
-- [ ] ambos funcionam juntos;
-- [ ] Dynamic Movement Remake funciona junto dos dois;
-- [ ] instalar ou atualizar qualquer pacote não altera `soh.exe`;
-- [ ] nenhuma onda de itens exige nova função específica compilada no host;
-- [ ] cenas e itens adicionais podem ser criados por add-ons;
-- [ ] saves sobrevivem a update, desativação e reinstalação;
-- [ ] falha de coremod produz recuperação sem apagar arquivos;
-- [ ] todos os arquivos distribuídos passam no scanner de conteúdo protegido;
-- [ ] testes sem ROM passam no Windows;
-- [ ] playtest real cobre os limites principais do Unbound;
-- [ ] os valores publicados pelo Prelude estão cobertos por fixtures de
+- [x] Unbound funciona sem NEI;
+- [x] ambos funcionam juntos;
+- [x] Dynamic Movement Remake funciona junto dos dois;
+- [x] instalar ou atualizar qualquer pacote não altera `soh.exe`;
+- [x] nenhuma onda de itens exige nova função específica compilada no host;
+- [x] cenas e itens adicionais podem ser criados por add-ons;
+- [x] saves sobrevivem a update, desativação e reinstalação;
+- [x] falha de coremod produz recuperação sem apagar arquivos;
+- [x] todos os arquivos distribuídos passam no scanner de conteúdo protegido;
+- [x] testes sem ROM passam no Windows;
+- [x] playtest real cobre os limites principais do Unbound;
+- [x] os valores publicados pelo Prelude estão cobertos por fixtures de
       fronteira e os limites remanescentes produzem diagnóstico correto;
-- [ ] mods Unbound incompatíveis são recusados no host sem a capability, em vez
+- [x] mods Unbound incompatíveis são recusados no host sem a capability, em vez
       de carregar parcialmente;
-- [ ] cenas afetadas por diferenças de versão resolvem todos os seus recursos
+- [x] cenas afetadas por diferenças de versão resolvem todos os seus recursos
       ou são distribuídas de forma autocontida;
-- [ ] conflito entre duas cópias completas da mesma cena é identificado antes
+- [x] conflito entre duas cópias completas da mesma cena é identificado antes
       do gameplay;
 - [ ] playtest real cobre todos os itens NEI declarados suportados;
-- [ ] documentação, exemplos, SDK e hashes acompanham a release;
-- [ ] recompilações realizadas depois do `COREEXT-GATE` são apenas das DLLs dos
-      próprios coremods, salvo mudança formal de ABI registrada em RFC.
+- [x] documentação, exemplos, SDK e hashes acompanham a release;
+- [x] instalação e atualização de coremods não exigem recompilar o host.
+      Recompilações de infraestrutura, correção ou tooling após `COREEXT-GATE`
+      estão enumeradas em RFC/handoff com versão e evidência; chamadas
+      específicas exigem demonstração anterior de insuficiência e exceção
+      aprovada ou foram generalizadas conforme a RFC 0027. O inventário
+      histórico tem destino explícito para cada dívida.
 
 Somente depois desse checklist ficar integralmente verde será criado o plano de
 port para Majora's Mask.
 
 ---
+
+
+Situação em 2026-10-10: marcados pelo RC5 `oot-0.5.0-rc5` (evidência e tabela na OOT-RELEASE-001). O playtest
+dos itens NEI fica com o mantenedor, com cópia e checklist preparados.
 
 ## 19. Riscos e respostas planejadas
 

@@ -2,18 +2,143 @@
 
 ## Estado
 
-review — candidato a release **`oot-0.5.0-rc3`** (2026-10-04) montado, reprodutível e verificado, com a rodada de
-host da RFC 0027 aprovada pelo usuário. Rodados em jogo:
-- instalação fresca;
-- matriz §12.2;
-- ciclo de save;
-- atualização do NEI de 0.3.16 para 0.3.17;
-- as fixtures do Unbound.
-
-O Gate OoT (§18) **não** está verde: a tabela do RC3 está logo abaixo. Nada foi publicado; commits locais, sem push.
-O RC2 (seções seguintes) fica como histórico.
+review — candidato a release **`oot-0.5.0-rc5`** (2026-10-09/10) montado, reprodutível e verificado. A bateria em
+jogo e os cinco gates novos passaram (seção abaixo). Do Gate OoT (§18) resta só o playtest real dos itens NEI, que
+o mantenedor vai fazer. Nada foi publicado; commits locais, sem push. RC2/RC3/RC4 ficam como histórico.
 
 ## Resultado
+
+### Release `oot-0.5.0-rc5` (2026-10-09/10)
+
+Candidato em `OOT-UPSTREAM-78DC-001/build/release/oot-0.5.0-rc5`. Host `soh.exe` com commit embutido `ddeffea`
+(`ddeffeadf`), SHA-256 `A65950B1FFB0380FD6F242E0AD22BDE3B67BDFC55D125BD83D7936DDE144850B`, layout `9a593a6e` sem
+mudança, CTest 68/68. Os pacotes saem do host `c0fad7399` (o `soh.exe` não foi recompilado depois de `ddeffeadf`).
+Commits locais, sem push; nada publicado.
+
+| Pacote | Versão | SHA-256 (16) |
+|---|---|---|
+| Overlay Shipwright 9.2.3 / upstream `78dc6d970` / layout `9a593a6e` | API 0.5.0 | `7eeacf420ffac5ca` |
+| Unbound Framework | 0.6.11 | `151bd9353bcce880` |
+| NEI | 0.3.20 | `4c1041a71b1f560d` |
+| Dynamic Movement Remake | 0.2.19 | `53809f6251005ae9` |
+| Mic Ocarina | 0.2.5 | `b7c542559d0630d6` |
+| Wind Waker Style | 0.1.2 | `e8ff0af96951f0b6` |
+| Shovel Demo | 0.1.2 | `50f7941a5922a398` |
+| Unbound09 Actors Demo | dados | `ff4d7e74b0d7a2b2` |
+| SDK de autor (ZIP separado) | rc5 | `7c6fbd73daf6e2ae` |
+
+**O que muda contra o RC4:**
+- **COREEXT-012 / RFC 0028 fase 1** (`45530b878`): setting `linkspan.pause.equip_selector`, helper
+  `LinkSpan_PauseEquipSelectorEnabled`, símbolo com nome de mod removido; HUD do D-pad e seletor separados.
+- **Logger** (`6bdb665b2`): correção do `ResourceLogging` agora commitada.
+- **Extrator** (core `648ba8f`): retentativa do `rename` do staging; o `ub030-boot` do RC4 passou no RC5.
+- **Camada Unbound sem framework** (`ddeffeadf`): recusada com diagnóstico; o mesmo commit traz o `crash-coremod` e o
+  scene-demo 0.6.x para os gates.
+- **Licenças** CC0 (host `1b9158a1c`, core `e6dd523`, coordenação `7be0d33`); **SDK** em ZIP (`37ed69386`); versões
+  (`bf8715832`).
+- **NEI 0.3.20** sem recompilar o host:
+  - `10a9407cc`: pipeline do fork acompanha a chave sem mods (`/FI` de `linkspan_vanilla.h`, chave do host por
+    ponteiro, defines só do host copiados pelo extrator) e os conflitos novos de overlay (`Message_Decode`,
+    `Message_DrawMain`, `EnMThunder_SpinAttacking`, `Message_DecodeChecked`, assinatura do `KaleidoScope_DrawItemSelect`).
+  - `b7570e79d`: replay da ocarina com o instrumento padrão (o stub gerado devolvia `OCARINA_INSTRUMENT_OFF` e a
+    mensagem travava em `MSGMODE_DISPLAY_SONG_PLAYED`).
+  - `29297d7d1`: ReDead amigável com Skull/Spooky Mask e realce `NightGSAlwaysSpawn`.
+  - `c0fad7399`: cursor das setas de página do pause e descarte da foto da Pictograph Box.
+  - Achados de três revisões do Codex: diff RC4→RC5 e auditorias dos 120 stubs com retorno e dos 106 stubs void.
+    Ficam como limitação: cegueira do Gust Jar (modo Shadow) e magia infinita do Chateau Romani.
+- **Release** (`7fc46b5bf`): tabela do `RELEASE.md` válida e NOTICE do overlay com os nomes instalados. Notas revisadas
+  por auditoria (Codex): sem promessa de save abrindo na versão anterior, limite da proteção de boot, efeitos locais
+  do Unbound e caminho curto da pasta do jogo.
+
+**Decisões do mantenedor (2026-10-09):** CC0 1.0 para o trabalho próprio (ícone da Navi do DMR fora; Shipwright,
+NEI/skijer, Unbound/roborich e Wind Waker Style seguem com os autores); RFC 0027 aceita e RFC 0028 fase 1 com áudio
+por caminho e `IsUnboundLayerArchive` como dívida C aceita, saída antes da Fase H; segunda família de ROM coberta
+pela prova de autocontenção (§10.5/§14.3); playtest dos itens NEI feito pelo mantenedor (**pendente**).
+
+**Validação** (evidência em `build/oot-upstream-001/evidence/release-g/rc5`, bateria `rc5-battery.ps1`):
+- empacotamento duas vezes, 8/8 iguais byte a byte; `-Verify` 10/10; scanner OK (21.872 arquivos);
+- instalação fresca: `PROVA OK`, 0 mods;
+- sem mods: falhas 0, sem erro no log, motor do upstream, save preservado;
+- matriz §12.2: 9/9 linhas `ok=True`;
+- ciclo de save: `CICLO OK`; atualização NEI 0.3.18 (save do RC4) → 0.3.20: `ATUALIZACAO OK`;
+- fixtures do Unbound 9/9: completa, boot (`ub030-boot`), savestate, m18, a8200, r04, r0809, água e luzes;
+- probe do SDK compilado só com o ZIP: carregado e descarregado no jogo;
+- autocontenção: referências 9, sem resolver 0; em jogo 37 conferidas, 0 ausentes (NTSC-US 1.1);
+- gates (`run-gates.ps1`, tentativa 3): add-ons, capability (pasta, solta e controle), recovery (crash do
+  `linkspan.crash-coremod` atribuído, desativado pela lista e pacote preservado), seletor sem/com DMR (C-right retido
+  após save e reinício) e rollback RC5→RC4→RC5: todos `ok=true gateComplete=true`.
+
+Tentativas anteriores, arquivadas: `rc5-tentativa1-nei0319` (NEI que seria substituído), `rc5-tentativa2-foco`
+(bateria com console minimizado tomava o primeiro plano), `gates-tentativa1/2` (harness: cópias em caminho
+longo, caixa de crash do LUS não fechada, item esperado no slot 0). Nenhuma delas mudou código de jogo.
+
+**Pendências:** playtest dos itens NEI pelo mantenedor (cópia `RELEASE-UNIFICADA/OOT-playtest-nei-rc5` com
+`CHECKLIST-NEI-JOGO.md`); playtest físico de Mic/DMR (histórico); push e publicação; restrições de redistribuição das
+partes de terceiros.
+
+### Gate OoT (§18) — situação no RC5
+
+| Critério | Situação | Evidência |
+|---|---|---|
+| overlay instala sobre 9.2.3 fresco | ✅ | `PROVA OK`, SHA do host, 0 mods |
+| sem mods mantém vanilla | ✅ | sessão sem mods, motor do upstream; OOT-VANILLA-001 (sem A/B por pixel) |
+| Unbound pacote único removível | ✅ | matriz 02/04/05/07/09, um `.shipmod` |
+| NEI pacote único removível | ✅ | matriz 03/04/06/07/09, ciclo de save |
+| NEI sem Unbound | ✅ | linhas 03/06 |
+| NEI central sem SM64/Pikachu/Wolf Link/FleetShipCombo | ✅ | expansões fora do pacote, matriz |
+| dependências opcionais em diretório privado | — | nenhuma dependência opcional distribuída |
+| sem ROM SM64; recusa de formato | ✅ / — | scanner OK; componente SM64 ausente |
+| Unbound sem NEI | ✅ | linhas 02/05 |
+| ambos juntos | ✅ | linhas 04/09 |
+| DMR junto dos dois | ✅ | linha 07 |
+| instalar/atualizar não altera `soh.exe` | ✅ | SHA `A65950B1…` em todas as sessões, update e rollback |
+| ondas de itens sem função específica no host | ✅ | RFC 0028 fase 1; NEI 0.3.20 sem recompilar o host; gate do seletor |
+| add-ons de cena e item | ✅ | gate-addons |
+| saves sobrevivem a update/desativação/reinstalação | ✅ | `CICLO OK`, `ATUALIZACAO OK`, gate-rollback |
+| falha de coremod recupera sem apagar | ✅ | gate-recovery |
+| scanner nos distribuídos | ✅ | release, SDK e cópia montada |
+| testes sem ROM no Windows | ✅ | CTest 68/68 |
+| playtest real dos limites do Unbound | ✅ | fixtures 9/9 |
+| fixtures de fronteira do Prelude | ✅ | completa, boot, m18, a8200 |
+| incompatíveis recusados sem a capability | ✅ | gate-capability |
+| cenas resolvem recursos ou são autocontidas | ✅ | autocontenção (decisão do mantenedor) |
+| conflito de cópias de cena antes do gameplay | ✅ | fixture boot |
+| playtest real de todos os itens NEI | 🟡 | mantenedor; cópia e checklist prontos |
+| docs, exemplos, SDK e hashes | ✅ | release, SDK, probe em jogo |
+| coremods sem recompilar o host (RFC 0027) | ✅ | NEI 0.3.20 sobre o mesmo `soh.exe`; rodadas após o RC4 enumeradas em COREEXT-011 |
+
+### Release `oot-0.5.0-rc4` (2026-10-04, registrada em 2026-10-09)
+
+Pasta `OOT-UPSTREAM-78DC-001/build/release/oot-0.5.0-rc4`. Host `soh.exe` `168A6885…`, commit embutido `e855b88`
+(rodada OOT-VANILLA-001 `43cb7e01e` + versões), layout `9a593a6e` sem mudança.
+
+| Pacote | SHA-256 (16) |
+|---|---|
+| `LinkSpan-Shipwright-9.2.3-Upstream-78dc6d970-layout-9a593a6e-Win64-overlay.zip` | `02eb16168f49ede2` |
+| `LinkSpan-Unbound-Framework-0.6.10-layout-9a593a6e.shipmod` | `6afcb8d2928945c7` (igual ao RC3) |
+| `LinkSpan-NEI-0.3.18-layout-9a593a6e.shipmod` | `d138e79a42c2e340` |
+| `Dynamic-Movement-Remake-0.2.18-layout-9a593a6e.zip` | `da59398fc051c57e` |
+| `LinkSpan-Mic-Ocarina-0.2.4-layout-9a593a6e.zip` | `c782476e9aa45c58` |
+| `LinkSpan-WindWakerStyle-0.1.1.shipmod` | `1ab4ab84c753a1e4` (igual ao RC3) |
+| `LinkSpan-Shovel-Demo-0.1.1-layout-9a593a6e-9f1e44e0.zip` | `f7bec07217b8457f` (igual ao RC3) |
+| `LinkSpan-Unbound09-Actors-Demo.o2r` | `ff4d7e74b0d7a2b2` (igual ao RC3) |
+
+**Validação** (`evidence/release-g/rc4`, `RESUMO.txt`): CTest 68/68 (teste novo da vanilla); dois empacotamentos
+idênticos (8/8); `-Verify` 8/8; scanner sem achados.
+- instalação fresca: `PROVA OK`, 0 mods, 371 comandos de cena em XML;
+- sem mods: 0 falhas, 0 erros no log, namespaces `linkspan`/`unbound` iguais;
+- matriz §12.2: 9/9 linhas, 0 falhas;
+- ciclo de save: `CICLO OK`;
+- atualização do NEI 0.3.17 (RC3) → 0.3.18 (RC4): `ATUALIZACAO OK`;
+- fixtures do Unbound: 8/9 com 0 falhas. A `boot` acusou 9 falhas, todas na sessão `grafo`.
+
+**A falha da `boot` não é regressão do RC4.** No log da sessão `grafo`
+(`rc4/fixtures/boot/session-grafo/*.post.log:9`) o host recusou o framework no boot com `cannot commit extracted
+package: Acesso negado`; sem o framework, nenhuma nota do grafo foi impressa, e as 9 falhas são consequência disso.
+As outras 8 sessões da mesma fixture passaram. A causa é o `rename` único da pasta de staging em
+`extern/ship-lua/src/manifest/PackageExtractor.cpp`, que falha quando outro processo (antivírus, indexador) ainda
+segura um arquivo recém-extraído. É o mesmo flake visto na UNBOUND-028. Corrigido para o RC5 no core `648ba8f`
+(nova tentativa por até ~2,3 s, com teste que reproduz o arquivo aberto no Windows).
 
 ### Release `oot-0.5.0-rc3` (2026-10-04)
 

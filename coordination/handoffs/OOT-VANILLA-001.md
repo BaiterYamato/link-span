@@ -2,9 +2,11 @@
 
 ## Estado
 
-review — rodada de host candidata, pedida pelo usuário em 2026-10-04 ("2)b": sem mods, o host se comporta como o
-upstream). Fica na branch `agent/OOT-VANILLA-001-sem-mods-vanilla` do host (`OOT-UPSTREAM-78DC-001`, a partir da
-integração `0ff8f2ff4`). **Não entra na integração nem no RC4 sem aprovação do usuário.** Commits locais, sem push.
+done — aprovada pelo usuário em 2026-10-04 ("eu aprovo": a rodada e a lista F). A integração do host
+(`agent/OOT-UPSTREAM-001-78dc6d970-integration`) e a do libultraship (`agent/OOT-UPSTREAM-001-linkspan-extensions`)
+avançaram por fast-forward até `43cb7e01e` e `d8d5d9a4`. O U (menu Mods, janela de log, `give_item linkspan`) ficou
+como estava. O A/B por pixel contra o upstream, que era opcional, não foi feito. Entra no RC4 (`oot-0.5.0-rc4`,
+ver OOT-RELEASE-001). Commits locais, sem push.
 
 ## Resultado
 
@@ -153,4 +155,4 @@ compilado da working tree igual a esse commit: o `build.c` embute o commit anter
 
 ## Próxima ação
 
-Aprovação do usuário (rodada, lista F e U); depois, integração e RC4.
+Nenhuma nesta tarefa: o RC4 segue na OOT-RELEASE-001.

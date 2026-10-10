@@ -81,3 +81,40 @@ validado os 24 SHAs, listas de arquivos e fontes, e marca como "não confirmado"
 
 Revisar a RFC 0027; se aceita, abrir as tarefas das saídas C (áudio por caminho genérico, ownership de inventário,
 camadas de VFS pedidas pelo provider) e mudar o status da RFC.
+
+### Fechamento para o RC5 (2026-10-09)
+
+**Estado:** RFC 0027 aceita pelo mantenedor em 2026-10-09. Fica superada a pendência de aprovação integral da RFC,
+do inventário dos 24 commits e das dívidas C. A aprovação da rodada v10 de 2026-10-04 permanece no histórico.
+Commits locais, sem push. Este fechamento é da regularização; a bateria do RC5 e a release seguem em review.
+
+**Resultado:**
+- Inventário histórico regularizado pela RFC aceita (core `99d912a` e nota `eac95e2`).
+- A parte do seletor com nome de mod foi generalizada pela RFC 0028 fase 1, host `45530b878`; ver COREEXT-012.
+- Rebuild do NEI registrado no host `10a9407cc`; provado em jogo no RC5 com NEI 0.3.20 (OOT-RELEASE-001).
+- Restam duas dívidas C aceitas: áudio por caminho (`SetSoundSettingsFactoryXML` / `SequenceIdForPath`) e montagem
+  de camadas Unbound no bootstrap (`IsUnboundLayerArchive`). Saídas: resolução por API genérica e camadas VFS pedidas pelo provider,
+  respectivamente. Marco aprovado: antes da Fase H. A correção de uma dessas partes não equivale à sua remoção.
+- A última linha do §18 passa a exigir que instalar/atualizar coremods não recompile o host, com as rodadas de
+  infraestrutura, correção ou tooling registradas e destino explícito para cada dívida. Não exige "só DLLs"
+  de forma absoluta depois do COREEXT-GATE.
+
+**Recompilações do host depois do RC4, incluídas no RC5:**
+
+| Rodada / commits | Categoria e motivo | Versão / evidência |
+|---|---|---|
+| COREEXT-012, `45530b878` | infraestrutura genérica, RFC 0028 fase 1; sai o símbolo com nome de mod | RC5, layout igual; gate-selector RC5 ok/completo: sem DMR o A não muda `buttonItems`; com DMR o item vai ao C-right e fica após save e reinício (queda do setting com o seletor aberto não foi exercitada em jogo) |
+| Logger, `6bdb665b2` | correção de `ResourceLogging`; regulariza o código sem commit do RC3 | RC5; prova em jogo anterior: `rc3/resourcelogging`, 2/2 sem crash |
+| Licenças, SDK e versões, `1b9158a1c`, `37ed69386`, `bf8715832` | tooling, sem efeito no código de jogo; CC0/avisos, SDK em ZIP e versões dos pacotes | RC5; 8/8 reprodutíveis, `-Verify` 10/10, scanner OK, probe do SDK carregado e descarregado no jogo |
+| Camada Unbound, `ddeffeadf` | correção dentro da dívida C aceita; camada sem framework recusada com diagnóstico | RC5; gate-capability RC5 ok/completo (camada em pasta, solta e controle com o framework) |
+
+**Validação:** host final embute `ddeffea` (`ddeffeadf`), SHA-256
+`A65950B1FFB0380FD6F242E0AD22BDE3B67BDFC55D125BD83D7936DDE144850B`, layout `9a593a6e` sem mudança, CTest 68/68.
+O core `648ba8f` corrige a falha intermitente do `rename` do extrator vista no RC4; isso não é uma função nova
+específica de mod no host. RC5: NEI 0.3.18→0.3.20, ciclo de save e rollback RC5→RC4→RC5 sobre o mesmo `soh.exe` (SHA `A65950B1…`); NEI 0.3.20 saiu sem recompilar o host.
+
+**Pendências e riscos:** executar as duas saídas C antes da Fase H. O aceite da dívida não elimina o acoplamento atual. Não estender esta aprovação a futuras
+chamadas específicas: continua exigida a demonstração anterior de insuficiência e a exceção aprovada, ou a
+generalização conforme a RFC.
+
+**Próxima ação:** provas do RC5 anexadas à OOT-RELEASE-001; acompanhar as saídas de áudio/camadas antes da Fase H.
