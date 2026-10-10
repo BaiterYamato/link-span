@@ -165,7 +165,7 @@ void InstallMmApi(lua_State* L) {          // chame para cada runtime carregado
 Para publicar um evento comum a partir do host (ex.: uma tecla), use
 `gModHost->DispatchEvent("input.hotkey", payload)`. Veja o exemplo completo
 (hotkey + spawn de cachorro) no fork do MM e em
-[`examples/dog-spawner`](../examples/dog-spawner/).
+[`link-span-examples/lua/dog-spawner`](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/dog-spawner).
 
 ## Notas
 

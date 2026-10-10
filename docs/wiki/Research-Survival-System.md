@@ -22,7 +22,7 @@ A arquitetura recomendada é uma quarta alternativa, **B modular**:
 - hooks, getters e setters genéricos no host; regras de survival em Lua.
 
 A Fase 0 já é parcialmente demonstrada por
-`examples/survival-demo`: HUD, persistência, drenagem e consequências funcionam
+`link-span-examples/lua/survival-demo`: HUD, persistência, drenagem e consequências funcionam
 com as APIs atuais. Entretanto, esse demo ainda usa rupia como placeholder e
 trata **receber** leite/peixe como **consumir**. Isso não é aceitável para um mod
 jogável porque interfere semanticamente com garrafas e quests.

@@ -9,7 +9,7 @@ Este é o primeiro mod comum do ShipLua. O mesmo pacote funciona no Shipwright e
 cmake --build build --target package_examples
 ```
 
-O arquivo será criado em `build/examples/hello-world.shipmod`. A geração fixa ordem,
+O arquivo será criado em `build/fixtures/hello-world.shipmod`. A geração fixa ordem,
 timestamp e permissões das entradas para produzir o mesmo conteúdo em builds iguais.
 
 ## Instalar

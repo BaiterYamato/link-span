@@ -225,13 +225,13 @@ add_test(NAME api_contract_codegen_tests
 # MODSDK-004 — mod test runner (mock runtime) via CLI
 # ---------------------------------------------------------------------------
 add_test(NAME mod_runner_example
-    COMMAND shiplua_mod_test_runner "${SHIPLUA_SOURCE_DIR}/examples/frame-counter")
+    COMMAND shiplua_mod_test_runner "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mods/frame-counter")
 add_test(NAME mod_runner_example_mm
-    COMMAND shiplua_mod_test_runner "${SHIPLUA_SOURCE_DIR}/examples/frame-counter" --game mm)
+    COMMAND shiplua_mod_test_runner "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mods/frame-counter" --game mm)
 add_test(NAME actor_spawn_example_oot
-    COMMAND shiplua_mod_test_runner "${SHIPLUA_SOURCE_DIR}/examples/actor-spawn" --game oot)
+    COMMAND shiplua_mod_test_runner "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mods/actor-spawn" --game oot)
 add_test(NAME actor_spawn_example_mm
-    COMMAND shiplua_mod_test_runner "${SHIPLUA_SOURCE_DIR}/examples/actor-spawn" --game mm)
+    COMMAND shiplua_mod_test_runner "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mods/actor-spawn" --game mm)
 add_test(NAME mod_runner_fixture_passing
     COMMAND shiplua_mod_test_runner "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mod-runner/passing-mod")
 add_test(NAME mod_runner_fixture_failing
@@ -252,8 +252,8 @@ add_test(NAME zip_package_tools
         --runner $<TARGET_FILE:shiplua_mod_test_runner>
         --sdk "${SHIPLUA_SOURCE_DIR}")
 add_test(NAME hello_runtime_manifest_validation
-    COMMAND shiplua_manifest_validator "${SHIPLUA_SOURCE_DIR}/examples/hello-runtime")
+    COMMAND shiplua_manifest_validator "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mods/hello-runtime")
 add_test(NAME hello_runtime_mod_tests_oot
-    COMMAND shiplua_mod_test_runner "${SHIPLUA_SOURCE_DIR}/examples/hello-runtime" --game oot)
+    COMMAND shiplua_mod_test_runner "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mods/hello-runtime" --game oot)
 add_test(NAME hello_runtime_mod_tests_mm
-    COMMAND shiplua_mod_test_runner "${SHIPLUA_SOURCE_DIR}/examples/hello-runtime" --game mm)
+    COMMAND shiplua_mod_test_runner "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mods/hello-runtime" --game mm)

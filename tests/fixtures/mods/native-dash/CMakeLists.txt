@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 project(LinkSpanNativeDash LANGUAGES C)
 # Build independente: NÃO faz add_subdirectory/link com shiplua ou o jogo.
-set(LINKSPAN_SDK_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/../../include" CACHE PATH "Headers do SDK")
+set(LINKSPAN_SDK_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/../../../../include" CACHE PATH "Headers do SDK")
 set(DASH_VELOCITY "12.0" CACHE STRING "Velocidade definida pelo mod")
 add_library(native_dash SHARED provider.c)
 target_include_directories(native_dash PRIVATE "${LINKSPAN_SDK_INCLUDE}")

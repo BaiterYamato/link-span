@@ -8,7 +8,7 @@ superfície central da API comum — logging, detecção de capabilities
 ## Validar
 
 ```powershell
-python tools/shipmod.py validate examples/hello-runtime
+python tools/shipmod.py validate tests/fixtures/mods/hello-runtime
 ```
 
 ## Testar sem jogo (mock runtime)
@@ -17,7 +17,7 @@ Os testes em `tests/` usam a DSL `describe`/`it`/`assert` do
 `shiplua_mod_test_runner` (MODSDK-004) e rodam sem jogo ou ROM:
 
 ```powershell
-python tools/shipmod.py test examples/hello-runtime
+python tools/shipmod.py test tests/fixtures/mods/hello-runtime
 ```
 
 ## Instalar

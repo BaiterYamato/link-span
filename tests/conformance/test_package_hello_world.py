@@ -10,7 +10,7 @@ from PackageHelloWorld import FIXED_TIMESTAMP, PACKAGE_FILES, package
 
 class HelloWorldPackagingTests(unittest.TestCase):
     def test_package_is_reproducible_and_canonical(self) -> None:
-        source = pathlib.Path(__file__).parents[2] / "examples" / "hello-world"
+        source = pathlib.Path(__file__).parents[1] / "fixtures" / "mods" / "hello-world"
         with tempfile.TemporaryDirectory() as temporary:
             first = pathlib.Path(temporary) / "first.shipmod"
             second = pathlib.Path(temporary) / "second.shipmod"
