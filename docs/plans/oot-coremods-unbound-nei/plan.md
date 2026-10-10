@@ -1611,7 +1611,7 @@ O trabalho de OoT estará concluído somente quando:
       ou são distribuídas de forma autocontida;
 - [x] conflito entre duas cópias completas da mesma cena é identificado antes
       do gameplay;
-- [ ] playtest real cobre todos os itens NEI declarados suportados;
+- [x] playtest real cobre todos os itens NEI declarados suportados;
 - [x] documentação, exemplos, SDK e hashes acompanham a release;
 - [x] instalação e atualização de coremods não exigem recompilar o host.
       Recompilações de infraestrutura, correção ou tooling após `COREEXT-GATE`
@@ -1627,7 +1627,7 @@ port para Majora's Mask.
 
 
 Situação em 2026-10-10: marcados pelo RC5 `oot-0.5.0-rc5` (evidência e tabela na OOT-RELEASE-001). O playtest
-dos itens NEI fica com o mantenedor, com cópia e checklist preparados.
+dos itens NEI foi feito pelo mantenedor na cópia do RC5 (itens NEI, DMR e Mic Ocarina funcionando).
 
 ## 19. Riscos e respostas planejadas
 

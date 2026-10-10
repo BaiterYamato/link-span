@@ -3,8 +3,8 @@
 ## Estado
 
 review — candidato a release **`oot-0.5.0-rc5`** (2026-10-09/10) montado, reprodutível e verificado. A bateria em
-jogo e os cinco gates novos passaram (seção abaixo). Do Gate OoT (§18) resta só o playtest real dos itens NEI, que
-o mantenedor vai fazer. Nada foi publicado; commits locais, sem push. RC2/RC3/RC4 ficam como histórico.
+jogo e os cinco gates novos passaram (seção abaixo). O mantenedor jogou a cópia de playtest em 2026-10-10: itens NEI, DMR e Mic Ocarina
+funcionando. Gate OoT (§18) 26/26. Nada foi publicado; commits locais, sem push. RC2/RC3/RC4 ficam como histórico.
 
 ## Resultado
 
@@ -53,7 +53,7 @@ Commits locais, sem push; nada publicado.
 **Decisões do mantenedor (2026-10-09):** CC0 1.0 para o trabalho próprio (ícone da Navi do DMR fora; Shipwright,
 NEI/skijer, Unbound/roborich e Wind Waker Style seguem com os autores); RFC 0027 aceita e RFC 0028 fase 1 com áudio
 por caminho e `IsUnboundLayerArchive` como dívida C aceita, saída antes da Fase H; segunda família de ROM coberta
-pela prova de autocontenção (§10.5/§14.3); playtest dos itens NEI feito pelo mantenedor (**pendente**).
+pela prova de autocontenção (§10.5/§14.3); playtest dos itens NEI feito pelo mantenedor (2026-10-10: itens NEI, DMR e Mic Ocarina funcionando).
 
 **Validação** (evidência em `build/oot-upstream-001/evidence/release-g/rc5`, bateria `rc5-battery.ps1`):
 - empacotamento duas vezes, 8/8 iguais byte a byte; `-Verify` 10/10; scanner OK (21.872 arquivos);
@@ -72,9 +72,9 @@ Tentativas anteriores, arquivadas: `rc5-tentativa1-nei0319` (NEI que seria subst
 (bateria com console minimizado tomava o primeiro plano), `gates-tentativa1/2` (harness: cópias em caminho
 longo, caixa de crash do LUS não fechada, item esperado no slot 0). Nenhuma delas mudou código de jogo.
 
-**Pendências:** playtest dos itens NEI pelo mantenedor (cópia `RELEASE-UNIFICADA/OOT-playtest-nei-rc5` com
-`CHECKLIST-NEI-JOGO.md`); playtest físico de Mic/DMR (histórico); push e publicação; restrições de redistribuição das
-partes de terceiros.
+**Pendências:** publicação da release; restrições de redistribuição das partes de terceiros; queda do setting do
+seletor com ele aberto (não exercitada em jogo). Playtest NEI e físico de DMR/Mic feitos pelo mantenedor em
+2026-10-10 (relato: funcionando).
 
 ### Gate OoT (§18) — situação no RC5
 
@@ -103,7 +103,7 @@ partes de terceiros.
 | incompatíveis recusados sem a capability | ✅ | gate-capability |
 | cenas resolvem recursos ou são autocontidas | ✅ | autocontenção (decisão do mantenedor) |
 | conflito de cópias de cena antes do gameplay | ✅ | fixture boot |
-| playtest real de todos os itens NEI | 🟡 | mantenedor; cópia e checklist prontos |
+| playtest real de todos os itens NEI | ✅ | mantenedor, 2026-10-10, cópia `OOT-playtest-nei-rc5` com NEI 0.3.20 |
 | docs, exemplos, SDK e hashes | ✅ | release, SDK, probe em jogo |
 | coremods sem recompilar o host (RFC 0027) | ✅ | NEI 0.3.20 sobre o mesmo `soh.exe`; rodadas após o RC4 enumeradas em COREEXT-011 |
 

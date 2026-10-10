@@ -1478,3 +1478,5 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
   seletor e rollback RC5→RC4→RC5 todos `ok=true gateComplete=true`.
 - **Gate §18:** 25 de 26 linhas marcadas no plano; resta o playtest real dos itens NEI (cópia
   `RELEASE-UNIFICADA/OOT-playtest-nei-rc5` com checklist). Push e publicação aguardam autorização.
+- **Playtest do mantenedor (10/10):** itens NEI, DMR e Mic Ocarina funcionando na cópia do RC5. Gate §18 26/26.
+  Push autorizado; publicação da release não.
