@@ -106,8 +106,9 @@ supervisor, os dois jogos estão disponíveis e as variáveis autenticadas da
 sessão são válidas. Em execução standalone ou com apenas um jogo, ela permanece
 desativada de forma segura.
 
-O build empacota o exemplo em
-`x64/Release/mods/link-home-to-clock-tower.shipmod`. Hosts antigos o rejeitam de
+O exemplo `link-home-to-clock-tower` mora em
+[link-span-examples](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/link-home-to-clock-tower).
+Instalado em `mods/`, hosts antigos o rejeitam de
 forma explícita por exigir API `0.3` e `world.travel`; ele não executa um
 teleporte parcial. No OoT, o pedido só é aceito dentro da casa do Link; o host
 MM aplica a entrada `mm.clock_tower.entrance` ao save selecionado.

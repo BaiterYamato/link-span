@@ -1,0 +1,30 @@
+# OOT-CORE-005
+
+- Status: review
+- Agent: Claude (Opus 5)
+- Platform: Windows
+- Branch: agent/OOT-UPSTREAM-001-78dc6d970-integration
+- Started: 2026-09-16T22:40:03.1856229Z
+- Depends on: COREEXT-006, OOT-CORE-003
+- Files:
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/oot_camera.h
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/oot_render.h
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/oot_hooks.h
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeView.h
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeView.cpp
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeViewGame.cpp
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeHooks.h
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeHooks.cpp
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeHooksGame.cpp
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeItemsGame.cpp
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeEngine.cpp
+  - OOT-UPSTREAM-78DC-001/soh/soh/OTRGlobals.cpp
+  - OOT-UPSTREAM-78DC-001/soh/soh/ShipLuaBootstrap.cpp
+  - OOT-UPSTREAM-78DC-001/soh/src/code/z_player_lib.c
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/ExportSdk.cmake
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/tests/EngineTests.cpp
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/view-demo/**
+  - OOT-UPSTREAM-78DC-001/tools/package-view-demo.ps1
+  - OOT-UPSTREAM-78DC-001/docs/native-mods.md
+- Goal:
+  - Câmera com posse exclusiva, render com matriz e display lists em escopo de draw e hook de limb do Player, com demo em jogo

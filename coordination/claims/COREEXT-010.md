@@ -1,0 +1,32 @@
+# COREEXT-010
+
+- Status: review
+- Agent: Claude (Opus 5.5)
+- Platform: Windows
+- Branch: agent/COREEXT-010-escape-batch
+- Started: 2026-09-26T17:48:48.7589317Z
+- Depends on: COREEXT-008, NEI-HOST-001
+- Files:
+  - OOT-UPSTREAM-78DC-001/extern/ship-lua/include/shiplua/native/NativeProvider.h
+  - OOT-UPSTREAM-78DC-001/extern/ship-lua/src/native/NativeProvider.cpp
+  - OOT-UPSTREAM-78DC-001/extern/ship-lua/tests/native/NativeProviderTests.cpp
+  - OOT-UPSTREAM-78DC-001/extern/ship-lua/rfcs/0023-native-escape-hatch.md
+  - OOT-UPSTREAM-78DC-001/extern/ship-lua/docs/native-providers.md
+  - OOT-UPSTREAM-78DC-001/extern/ship-lua/tests/native/ThrowFixture.cpp (rodada 2)
+  - OOT-UPSTREAM-78DC-001/extern/ship-lua/tests/native/EscapeFixture.c (rodada 2)
+  - OOT-UPSTREAM-78DC-001/extern/ship-lua/src/host/ModHost.cpp (rodada 2)
+  - OOT-UPSTREAM-78DC-001/extern/ship-lua/include/shiplua/host/ModHost.h (rodada 2)
+  - OOT-UPSTREAM-78DC-001/extern/ship-lua
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/OotNativeEscapeWin.cpp
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/oot_scenes.h
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/oot_resources.h
+  - OOT-UPSTREAM-78DC-001/tools/package-*.ps1
+  - OOT-UPSTREAM-78DC-001/build/oot-upstream-001/evidence/coreext-010/**
+  - RELEASE-UNIFICADA/OOT-teste-cenas-20260914/**
+  - docs/agents/Plans.md
+  - coordination/claims/COREEXT-010.md
+  - coordination/handoffs/COREEXT-010.md
+- Goal:
+  - Escape hatch em lote: o core abre um lote em volta do init de um provider e da remocao no unload; o host OoT enfileira na MinHook e aplica com um MH_ApplyQueued, um congelamento de threads so em vez de um por desvio (NEI: ~19 s no boot e ~19 s no fechamento).
+  - Contrato novo e opcional em NativeEscapeHatch (beginBatch/commitBatch) e emenda da RFC 0023: desvio instalado no init ativa quando o init retorna; init que falha remove os desvios sem ativar; fora do lote, install/remove continuam valendo no retorno.
+  - O NativeProvider.h entra no glob do layout id: a rodada troca o id e leva junto as sobras que esperavam o proximo id (limite 0x7FF4 no oot_scenes.h, comentario de threads no oot_resources.h). Todos os mods nativos publicados sao reempacotados para o layout novo.

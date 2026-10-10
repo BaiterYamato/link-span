@@ -1,0 +1,23 @@
+# OOT-MOVE-005
+
+- Status: review
+- Agent: Claude
+- Platform: Windows
+- Branch: agent/OOT-NATIVE-001-native-engine
+- Started: 2026-09-13T13:26:04.5625882Z
+- Depends on: OOT-MOVE-004
+- Files:
+  - OOT-NATIVE-001/soh/soh/native/oot_engine.h
+  - OOT-NATIVE-001/soh/soh/native/OotNativeEngine.cpp
+  - OOT-NATIVE-001/soh/native-sdk/tests/EngineTests.cpp
+  - OOT-NATIVE-001/soh/native-sdk/example/**
+  - NATIVE-001/rfcs/0018-oot-movement-v2.md
+  - NATIVE-001/rfcs/0014-dynamic-movement-remake.md
+  - OOT-NATIVE-001/build/dynamic-movement-0.2.8/**
+  - OOT-NATIVE-001/build/distribution/Dynamic-Movement-Remake-0.2.8.zip
+  - OOT-NATIVE-001/build/distribution/LinkSpan-Shipwright-9.2.3-MovementV2-D-pad-Win64-overlay.zip
+  - coordination/claims/OOT-MOVE-005.md
+  - coordination/handoffs/OOT-MOVE-005.md
+- Goal:
+  - D-pad do Dynamic Movement Remake: esquerda tira a ocarina sem ocupar botão C; cima alterna o traje (toque volta ao último, segurar percorre os trajes com ícones no HUD); baixo alterna as botas (toque alterna com as Kokiri, segurar percorre as botas).
+  - Host: player_use_item_shortcut aceita ocarinas, trajes e botas pelos caminhos nativos (Player_ActionHandler_13 e o equipamento do AssignableTunicsAndBoots), com as regras do jogo.

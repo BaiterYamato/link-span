@@ -1,0 +1,26 @@
+# OOT-NATIVE-001
+
+- Status: review
+- Agent: Codex
+- Platform: Windows
+- Branch: agent/OOT-NATIVE-001-native-engine
+- Started: 2026-09-09T02:20:17.5372774Z
+- Depends on: NATIVE-001
+- Files:
+  - include/shiplua/api/LuaApiBinding.h
+  - src/api/LuaApiBinding.cpp
+  - tests/unit/LuaApiBindingTests.cpp
+  - schema/api.yml
+  - schema/capabilities.yml
+  - generated/**
+  - include/shiplua/storage/KeyValueStorage.h
+  - src/storage/KeyValueStorage.cpp
+  - tests/unit/KeyValueStorageTests.cpp
+  - OOT-NATIVE-001/CMakeLists.txt
+  - OOT-NATIVE-001/soh/soh/ShipLuaBootstrap.cpp
+  - OOT-NATIVE-001/soh/soh/native/**
+  - OOT-NATIVE-001/soh/native-sdk/**
+  - OOT-NATIVE-001/docs/native-mods.md
+  - rfcs/0012-oot-native-engine.md
+- Goal:
+  - Integrar providers nativos e ZIP no host OoT com serviços de engine e um mod compilado separadamente, sem regras específicas por mod

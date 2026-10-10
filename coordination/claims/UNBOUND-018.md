@@ -1,0 +1,22 @@
+# UNBOUND-018
+
+- Status: review
+- Agent: Claude (Opus 5.5)
+- Platform: Windows
+- Branch: agent/OOT-UPSTREAM-001-78dc6d970-integration
+- Started: 2026-10-03T10:04:53.3034130Z
+- Depends on: UNBOUND-017, OOT-RELEASE-001
+- Files:
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/unbound-core/scene_conflicts.h
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/unbound-core/scene_conflicts.cpp
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/unbound-core/unbound_core.cpp
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/unbound-core/CMakeLists.txt
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/unbound-core/conflict_tests.cpp
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/unbound-core/core-main.lua
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/unbound-core/README.md
+  - OOT-UPSTREAM-78DC-001/tools/package-unbound-framework.ps1
+  - OOT-UPSTREAM-78DC-001/tools/make-unbound-conflict-fixtures.py
+  - OOT-UPSTREAM-78DC-001/build/oot-upstream-001/evidence/unbound-018/**
+- Goal:
+  - Gate OoT 10.5/14.3: conflito de duas copias da mesma cena detectado antes do gameplay, com diagnostico deterministico (sem "ultimo archive vence" silencioso) e delta mesclavel reconhecido como tal.
+  - No framework Unbound (DLL), sem mudar o host: camadas de mod listadas pelo diretorio central do ZIP, comparacao folha a folha via read_file_layers no game.ready.

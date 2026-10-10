@@ -1,0 +1,57 @@
+name: hello-world-fixture
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "tests/fixtures/mods/**"
+      - "tests/conformance/**"
+      - "CMakeLists.txt"
+      - "tests/CMakeLists.txt"
+      - ".github/workflows/hello-world-fixture.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "tests/fixtures/mods/**"
+      - "tests/conformance/**"
+      - "CMakeLists.txt"
+      - "tests/CMakeLists.txt"
+      - ".github/workflows/hello-world-fixture.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    name: empacotar e validar a fixture hello-world
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar o repositório
+        uses: actions/checkout@v7
+
+      - name: Instalar ferramentas
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build g++ python3
+
+      - name: Configurar
+        run: >-
+          cmake -S . -B build -G Ninja
+          -DCMAKE_C_COMPILER=gcc
+          -DCMAKE_CXX_COMPILER=g++
+
+      - name: Compilar pacote e validadores
+        run: >-
+          cmake --build build
+          --target package_examples shiplua_manifest_validator hello_world_conformance_tests
+
+      - name: Validar o pacote gerado
+        run: build/shiplua_manifest_validator build/fixtures/hello-world.shipmod
+
+      - name: Executar testes focais
+        run: >-
+          ctest --test-dir build
+          -R "hello_world_(conformance_tests|package_validation|packaging_tests)"
+          --output-on-failure

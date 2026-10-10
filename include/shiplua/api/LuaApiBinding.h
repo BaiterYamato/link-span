@@ -22,6 +22,7 @@
 struct lua_State;
 
 namespace ShipLua {
+class NativeProvider;
 
 struct LuaApiHostContext {
     std::string gameId;
@@ -34,8 +35,15 @@ struct LuaApiHostContext {
     std::shared_ptr<CapabilityRegistry> capabilityRegistry;
     std::shared_ptr<FrameTimerScheduler> timers;  // nullable; null = host sem ship.timer
     std::shared_ptr<KeyValueStorage> storage;     // nullable; null = host sem ship.storage
+    // Store compartilhado entre jogos, preservando o namespace por mod.
+    // Nullable: sem backend, ship.storage.shared retorna unsupported.
+    std::shared_ptr<KeyValueStorage> sharedStorage;
     std::shared_ptr<ActorProvider> actors;         // nullable; null = host sem ship.actor
     std::function<Result<void>(const WorldDestination&)> worldTravel;
+    // Multiplicador de velocidade do jogador (capability player.speed). Existe
+    // nos dois jogos, mas quem sabe mexer no estado e o adaptador de host.
+    // Nullable: sem backend, ship.player.set_speed_multiplier retorna unsupported.
+    std::function<Result<void>(double)> playerSpeedMultiplier;
     // Games whose assets/hosts are available to the supervising Link-Span
     // process. Empty keeps standalone compatibility and means only gameId.
     std::vector<std::string> availableGames;
@@ -45,6 +53,7 @@ struct LuaApiHostContext {
 struct LuaApiModPolicy {
     std::vector<std::string> permissions;
     std::size_t maxActors = 16;
+    NativeProvider* native = nullptr; // owned by ModHost; outlives binding and LuaRuntime
 };
 
 // Validates a host context before any binding is installed: game id must be
@@ -102,10 +111,18 @@ class LuaApiBinding {
     static int StorageSet(lua_State* state) noexcept;
     static int StorageDelete(lua_State* state) noexcept;
     static int StorageClear(lua_State* state) noexcept;
+    static int SharedStorageGet(lua_State* state) noexcept;
+    static int SharedStorageSet(lua_State* state) noexcept;
+    static int SharedStorageDelete(lua_State* state) noexcept;
+    static int SharedStorageClear(lua_State* state) noexcept;
     static int WorldTravel(lua_State* state) noexcept;
+    static int HooksResult(lua_State* state) noexcept;
+    static int PlayerSetSpeedMultiplier(lua_State* state) noexcept;
     static int ActorSpawn(lua_State* state) noexcept;
     static int ActorDestroy(lua_State* state) noexcept;
     static int ActorExists(lua_State* state) noexcept;
+    static int NativeHas(lua_State* state) noexcept;
+    static int NativeCall(lua_State* state) noexcept;
     static int LogDebug(lua_State* state) noexcept;
     static int LogInfo(lua_State* state) noexcept;
     static int LogWarn(lua_State* state) noexcept;
@@ -129,10 +146,14 @@ class LuaApiBinding {
     Result<TimerHandle> DoScheduleTimer(lua_State* state, bool repeating, std::uint64_t frames,
                                         int callbackIndex);
     int CancelTimer(lua_State* state, const char*& error);
-    int GetStorage(lua_State* state, const char*& error);
-    int SetStorage(lua_State* state, const char*& error);
-    int DeleteStorage(lua_State* state, const char*& error);
-    int ClearStorage(lua_State* state, const char*& error);
+    // storage é o store alvo (mStorage por-mod ou mSharedStorage cross-game);
+    // label distingue a mensagem de erro ("ship.storage" vs "ship.storage.shared").
+    int GetStorage(lua_State* state, const char*& error, KeyValueStorage* storage, const char* label);
+    int SetStorage(lua_State* state, const char*& error, KeyValueStorage* storage, const char* label);
+    int DeleteStorage(lua_State* state, const char*& error, KeyValueStorage* storage, const char* label);
+    int ClearStorage(lua_State* state, const char*& error, KeyValueStorage* storage);
+    int HooksResultFromLua(lua_State* state, const char*& error);
+    int PlayerSetSpeedMultiplierFromLua(lua_State* state, const char*& error);
     int WorldTravelFromLua(lua_State* state, const char*& error);
     int ActorSpawnFromLua(lua_State* state);
     int ActorDestroyFromLua(lua_State* state);
@@ -154,7 +175,11 @@ class LuaApiBinding {
     std::shared_ptr<CapabilityRegistry> mCapabilities;
     std::shared_ptr<FrameTimerScheduler> mTimers;
     std::shared_ptr<KeyValueStorage> mStorage;
+    std::shared_ptr<KeyValueStorage> mSharedStorage;
     std::shared_ptr<ActorProvider> mActors;
+    // Payload do evento sendo entregue agora. Valido somente durante
+    // InvokeCallback; e por onde ship.hooks.result devolve o valor ao host.
+    EventPayload* mActivePayload = nullptr;
     LuaApiModPolicy mModPolicy;
     std::map<std::string, std::shared_ptr<HotkeyCallback>> mHotkeyCallbacks;
     std::size_t mModLoadOrder = 0;

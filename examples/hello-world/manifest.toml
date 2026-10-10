@@ -1,8 +1,0 @@
-id = "example.hello_world"
-name = "Olá, mundo"
-version = "0.1.0"
-api = ">=0.1 <0.5"
-entrypoint = "main.lua"
-description = "Exemplo mínimo que confirma a identidade do host no evento game.ready."
-authors = ["BaiterYamato"]
-games = ["oot", "mm"]

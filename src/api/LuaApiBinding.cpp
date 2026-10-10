@@ -12,6 +12,7 @@
 #include <utility>
 
 #include "shiplua/generated/ApiBindings.h"
+#include "shiplua/native/NativeProvider.h"
 
 #if __has_include(<lua.hpp>)
 #include <lua.hpp>
@@ -97,6 +98,71 @@ void PushEventValue(lua_State* state, const EventValue& value) {
 
 void PushEventPayload(lua_State* state, const EventPayload& payload) {
     PushEventObject(state, payload);
+}
+
+// Caminho inverso de PushEventValue: le um valor Lua e devolve o EventValue
+// equivalente. Usado por ship.hooks.result, que grava a resposta do mod no
+// payload do hook em voo. A profundidade e limitada porque a tabela vem do mod
+// e pode ser ciclica; ao estourar, o ramo vira nil em vez de recursao infinita.
+constexpr int kMaxEventValueDepth = 8;
+
+EventValue ReadEventValue(lua_State* state, int index, int depth) {
+    if (depth > kMaxEventValueDepth) {
+        return EventValue{};
+    }
+    const int absolute = lua_absindex(state, index);
+    switch (lua_type(state, absolute)) {
+    case LUA_TBOOLEAN:
+        return EventValue{lua_toboolean(state, absolute) != 0};
+    case LUA_TNUMBER:
+        if (lua_isinteger(state, absolute)) {
+            return EventValue{static_cast<std::int64_t>(lua_tointeger(state, absolute))};
+        }
+        return EventValue{static_cast<double>(lua_tonumber(state, absolute))};
+    case LUA_TSTRING: {
+        size_t length = 0;
+        const char* text = lua_tolstring(state, absolute, &length);
+        return EventValue{std::string(text != nullptr ? text : "", length)};
+    }
+    case LUA_TTABLE:
+        break;
+    default:
+        return EventValue{};
+    }
+
+    // Sequencia (1..n sem buracos) vira Array; qualquer outra tabela vira Object
+    // com as chaves textuais. Chaves nao textuais sao ignoradas.
+    const lua_Integer length = static_cast<lua_Integer>(lua_rawlen(state, absolute));
+    bool sequence = length > 0;
+    for (lua_Integer i = 1; sequence && i <= length; ++i) {
+        lua_rawgeti(state, absolute, i);
+        sequence = lua_type(state, -1) != LUA_TNIL;
+        lua_pop(state, 1);
+    }
+    if (sequence) {
+        EventValue::Array items;
+        items.reserve(static_cast<std::size_t>(length));
+        for (lua_Integer i = 1; i <= length; ++i) {
+            lua_rawgeti(state, absolute, i);
+            items.push_back(ReadEventValue(state, -1, depth + 1));
+            lua_pop(state, 1);
+        }
+        return EventValue{std::move(items)};
+    }
+
+    EventValue::Object object;
+    lua_pushnil(state);
+    while (lua_next(state, absolute) != 0) {
+        if (lua_type(state, -2) == LUA_TSTRING) {
+            size_t keyLength = 0;
+            const char* key = lua_tolstring(state, -2, &keyLength);
+            if (key != nullptr) {
+                object.emplace(std::string(key, keyLength), ReadEventValue(state, -1, depth + 1));
+            }
+        }
+        lua_pop(state, 1);
+    }
+    return EventValue{std::move(object)};
 }
 
 void PushStorageValue(lua_State* state, const KeyValueStorage::Value& value) {
@@ -477,6 +543,7 @@ LuaApiBinding::LuaApiBinding(LuaRuntime& runtime, EventDispatcher& events, Logge
       mHotkeys(mHostContext.hotkeys),
       mTimers(mHostContext.timers),
       mStorage(mHostContext.storage),
+      mSharedStorage(mHostContext.sharedStorage),
       mActors(mHostContext.actors),
       mModPolicy(std::move(modPolicy)),
       mModLoadOrder(modLoadOrder),
@@ -549,9 +616,68 @@ int LuaApiBinding::InstallProtected(lua_State* state) noexcept {
     return failed ? Fail(state, "exceção C++ durante instalação da API ship") : 0;
 }
 
+int LuaApiBinding::NativeHas(lua_State* state) noexcept {
+    auto* provider = static_cast<NativeProvider*>(lua_touserdata(state, lua_upvalueindex(1)));
+    size_t length = 0;
+    const char* name = lua_type(state, 1) == LUA_TSTRING ? lua_tolstring(state, 1, &length) : nullptr;
+    if (!name || !length || length > 128) return Fail(state, "expected native function name (1..128 bytes)");
+    lua_pushboolean(state, provider && provider->Has(std::string_view(name, length)));
+    return 1;
+}
+
+int LuaApiBinding::NativeCall(lua_State* state) noexcept {
+    auto* provider = static_cast<NativeProvider*>(lua_touserdata(state, lua_upvalueindex(1)));
+    size_t nameLength = 0, requestLength = 0;
+    const char* name = lua_type(state, 1) == LUA_TSTRING ? lua_tolstring(state, 1, &nameLength) : nullptr;
+    const char* request = lua_type(state, 2) == LUA_TSTRING ? lua_tolstring(state, 2, &requestLength) : nullptr;
+    char response[SHIP_NATIVE_MAX_BYTES];
+    NativeCallResult result{ErrorCode::Unsupported, 0};
+    if (!name || !request || !nameLength || nameLength > 128) {
+        result.code = ErrorCode::InvalidArgument;
+    } else if (requestLength > SHIP_NATIVE_MAX_BYTES) {
+        result.code = ErrorCode::ResourceLimit;
+    } else if (provider) {
+        result = provider->Call(std::string_view(name, nameLength), request,
+            static_cast<uint32_t>(requestLength), response, sizeof(response));
+    }
+    // Só PODs vivos daqui em diante: alocação Lua pode gerar longjmp no MSVC.
+    if (result.code == ErrorCode::Ok) {
+        lua_pushlstring(state, response, result.size);
+        return 1;
+    }
+    const char* code = "host_failure";
+    const char* message = "native provider call failed";
+    switch (result.code) {
+        case ErrorCode::Unsupported: code = "unsupported"; message = "native provider/service unavailable"; break;
+        case ErrorCode::InvalidArgument: code = "invalid_argument"; message = "expected native function name and byte string"; break;
+        case ErrorCode::InvalidHandle: code = "invalid_handle"; message = "native function not registered by this mod"; break;
+        case ErrorCode::InvalidState: code = "invalid_state"; message = "native provider disabled, reentered or called on wrong thread"; break;
+        case ErrorCode::ResourceLimit: code = "resource_limit"; message = "native request/response exceeds 65536 bytes"; break;
+        default: break;
+    }
+    lua_pushnil(state);
+    lua_createtable(state, 0, 2);
+    lua_pushstring(state, code);
+    lua_setfield(state, -2, "code");
+    lua_pushstring(state, message);
+    lua_setfield(state, -2, "message");
+    return 2;
+}
+
 void LuaApiBinding::BuildModule(lua_State* state) {
     lua_newtable(state);
     const int ship = lua_gettop(state);
+
+    lua_newtable(state);
+    // Provider sobrevive a lua_close; LuaApiBinding não. Finalizadores podem
+    // guardar estas closures, logo não capturar `this` como outras APIs legadas.
+    lua_pushlightuserdata(state, mModPolicy.native);
+    lua_pushcclosure(state, &LuaApiBinding::NativeHas, 1);
+    lua_setfield(state, -2, "has");
+    lua_pushlightuserdata(state, mModPolicy.native);
+    lua_pushcclosure(state, &LuaApiBinding::NativeCall, 1);
+    lua_setfield(state, -2, "call");
+    lua_setfield(state, ship, "native");
 
     lua_newtable(state);
     SetFunction(state, -1, "id", &LuaApiBinding::GameId, this);
@@ -600,7 +726,25 @@ void LuaApiBinding::BuildModule(lua_State* state) {
     SetFunction(state, -1, "set", &LuaApiBinding::StorageSet, this);
     SetFunction(state, -1, "delete", &LuaApiBinding::StorageDelete, this);
     SetFunction(state, -1, "clear", &LuaApiBinding::StorageClear, this);
+    // Backend compartilhado entre jogos, com namespace separado para cada mod.
+    lua_newtable(state);
+    SetFunction(state, -1, "get", &LuaApiBinding::SharedStorageGet, this);
+    SetFunction(state, -1, "set", &LuaApiBinding::SharedStorageSet, this);
+    SetFunction(state, -1, "delete", &LuaApiBinding::SharedStorageDelete, this);
+    SetFunction(state, -1, "clear", &LuaApiBinding::SharedStorageClear, this);
+    lua_setfield(state, -2, "shared");
     lua_setfield(state, ship, "storage");
+
+    lua_newtable(state);
+    SetFunction(state, -1, "result", &LuaApiBinding::HooksResult, this);
+    lua_setfield(state, ship, "hooks");
+
+    // O adaptador de host acrescenta ship.player.get/set (especificos de jogo)
+    // reaproveitando esta mesma tabela, e sobrescreve set_speed_multiplier pela
+    // implementacao real. O nucleo so garante que a superficie common exista.
+    lua_newtable(state);
+    SetFunction(state, -1, "set_speed_multiplier", &LuaApiBinding::PlayerSetSpeedMultiplier, this);
+    lua_setfield(state, ship, "player");
 
     lua_newtable(state);
     SetFunction(state, -1, "travel", &LuaApiBinding::WorldTravel, this);
@@ -1474,7 +1618,8 @@ int LuaApiBinding::StorageGet(lua_State* state) noexcept {
         if (binding == nullptr) {
             error = "contexto da API ship indisponível";
         } else {
-            result = binding->GetStorage(state, error);
+            result = binding->GetStorage(state, error, binding->mStorage.get(),
+                                         "ship.storage.get exige uma chave textual");
         }
     } catch (...) {
         error = ErrorMessage(ErrorCode::HostFailure);
@@ -1482,22 +1627,23 @@ int LuaApiBinding::StorageGet(lua_State* state) noexcept {
     return error != nullptr ? Fail(state, error) : result;
 }
 
-int LuaApiBinding::GetStorage(lua_State* state, const char*& error) {
-    if (mStorage == nullptr) {
+int LuaApiBinding::GetStorage(lua_State* state, const char*& error, KeyValueStorage* storage,
+                             const char* label) {
+    if (storage == nullptr) {
         error = ErrorMessage(ErrorCode::Unsupported);
         return 0;
     }
     if (lua_type(state, 1) != LUA_TSTRING) {
-        error = "ship.storage.get exige uma chave textual";
+        error = label; // "<label>.get exige uma chave textual" — mensagem simplificada
         return 0;
     }
     size_t length = 0;
     const char* key = lua_tolstring(state, 1, &length);
     if (key == nullptr) {
-        error = "ship.storage.get exige uma chave textual";
+        error = label;
         return 0;
     }
-    auto result = mStorage->Get(mRuntime.ModId(), std::string(key, length));
+    auto result = storage->Get(mRuntime.ModId(), std::string(key, length));
     if (!result.isOk()) {
         error = ErrorMessage(result.code);
         return 0;
@@ -1522,7 +1668,8 @@ int LuaApiBinding::StorageSet(lua_State* state) noexcept {
         if (binding == nullptr) {
             error = "contexto da API ship indisponível";
         } else {
-            result = binding->SetStorage(state, error);
+            result = binding->SetStorage(state, error, binding->mStorage.get(),
+                                         "ship.storage.set exige uma chave textual");
         }
     } catch (...) {
         error = ErrorMessage(ErrorCode::HostFailure);
@@ -1530,19 +1677,20 @@ int LuaApiBinding::StorageSet(lua_State* state) noexcept {
     return error != nullptr ? Fail(state, error) : result;
 }
 
-int LuaApiBinding::SetStorage(lua_State* state, const char*& error) {
-    if (mStorage == nullptr) {
+int LuaApiBinding::SetStorage(lua_State* state, const char*& error, KeyValueStorage* storage,
+                             const char* label) {
+    if (storage == nullptr) {
         error = ErrorMessage(ErrorCode::Unsupported);
         return 0;
     }
     if (lua_type(state, 1) != LUA_TSTRING) {
-        error = "ship.storage.set exige uma chave textual";
+        error = label;
         return 0;
     }
     size_t length = 0;
     const char* key = lua_tolstring(state, 1, &length);
     if (key == nullptr) {
-        error = "ship.storage.set exige uma chave textual";
+        error = label;
         return 0;
     }
     KeyValueStorage::Value value;
@@ -1564,11 +1712,11 @@ int LuaApiBinding::SetStorage(lua_State* state, const char*& error) {
             break;
         }
         default:
-            error = "ship.storage.set aceita somente booleano, número ou texto";
+            error = "ship.storage set aceita somente booleano, número ou texto";
             return 0;
     }
     const auto stored =
-        mStorage->Set(mRuntime.ModId(), std::string(key, length), std::move(value));
+        storage->Set(mRuntime.ModId(), std::string(key, length), std::move(value));
     if (!stored.isOk()) {
         error = ErrorMessage(stored.code);
         return 0;
@@ -1585,7 +1733,8 @@ int LuaApiBinding::StorageDelete(lua_State* state) noexcept {
         if (binding == nullptr) {
             error = "contexto da API ship indisponível";
         } else {
-            result = binding->DeleteStorage(state, error);
+            result = binding->DeleteStorage(state, error, binding->mStorage.get(),
+                                            "ship.storage.delete exige uma chave textual");
         }
     } catch (...) {
         error = ErrorMessage(ErrorCode::HostFailure);
@@ -1593,22 +1742,23 @@ int LuaApiBinding::StorageDelete(lua_State* state) noexcept {
     return error != nullptr ? Fail(state, error) : result;
 }
 
-int LuaApiBinding::DeleteStorage(lua_State* state, const char*& error) {
-    if (mStorage == nullptr) {
+int LuaApiBinding::DeleteStorage(lua_State* state, const char*& error, KeyValueStorage* storage,
+                                const char* label) {
+    if (storage == nullptr) {
         error = ErrorMessage(ErrorCode::Unsupported);
         return 0;
     }
     if (lua_type(state, 1) != LUA_TSTRING) {
-        error = "ship.storage.delete exige uma chave textual";
+        error = label;
         return 0;
     }
     size_t length = 0;
     const char* key = lua_tolstring(state, 1, &length);
     if (key == nullptr) {
-        error = "ship.storage.delete exige uma chave textual";
+        error = label;
         return 0;
     }
-    auto removed = mStorage->Delete(mRuntime.ModId(), std::string(key, length));
+    auto removed = storage->Delete(mRuntime.ModId(), std::string(key, length));
     if (!removed.isOk()) {
         error = ErrorMessage(removed.code);
         return 0;
@@ -1625,7 +1775,7 @@ int LuaApiBinding::StorageClear(lua_State* state) noexcept {
         if (binding == nullptr) {
             error = "contexto da API ship indisponível";
         } else {
-            result = binding->ClearStorage(state, error);
+            result = binding->ClearStorage(state, error, binding->mStorage.get());
         }
     } catch (...) {
         error = ErrorMessage(ErrorCode::HostFailure);
@@ -1633,18 +1783,164 @@ int LuaApiBinding::StorageClear(lua_State* state) noexcept {
     return error != nullptr ? Fail(state, error) : result;
 }
 
-int LuaApiBinding::ClearStorage(lua_State* state, const char*& error) {
-    if (mStorage == nullptr) {
+int LuaApiBinding::ClearStorage(lua_State* state, const char*& error, KeyValueStorage* storage) {
+    if (storage == nullptr) {
         error = ErrorMessage(ErrorCode::Unsupported);
         return 0;
     }
-    auto cleared = mStorage->Clear(mRuntime.ModId());
+    auto cleared = storage->Clear(mRuntime.ModId());
     if (!cleared.isOk()) {
         error = ErrorMessage(cleared.code);
         return 0;
     }
     lua_pushinteger(state, static_cast<lua_Integer>(*cleared.value));
     return 1;
+}
+
+// ship.storage.shared.* — mesmos impls, mas apontando para o store cross-game.
+// Reaproveitam GetStorage/SetStorage/DeleteStorage/ClearStorage passando
+// mSharedStorage; o namespace por mod é o mesmo, então o MESMO mod vê o mesmo
+// estado em OoT e MM.
+int LuaApiBinding::SharedStorageGet(lua_State* state) noexcept {
+    LuaApiBinding* binding = FromUpvalue(state);
+    const char* error = nullptr;
+    int result = 0;
+    try {
+        if (binding == nullptr) {
+            error = "contexto da API ship indisponível";
+        } else {
+            result = binding->GetStorage(state, error, binding->mSharedStorage.get(),
+                                         "ship.storage.shared.get exige uma chave textual");
+        }
+    } catch (...) {
+        error = ErrorMessage(ErrorCode::HostFailure);
+    }
+    return error != nullptr ? Fail(state, error) : result;
+}
+
+int LuaApiBinding::SharedStorageSet(lua_State* state) noexcept {
+    LuaApiBinding* binding = FromUpvalue(state);
+    const char* error = nullptr;
+    int result = 0;
+    try {
+        if (binding == nullptr) {
+            error = "contexto da API ship indisponível";
+        } else {
+            result = binding->SetStorage(state, error, binding->mSharedStorage.get(),
+                                         "ship.storage.shared.set exige uma chave textual");
+        }
+    } catch (...) {
+        error = ErrorMessage(ErrorCode::HostFailure);
+    }
+    return error != nullptr ? Fail(state, error) : result;
+}
+
+int LuaApiBinding::SharedStorageDelete(lua_State* state) noexcept {
+    LuaApiBinding* binding = FromUpvalue(state);
+    const char* error = nullptr;
+    int result = 0;
+    try {
+        if (binding == nullptr) {
+            error = "contexto da API ship indisponível";
+        } else {
+            result = binding->DeleteStorage(state, error, binding->mSharedStorage.get(),
+                                            "ship.storage.shared.delete exige uma chave textual");
+        }
+    } catch (...) {
+        error = ErrorMessage(ErrorCode::HostFailure);
+    }
+    return error != nullptr ? Fail(state, error) : result;
+}
+
+int LuaApiBinding::SharedStorageClear(lua_State* state) noexcept {
+    LuaApiBinding* binding = FromUpvalue(state);
+    const char* error = nullptr;
+    int result = 0;
+    try {
+        if (binding == nullptr) {
+            error = "contexto da API ship indisponível";
+        } else {
+            result = binding->ClearStorage(state, error, binding->mSharedStorage.get());
+        }
+    } catch (...) {
+        error = ErrorMessage(ErrorCode::HostFailure);
+    }
+    return error != nullptr ? Fail(state, error) : result;
+}
+
+// ship.hooks.result(valor) - o caminho de volta da ponte de hooks. Um hook
+// should/modify entrega o payload ao mod; o mod responde gravando
+// __hook_result nele, e o adaptador de host le essa chave ao voltar. Vive no
+// nucleo porque quem e dono do payload em voo e o dispatcher, nao o host.
+int LuaApiBinding::HooksResultFromLua(lua_State* state, const char*& error) {
+    if (lua_gettop(state) < 1) {
+        error = "ship.hooks.result exige um valor";
+        return 0;
+    }
+    if (mActivePayload == nullptr) {
+        // Chamada fora de um callback de evento: nao ha payload para responder.
+        error = ErrorMessage(ErrorCode::InvalidState);
+        return 0;
+    }
+    (*mActivePayload)["__hook_result"] = ReadEventValue(state, 1, 0);
+    lua_pushboolean(state, 1);
+    return 1;
+}
+
+int LuaApiBinding::HooksResult(lua_State* state) noexcept {
+    LuaApiBinding* binding = FromUpvalue(state);
+    const char* error = nullptr;
+    int result = 0;
+    try {
+        if (binding == nullptr) {
+            error = "contexto da API ship indisponivel";
+        } else {
+            result = binding->HooksResultFromLua(state, error);
+        }
+    } catch (...) {
+        error = ErrorMessage(ErrorCode::HostFailure);
+    }
+    return error != nullptr ? Fail(state, error) : result;
+}
+
+// ship.player.set_speed_multiplier(fator) - primitiva comum aos dois jogos, mas
+// o estado que ela dirige pertence ao host. O nucleo mantem a funcao sempre na
+// superficie (contrato: toda funcao common existe) e delega ao provider; sem
+// provider, responde unsupported, e quem faz feature detection e
+// ship.capabilities.has("player.speed").
+int LuaApiBinding::PlayerSetSpeedMultiplierFromLua(lua_State* state, const char*& error) {
+    if (lua_type(state, 1) != LUA_TNUMBER) {
+        error = "ship.player.set_speed_multiplier exige um fator numerico";
+        return 0;
+    }
+    const double factor = static_cast<double>(lua_tonumber(state, 1));
+    if (!mHostContext.playerSpeedMultiplier) {
+        error = ErrorMessage(ErrorCode::Unsupported);
+        return 0;
+    }
+    const Result<void> applied = mHostContext.playerSpeedMultiplier(factor);
+    if (!applied.isOk()) {
+        error = ErrorMessage(applied.code);
+        return 0;
+    }
+    lua_pushboolean(state, 1);
+    return 1;
+}
+
+int LuaApiBinding::PlayerSetSpeedMultiplier(lua_State* state) noexcept {
+    LuaApiBinding* binding = FromUpvalue(state);
+    const char* error = nullptr;
+    int result = 0;
+    try {
+        if (binding == nullptr) {
+            error = "contexto da API ship indisponivel";
+        } else {
+            result = binding->PlayerSetSpeedMultiplierFromLua(state, error);
+        }
+    } catch (...) {
+        error = ErrorMessage(ErrorCode::HostFailure);
+    }
+    return error != nullptr ? Fail(state, error) : result;
 }
 
 #if defined(_MSC_VER)
@@ -1910,7 +2206,12 @@ EventFlow LuaApiBinding::InvokeCallback(const std::shared_ptr<LuaCallback>& call
     const int handlerIndex = lua_gettop(state);
     lua_rawgeti(state, LUA_REGISTRYINDEX, callback->registryReference);
     PushEventPayload(state, payload);
+    // Enquanto o callback roda, ship.hooks.result escreve neste payload.
+    // Restaura o anterior no fim porque um callback pode disparar outro evento.
+    EventPayload* const previousPayload = mActivePayload;
+    mActivePayload = &payload;
     const int status = lua_pcall(state, 1, 0, handlerIndex);
+    mActivePayload = previousPayload;
     if (status == LUA_OK) {
         lua_pop(state, 1);
         callback->consecutiveFailures = 0;

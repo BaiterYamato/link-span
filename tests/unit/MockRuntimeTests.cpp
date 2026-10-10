@@ -24,7 +24,7 @@ ShipLua::Manifest MakeManifest(std::string id) {
     manifest.id = std::move(id);
     manifest.name = "Mock test";
     manifest.version = "0.1.0";
-    manifest.apiRange = ">=0.4 <0.5";
+    manifest.apiRange = ">=0.4 <0.6";
     manifest.entrypoint = "main.lua";
     return manifest;
 }

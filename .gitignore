@@ -38,3 +38,9 @@ build-cmake/
 
 # Git worktrees
 /.worktrees/
+
+# Material de referencia de terceiro e credito local: ficam FORA do
+# repositorio publico por decisao do autor (01/08/2026). Continuam em disco
+# para consulta durante o port.
+research/
+CREDITS.md

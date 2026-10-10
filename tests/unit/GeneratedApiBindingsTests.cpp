@@ -15,6 +15,18 @@ void Check(bool condition, const char* message) {
     }
 }
 
+// Validar contratos por nome: inserir uma API não altera a identidade das demais.
+const ShipLua::Generated::FunctionBinding& FindFunction(std::string_view name) {
+    for (const auto& entry : ShipLua::Generated::kFunctions) if (entry.name == name) return entry;
+    Check(false, "missing expected function");
+    return ShipLua::Generated::kFunctions.front();
+}
+const ShipLua::Generated::CapabilityBinding& FindCapability(std::string_view name) {
+    for (const auto& entry : ShipLua::Generated::kCapabilities) if (entry.name == name) return entry;
+    Check(false, "missing expected capability");
+    return ShipLua::Generated::kCapabilities.front();
+}
+
 } // namespace
 
 int main() {
@@ -22,70 +34,66 @@ int main() {
     static_assert(std::is_same_v<Subscription, std::uint64_t>);
     static_assert(std::is_same_v<decltype(ActorHandle::kind), std::string>);
     static_assert(std::is_same_v<decltype(ActorHandle::scene_generation), std::int64_t>);
-    static_assert(kFunctions.size() == 28);
-    static_assert(kEvents.size() == 11);
-    static_assert(kCapabilities.size() == 24);
-
-    Check(kApiVersion == "0.4.0", "API version should derive from the schema");
+    Check(kApiVersion == "0.5.0", "API version should derive from the schema");
     Check(kFunctions.front().name == "ship.game.id", "first function should preserve schema order");
     Check(kFunctions.front().version == "0.1.0" && kFunctions.front().stability == "stable",
           "function version and stability should derive from the schema");
-    Check(kFunctions[6].arguments.size() == 3 && !kFunctions[6].arguments[2].required,
+    Check(FindFunction("ship.events.on").arguments.size() == 3 && !FindFunction("ship.events.on").arguments[2].required,
           "optional callback metadata should be generated");
     Check(kEvents[1].name == "game.frame" && kEvents[1].payload[0].name == "frame",
           "event payload metadata should be generated");
-    Check(kCapabilities[0].name == "core.events" && kCapabilities[3].name == "core.storage" &&
-              kCapabilities[0].supportsOot && kCapabilities[0].supportsMm,
+    Check(FindCapability("core.events").name == "core.events" && FindCapability("core.storage").name == "core.storage" &&
+              FindCapability("core.events").supportsOot && FindCapability("core.events").supportsMm,
           "core capabilities should be generated with both hosts");
-    Check(kCapabilities[13].name == "mm.room.events" && !kCapabilities[13].supportsOot &&
-              kCapabilities[13].supportsMm,
+    Check(FindCapability("mm.room.events").name == "mm.room.events" && !FindCapability("mm.room.events").supportsOot &&
+              FindCapability("mm.room.events").supportsMm,
            "host-specific capability support should be generated");
-    Check(kFunctions[9].name == "ship.actor.spawn" &&
-              kFunctions[9].capability == "actor.spawn" &&
-              kFunctions[9].version == "0.4.0" &&
-              kFunctions[9].errorMode == "return" &&
-              kFunctions[9].errorType == "operation_error" &&
-              kCapabilities[6].name == "actor.spawn" && kCapabilities[6].supportsOot &&
-              kCapabilities[6].supportsMm,
+    Check(FindFunction("ship.actor.spawn").name == "ship.actor.spawn" &&
+              FindFunction("ship.actor.spawn").capability == "actor.spawn" &&
+              FindFunction("ship.actor.spawn").version == "0.4.0" &&
+              FindFunction("ship.actor.spawn").errorMode == "return" &&
+              FindFunction("ship.actor.spawn").errorType == "operation_error" &&
+              FindCapability("actor.spawn").name == "actor.spawn" && FindCapability("actor.spawn").supportsOot &&
+              FindCapability("actor.spawn").supportsMm,
           "generic actor spawn should carry its common capability contract");
-    Check(kFunctions[12].name == "ship.world.travel" &&
-              kFunctions[12].capability == "world.travel" &&
-              kFunctions[12].version == "0.3.0" &&
-              kCapabilities[12].name == "world.travel" && kCapabilities[12].supportsOot &&
-              kCapabilities[12].supportsMm,
+    Check(FindFunction("ship.world.travel").name == "ship.world.travel" &&
+              FindFunction("ship.world.travel").capability == "world.travel" &&
+              FindFunction("ship.world.travel").version == "0.3.0" &&
+              FindCapability("world.travel").name == "world.travel" && FindCapability("world.travel").supportsOot &&
+              FindCapability("world.travel").supportsMm,
           "world travel should retain its common capability contract");
-    Check(kFunctions[13].name == "ship.mm.player.jump" && kFunctions[13].availability == "mm" &&
-              kFunctions[13].capability == "mm.player.jump",
+    Check(FindFunction("ship.mm.player.jump").name == "ship.mm.player.jump" && FindFunction("ship.mm.player.jump").availability == "mm" &&
+              FindFunction("ship.mm.player.jump").capability == "mm.player.jump",
            "MM jump should retain its host and capability contract");
-    Check(kFunctions[13].version == "0.2.0" && kFunctions[13].stability == "experimental",
+    Check(FindFunction("ship.mm.player.jump").version == "0.2.0" && FindFunction("ship.mm.player.jump").stability == "experimental",
            "MM jump should retain its version and stability contract");
-    Check(kFunctions[14].name == "ship.mm.spawn_dog" && kFunctions[14].availability == "mm" &&
-              kFunctions[14].capability == "mm.spawn_dog",
+    Check(FindFunction("ship.mm.spawn_dog").name == "ship.mm.spawn_dog" && FindFunction("ship.mm.spawn_dog").availability == "mm" &&
+              FindFunction("ship.mm.spawn_dog").capability == "mm.spawn_dog",
            "MM spawn_dog should retain its host and capability contract");
-    Check(kFunctions[14].version == "0.3.0" && kFunctions[14].stability == "experimental",
+    Check(FindFunction("ship.mm.spawn_dog").version == "0.3.0" && FindFunction("ship.mm.spawn_dog").stability == "experimental",
            "MM spawn_dog should retain its version and stability contract");
-    Check(kFunctions[15].name == "ship.oot.player.jump" && kFunctions[15].availability == "oot" &&
-              kFunctions[15].capability == "oot.player.jump",
+    Check(FindFunction("ship.oot.player.jump").name == "ship.oot.player.jump" && FindFunction("ship.oot.player.jump").availability == "oot" &&
+              FindFunction("ship.oot.player.jump").capability == "oot.player.jump",
            "OOT jump should carry its host and capability contract");
-    Check(kFunctions[15].version == "0.3.0" && kFunctions[15].stability == "experimental",
+    Check(FindFunction("ship.oot.player.jump").version == "0.3.0" && FindFunction("ship.oot.player.jump").stability == "experimental",
            "OOT jump should retain its version and stability contract");
-    Check(kFunctions[16].name == "ship.oot.spawn_dog" && kFunctions[16].availability == "oot" &&
-              kFunctions[16].capability == "oot.spawn_dog",
+    Check(FindFunction("ship.oot.spawn_dog").name == "ship.oot.spawn_dog" && FindFunction("ship.oot.spawn_dog").availability == "oot" &&
+              FindFunction("ship.oot.spawn_dog").capability == "oot.spawn_dog",
            "OOT spawn_dog should carry its host and capability contract");
-    Check(kFunctions[16].version == "0.3.0" && kFunctions[16].stability == "experimental",
+    Check(FindFunction("ship.oot.spawn_dog").version == "0.3.0" && FindFunction("ship.oot.spawn_dog").stability == "experimental",
            "OOT spawn_dog should retain its version and stability contract");
-    Check(kCapabilities[19].name == "oot.player.jump" && kCapabilities[19].supportsOot &&
-              !kCapabilities[19].supportsMm,
+    Check(FindCapability("oot.player.jump").name == "oot.player.jump" && FindCapability("oot.player.jump").supportsOot &&
+              !FindCapability("oot.player.jump").supportsMm,
            "OOT jump capability should be host-specific");
-    Check(kFunctions[21].name == "ship.timer.after" && kFunctions[21].capability == "core.timers" &&
-              kFunctions[21].returnType == "timer_handle",
+    Check(FindFunction("ship.timer.after").name == "ship.timer.after" && FindFunction("ship.timer.after").capability == "core.timers" &&
+              FindFunction("ship.timer.after").returnType == "timer_handle",
            "timer API should retain its capability contract");
-    Check(kFunctions[21].version == "0.3.0" && kFunctions[21].stability == "experimental",
+    Check(FindFunction("ship.timer.after").version == "0.3.0" && FindFunction("ship.timer.after").stability == "experimental",
            "timer API should retain its version and stability contract");
-    Check(kFunctions[24].name == "ship.storage.get" &&
-              kFunctions[24].capability == "core.storage" && kFunctions[24].returnType == "any",
+    Check(FindFunction("ship.storage.get").name == "ship.storage.get" &&
+              FindFunction("ship.storage.get").capability == "core.storage" && FindFunction("ship.storage.get").returnType == "any",
            "storage API should retain its capability contract");
-    Check(kFunctions[24].version == "0.3.0" && kFunctions[24].stability == "experimental",
+    Check(FindFunction("ship.storage.get").version == "0.3.0" && FindFunction("ship.storage.get").stability == "experimental",
            "storage API should retain its version and stability contract");
 
     if (failures != 0) {

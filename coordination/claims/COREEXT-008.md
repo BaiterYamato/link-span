@@ -1,0 +1,35 @@
+# COREEXT-008
+
+- Status: review
+- Agent: Claude (Opus 5)
+- Platform: Windows
+- Branch: agent/NATIVE-001-provider-runtime
+- Started: 2026-09-16T17:52:05.9631598Z
+- Depends on: COREEXT-006
+- Files:
+  - NATIVE-001/include/shiplua/native/ship_native_abi.h
+  - NATIVE-001/include/shiplua/native/NativeProvider.h
+  - NATIVE-001/src/native/NativeProvider.cpp
+  - NATIVE-001/include/shiplua/manifest/Manifest.h
+  - NATIVE-001/src/manifest/ManifestParser.cpp
+  - NATIVE-001/src/host/ModHost.cpp
+  - NATIVE-001/schema/manifest.schema.json
+  - NATIVE-001/tests/CMakeLists.txt
+  - NATIVE-001/tests/native/**
+  - NATIVE-001/docs/native-providers.md
+  - NATIVE-001/rfcs/0023-native-escape-hatch.md
+  - OOT-UPSTREAM-78DC-001/extern/ship-lua
+  - OOT-UPSTREAM-78DC-001/CMakeLists.txt
+  - OOT-UPSTREAM-78DC-001/soh/CMakeLists.txt
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/**
+  - OOT-UPSTREAM-78DC-001/soh/soh/ShipLuaBootstrap.cpp
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/**
+  - OOT-UPSTREAM-78DC-001/tools/**
+  - OOT-UPSTREAM-78DC-001/docs/native-mods.md
+  - OOT-UPSTREAM-78DC-001/build/oot-upstream-001/evidence/coreext008-*/**
+  - RELEASE-UNIFICADA/OOT-teste-cenas-20260914/**
+  - docs/agents/Plans.md
+  - coordination/claims/COREEXT-008.md
+  - coordination/handoffs/COREEXT-008.md
+- Goal:
+  - Escape hatch ABI 1.3 para core extensions: fingerprint SHA-256 do executavel declarado no manifesto, resolucao de simbolos por arquivo soh.symbols gerado do PDB e detours MinHook com dono removidos antes do shutdown

@@ -8,6 +8,23 @@
 
 namespace ShipLua {
 
+enum class ModKind {
+    Mod,
+    CoreExtension,
+};
+
+enum class ModLoadPhase {
+    PreGame,
+    Runtime,
+};
+
+struct NativeProviderManifest {
+    std::string abiVersion;
+    std::string win64;
+    std::string linux64;
+    std::string macos;
+};
+
 // In-memory representation of a mod's manifest.toml.
 // Mirrors schema/manifest.schema.json; required fields are id, name,
 // version, apiRange (the `api` key) and entrypoint. Everything else is
@@ -29,6 +46,9 @@ struct Manifest {
     // Explicit Link-Span requirement. This is deliberately distinct from
     // games=["oot","mm"], which means "runs in either game".
     bool requiresBothGames = false;
+    ModKind kind = ModKind::Mod;
+    ModLoadPhase loadPhase = ModLoadPhase::Runtime;
+    std::optional<NativeProviderManifest> provider;
 
     // [host] — per-host version ranges. Unset means "no constraint".
     std::optional<std::string> hostShipwright; // key: shipwright

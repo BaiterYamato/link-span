@@ -154,7 +154,7 @@ Handles are valid only for the current session/scene and must not be persisted.
 Scene changes invalidate handles (`ship.actor.exists` returns `false`).
 Runtime unload automatically destroys actors owned by the mod, and
 `[limits] actors` in the manifest caps how many live at once. See the ROM-free
-testable example in [`examples/actor-spawn`](../examples/actor-spawn/).
+testable example in [`link-span-examples/lua/actor-spawn`](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/actor-spawn).
 
 ### Events
 ```lua
@@ -222,7 +222,7 @@ in the game log (`logs/...log`). If a mod is rejected, the log tells you why
 
 ## 6. Complete example: hotkey that spawns a dog (MM)
 
-See [`examples/dog-spawner`](../examples/dog-spawner/). Host publishes `input.hotkey`
+See [`link-span-examples/lua/dog-spawner`](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/dog-spawner). Host publishes `input.hotkey`
 when the configured key (default **F**) is pressed; the mod reacts and calls
 `ship.mm.spawn_dog()`:
 

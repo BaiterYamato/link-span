@@ -19,7 +19,7 @@ std::filesystem::path Fixture(const std::string& name) {
 }
 
 std::filesystem::path Example(const std::string& name) {
-    return std::filesystem::path(SHIPLUA_TEST_SOURCE_DIR).parent_path() / "examples" / name;
+    return std::filesystem::path(SHIPLUA_TEST_SOURCE_DIR) / "fixtures" / "mods" / name;
 }
 
 bool AllTestsPassed(const ShipLua::ModTestReport& report) {

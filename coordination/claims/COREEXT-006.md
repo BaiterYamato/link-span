@@ -1,0 +1,38 @@
+# COREEXT-006
+
+- Status: review
+- Agent: Claude (Opus 5)
+- Platform: Windows
+- Branch: agent/NATIVE-001-provider-runtime
+- Started: 2026-09-16T13:00:57.3590798Z
+- Depends on: COREEXT-001, OOT-UNBOUND-003C
+- Files:
+  - NATIVE-001/include/shiplua/native/ship_native_abi.h
+  - NATIVE-001/include/shiplua/native/NativeHooks.h
+  - NATIVE-001/include/shiplua/native/NativeProvider.h
+  - NATIVE-001/src/native/NativeHooks.cpp
+  - NATIVE-001/src/native/NativeProvider.cpp
+  - NATIVE-001/src/manifest/ManifestParser.cpp
+  - NATIVE-001/src/host/ModHost.cpp
+  - NATIVE-001/include/shiplua/host/ModHost.h
+  - NATIVE-001/schema/manifest.schema.json
+  - NATIVE-001/CMakeLists.txt
+  - NATIVE-001/tests/CMakeLists.txt
+  - NATIVE-001/tests/native/**
+  - NATIVE-001/tools/shipmod.py
+  - NATIVE-001/docs/native-providers.md
+  - NATIVE-001/rfcs/0021-native-hooks.md
+  - OOT-UPSTREAM-78DC-001/extern/ship-lua
+  - OOT-UPSTREAM-78DC-001/soh/soh/ShipLuaBootstrap.cpp
+  - OOT-UPSTREAM-78DC-001/soh/soh/native/**
+  - OOT-UPSTREAM-78DC-001/soh/src/code/z_actor.c
+  - OOT-UPSTREAM-78DC-001/soh/src/code/z_play.c
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/**
+  - OOT-UPSTREAM-78DC-001/tools/**
+  - OOT-UPSTREAM-78DC-001/docs/native-mods.md
+  - docs/plans/oot-coremods-unbound-nei/inventory-phase-c.md
+  - docs/agents/Plans.md
+  - coordination/claims/COREEXT-006.md
+  - coordination/handoffs/COREEXT-006.md
+- Goal:
+  - Hooks nativos observe/transform/replace na ABI 1.2 com dono, prioridade, conflito exclusivo e remocao no unload; registro testado sem ROM e pontos oot.play.update, oot.actor.update e oot.actor.draw no host OoT

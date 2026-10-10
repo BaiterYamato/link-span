@@ -73,6 +73,7 @@ target_include_directories(shiplua PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/include"
     "${CMAKE_CURRENT_SOURCE_DIR}/generated/include")
 target_link_libraries(shiplua PRIVATE lua_static tomlplusplus::tomlplusplus miniz)
+target_link_libraries(shiplua PRIVATE ${CMAKE_DL_LIBS})
 # Expose Lua headers to privileged consumers (host adapters) so they can install
 # host-specific bindings (e.g. ship.mm.*) directly on a runtime's lua_State.
 # Mods never see this: it is a build-time include path for the C++ adapter only.
@@ -112,42 +113,27 @@ target_link_libraries(linkspan_asset_discovery_tests PRIVATE linkspan_launcher_c
 add_test(NAME linkspan_asset_discovery_tests COMMAND linkspan_asset_discovery_tests)
 
 # ---------------------------------------------------------------------------
-# Example packages
+# Pacote de fixture (hello-world) para os testes de conformidade.
+# Os mods de exemplo moram em https://github.com/BaiterYamato/link-span-examples.
 # ---------------------------------------------------------------------------
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
-set(SHIPLUA_EXAMPLE_OUTPUT_DIR "${CMAKE_BINARY_DIR}/examples")
+set(SHIPLUA_EXAMPLE_OUTPUT_DIR "${CMAKE_BINARY_DIR}/fixtures")
 set(SHIPLUA_HELLO_WORLD_PACKAGE "${SHIPLUA_EXAMPLE_OUTPUT_DIR}/hello-world.shipmod")
 add_custom_command(
     OUTPUT "${SHIPLUA_HELLO_WORLD_PACKAGE}"
     COMMAND "${CMAKE_COMMAND}" -E make_directory "${SHIPLUA_EXAMPLE_OUTPUT_DIR}"
     COMMAND "${Python3_EXECUTABLE}"
             "${CMAKE_CURRENT_SOURCE_DIR}/tests/conformance/PackageHelloWorld.py"
-            "${CMAKE_CURRENT_SOURCE_DIR}/examples/hello-world"
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/mods/hello-world"
             "${SHIPLUA_HELLO_WORLD_PACKAGE}"
     DEPENDS
-        "${CMAKE_CURRENT_SOURCE_DIR}/examples/hello-world/manifest.toml"
-        "${CMAKE_CURRENT_SOURCE_DIR}/examples/hello-world/main.lua"
+        "${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/mods/hello-world/manifest.toml"
+        "${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/mods/hello-world/main.lua"
         "${CMAKE_CURRENT_SOURCE_DIR}/tests/conformance/PackageHelloWorld.py"
     COMMENT "Empacotando hello-world.shipmod"
     VERBATIM)
 add_custom_target(package_examples DEPENDS "${SHIPLUA_HELLO_WORLD_PACKAGE}")
 
-set(SHIPLUA_LINKSPAN_DEMO_PACKAGE
-    "${SHIPLUA_EXAMPLE_OUTPUT_DIR}/link-home-to-clock-tower.shipmod")
-add_custom_command(
-    OUTPUT "${SHIPLUA_LINKSPAN_DEMO_PACKAGE}"
-    COMMAND "${CMAKE_COMMAND}" -E make_directory "${SHIPLUA_EXAMPLE_OUTPUT_DIR}"
-    COMMAND "${Python3_EXECUTABLE}"
-            "${CMAKE_CURRENT_SOURCE_DIR}/tests/conformance/PackageHelloWorld.py"
-            "${CMAKE_CURRENT_SOURCE_DIR}/examples/link-home-to-clock-tower"
-            "${SHIPLUA_LINKSPAN_DEMO_PACKAGE}"
-    DEPENDS
-        "${CMAKE_CURRENT_SOURCE_DIR}/examples/link-home-to-clock-tower/manifest.toml"
-        "${CMAKE_CURRENT_SOURCE_DIR}/examples/link-home-to-clock-tower/main.lua"
-        "${CMAKE_CURRENT_SOURCE_DIR}/tests/conformance/PackageHelloWorld.py"
-    COMMENT "Empacotando link-home-to-clock-tower.shipmod"
-    VERBATIM)
-add_custom_target(package_linkspan_demo DEPENDS "${SHIPLUA_LINKSPAN_DEMO_PACKAGE}")
 
 # O mod test runner executa pacotes .shipmod em alguns testes do ctest; o
 # pacote de exemplo precisa existir antes dele rodar.

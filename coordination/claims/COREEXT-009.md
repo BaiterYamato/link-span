@@ -1,0 +1,34 @@
+# COREEXT-009
+
+- Status: review
+- Agent: Claude (Opus 5)
+- Platform: Windows
+- Branch: agent/NATIVE-001-provider-runtime
+- Started: 2026-09-16T18:34:13.8726219Z
+- Depends on: COREEXT-006, COREEXT-008
+- Files:
+  - NATIVE-001/include/shiplua/native/NativeDiagnostics.h
+  - NATIVE-001/src/native/NativeDiagnostics.cpp
+  - NATIVE-001/include/shiplua/native/NativeHooks.h
+  - NATIVE-001/src/native/NativeHooks.cpp
+  - NATIVE-001/include/shiplua/native/NativeProvider.h
+  - NATIVE-001/src/native/NativeProvider.cpp
+  - NATIVE-001/include/shiplua/host/ModHost.h
+  - NATIVE-001/src/host/ModHost.cpp
+  - NATIVE-001/tests/CMakeLists.txt
+  - NATIVE-001/tests/native/**
+  - NATIVE-001/docs/native-providers.md
+  - NATIVE-001/rfcs/0024-native-crash-attribution.md
+  - OOT-UPSTREAM-78DC-001/extern/ship-lua
+  - OOT-UPSTREAM-78DC-001/soh/soh/CrashHandlerExt.cpp
+  - OOT-UPSTREAM-78DC-001/soh/soh/ShipLuaBootstrap.cpp
+  - OOT-UPSTREAM-78DC-001/soh/native-sdk/**
+  - OOT-UPSTREAM-78DC-001/tools/**
+  - OOT-UPSTREAM-78DC-001/docs/native-mods.md
+  - OOT-UPSTREAM-78DC-001/build/oot-upstream-001/evidence/coreext009-*/**
+  - RELEASE-UNIFICADA/OOT-teste-cenas-20260914/**
+  - docs/agents/Plans.md
+  - coordination/claims/COREEXT-009.md
+  - coordination/handoffs/COREEXT-009.md
+- Goal:
+  - Atribuicao de crash a mods nativos (atividade por thread e DLLs na pilha) no crash log e desativacao automatica do mod nativo que derrubou o boot, com lista .shiplua-disabled reversivel

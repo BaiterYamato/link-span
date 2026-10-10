@@ -32,6 +32,22 @@ class SchemaValidationTests(unittest.TestCase):
     def test_canonical_documents_are_valid(self):
         self.assertEqual([], self.validate())
 
+    def test_survival_primitives_keep_safe_public_shapes(self):
+        functions = {item["name"]: item for item in self.api["functions"]}
+        events = {item["name"]: item for item in self.events["events"]}
+        capabilities = {item["name"] for item in self.capabilities["capabilities"]}
+
+        self.assertEqual("game_state", functions["ship.game.state"]["returns"])
+        self.assertEqual("game.state", functions["ship.game.state"]["capability"])
+        self.assertEqual("hud.icons", functions["ship.hud.draw_icon"]["capability"])
+        self.assertEqual("transform", events["input.action"]["kind"])
+        self.assertEqual("input.actions", events["input.action"]["capability"])
+        self.assertEqual(
+            ["action", "pressed", "source"],
+            [field["name"] for field in events["input.action"]["payload"]],
+        )
+        self.assertTrue({"game.state", "input.actions", "hud.icons"} <= capabilities)
+
     def test_orphan_capability_is_rejected(self):
         events = copy.deepcopy(self.events)
         events["events"][0]["capability"] = "missing.capability"

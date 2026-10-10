@@ -1,6 +1,6 @@
 # MODSDK-004
 
-- Status: review
+- Status: closed
 - Agent: kimi-subagent-modsdk-004
 - Platform: Windows 11 / Kimi Work / CMake + MSVC 2022
 - Repository: BaiterYamato/ship-lua (link-span)

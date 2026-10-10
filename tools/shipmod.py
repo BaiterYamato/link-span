@@ -4,7 +4,7 @@
 Subcomandos (plan-sdk.md §16, release v0.1.0-alpha.1 §29):
 
 - ``new``      — cria o scaffold de um mod (manifest.toml, main.lua, README.md, tests/).
-- ``validate`` — valida manifestos (diretório, manifest.toml ou pacote .shipmod).
+- ``validate`` — valida manifestos (diretório, manifest.toml ou pacote .zip/.shipmod).
 - ``test``     — executa os testes do mod no mock runtime via shiplua_mod_test_runner.
 - ``doctor``   — diagnostica o ambiente de desenvolvimento e a saúde do repositório.
 
@@ -83,7 +83,7 @@ MANIFEST_TEMPLATE = """\
 id = {mod_id}
 name = {display_name}
 version = "0.1.0"
-api = ">=0.1 <0.5"
+api = ">=0.1 <0.6"
 entrypoint = "main.lua"
 description = {description}
 authors = [{author}]
@@ -237,7 +237,7 @@ def _validate_basic(path: Path) -> tuple[bool, str]:
         if not manifest.is_file():
             return False, f"{origem}: diretório sem manifest.toml"
         raw = manifest.read_bytes()
-    elif path.is_file() and path.suffix == ".shipmod":
+    elif path.is_file() and path.suffix.lower() in (".zip", ".shipmod"):
         try:
             with zipfile.ZipFile(path) as archive:
                 raw = archive.read("manifest.toml")
@@ -473,12 +473,12 @@ def _check_codegen() -> tuple[str, str, str]:
 
 
 def _check_examples() -> tuple[str, str, str]:
-    examples_dir = REPO_ROOT / "examples"
+    examples_dir = REPO_ROOT / "tests" / "fixtures" / "mods"
     manifests = sorted(
         path.parent for path in examples_dir.glob("*/manifest.toml")
     )
     if not manifests:
-        return "aviso", "Exemplos", "nenhum exemplo encontrado em examples/"
+        return "aviso", "Fixtures de mods", "nenhuma fixture encontrada em tests/fixtures/mods/"
 
     validator = find_repo_tool("shiplua_manifest_validator", "SHIPLUA_MANIFEST_VALIDATOR")
     if validator is not None:
@@ -493,22 +493,22 @@ def _check_examples() -> tuple[str, str, str]:
             if result is None or result.returncode not in (0, 1):
                 return (
                     "aviso",
-                    "Exemplos",
+                    "Fixtures de mods",
                     "validador encontrado, mas não executa (runtime do toolchain, "
                     "ex.: DLLs do MinGW, está no PATH?)",
                 )
             if result.returncode != 0:
                 invalid.append(mod_dir.name)
         if invalid:
-            return "falha", "Exemplos", "inválidos: " + ", ".join(invalid)
-        return "ok", "Exemplos", f"{len(manifests)} exemplo(s) válidos (validador canônico)"
+            return "falha", "Fixtures de mods", "inválidos: " + ", ".join(invalid)
+        return "ok", "Fixtures de mods", f"{len(manifests)} fixture(s) válidas (validador canônico)"
 
     if tomllib is None:
-        return "aviso", "Exemplos", "sem validador compilado e sem Python 3.11+ para o fallback"
+        return "aviso", "Fixtures de mods", "sem validador compilado e sem Python 3.11+ para o fallback"
     invalid = [mod_dir.name for mod_dir in manifests if not _validate_basic(mod_dir)[0]]
     if invalid:
-        return "falha", "Exemplos", "inválidos (verificação básica): " + ", ".join(invalid)
-    return "ok", "Exemplos", f"{len(manifests)} exemplo(s) válidos (verificação básica)"
+        return "falha", "Fixtures de mods", "inválidos (verificação básica): " + ", ".join(invalid)
+    return "ok", "Fixtures de mods", f"{len(manifests)} fixture(s) válidas (verificação básica)"
 
 
 def cmd_doctor(args: argparse.Namespace) -> int:
@@ -571,7 +571,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_new.set_defaults(func=cmd_new)
 
     p_validate = subparsers.add_parser(
-        "validate", help="valida manifesto de mod (diretório, manifest.toml ou .shipmod)"
+        "validate", help="valida manifesto de mod (diretório, manifest.toml, .zip ou .shipmod)"
     )
     p_validate.add_argument("caminhos", nargs="+", help="caminhos a validar")
     p_validate.set_defaults(func=cmd_validate)
@@ -579,7 +579,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_test = subparsers.add_parser(
         "test", help="executa os testes do mod no mock runtime (MODSDK-004)"
     )
-    p_test.add_argument("caminho", help="diretório do mod ou pacote .shipmod")
+    p_test.add_argument("caminho", help="diretório do mod ou pacote .zip/.shipmod")
     p_test.add_argument("--game", choices=sorted(GAMES), help="jogo simulado pelo mock")
     p_test.add_argument(
         "--capability",

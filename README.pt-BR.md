@@ -44,10 +44,10 @@ Detalhes de integração em [`coordination/INTEGRATION.md`](coordination/INTEGRA
 - **Quer escrever um mod?** → **[Guia: Escrevendo mods](docs/writing-mods.md)**
 - **Quer adicionar o Link-Span ao source do seu jogo e compilar?** → **[Guia: Integração no host](docs/host-integration.md)**
 - **Referência da API** (gerada dos schemas) → [`generated/docs/api-reference.md`](generated/docs/api-reference.md)
-- **Exemplos** → [`examples/`](examples/)
-  - [`hello-world`](examples/hello-world/) — o mod mínimo (loga a identidade do host).
-  - [`actor-spawn`](examples/actor-spawn/) — atores genéricos com ownership e handles seguros, testado sem ROM.
-  - [`dog-spawner`](examples/dog-spawner/) — hotkey **F** que spawna um cachorro no MM (usa `ship.mm.*`).
+- **Exemplos** → [`link-span-examples`](https://github.com/BaiterYamato/link-span-examples)
+  - [`hello-world`](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/hello-world) — o mod mínimo (loga a identidade do host).
+  - [`actor-spawn`](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/actor-spawn) — atores genéricos com ownership e handles seguros, testado sem ROM.
+  - [`dog-spawner`](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/dog-spawner) — hotkey **F** que spawna um cachorro no MM (usa `ship.mm.*`).
 
 ## Início rápido (Windows)
 
@@ -138,4 +138,4 @@ Leia [`AGENTS.md`](AGENTS.md) (contrato de trabalho) e [`PLAN.md`](PLAN.md) (rot
 
 ## Licença
 
-Núcleo do Link-Span sob a licença do repositório. **Nunca** versione ROMs, `.z64`/`.n64`/`.o2r` ou qualquer asset protegido.
+O Link-Span está em domínio público pela CC0 1.0 ([LICENSE](LICENSE)); componentes de terceiros e hosts mantêm os próprios termos ([NOTICE.md](NOTICE.md)). **Nunca** versione ROMs, `.z64`/`.n64`/`.o2r` ou qualquer asset protegido.

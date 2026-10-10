@@ -27,7 +27,7 @@ void WriteText(const std::filesystem::path &path, const std::string &contents) {
 std::string Manifest(const std::string &id, const std::string &extra = {}) {
   return "id = \"" + id + "\"\nname = \"" + id +
          "\"\nversion = \"1.0.0\"\n"
-         "api = \">=0.1 <0.5\"\nentrypoint = \"main.lua\"\n" +
+         "api = \">=0.1 <0.6\"\nentrypoint = \"main.lua\"\n" +
          extra;
 }
 
@@ -125,7 +125,7 @@ void TestPackageOwnership(const std::filesystem::path &root) {
   const auto mods = root / "packages";
   const auto cache = root / "cache-packages";
   std::filesystem::create_directories(mods);
-  Check(WritePackage(mods / "example.shipmod", Manifest("example.package"),
+  Check(WritePackage(mods / "example.zip", Manifest("example.package"),
                      "loaded = true\n"),
         "package fixture should be created");
 
@@ -133,7 +133,7 @@ void TestPackageOwnership(const std::filesystem::path &root) {
   auto result = host.LoadModsFromRoot(mods, cache);
   Check(result.isOk() && result.value->loadedIds ==
                              std::vector<std::string>{"example.package"},
-        "package should load from root");
+        "ZIP package should load from root");
   Check(std::filesystem::exists(cache), "package cache should exist");
   Check(host.UnloadMod("example.package").isOk(), "package should unload");
   Check(std::filesystem::is_empty(cache),

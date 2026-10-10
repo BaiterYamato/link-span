@@ -1,0 +1,33 @@
+# OOT-MOVE-004
+
+- Status: review
+- Agent: Claude
+- Platform: Windows
+- Branch: agent/OOT-NATIVE-001-native-engine
+- Started: 2026-09-13T01:54:46.5759638Z
+- Depends on: OOT-MOVE-003, OOT-UNBOUND-002B
+- Files:
+  - OOT-NATIVE-001/soh/soh/native/oot_engine.h
+  - OOT-NATIVE-001/soh/soh/native/OotNativeEngine.h
+  - OOT-NATIVE-001/soh/soh/native/OotNativeEngine.cpp
+  - OOT-NATIVE-001/soh/soh/ShipLuaBootstrap.cpp
+  - OOT-NATIVE-001/soh/src/code/z_parameter.c
+  - OOT-NATIVE-001/soh/native-sdk/tests/EngineTests.cpp
+  - OOT-NATIVE-001/soh/native-sdk/example/**
+  - OOT-NATIVE-001/docs/native-mods.md
+  - OOT-NATIVE-001/docs/install-linkspan-overlay.md
+  - NATIVE-001/rfcs/0014-dynamic-movement-remake.md
+  - NATIVE-001/rfcs/0018-oot-movement-v2.md
+  - OOT-NATIVE-001/build/dynamic-movement-0.2.7/**
+  - OOT-NATIVE-001/build/distribution/Dynamic-Movement-Remake-0.2.7.zip
+  - OOT-NATIVE-001/build/distribution/LinkSpan-Shipwright-9.2.3-MovementV2-OcarinaV1-Win64-overlay.zip
+  - OOT-NATIVE-001/build/official-9.2.3/fresh-move-004-*/**
+  - OOT-NATIVE-001/build/runtime-evidence/move-004-*/**
+  - OOT-NATIVE-001/build/oot-mic-001-parked/**
+  - coordination/claims/OOT-MOVE-004.md
+  - coordination/handoffs/OOT-MOVE-004.md
+  - docs/agents/Plans.md
+- Goal:
+  - Publicar linkspan.oot.movement v2: eixo do gamepad, gatilho ligado a botão virtual, uso nativo de Lente e máscaras e posição dos botões C no HUD.
+  - Dynamic Movement Remake: ZR usa o item do C selecionado, R troca a seleção com destaque no HUD e o R3 usa Lente/máscara sem ocupar botões C.
+  - Integrar câmera, atalho e C-Up no D-pad direita ao exemplo do repositório e gerar overlay novo validado.
