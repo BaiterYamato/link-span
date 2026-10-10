@@ -211,15 +211,8 @@ try {
     $modsDir = Join-Path $stageDir 'mods'
     New-Item -ItemType Directory -Path $modsDir -Force | Out-Null
     New-Item -ItemType Directory -Path (Join-Path $stageDir 'state') -Force | Out-Null
-    foreach ($modName in @('hello-world', 'jump', 'dog-spawner')) {
-        $source = Join-Path $root "examples/$modName"
-        Copy-Item -LiteralPath $source -Destination (Join-Path $modsDir $modName) -Recurse -Force
-    }
-    Step 'Montando pacote local'
-    $demoPackage = Join-Path $buildDir 'examples/link-home-to-clock-tower.shipmod'
-    if (Test-Path -LiteralPath $demoPackage -PathType Leaf) {
-        Copy-Item -LiteralPath $demoPackage -Destination (Join-Path $modsDir 'link-home-to-clock-tower.shipmod') -Force
-    }
+    # Os mods de exemplo não acompanham o pacote: ficam em
+    # https://github.com/BaiterYamato/link-span-examples.
     Publish-LinkSpanPackage -StageDir $stageDir -Destination $outputDir
     if ($RomFree) {
         Assert-LinkSpanPackageIsRomFree -Path $outputDir | Out-Null
