@@ -1,66 +1,38 @@
+**English** · [Português (Brasil)](Troubleshooting-pt-BR)
+
 # Troubleshooting
 
-## My mod doesn't load
+## Find the first useful diagnostic
 
-Check the game log (`logs/*.log` next to the executable). Every rejection is
-logged with a reason:
+Read the game log beside the executable: `logs/Ship of Harkinian.log` for OoT or `logs/2 Ship 2 Harkinian.log` for MM. For Unbound also read `logs/linkspan-unbound.log`. Start at the first error or rejected mod, not later symptoms.
 
-- **`api range ">=0.1 <0.2" does not include ShipLua API 0.4.0`** — the mod
-  was packaged for an old SDK. Update `manifest.toml` to `api = ">=0.4 <0.5"`
-  (or a range covering 0.4) and repack.
-- **`capability … missing`** — the mod requires a capability this host does
-  not offer. Use `optional` + `ship.capabilities.has(...)` when a feature is
-  nice-to-have.
-- **Nothing about the mod at all** — the `.shipmod` must contain
-  `manifest.toml` and `main.lua` at the ZIP **root** (not in a subfolder),
-  and must sit in the game's `mods/` folder.
+## A mod is absent or refused
 
-## A key does nothing
+- Confirm you started the Link-Span-enabled executable and put the package in that game's `mods/`.
+- A ZIP must have `manifest.toml` at its root; a ZIP without it is ignored. Check the declared entrypoint/provider files and avoid duplicate installed versions of an id.
+- Validate the actual installed package with `python tools/shipmod.py validate <package>`. Use the compiled validator, not only the CLI's basic fallback.
+- Check the API range against **0.5.0**, the declared game and host version, required capabilities and dependencies. An old `>=0.4 <0.5` range excludes 0.5.0. Widening a range does not fix incompatible code; test before changing it.
+- A missing required capability needs a suitable host or a revised mod. For an optional feature, use `ship.capabilities.has(...)` before invoking it.
+- On Windows, try a short game path, such as `C:\Games\SoH`. RC5 still has a 260-character path limit and extracts packages under `mods/.shiplua-cache/`.
 
-- Two mods may share the same default key (both callbacks fire) — rebind in
-  the ShipLua settings.
-- `spawn failed [invalid_state]: required object is not loaded` — the
-  current scene doesn't have that actor's model bank. Try the scene the mod
-  suggests (e.g. dogs: OoT Market / MM Clock Town).
-- `unsupported` — unknown actor key: use a catalog name or the
-  `oot.id.<n>` / `mm.id.<n>` form.
+## Native layout or fingerprint mismatch
 
-## `ship.storage` raises "unsupported"
+Use the provider compiled against this host's SDK. Rebuild or download a matching package; do not bypass the layout check. Escape-hatch providers also require the exact executable fingerprint and matching `soh.symbols`. Keep `soh.exe`, `soh.o2r` and `soh.symbols` from the same overlay. See [Native Mods](Native-Mods).
 
-`core.storage` (and `core.timers`) are currently implemented in the **mock
-runtime only**, not in the real hosts. Feature-detect:
+## Boot guard disabled a mod
 
-```lua
-local hasStorage = ship.capabilities.has("core.storage")
-```
+If an attributed native failure happens while loading or before 300 gameplay frames, the next startup disables the culprit in **`mods/.shiplua-disabled`**. The package stays in `mods/`.
 
-## Cross-world assets unavailable
+Close the game, read the log and move the suspect package outside `mods/`. After fixing or replacing it, remove only its line from `.shiplua-disabled` to re-enable it. Do not blindly clear the whole list. If startup keeps failing, restore the matching host/mod backup described in [Getting Started](Getting-Started).
 
-The boot log says where it looked:
+## A key or resource does nothing
 
-```text
-ShipLua: mm.o2r não encontrado em '…' — assets do MM indisponíveis no OOT
-```
+Check the configured binding and other mods using the same key. Actor creation can require an object loaded in the current scene; use the example's recommended scene. Check capabilities instead of assuming the mock and real host offer identical services.
 
-Keep the sibling `OOT/` and `MM/` folders next to each other (the launcher
-layout), or point `SHIPLUA_MM_ROOT` / `SHIPLUA_OOT_ROOT` at the right place.
-Both games must have their archives generated (first boot with your ROM).
+For cross-world content, inspect the archive mount diagnostic and correct sibling folders or `SHIPLUA_MM_ROOT` / `SHIPLUA_OOT_ROOT`. Generate both archives through their normal game flows. See [Cross-World Assets](Cross-World-Assets).
 
-## The game crashed
+For NEI, confirm `nei-assets/nei-assets-core.o2r` was generated locally following its README. Without it, RC5 only supplies Roc's Feather and Roc's Cape. Other NEI assets are not part of the release. For Unbound data, install the required Unbound Framework; otherwise RC5 skips those archive layers.
 
-Crash logs are appended to `logs/*.log` with a stack trace (`CrashHandler`).
-When reporting a bug, attach:
+## Report a reproducible problem
 
-1. the tail of the log (including the `Traceback:` block);
-2. your `mods/` folder listing;
-3. game versions (first `Starting …` line of the log).
-
-Open issues at <https://github.com/BaiterYamato/link-span/issues>.
-
----
-
-**Resumo (pt-BR):** o log em `logs/*.log` explica toda rejeição de mod
-(faixa de api antiga, capability ausente, zip com estrutura errada), falha de
-spawn (objeto da cena ausente, chave desconhecida) e traz o stack trace de
-crashes. `ship.storage`/`ship.timer` só existem no mock — use
-`ship.capabilities.has`. Cross-world exige as pastas irmãs `OOT/` e `MM/`.
+Include host and overlay version, mod names/versions, exact actions and scene, and the relevant log excerpt with any stack trace. For native failures include SDK/layout information and whether the boot guard disabled a package. Remove secrets and personal information from attachments. File reports in [Link-Span issues](https://github.com/BaiterYamato/link-span/issues).

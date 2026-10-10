@@ -2,52 +2,52 @@
   "schema_version": 1,
   "api_version": "0.5.0",
   "types": [
-    {"name": "game_id", "kind": "enum", "values": ["oot", "mm"], "description": "Identificador público do jogo host."},
-    {"name": "subscription", "kind": "opaque", "lua_type": "integer", "description": "Identificador opaco de inscrição em evento."},
-    {"name": "timer_handle", "kind": "opaque", "lua_type": "integer", "description": "Identificador opaco de timer em frames."},
+    {"name": "game_id", "kind": "enum", "values": ["oot", "mm"], "description": "Identificador público do jogo host.", "description_en": "Public identifier of the host game."},
+    {"name": "subscription", "kind": "opaque", "lua_type": "integer", "description": "Identificador opaco de inscrição em evento.", "description_en": "Opaque identifier of an event subscription."},
+    {"name": "timer_handle", "kind": "opaque", "lua_type": "integer", "description": "Identificador opaco de timer em frames.", "description_en": "Opaque identifier of a frame timer."},
     {"name": "event_options", "kind": "object", "fields": [
       {"name": "priority", "type": "integer", "required": false}
-    ], "description": "Opções determinísticas de inscrição."},
+    ], "description": "Opções determinísticas de inscrição.", "description_en": "Deterministic subscription options."},
     {"name": "actor_handle", "kind": "object", "fields": [
       {"name": "kind", "type": "string", "required": true},
       {"name": "slot", "type": "integer", "required": true},
       {"name": "generation", "type": "integer", "required": true},
       {"name": "scene_generation", "type": "integer", "required": true}
-    ], "description": "Handle opaco validado por kind, slot, geração e cena."},
+    ], "description": "Handle opaco validado por kind, slot, geração e cena.", "description_en": "Opaque handle validated by kind, slot, generation and scene."},
     {"name": "actor_position", "kind": "object", "fields": [
       {"name": "x", "type": "number", "required": true},
       {"name": "y", "type": "number", "required": true},
       {"name": "z", "type": "number", "required": true}
-    ], "description": "Posição absoluta finita em coordenadas do mundo."},
+    ], "description": "Posição absoluta finita em coordenadas do mundo.", "description_en": "Finite absolute position in world coordinates."},
     {"name": "actor_rotation", "kind": "object", "fields": [
       {"name": "x", "type": "number", "required": true},
       {"name": "y", "type": "number", "required": true},
       {"name": "z", "type": "number", "required": true}
-    ], "description": "Rotação XYZ em graus."},
+    ], "description": "Rotação XYZ em graus.", "description_en": "XYZ rotation in degrees."},
     {"name": "actor_spawn_options", "kind": "object", "fields": [
       {"name": "position", "type": "actor_position", "required": true},
       {"name": "rotation", "type": "actor_rotation", "required": false}
-    ], "description": "Transform seguro para criação de ator."},
+    ], "description": "Transform seguro para criação de ator.", "description_en": "Safe transform for spawning an actor."},
     {"name": "operation_error", "kind": "object", "fields": [
       {"name": "code", "type": "string", "required": true},
       {"name": "message", "type": "string", "required": true}
-    ], "description": "Erro estruturado retornado sem lançar lua_error."},
+    ], "description": "Erro estruturado retornado sem lançar lua_error.", "description_en": "Structured error returned without raising lua_error."},
     {"name": "actor_snapshot", "kind": "object", "fields": [
       {"name": "handle", "type": "actor_handle", "required": true},
       {"name": "actor_id", "type": "integer", "required": true},
       {"name": "category", "type": "integer", "required": true}
-    ], "description": "Snapshot mínimo e estável de ator."},
+    ], "description": "Snapshot mínimo e estável de ator.", "description_en": "Minimal, stable snapshot of an actor."},
     {"name": "hotkey_options", "kind": "object", "fields": [
       {"name": "default", "type": "string", "required": false},
       {"name": "label", "type": "string", "required": false}
-    ], "description": "Opções de registro de hotkey (tecla default e rótulo)."},
+    ], "description": "Opções de registro de hotkey (tecla default e rótulo).", "description_en": "Hotkey registration options (default key and label)."},
     {"name": "game_state", "kind": "object", "fields": [
       {"name": "mode", "type": "string", "required": true},
       {"name": "save_slot", "type": "integer", "required": false}
-    ], "description": "Estado estável do gameplay sem expor structs nativas."},
+    ], "description": "Estado estável do gameplay sem expor structs nativas.", "description_en": "Stable gameplay state without exposing native structs."},
     {"name": "hud_icon_options", "kind": "object", "fields": [
       {"name": "alpha", "type": "integer", "required": false}
-    ], "description": "Opções limitadas de apresentação de ícone no HUD."}
+    ], "description": "Opções limitadas de apresentação de ícone no HUD.", "description_en": "Bounded presentation options for a HUD icon."}
   ],
   "functions": [
     {"name": "ship.game.id", "version": "0.1.0", "stability": "stable", "arguments": [], "returns": "game_id", "availability": "common", "capability": null, "errors": []},

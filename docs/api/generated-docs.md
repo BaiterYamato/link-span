@@ -1,27 +1,29 @@
-# Documentação gerada da API
+**English** · [Português (Brasil)](generated-docs.pt-BR.md)
 
-`tools/generate_api_docs.py` produz dois artefatos versionados a partir dos
-schemas canônicos:
+# Documentation generated from the API
 
-- `generated/lua/shiplua.lua`: definições LuaDoc para autocomplete e análise
-  estática no Lua Language Server;
-- `generated/docs/api-reference.md`: referência humana em português do Brasil.
+`tools/generate_api_docs.py` produces two versioned artifacts from the
+canonical schemas:
 
-O LuaDoc inclui aliases, objetos, payloads de evento, namespaces e assinaturas.
-O parâmetro de evento usa um alias com todos os nomes canônicos. O Markdown
-lista tipos, funções, eventos, suporte por host, capabilities e erros.
+- `generated/lua/shiplua.lua`: LuaDoc definitions for autocomplete and analysis
+  static in Lua Language Server;
+- `generated/docs/api-reference.md`: human reference in Brazilian Portuguese.
 
-## Atualização
+LuaDoc includes aliases, objects, event payloads, namespaces, and signatures.
+The event parameter is aliased with all canonical names. Markdown
+lists types, functions, events, host support, capabilities and errors.
+
+## Update
 
 ```powershell
 rtk python tools/generate_api_docs.py
 ```
 
-## Verificação de drift
+## Drift check
 
 ```powershell
 rtk python tools/generate_api_docs.py --check
 ```
 
-O CTest executa o gate e os testes do gerador. Os artefatos não devem ser
-editados manualmente; descrições duráveis pertencem aos schemas.
+CTest performs the gate and generator tests. Artifacts should not be
+manually edited; Durable descriptions belong to schemas.

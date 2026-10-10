@@ -1,27 +1,19 @@
+**English** · [Português (Brasil)](Writing-Your-First-Mod-pt-BR)
+
 # Writing Your First Mod
 
-A mod is a folder with two files, zipped into a `.shipmod`:
+## 1. Make a hello-world mod
 
-```text
-my-mod/
-├── manifest.toml
-└── main.lua
-```
-
-## 1. The manifest
+Create `first-mod/manifest.toml` and `first-mod/main.lua`. You can work in a core checkout for the commands below, or use absolute paths to `tools/shipmod.py` and your mod.
 
 ```toml
-id = "yourname.my_mod"
-name = "My Mod"
+id = "yourname.first_mod"
+name = "First Mod"
 version = "0.1.0"
-api = ">=0.4 <0.5"
+api = ">=0.5.0 <0.6.0"
 entrypoint = "main.lua"
-description = "My first Link-Span mod."
-authors = ["You"]
 games = ["oot", "mm"]
 ```
-
-## 2. Hello world
 
 ```lua
 local ship = require("ship")
@@ -31,7 +23,11 @@ ship.events.on("game.ready", function()
 end)
 ```
 
-## 3. Add a hotkey
+This range targets the current Lua API **0.5.0**. Expand it only after checking compatibility. The manifest's version is your mod's version, not the API version.
+
+## 2. Add a hotkey
+
+Append this to `main.lua`, after the `ship` declaration:
 
 ```lua
 ship.hotkeys.register("greet", { default = "G", label = "Greet" }, function()
@@ -39,45 +35,65 @@ ship.hotkeys.register("greet", { default = "G", label = "Greet" }, function()
 end)
 ```
 
-Hotkeys are rebindable by the player in the ShipLua settings.
+The player can rebind the key in the host's mod settings.
 
-## 4. Spawn something
+## 3. Test in the mock runtime
+
+Create `first-mod/tests/first_mod_test.lua`:
 
 ```lua
-ship.hotkeys.register("spawn", { default = "K", label = "Spawn" }, function()
-    -- By curated name…
-    local actor, err = ship.actor.spawn(
-        ship.game.id() == "oot" and "oot.en_dog" or "mm.en_dg",
-        { position = { x = 0, y = 0, z = 0 } })  -- (0,0,0) = in front of you
-    -- …or by raw id, e.g. ship.actor.spawn("mm.id.0x021", …)
-    if not actor then
-        ship.log.warn(err.code .. ": " .. err.message)
-    end
+local ship = require("ship")
+
+describe("first-mod", function()
+    it("logs the host identity", function()
+        local found = false
+        for _, entry in ipairs(mock.log.entries()) do
+            if entry.message == "Hello from " .. ship.game.id() then
+                found = true
+            end
+        end
+        assert.is_true(found)
+    end)
+
+    it("responds to G", function()
+        mock.reset()
+        assert.equals(1, mock.input.press("G"))
+        local found = false
+        for _, entry in ipairs(mock.log.entries()) do
+            if entry.message == "G pressed in " .. ship.game.id() then
+                found = true
+            end
+        end
+        assert.is_true(found)
+    end)
 end)
 ```
 
-## 5. Test without the game (optional)
+The runner loads `main.lua` and emits `game.ready` before running the tests. The mock supplies `describe`, `it`, `assert` and `mock`; those are test helpers, not game APIs.
+
+Build the core first with the [README build instructions](https://github.com/BaiterYamato/link-span#building-the-core). Then:
 
 ```powershell
-python tools/shipmod.py validate my-mod
-python tools/shipmod.py test my-mod --game oot
+# Run from the Link-Span core checkout.
+cmake --build build --config Release --target shiplua_manifest_validator shiplua_mod_test_runner
+python tools/shipmod.py validate first-mod
+python tools/shipmod.py test first-mod --game oot
+python tools/shipmod.py test first-mod --game mm
 ```
 
-## 6. Package and install
+If your build uses a different directory, point `SHIPLUA_MOD_TEST_RUNNER` and `SHIPLUA_MANIFEST_VALIDATOR` at its executables. Without the C++ validator, the CLI may fall back to basic structural validation; that is not the full validator. A passing mock test checks the simulated behavior, not real input, rendering or gameplay.
+
+## 4. Install and confirm in-game
+
+Copy `first-mod/` into the installed game's `mods/`, or package its contents:
 
 ```powershell
-Compress-Archive -Path my-mod\manifest.toml, my-mod\main.lua -DestinationPath my-mod.zip
-Rename-Item my-mod.zip my-mod.shipmod
+Compress-Archive -Path first-mod/* -DestinationPath first-mod.zip
+python tools/shipmod.py validate first-mod.zip
 ```
 
-Copy it to the game's `mods/` folder and boot. The log tells you if the mod
-loaded — or exactly why it was rejected.
+`manifest.toml` must be at the ZIP root. A `.shipmod` is the same ZIP with a different extension. Keep only one installed copy of this mod.
 
-Full guide: [docs/writing-mods.en.md](https://github.com/BaiterYamato/link-span/blob/main/docs/writing-mods.en.md)
+Start the Link-Span-enabled host. Confirm `Hello from oot` or `Hello from mm` in its log, then press G during gameplay and check the new log entry. See [Getting Started](Getting-Started) and [Packaging and Publishing](Packaging-and-Publishing).
 
----
-
-**Resumo (pt-BR):** crie `manifest.toml` (com `api = ">=0.4 <0.5"`) e
-`main.lua`, registre eventos e hotkeys pela API `ship.*`, teste sem ROM com o
-CLI `shipmod`, zipe os dois arquivos como `.shipmod` e jogue na pasta `mods/`.
-Guia completo em `docs/writing-mods.md` (português).
+Continue with [Writing mods](https://github.com/BaiterYamato/link-span/blob/main/docs/writing-mods.md), [Manifest](https://github.com/BaiterYamato/link-span/blob/main/docs/manifest.md), [CLI](https://github.com/BaiterYamato/link-span/blob/main/docs/shipmod-cli.md) and the [Lua API](https://github.com/BaiterYamato/link-span/blob/main/generated/docs/api-reference.md).
