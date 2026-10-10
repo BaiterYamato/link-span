@@ -1,54 +1,37 @@
+**English** · [Português (Brasil)](Cross-World-Assets-pt-BR)
+
 # Cross-World Assets
 
-Since SDK 0.4 each host mounts the neighbouring game's archive at runtime:
+Generate `oot.o2r` and `mm.o2r` locally through the normal extraction flow of each game. Each Link-Span-enabled host can read the other game's archive live; do not bundle that archive in your mod.
 
-| You are in | It mounts | Assets appear as |
-|---|---|---|
-| OoT | `../MM/mm.o2r` | `mm/objects/...`, `mm/textures/...` |
-| MM | `../OOT/oot.o2r` | `oot/objects/...`, `oot/textures/...` |
-
-No asset is copied — the host reads the neighbour's archive live. The boot
-log confirms it:
+## Arrange sibling game folders
 
 ```text
-ShipLua expôs 50496 assets do MM sob 'mm/' (…)
-ShipLua montou o mm.o2r do MM em modo cross-world: …\MM\mm.o2r
+Link-Span/
+└── hosts/
+    ├── oot/
+    │   ├── soh.exe
+    │   └── oot.o2r
+    └── mm/
+        ├── 2ship.exe
+        └── mm.o2r
 ```
 
-## What you can do with it
+| Running host | Neighbor archive | Resource namespace |
+|---|---|---|
+| OoT | `../MM/mm.o2r` | `mm/` |
+| MM | `../OOT/oot.o2r` | `oot/` |
 
-- **Spawn the Elegy of Emptiness statue in OoT** — the shipped
-  `elegy-statue` mod (**K** in OoT) draws
-  `mm/objects/gameplay_keep/gElegyShellHumanDL` straight from `mm.o2r`.
-- **Summon Rauru in MM** — the shipped `rauru` mod (**K** in MM) builds a
-  SkelAnime from `oot/objects/object_rl/…` (skeleton + idle animation).
+On Windows, the sibling names are case-insensitive. For another layout, set `SHIPLUA_MM_ROOT` for OoT or `SHIPLUA_OOT_ROOT` for MM to the neighboring game directory. The startup log reports the searched path and whether the archive was mounted. If absent, cross-world resources are unavailable; an ordinary single-game mod does not need both archives.
 
-From Lua, cross-world actors are just catalog keys:
+## Try the examples
 
-```lua
-ship.actor.spawn("oot.mm_elegy_statue", { position = { x = 0, y = 0, z = 0 } })
-ship.actor.spawn("mm.oot_rauru",        { position = { x = 0, y = 0, z = 0 } })
-```
+- [`elegy-statue`](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/elegy-statue): in OoT, K toggles the MM statue using actor key `oot.mm_elegy_statue`.
+- [`rauru`](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/rauru): in MM, K toggles Rauru using `mm.oot_rauru`.
+- [`oot-kokiri-sword`](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/oot-kokiri-sword): in MM, T changes the sword appearance using OoT resources.
 
-## How it works (short version)
+Install the example separately; confirm the mount and any required capabilities in the host log. Resources are addressed under `mm/` or `oot/`. The host aliases non-colliding render-resource hashes and sanitizes display-list dialect differences.
 
-- Everything is addressable under the `mm/` / `oot/` **namespace**;
-- `objects/` and `textures/` entries that don't collide with local paths
-  also get an **alias at their original hash**, so internal references
-  (display list → textures, skeleton → limb DLs) resolve automatically;
-- audio and other enumerated data get **no alias** on purpose (foreign
-  formats would crash the host's scanners) — namespace-only;
-- a **dialect sanitizer** translates the two ports' display-list encodings
-  at load time.
+Reading render resources does not execute the neighboring game. Its scenes and audio are not automatically usable in the other engine. Skeletal resource formats must remain compatible, and materials can differ. World travel additionally needs launcher/host support and `world.travel`; mounting an archive alone does not provide travel.
 
-Override the sibling location with `SHIPLUA_MM_ROOT` (in OoT) /
-`SHIPLUA_OOT_ROOT` (in MM).
-
-Deep dive: [docs/cross-world-assets.en.md](https://github.com/BaiterYamato/link-span/blob/main/docs/cross-world-assets.en.md)
-
----
-
-**Resumo (pt-BR):** cada jogo monta o archive do vizinho em runtime
-(`mm/…` no OOT, `oot/…` no MM), com alias de hash para dados de render e
-sanitizador de dialeto de display lists. Demos: estátua da Elegia no OOT e
-Rauru no MM, ambos no K. Detalhes em `docs/cross-world-assets.md`.
+Full contract: [Cross-world assets](https://github.com/BaiterYamato/link-span/blob/main/docs/cross-world-assets.md) · [Launcher](https://github.com/BaiterYamato/link-span/blob/main/docs/launcher.md).

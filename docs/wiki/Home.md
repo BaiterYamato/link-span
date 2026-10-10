@@ -1,39 +1,39 @@
+**English** · [Português (Brasil)](Home-pt-BR)
+
 # Link-Span Wiki
 
-**A shared Lua modloader for Ocarina of Time (Shipwright) and Majora's Mask
-(2Ship2Harkinian)** — write a mod once, run it in both games, and reach
-across worlds: MM assets inside OoT and OoT assets inside MM, live.
+Link-Span is a shared Lua 5.4 modloader for Ocarina of Time in Shipwright and Majora's Mask in 2Ship2Harkinian. The Lua API is **0.5.0**. A mod using the common API can target both games; game-specific features require the host's capabilities.
 
-## Features
+## Start with a task
 
-- **One Lua API for both games** (`ship.*`), isolated sandbox per mod,
-  failure isolation (one broken mod never takes the others down).
-- **Rebindable hotkeys** (`ship.hotkeys`).
-- **Generic actor API** with safe handles — spawn by curated name
-  (`oot.en_dog`) or by raw id (`mm.id.0x021`), no host recompilation.
-- **Cross-world assets** — OoT mounts `../MM/mm.o2r` as `mm/…`, MM mounts
-  `../OOT/oot.o2r` as `oot/…`. Demos: MM's Elegy statue in OoT, OoT's Rauru
-  in MM.
-- **Launcher** (`link-span.exe`) with game chooser and in-game world switch.
-- **Dev CLI + mock runtime** — validate and test mods without a ROM.
+- [Getting Started](Getting-Started)
+- [Writing Your First Mod](Writing-Your-First-Mod)
+- [Native Mods](Native-Mods)
+- [Example Mods](Example-Mods)
+- [Cross-World Assets](Cross-World-Assets)
+- [Packaging and Publishing](Packaging-and-Publishing)
+- [Troubleshooting](Troubleshooting)
+- [FAQ](FAQ)
 
-## Pages
+## What it provides
 
-- [Getting Started](Getting-Started) — install, ROM setup, folder layout.
-- [Writing Your First Mod](Writing-Your-First-Mod) — hello-world to hotkeys.
-- [Cross-World Assets](Cross-World-Assets) — the `mm/` / `oot/` namespaces.
-- [Example Mods](Example-Mods) — the 8 shipped examples and their keys.
-- [Troubleshooting](Troubleshooting) — rejections, keys, crashes, logs.
-- [Pesquisa externa: itens e extensões OoT/MM](Research-External-Item-Systems) — padrões de OoTMM, custom items, NEI, stamina e CloudModding.
+- An isolated Lua state for each mod, manifests, compatibility checks and dependency ordering.
+- Events, rebindable hotkeys and an actor API with opaque handles.
+- Folder, ZIP and `.shipmod` loading; a development CLI and a ROM-free mock runtime.
+- Cross-world resource namespaces and a launcher for game selection and world travel, where supported by the installed hosts.
+- Native providers and core extensions. Native code runs inside the game process; Lua isolation does not sandbox a DLL.
 
-Full docs live in the repository:
-[docs/](https://github.com/BaiterYamato/link-span/tree/main/docs) ·
-[API reference](https://github.com/BaiterYamato/link-span/blob/main/generated/docs/api-reference.en.md)
+The OoT installation described here uses the **oot-0.5.0 RC5 overlay for Shipwright 9.2.3**. MM and launcher setup have their own requirements; see [Getting Started](Getting-Started).
 
----
+## Full references
 
-**Resumo (pt-BR):** Link-Span é um modloader Lua compartilhado para OoT e MM
-com API única, hotkeys rebindáveis, API genérica de atores (por nome ou id) e
-assets cross-world (assets do MM dentro do OOT e vice-versa). Comece por
-[Getting Started](Getting-Started); as docs completas ficam na pasta
-`docs/` do repositório (em português e inglês).
+[Modder guides](https://github.com/BaiterYamato/link-span/blob/main/docs/README.md) · [Lua API](https://github.com/BaiterYamato/link-span/blob/main/generated/docs/api-reference.md) · [Examples repository](https://github.com/BaiterYamato/link-span-examples)
+
+Examples live in the separate repository. Core test fixtures are not the modder examples.
+
+## Research (pt-BR)
+
+These internal research records remain in Portuguese. They are background material, not installation guides.
+
+- [Research-External-Item-Systems](https://github.com/BaiterYamato/link-span/blob/main/docs/wiki/Research-External-Item-Systems.md)
+- [Research-Survival-System](https://github.com/BaiterYamato/link-span/blob/main/docs/wiki/Research-Survival-System.md)

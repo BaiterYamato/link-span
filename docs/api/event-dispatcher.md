@@ -1,40 +1,42 @@
-# Dispatcher de eventos
+**English** · [Português (Brasil)](event-dispatcher.pt-BR.md)
 
-O `EventDispatcher` é o contrato interno, independente de Lua e dos hosts, que
-ordena e isola callbacks antes de os bindings públicos serem conectados.
+# Event dispatcher
 
-## Ordem determinística
+`EventDispatcher` is the internal contract, independent of Lua and hosts, that
+orders and isolates callbacks before public bindings are connected.
 
-As inscrições são executadas por:
+## Deterministic order
 
-1. ordem de carregamento já resolvida pelo grafo de mods;
-2. prioridade do mod;
-3. prioridade do callback;
-4. ID do mod;
-5. ID crescente de registro.
+Registration is carried out by:
 
-Valores menores executam primeiro. A ordem de carregamento incorpora
-dependências e as restrições `load.after` e `load.before`.
+1. load order already resolved by the mod graph;
+2. mod priority;
+3. callback priority;
+4. Mod ID;
+5. Increasing record ID.
 
-## Tipos de evento
+Smaller values ​​run first. The loading order incorporates
+dependencies and the constraints `load.after` and `load.before`.
 
-- `observe`: observa uma cópia do payload; alterações são descartadas;
-- `filter`: retorna `Block` para interromper a propagação sem alterar o payload;
-- `transform`: altera o payload compartilhado e continua a propagação;
-- `consume`: retorna `Consume` para encerrar a propagação sem alterar o payload.
+## Event types
 
-Um fluxo incompatível com o tipo do evento é registrado como falha do callback,
-mas não derruba o dispatcher.
+- `observe`: observes a copy of the payload; changes are discarded;
+- `filter`: returns `Block` to stop propagation without changing the payload;
+- `transform`: changes the shared payload and continues propagation;
+- `consume`: returns `Consume` to end propagation without changing the payload.
 
-## Segurança durante o dispatch
+A flow incompatible with the event type is recorded as a callback failure,
+but it doesn't bring down the dispatcher.
 
-- exceções são convertidas em `CallbackFailure` com assinatura e ID do mod;
-- callbacks seguintes continuam após uma falha;
-- uma remoção passa a valer imediatamente para callbacks ainda não chamados;
-- uma inscrição criada durante o dispatch só participa do próximo dispatch;
-- eventos não podem ser definidos durante um dispatch;
-- todas as operações mutáveis devem ocorrer na thread que criou o dispatcher.
+## Security during dispatch
 
-O payload aceita `nil`, booleano, inteiro de 64 bits, número, texto, array e
-objeto recursivo. Ele não contém ponteiros, referências do host nem layouts de
-estruturas internas dos jogos.
+- exceptions are converted to `CallbackFailure` with signature and mod ID;
+- following callbacks continue after a failure;
+- a removal takes effect immediately for callbacks not yet called;
+- a subscription created during dispatch only participates in the next dispatch;
+- events cannot be defined during a dispatch;
+- all mutable operations must occur in the thread that created the dispatcher.
+
+The payload accepts `nil`, boolean, 64-bit integer, number, text, array and
+recursive object. It does not contain pointers, host references, or file layouts.
+internal structures of games.

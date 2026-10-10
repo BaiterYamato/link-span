@@ -1,0 +1,1 @@
+[Link-Span repository / Repositório](https://github.com/BaiterYamato/link-span) · [Examples / Exemplos](https://github.com/BaiterYamato/link-span-examples) · [CC0 1.0](https://github.com/BaiterYamato/link-span/blob/main/LICENSE) · [Third-party notices / Avisos de terceiros](https://github.com/BaiterYamato/link-span/blob/main/NOTICE.md)

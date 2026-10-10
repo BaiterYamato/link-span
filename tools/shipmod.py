@@ -566,8 +566,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_new.add_argument("nome", help="nome do diretório do mod (slug, ex.: kafei-puppet)")
     p_new.add_argument("--dir", default=".", help="diretório pai (padrão: diretório atual)")
     p_new.add_argument("--id", help="id do mod (padrão: community.<nome_com_sublinhados>)")
-    p_new.add_argument("--autor", help="autor do mod (padrão: user.name do git)")
-    p_new.add_argument("--desc", help="descrição curta do mod")
+    p_new.add_argument("--author", "--autor", dest="autor",
+                       help="autor do mod (padrão: user.name do git)")
+    p_new.add_argument("--description", "--desc", dest="desc", help="descrição curta do mod")
     p_new.set_defaults(func=cmd_new)
 
     p_validate = subparsers.add_parser(
