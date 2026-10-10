@@ -474,12 +474,12 @@ def _check_codegen() -> tuple[str, str, str]:
 
 
 def _check_examples() -> tuple[str, str, str]:
-    examples_dir = REPO_ROOT / "examples"
+    examples_dir = REPO_ROOT / "tests" / "fixtures" / "mods"
     manifests = sorted(
         path.parent for path in examples_dir.glob("*/manifest.toml")
     )
     if not manifests:
-        return "aviso", "Exemplos", "nenhum exemplo encontrado em examples/"
+        return "aviso", "Fixtures de mods", "nenhuma fixture encontrada em tests/fixtures/mods/"
 
     validator = find_repo_tool("shiplua_manifest_validator", "SHIPLUA_MANIFEST_VALIDATOR")
     if validator is not None:
@@ -494,22 +494,22 @@ def _check_examples() -> tuple[str, str, str]:
             if result is None or result.returncode not in (0, 1):
                 return (
                     "aviso",
-                    "Exemplos",
+                    "Fixtures de mods",
                     "validador encontrado, mas não executa (runtime do toolchain, "
                     "ex.: DLLs do MinGW, está no PATH?)",
                 )
             if result.returncode != 0:
                 invalid.append(mod_dir.name)
         if invalid:
-            return "falha", "Exemplos", "inválidos: " + ", ".join(invalid)
-        return "ok", "Exemplos", f"{len(manifests)} exemplo(s) válidos (validador canônico)"
+            return "falha", "Fixtures de mods", "inválidos: " + ", ".join(invalid)
+        return "ok", "Fixtures de mods", f"{len(manifests)} fixture(s) válidas (validador canônico)"
 
     if tomllib is None:
-        return "aviso", "Exemplos", "sem validador compilado e sem Python 3.11+ para o fallback"
+        return "aviso", "Fixtures de mods", "sem validador compilado e sem Python 3.11+ para o fallback"
     invalid = [mod_dir.name for mod_dir in manifests if not _validate_basic(mod_dir)[0]]
     if invalid:
-        return "falha", "Exemplos", "inválidos (verificação básica): " + ", ".join(invalid)
-    return "ok", "Exemplos", f"{len(manifests)} exemplo(s) válidos (verificação básica)"
+        return "falha", "Fixtures de mods", "inválidos (verificação básica): " + ", ".join(invalid)
+    return "ok", "Fixtures de mods", f"{len(manifests)} fixture(s) válidas (verificação básica)"
 
 
 # --- validador de ABI e exports de mods nativos (COREEXT-009, plan §9.9) ---

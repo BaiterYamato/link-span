@@ -9,7 +9,7 @@ cada função ao schema do Link-Span, a uma allowlist ou ao código do loader.
 Implementado no core: carga dinâmica, ABI C 1.0 a 1.3 (hooks e escape hatch), funções privadas por instância,
 consulta de serviços do host, core extensions que publicam serviços para outros
 mods, diretórios e pacotes, rollback, unload e erros Lua.
-O exemplo `examples/native-dash` é compilado separadamente do host. O teste
+A fixture `tests/fixtures/mods/native-dash` é compilado separadamente do host. O teste
 `native_independent_mod` muda apenas a DLL/SO e verifica SHA-256 inalterado do
 executável. O gameplay usado nessa prova é simulado, sem ROM.
 
@@ -155,7 +155,7 @@ A partir da raiz do SDK:
 
 ```powershell
 cmake --build build --config Release --target native_sdk_host
-cmake -S examples/native-dash -B build/native-dash -DDASH_VELOCITY=12.0
+cmake -S tests/fixtures/mods/native-dash -B build/native-dash -DDASH_VELOCITY=12.0
 cmake --build build/native-dash --config Release
 build/tests/Release/native_sdk_host.exe build/native-dash/mod 12 oot
 ```
@@ -163,7 +163,7 @@ build/tests/Release/native_sdk_host.exe build/native-dash/mod 12 oot
 Agora altere somente o mod, preservando o mesmo host:
 
 ```powershell
-cmake -S examples/native-dash -B build/native-dash -DDASH_VELOCITY=21.0
+cmake -S tests/fixtures/mods/native-dash -B build/native-dash -DDASH_VELOCITY=21.0
 cmake --build build/native-dash --config Release
 build/tests/Release/native_sdk_host.exe build/native-dash/mod 21 oot
 ```

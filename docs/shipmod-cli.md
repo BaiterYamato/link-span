@@ -12,7 +12,7 @@ Subcomandos disponíveis neste release: `new`, `validate`, `test` e `doctor`.
 
 ## `shipmod new <nome>`
 
-Cria o scaffold de um mod novo nos moldes de `examples/`:
+Cria o scaffold de um mod novo nos moldes dos mods de [link-span-examples](https://github.com/BaiterYamato/link-span-examples):
 
 ```powershell
 python tools/shipmod.py new kafei-puppet --dir mods
@@ -40,8 +40,8 @@ Valida manifestos de mods — diretório com `manifest.toml`, arquivo TOML ou
 pacote `.shipmod` — delegando ao `shiplua_manifest_validator` compilado:
 
 ```powershell
-python tools/shipmod.py validate examples/hello-runtime
-python tools/shipmod.py validate build/examples/hello-world.shipmod
+python tools/shipmod.py validate tests/fixtures/mods/hello-runtime
+python tools/shipmod.py validate build/fixtures/hello-world.shipmod
 ```
 
 Quando o validador canônico não está compilado, o CLI cai para uma verificação
@@ -55,7 +55,7 @@ Executa os testes do mod (`tests/*.lua`) no mock runtime, sem jogo ou ROM,
 delegando ao `shiplua_mod_test_runner` (MODSDK-004):
 
 ```powershell
-python tools/shipmod.py test examples/hello-runtime --game oot
+python tools/shipmod.py test tests/fixtures/mods/hello-runtime --game oot
 python tools/shipmod.py test mods/kafei-puppet --capability core.input
 ```
 
@@ -80,7 +80,7 @@ Verificações:
 - schemas da API válidos (`tools/validate_api_schemas.py`);
 - codegen sem drift (`generate_cpp_api.py --check`, `generate_api_docs.py --check`,
   `generate_api_contracts.py --check`);
-- manifestos de `examples/` válidos.
+- manifestos de `tests/fixtures/mods/` válidos.
 
 Cada verificação resulta em `ok`, `aviso` ou `falha`; o comando sai com código
 `1` se houver ao menos uma falha.

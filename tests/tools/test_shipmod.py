@@ -119,7 +119,7 @@ class ValidateFallbackTests(unittest.TestCase):
         self.addCleanup(patcher.stop)
 
     def test_valid_example_directory(self) -> None:
-        code, out, _ = run_cli(["validate", str(REPO_ROOT / "examples" / "hello-world")])
+        code, out, _ = run_cli(["validate", str(REPO_ROOT / "tests" / "fixtures" / "mods" / "hello-world")])
         self.assertEqual(code, shipmod.EXIT_OK)
         self.assertIn("example.hello_world", out)
 
@@ -205,7 +205,7 @@ class ValidateDelegationTests(unittest.TestCase):
 class TestCommandTests(unittest.TestCase):
     def test_missing_runner_fails_with_clear_message(self) -> None:
         with mock.patch.object(shipmod, "find_repo_tool", return_value=None):
-            code, _, err = run_cli(["test", "examples/hello-runtime"])
+            code, _, err = run_cli(["test", "tests/fixtures/mods/hello-runtime"])
         self.assertEqual(code, shipmod.EXIT_MISSING_TOOL)
         self.assertIn("shiplua_mod_test_runner", err)
         self.assertIn("MODSDK-004", err)
@@ -403,7 +403,7 @@ class NativeDoctorTests(unittest.TestCase):
         self.assertEqual(other["Fingerprints"], "aviso")
 
     def test_lua_mod_has_nothing_to_validate(self) -> None:
-        code, out, _ = run_cli(["doctor", str(REPO_ROOT / "examples" / "hello-runtime")])
+        code, out, _ = run_cli(["doctor", str(REPO_ROOT / "tests" / "fixtures" / "mods" / "hello-runtime")])
         self.assertEqual(code, shipmod.EXIT_OK, out)
         self.assertIn("sem [provider]", out)
 

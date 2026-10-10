@@ -54,7 +54,7 @@ Sobre a faixa `api`:
 ### 2.2 Escreva o `main.lua`
 
 O `main.lua` roda uma vez quando o mod carrega. Este exemplo é o
-[`examples/actor-spawn`](../examples/actor-spawn/) real, levemente comentado:
+[`link-span-examples/lua/actor-spawn`](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/actor-spawn) real, levemente comentado:
 
 ```lua
 local ship = require("ship")
@@ -385,7 +385,7 @@ end
 No OoT, o host cria `shiplua-storage.bin` no diretório do aplicativo e anuncia
 `core.storage`. `core.storage.shared` só aparece sob o launcher Link-Span; fora
 dele, use fallback quando precisar do mesmo estado entre jogos. Use o padrão de
-fallback do [`examples/frame-counter`](../examples/frame-counter/):
+fallback do [`link-span-examples/lua/frame-counter`](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/frame-counter):
 
 ```lua
 local hasStorage = ship.capabilities.has("core.storage")
@@ -413,7 +413,7 @@ ship.world.travel("mm", "mm.clock_tower.entrance")
 
 Só é anunciada quando o processo roda sob o launcher Link-Span com os dois
 jogos disponíveis — veja [link-span-process.md](link-span-process.md) e
-[`examples/link-home-to-clock-tower`](../examples/link-home-to-clock-tower/).
+[`link-span-examples/lua/link-home-to-clock-tower`](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/link-home-to-clock-tower).
 
 ### Namespaces específicos de jogo (`ship.oot.*` / `ship.mm.*`)
 
@@ -425,7 +425,7 @@ jogos disponíveis — veja [link-span-process.md](link-span-process.md) e
 | `ship.mm.spawn_dog()` | `mm.spawn_dog` | MM |
 
 São instalados pelo adaptador do host — **cheque capability e existência** antes
-de usar, como no [`examples/jump`](../examples/jump/):
+de usar, como no [`link-span-examples/lua/jump`](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/jump):
 
 ```lua
 local function resolveJump()

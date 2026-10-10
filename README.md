@@ -49,15 +49,15 @@ Integration details in [`coordination/INTEGRATION.en.md`](coordination/INTEGRATI
 - **Cross-world assets** (use MM assets inside OoT and vice-versa) → **[Guide](docs/cross-world-assets.en.md)**
 - **Want to add Link-Span to your own game source and build it?** → **[Guide: Host integration](docs/host-integration.en.md)**
 - **API reference** (generated from the schemas) → [`generated/docs/api-reference.en.md`](generated/docs/api-reference.en.md)
-- **Examples** → [`examples/`](examples/)
-  - [`hello-world`](examples/hello-world/) — the minimal mod (logs the host identity).
-  - [`frame-counter`](examples/frame-counter/) — **C**: events, timers and storage with feature detection.
-  - [`dog-spawner`](examples/dog-spawner/) — **F**: spawns a dog in OoT (Market) or MM (Clock Town).
-  - [`jump`](examples/jump/) — **J**: makes Link jump in both games.
-  - [`actor-spawn`](examples/actor-spawn/) — **K**: the generic actor API with safe handles.
-  - [`kafei-puppet`](examples/kafei-puppet/) — **H** (OoT): Young-Link skeleton puppet, reskinnable via `.otr` replacers.
-  - [`elegy-statue`](examples/elegy-statue/) — **K** (OoT): MM's Elegy statue read live from `mm.o2r` (cross-world).
-  - [`rauru`](examples/rauru/) — **K** (MM): OoT's Rauru, skeleton + animation read live from `oot.o2r` (cross-world).
+- **Examples** → [`link-span-examples`](https://github.com/BaiterYamato/link-span-examples)
+  - [`hello-world`](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/hello-world) — the minimal mod (logs the host identity).
+  - [`frame-counter`](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/frame-counter) — **C**: events, timers and storage with feature detection.
+  - [`dog-spawner`](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/dog-spawner) — **F**: spawns a dog in OoT (Market) or MM (Clock Town).
+  - [`jump`](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/jump) — **J**: makes Link jump in both games.
+  - [`actor-spawn`](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/actor-spawn) — **K**: the generic actor API with safe handles.
+  - [`kafei-puppet`](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/kafei-puppet) — **H** (OoT): Young-Link skeleton puppet, reskinnable via `.otr` replacers.
+  - [`elegy-statue`](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/elegy-statue) — **K** (OoT): MM's Elegy statue read live from `mm.o2r` (cross-world).
+  - [`rauru`](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/rauru) — **K** (MM): OoT's Rauru, skeleton + animation read live from `oot.o2r` (cross-world).
 
 ## Quick start (Windows)
 

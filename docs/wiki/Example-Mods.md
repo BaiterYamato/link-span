@@ -1,7 +1,7 @@
 # Example Mods
 
-All examples ship in the release `mods/` folders and live in
-[`examples/`](https://github.com/BaiterYamato/link-span/tree/main/examples).
+The examples do not ship with Link-Span. They live in their own repository,
+[`link-span-examples`](https://github.com/BaiterYamato/link-span-examples) (Lua mods in `lua/`, OoT native demos in `oot-native/`).
 
 | Mod | Key | Game(s) | What it shows |
 |---|---|---|---|

@@ -4,7 +4,7 @@
 #include <iostream>
 #include "shiplua/host/ModHost.h"
 #include "shiplua/manifest/PackageFormat.h"
-#include "../../examples/native-dash/player_service.h"
+#include "../fixtures/mods/native-dash/player_service.h"
 
 namespace {
 double SHIP_NATIVE_CALL GetVelocity(void* context) { return *static_cast<double*>(context); }

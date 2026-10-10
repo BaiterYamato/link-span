@@ -27,7 +27,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix="linkspan-independent-") as scratch:
         build = Path(scratch) / "provider-build"
         for velocity in (12, 21):
-            configure = [args.cmake, "-S", args.sdk / "examples/native-dash", "-B", build,
+            configure = [args.cmake, "-S", args.sdk / "tests/fixtures/mods/native-dash", "-B", build,
                          f"-DDASH_VELOCITY={velocity}.0"]
             if args.generator:
                 configure += ["-G", args.generator]
