@@ -13,6 +13,7 @@
   - OOT-UPSTREAM-78DC-001/soh/native-sdk/nei-core/fork/{extracted-fixes.txt,fork_items.c,inventory_unit.c,nei_host_overrides.h,resource_guard.c}
   - OOT-UPSTREAM-78DC-001/tools/{build-nei-assets.py,package-nei-core.ps1}
   - OOT-UPSTREAM-78DC-001/{NOTICE-LINKSPAN.md,docs/licensing/OVERLAY-NOTICE.md}
+  - OOT-UPSTREAM-78DC-001/soh/soh/Enhancements/mod_menu.cpp (pula mods/.shiplua-* na varredura do SoH)
   - link-span-examples/oot-native/shovel-demo/**, link-span-examples/tools/package-shovel-demo.ps1
   - logs/rc-pipeline-oot-next/** (rc-build, rc-package, rc-post-build; fora de repositório)
 - Goal:
