@@ -31,7 +31,7 @@ Confira o binding configurado e outros mods na mesma tecla. Criar atores pode ex
 
 Para conteúdo entre mundos, confira o diagnóstico de montagem e corrija as pastas irmãs ou `SHIPLUA_MM_ROOT` / `SHIPLUA_OOT_ROOT`. Gere ambos os archives pelos fluxos normais dos jogos. Veja [Assets entre mundos](Cross-World-Assets-pt-BR).
 
-Para NEI, confirme que `nei-assets/nei-assets-core.o2r` foi gerado localmente seguindo seu README. Sem ele, o RC8 só oferece Roc's Feather e Roc's Cape. Os demais assets NEI não fazem parte da release. Para dados Unbound, instale o Unbound Framework exigido; sem ele, o RC8 ignora essas camadas de archive.
+Para NEI, se itens aparecerem sem ícone ou modelo, procure a linha de status do NEI no log do jogo e confira se ela diz `assets: pacote: core+...`. A partir do NEI 0.3.24 os assets vão dentro do pacote `LinkSpan-NEI-*.shipmod`, então não há nada a gerar; reinstale o pacote se essa linha não mostrar o núcleo. Um pacote antigo (anterior à 0.3.24) ainda depende de `nei-assets/nei-assets-core.o2r` ao lado do jogo; sem ele só Roc's Feather e Roc's Cape ficam disponíveis. Para dados Unbound, instale o Unbound Framework exigido; sem ele, o RC8 ignora essas camadas de archive.
 
 ## Relate um problema reproduzível
 

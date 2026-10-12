@@ -33,7 +33,7 @@ For OoT, use the **oot-0.5.0 RC8 overlay for Shipwright 9.3.0** and its matching
 
 For MM, use a Link-Span-enabled [2Ship host](https://github.com/BaiterYamato/2ship2harkinian), generate `mm.o2r` through the normal 2Ship flow and install mods beside its executable. The OoT overlay does not install Link-Span into MM.
 
-Full installation, NEI asset requirements, updating and rollback: [Getting Started](https://github.com/BaiterYamato/link-span/wiki/Getting-Started). A dual-host launcher setup is described in [Launcher](docs/launcher.md).
+Full installation, where the NEI assets live, updating and rollback: [Getting Started](https://github.com/BaiterYamato/link-span/wiki/Getting-Started). A dual-host launcher setup is described in [Launcher](docs/launcher.md).
 
 ## For modders
 
