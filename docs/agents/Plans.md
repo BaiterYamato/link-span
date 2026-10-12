@@ -1480,3 +1480,43 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
   `RELEASE-UNIFICADA/OOT-playtest-nei-rc5` com checklist). Push e publicação aguardam autorização.
 - **Playtest do mantenedor (10/10):** itens NEI, DMR e Mic Ocarina funcionando na cópia do RC5. Gate §18 26/26.
   Push autorizado; publicação da release não.
+
+### UPDATE 2026-10-11 (Claude) — OOT-RELEASE-001: RC6 `oot-0.5.0-rc6` validado, não publicado
+
+- **Publicação:** rascunho de pre-release no BaiterYamato/Shipwright (tag `oot-0.5.0-rc6` no `ee97c6752`), 14
+  arquivos com digest conferido contra o `SHA256SUMS.txt`. Não foi publicado: o host passou ao Shipwright 9.3.0, e o
+  candidato publicado é o RC8 (UPDATE OOT-UPSTREAM-003 abaixo).
+- **RC6:** `soh.exe` `E05FC6D4…` (`923aaa07c`), layout `9a593a6e`, CTest 68/68; NEI 0.3.21, Unbound 0.6.11, DMR
+  0.2.20, Mic 0.2.6, WW 0.1.2, Shovel 0.1.2, SDK em ZIP. 8/8 reprodutíveis, `-Verify` 10/10, scanner OK.
+- **Validação:** primeira rodada de ponta a ponta da pipeline `logs/rc-pipeline-oot-next`: instalação fresca, sem
+  mods, matriz 9/9, ciclo de save, atualização NEI 0.3.20 → 0.3.21, fixtures 9/9, probe do SDK, autocontenção e cinco
+  gates verdes (2026-10-10/11).
+- **Pendente:** permissão das partes de terceiros sem licença (registrada no handoff), publicar a wiki e, no próximo
+  RC, subir a versão dos pacotes que mudarem de bytes.
+
+### UPDATE 2026-10-11 (Claude) — OOT-UPSTREAM-002: host no Shipwright 9.3.0, RC7 validado e não publicado
+
+- **Host:** merge da tag Shipwright 9.3.0 (`ecd889c201`) sobre a develop `78dc6d970` com o Link-Span: 74 commits
+  upstream, 32 arquivos em conflito. Junto vai a UNBOUND-032 (correções do Unbound 0.10/0.11 e do ModApi do skijer).
+  Layout `9a593a6e` → `7376240d`; Quick Bongo Kill corrigido; fork NEI com 0 conflitos e 319 funções sobrepostas.
+- **RC7 `oot-0.5.0-rc7`:** bateria e cinco gates verdes (rollback RC7 → RC6 → RC7). O mantenedor decidiu não
+  publicar (rascunho no BaiterYamato/Shipwright) e levar os achados da auditoria do 9.3.0 ao RC8.
+- **Merge:** BaiterYamato/Shipwright#1 (`19829d981d`) e #2 (`783e5605b8`) na
+  `agent/OOT-UPSTREAM-001-78dc6d970-integration` e link-span-examples#1 (`feb389657e`), com exceção do `clang-format`
+  decidida pelo mantenedor: 197 arquivos antigos do Link-Span, formatação adiada para a OOT-FORMAT-001 porque muda o
+  layout id.
+- Handoffs: `coordination/handoffs/UNBOUND-032.md` e `coordination/handoffs/OOT-UPSTREAM-002.md`.
+
+### UPDATE 2026-10-12 (Claude) — OOT-UPSTREAM-003: RC8 `oot-0.5.0-rc8` publicado como pre-release
+
+- **Correções da auditoria do 9.3.0:** opções do SoH gravadas por mods (`set_setting_int`, API Lua de máscaras) agora
+  chegam aos hooks `COND_*`: uma fila reaplicada com `ShipInit::Init` no começo e no fim do `GameState_Update`. O skip
+  da intro do Ganon passa por `oot.actor.update`.
+- **RC8:** `soh.exe` `FA236D42…` (`d37f2bcb18`), layout `7376240d`, CTest 68/68; NEI 0.3.23, Unbound 0.6.13, DMR
+  0.2.22, Mic 0.2.8, WW 0.1.4, Shovel 0.1.4. Bateria e cinco gates verdes na primeira passada (rollback RC8 → RC7 →
+  RC8).
+- **Publicação:** pre-release no [BaiterYamato/Shipwright](https://github.com/BaiterYamato/Shipwright/releases/tag/oot-0.5.0-rc8) (tag no `d37f2bcb18`), 14 arquivos com digest
+  conferido. Merges: BaiterYamato/Shipwright#3 (`4d8d7df622`, mesma exceção do `clang-format`) e link-span-examples#2
+  (`5550620`). README e wiki em `docs/wiki` passam a apontar o RC8.
+- **Pendente:** prova física da reaplicação das opções com o DMR, controle/câmera e microfone; publicar a wiki;
+  OOT-FORMAT-001 no começo do próximo ciclo.
