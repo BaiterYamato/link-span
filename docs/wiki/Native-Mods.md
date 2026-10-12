@@ -6,9 +6,9 @@ A native mod packages Lua with a C/C++ provider library. Lua calls the mod's pri
 
 ## Use the matching OoT SDK
 
-Download the RC5 **`LinkSpan-OoT-SDK-oot-0.5.0-rc5-…-Win64.zip`** alongside the matching host release. Extract it outside the game folder. The SDK is not a mod: do not put it in `mods/`.
+Download the RC8 **`LinkSpan-OoT-SDK-oot-0.5.0-rc8-layout-7376240d-Win64.zip`** alongside the matching host release. Extract it outside the game folder. The SDK is not a mod: do not put it in `mods/`.
 
-Read `AUTHOR-GUIDE.en.md`, `OOT-NATIVE-CONTRACT.md` and `linkspan-sdk.json` in the SDK. Use the MSVC version recorded there. A host source build exports `build/x64/native-sdk/Release/OotNativeSdk.cmake`; set `OOT_NATIVE_SDK` to the actual `OotNativeSdk.cmake` in your extracted SDK or build.
+Read `AUTHOR-GUIDE.md`, `OOT-NATIVE-CONTRACT.md` and `linkspan-sdk.json` in the SDK. Use the MSVC version recorded there. A host source build exports `build/x64/native-sdk/Release/OotNativeSdk.cmake`; set `OOT_NATIVE_SDK` to the actual `OotNativeSdk.cmake` in your extracted SDK or build.
 
 The detailed authoring and packaging steps are in [docs/native-mods.md](https://github.com/BaiterYamato/link-span/blob/main/docs/native-mods.md). The generic provider contract is in [Native providers](https://github.com/BaiterYamato/link-span/blob/main/docs/native-providers.md).
 

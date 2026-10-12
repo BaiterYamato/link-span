@@ -2,11 +2,54 @@
 
 ## Estado
 
-review — candidato a release **`oot-0.5.0-rc5`** (2026-10-09/10) montado, reprodutível e verificado. A bateria em
-jogo e os cinco gates novos passaram (seção abaixo). O mantenedor jogou a cópia de playtest em 2026-10-10: itens NEI, DMR e Mic Ocarina
-funcionando. Gate OoT (§18) 26/26. Nada foi publicado; commits locais, sem push. RC2/RC3/RC4 ficam como histórico.
+review — o **`oot-0.5.0-rc6`** passou na bateria em jogo e nos cinco gates em 2026-10-10/11, pela pipeline
+`logs/rc-pipeline-oot-next`, mas não foi publicado: o host passou ao Shipwright 9.3.0. O RC7 (OOT-UPSTREAM-002)
+também ficou só em rascunho, e o candidato publicado é o **`oot-0.5.0-rc8`**, pre-release de 2026-10-12 no
+[BaiterYamato/Shipwright](https://github.com/BaiterYamato/Shipwright/releases/tag/oot-0.5.0-rc8) (ver `coordination/handoffs/OOT-UPSTREAM-003.md`). O RC5 foi validado e jogado pelo
+mantenedor (2026-10-10), sem publicação; RC2 a RC7 ficam como histórico. Gate OoT (§18) 26/26.
 
 ## Resultado
+
+### Release `oot-0.5.0-rc6` (2026-10-10/11, validada, não publicada)
+
+Rascunho de pre-release no BaiterYamato/Shipwright (tag `oot-0.5.0-rc6` no `ee97c6752`), não publicado. Leva os 9 pacotes,
+`RELEASE-NOTES.md`, `RELEASE.md`, `SHA256SUMS.txt`, `inventory.json` e `protected-content.txt`; o digest de cada
+arquivo no GitHub confere com o `SHA256SUMS.txt`. O `protected-content.json` ficou de fora por trazer um caminho
+local. Pasta: `OOT-UPSTREAM-78DC-001/build/release/oot-0.5.0-rc6`.
+
+Host `soh.exe` SHA-256 `E05FC6D4DCACFEB30E3A70135C40B024B5D81588AF0B8AD5F3F1D64CB7784CF9`, compilado do `923aaa07c`
+(CTest 68/68); o `ee97c6752` só sobe as versões nos manifestos e docs. Core `4766532` (main com a MENU-001), exemplos
+`b9665bc`, layout `9a593a6e` sem mudança.
+
+| Pacote | Versão | SHA-256 (16) |
+|---|---|---|
+| Overlay Shipwright 9.2.3 / upstream `78dc6d970` / layout `9a593a6e` | API 0.5.0 | `8800ffc65cd746d9` |
+| Unbound Framework | 0.6.11 | `13f5f08ec8c93639` |
+| NEI | 0.3.21 | `7aa85363f5fcf31b` |
+| Dynamic Movement Remake | 0.2.20 | `06b1a55670e9b0f1` |
+| Mic Ocarina | 0.2.6 | `2c1023d46d282fd4` |
+| Wind Waker Style | 0.1.2 | `4672d809f400e8cf` |
+| Shovel Demo | 0.1.2 | `3b840a1bd825a5fa` |
+| Unbound09 Actors Demo | dados | `ff4d7e74b0d7a2b2` |
+| SDK de autor (ZIP separado) | rc6 | `b5ae90e2735ee4f6` |
+
+**O que muda contra o RC5:**
+- mensagens do modloader, guias e guia de autor do SDK em inglês, com o português ao lado (`*.pt-BR.md`);
+  `RELEASE.md` e metadados do SDK em inglês (host `230e93c55` e `923aaa07c`);
+- exemplos e demos no [link-span-examples](https://github.com/BaiterYamato/link-span-examples), de onde saem o Shovel
+  Demo e o Actors Demo (core `0c5e43d` e `b64e200`);
+- core com a MENU-001 integrada (PR #48);
+- NEI 0.3.21, DMR 0.2.20 e Mic 0.2.6 só acompanham o SHA do `soh.exe` novo (`ee97c6752`), sem mudança de jogo.
+
+**Validação** (evidência em `build/oot-upstream-001/evidence/release-g/rc6`; status em
+`logs/rc-pipeline-oot-next/rc6-battery.status`):
+- empacotamento duas vezes, 8/8 iguais byte a byte; `-Verify` 10/10; scanner OK na release, no SDK e na cópia montada;
+- instalação fresca: `PROVA OK`, 0 mods; sem mods: falhas 0, sem erro no log, save preservado;
+- matriz §12.2: 9/9 linhas `ok=True`; ciclo de save: `CICLO OK`; atualização NEI 0.3.20 → 0.3.21: `ATUALIZACAO OK`;
+- fixtures do Unbound 9/9; probe do SDK compilado só com o ZIP: carregado e descarregado no jogo;
+- autocontenção: referências 9, sem resolver 0; em jogo 37 conferidas, 0 ausentes (NTSC-US 1.1);
+- gates add-ons, capability, recovery, seletor e rollback RC6→RC5→RC6: todos `ok=true gateComplete=true`, todos com o
+  `soh.exe` do RC6.
 
 ### Release `oot-0.5.0-rc5` (2026-10-09/10)
 
@@ -266,6 +309,14 @@ no core). A RFC duplicada foi resolvida: o randomizer hints entrou no core já c
 
 ## Commits
 
+RC6 (2026-10-10/11):
+- host `ee97c6752` (`agent/OOT-UPSTREAM-001-78dc6d970-integration`): versões do RC6; enviado ao BaiterYamato/Shipwright
+  em 2026-10-11, a pedido do usuário;
+- link-span, branch `agent/OOT-UPSTREAM-003-core-docs` (PR para a main): este handoff e o UPDATE do RC6 em
+  `docs/agents/Plans.md`. O README e a wiki em `docs/wiki` passaram direto do RC5 para o RC8 (OOT-UPSTREAM-003).
+
+Até o RC3:
+
 Locais, sem push; autorizados pelo usuário em 2026-10-02 ("Faça o que é necessário").
 
 RC3, no host (`agent/OOT-UPSTREAM-001-78dc6d970-integration`):
@@ -299,6 +350,12 @@ traz a RFC 0028 em rascunho.
 
 ## Arquivos alterados
 
+- **RC6:**
+  - host: `soh/native-sdk/{example,mic-ocarina}/manifest.toml`, `soh/native-sdk/nei-core/README{,.pt-BR}.md` e
+    `tools/package-nei-core.ps1` (`ee97c6752`);
+  - link-span: `README{,.pt-BR}.md`, `docs/wiki/{Getting-Started,Home,Native-Mods,Example-Mods,Troubleshooting}`
+    (EN e pt-BR), este handoff e `docs/agents/Plans.md`;
+  - a pipeline do RC6 fica fora do git, em `logs/rc-pipeline-oot-next`.
 - **Host — ferramentas:**
   - `tools/linkspan-zip.ps1`, `tools/build-linkspan-release.ps1`, `tools/read-linkspan-manifest.py`,
     `tools/scan-protected-content.py` e `tools/test-reproducible.ps1`;
@@ -328,6 +385,16 @@ traz a RFC 0028 em rascunho.
   tarefas.
 
 ## Validação executada
+
+**RC6** (Windows 11, MSVC 19.44 / toolset 14.44, Release x64, PowerShell 5.1), pela pipeline `logs/rc-pipeline-oot-next`:
+
+```text
+rc-build.ps1 -Tag rc6                                            # host 923aaa07c, soh_symbols, CTest 68/68, NEI, mods, demos
+rc-post-build.ps1 -Tag rc6 -ReleaseNotes rc6-sdk/RELEASE-NOTES.md   # 2 empacotamentos, pacotes dos gates, SDK, probe, -Verify
+rc-battery.ps1 -Tag rc6 -PrevTag rc5 -PrevSmoke build\oot-upstream-001\smoke-rc5-20261009 -GamepadConnected
+```
+
+**RC2/RC3:**
 
 Windows 11, MSVC 14.44, Release x64, PowerShell 5.1.
 
@@ -368,6 +435,7 @@ A marca de entrada própria é o fim do processo da sessão, e só vale quando o
 
 ## Resultado da validação
 
+- **RC6:** bateria completa e cinco gates verdes; detalhes na seção do RC6 em Resultado.
 - **Testes sem ROM:** CTest raiz 67/67 com o host `E278E9A3` (`build/x64/Testing/Temporary/LastTest.log`). O
   `oot_native_independent_mod` falhava desde o DMR 0.2.14 e foi corrigido; o `LastTestsFailed.log` ainda lista essa
   falha da execução anterior.
@@ -471,6 +539,13 @@ Fora do checklist, e bloqueando a publicação: a **licença** do Link-Span (nã
 
 ## Pendências
 
+**No RC6 (validado, não publicado; o RC8 o substitui, ver OOT-UPSTREAM-003):**
+- partes de terceiros sem licença publicada (Shipwright, NEI/skijer, Unbound e Wind Waker Style/roborich): a release
+  declara isso e não concede licença sobre o código portado; nenhuma permissão dos autores está registrada aqui;
+- o playtest físico de DMR e Mic Ocarina foi no RC5 (2026-10-10); no RC6 esses mods só mudaram o SHA fixado;
+- queda do setting do seletor com ele aberto, ainda não exercitada em jogo;
+- a wiki publicada (`link-span.wiki`) ainda não recebeu as páginas de `docs/wiki`, agora atualizadas para o RC8.
+
 **No RC3 (2026-10-04)**, decisões do mantenedor:
 - licença;
 - playtest físico;
@@ -495,6 +570,10 @@ pendências abaixo são do RC2 e seguem valendo quando não foram resolvidas aci
 
 ## Riscos
 
+- **RC6 — mesma versão, bytes diferentes:** Unbound Framework 0.6.11, Wind Waker Style 0.1.2 e Shovel Demo 0.1.2 têm
+  o número de versão do RC5, mas SHA-256 diferente (RC5 `151bd935…`, `e8ff0af9…` e `50f7941a…`; RC6 `13f5f08e…`,
+  `4672d809…` e `3b840a1b…`). Foram recompilados no RC6, e o Shovel agora sai do link-span-examples. Como o RC5 não
+  foi publicado, nenhum jogador tem as duas cópias; o próximo RC deve subir a versão de todo pacote que mudar de bytes.
 - **RC3: o `soh.exe` tem uma mudança sem commit.** É `soh/soh/resource/logging/SceneCommandLoggers.cpp`, gravada em
   2026-10-03 às 10:25, cujo `.obj` foi recompilado às 10:28 e entrou nos builds seguintes. Ela corrige o crash do
   `ResourceLogging`:
@@ -523,6 +602,13 @@ pendências abaixo são do RC2 e seguem valendo quando não foram resolvidas aci
   Link-Span anteriores à fase G. Falta reproduzir no upstream limpo; tarefa à parte sugerida.
 
 ## Próxima ação recomendada
+
+Depois do RC6 (não publicado; o publicado é o RC8):
+
+1. Acompanhar o retorno da pre-release `oot-0.5.0-rc8` (issues no BaiterYamato/Shipwright).
+2. Publicar a wiki com as páginas de `docs/wiki` do RC8, se o mantenedor autorizar.
+3. Próximo RC só com mudança de código, pela pipeline `logs/rc-pipeline-oot-next` (README lá), subindo a versão de
+   todo pacote que mudar de bytes.
 
 No RC3:
 

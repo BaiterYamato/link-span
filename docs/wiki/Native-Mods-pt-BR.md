@@ -6,7 +6,7 @@ Um mod nativo empacota Lua com uma biblioteca provider em C/C++. O Lua chama fun
 
 ## Use o SDK OoT correspondente
 
-Baixe o **`LinkSpan-OoT-SDK-oot-0.5.0-rc5-…-Win64.zip`** do RC5 junto com a release do host correspondente. Extraia fora da pasta do jogo. O SDK não é um mod: não o coloque em `mods/`.
+Baixe o **`LinkSpan-OoT-SDK-oot-0.5.0-rc8-layout-7376240d-Win64.zip`** do RC8 junto com a release do host correspondente. Extraia fora da pasta do jogo. O SDK não é um mod: não o coloque em `mods/`.
 
 Leia `AUTHOR-GUIDE.pt-BR.md`, `OOT-NATIVE-CONTRACT.md` e `linkspan-sdk.json` no SDK. Use a versão do MSVC registrada ali. Um build do host exporta `build/x64/native-sdk/Release/OotNativeSdk.cmake`; aponte `OOT_NATIVE_SDK` para o `OotNativeSdk.cmake` real do SDK extraído ou do build.
 

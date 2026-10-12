@@ -13,7 +13,7 @@ Leia o log ao lado do executável: `logs/Ship of Harkinian.log` no OoT ou `logs/
 - Valide o pacote realmente instalado com `python tools/shipmod.py validate <pacote>`. Use o validador compilado, não só o fallback básico da CLI.
 - Confira a faixa de API com **0.5.0**, jogo, versão do host, capabilities obrigatórias e dependências. Uma faixa antiga `>=0.4 <0.5` exclui 0.5.0. Ampliar a faixa não corrige código incompatível; teste antes de alterar.
 - Uma capability obrigatória ausente exige host adequado ou revisão do mod. Para recurso opcional, use `ship.capabilities.has(...)` antes de chamar.
-- No Windows, experimente um caminho curto, como `C:\Jogos\SoH`. O RC5 ainda tem limite de 260 caracteres e extrai pacotes em `mods/.shiplua-cache/`.
+- No Windows, experimente um caminho curto, como `C:\Jogos\SoH`. O RC8 ainda tem limite de 260 caracteres e extrai pacotes em `mods/.shiplua-cache/`.
 
 ## Layout ou fingerprint nativo diferente
 
@@ -31,7 +31,7 @@ Confira o binding configurado e outros mods na mesma tecla. Criar atores pode ex
 
 Para conteúdo entre mundos, confira o diagnóstico de montagem e corrija as pastas irmãs ou `SHIPLUA_MM_ROOT` / `SHIPLUA_OOT_ROOT`. Gere ambos os archives pelos fluxos normais dos jogos. Veja [Assets entre mundos](Cross-World-Assets-pt-BR).
 
-Para NEI, confirme que `nei-assets/nei-assets-core.o2r` foi gerado localmente seguindo seu README. Sem ele, o RC5 só oferece Roc's Feather e Roc's Cape. Os demais assets NEI não fazem parte da release. Para dados Unbound, instale o Unbound Framework exigido; sem ele, o RC5 ignora essas camadas de archive.
+Para NEI, confirme que `nei-assets/nei-assets-core.o2r` foi gerado localmente seguindo seu README. Sem ele, o RC8 só oferece Roc's Feather e Roc's Cape. Os demais assets NEI não fazem parte da release. Para dados Unbound, instale o Unbound Framework exigido; sem ele, o RC8 ignora essas camadas de archive.
 
 ## Relate um problema reproduzível
 

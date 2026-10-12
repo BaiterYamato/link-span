@@ -29,7 +29,7 @@ end)
 
 ## Para jogadores: instalar
 
-No OoT, use o **overlay oot-0.5.0 RC5 para Shipwright 9.2.3** e os mods independentes correspondentes nas [releases do host](https://github.com/BaiterYamato/Shipwright/releases). Comece por uma instalação oficial funcionando, gere `oot.o2r` da sua própria ROM pelo fluxo normal, faça backup da pasta e troque `soh.exe`, `soh.o2r` e `soh.symbols` juntos pelo overlay. Coloque os pacotes escolhidos em `mods/`, sem extrair.
+No OoT, use o **overlay oot-0.5.0 RC8 para Shipwright 9.3.0** e os mods independentes correspondentes na [release do host](https://github.com/BaiterYamato/Shipwright/releases/tag/oot-0.5.0-rc8). Comece por uma instalação oficial do Shipwright 9.3.0 funcionando, gere `oot.o2r` da sua própria ROM pelo fluxo normal, faça backup da pasta e troque `soh.exe`, `soh.o2r` e `soh.symbols` juntos pelo overlay. Coloque os pacotes escolhidos em `mods/`, sem extrair.
 
 No MM, use um [host 2Ship com Link-Span](https://github.com/BaiterYamato/2ship2harkinian), gere `mm.o2r` pelo fluxo normal do 2Ship e instale os mods ao lado do executável. O overlay OoT não instala Link-Span no MM.
 
