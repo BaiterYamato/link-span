@@ -275,15 +275,14 @@ def release_body(definition):
     def button(role):
         download = definition["downloads"][role]
         return f"[![{download['label']}]({badges}/download-{role}.svg)]({base}/{download['file']})"
-    labels = "\n".join(f"- **{d['label']}**: [{d['file']}]({base}/{d['file']})" for d in definition["downloads"].values())
     sources = "\n".join(f"- {role}: [`{s['commit'][:12]}`](https://github.com/{s['repository']}/commit/{s['commit']})"
                         for role, s in definition["sources"].items())
     origin = definition.get("historical_publication")
     history = ("\n\n## Publicação anterior\n\nEsta montagem reutiliza os pacotes originais sem mudar seus bytes. "
                f"[Publicação original]({origin['url']}). A origem histórica permanece preservada.\n") if origin else "\n"
-    return (f"# {definition['title']}\n\nCandidato a lançamento para Shipwright {definition['host']['version']}.\n\n"
+    return (f"Candidato a lançamento para Shipwright {definition['host']['version']}.\n\n"
             f"## Download\n\n{button('overlay')} {button('sdk')}\n\n{button('examples')} {button('source')}\n\n"
-            f"{labels}\n\n## Instalação\n\n"
+            "## Instalação\n\n"
             "Gere oot.o2r com sua própria ROM usando o Shipwright oficial da versão indicada. Faça backup e, com o jogo fechado, "
             "extraia o overlay na raiz. Escolha os mods desejados no ZIP de exemplos; coloque os pacotes em mods/ sem extrair. "
             "O SDK e o Source são para desenvolvimento. Veja LEIA-ME.txt e CATALOGO.json dentro do ZIP.\n\n"
