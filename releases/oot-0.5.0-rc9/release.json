@@ -1,0 +1,225 @@
+{
+  "schema_version": 1,
+  "tag": "oot-0.5.0-rc9",
+  "title": "Link-Span OoT 0.5.0 RC9",
+  "repository": "BaiterYamato/link-span",
+  "historical_publication": {
+    "repository": "BaiterYamato/Shipwright",
+    "url": "https://github.com/BaiterYamato/Shipwright/releases/tag/oot-0.5.0-rc9",
+    "published_at": "2026-10-13T02:37:48Z"
+  },
+  "api_version": "0.5.0",
+  "sources": {
+    "core": {
+      "repository": "BaiterYamato/link-span",
+      "commit": "4766532796c1e546384087b589b2ce77fb2b450b"
+    },
+    "host": {
+      "repository": "BaiterYamato/Shipwright",
+      "commit": "3a3e43d328c8f9710eec29698661bfa0316983df"
+    },
+    "examples": {
+      "repository": "BaiterYamato/link-span-examples",
+      "commit": "19e53f9135b883e8a47c8b2db839304ccb0445bd"
+    }
+  },
+  "host": {
+    "version": "9.3.0",
+    "upstream_commit": "ecd889c2019b87e78b0a3d942a6a3fe98b7efaed",
+    "layout": "7376240d0f0a6a4cab580164c2013584cce37675a9def33e00e8dc795cc33978",
+    "executable_sha256": "b9046f1a0c5f55da4f4dc2bb1023039e90c1dc880544806bdef8e12a89853e0a"
+  },
+  "downloads": {
+    "overlay": {
+      "label": "OoT Overlay — Windows",
+      "file": "LinkSpan-Shipwright-9.3.0-Upstream-ecd889c20-layout-7376240d-Win64-overlay.zip"
+    },
+    "sdk": {
+      "label": "OoT SDK",
+      "file": "LinkSpan-OoT-SDK-oot-0.5.0-rc9-layout-7376240d-Win64.zip"
+    },
+    "examples": {
+      "label": "Mod Examples — ZIP",
+      "file": "LinkSpan-Mod-Examples-oot-0.5.0-rc9-Win64.zip"
+    },
+    "source": {
+      "label": "Source",
+      "file": "LinkSpan-Source-oot-0.5.0-rc9.zip"
+    }
+  },
+  "inputs": [
+    {
+      "role": "mod",
+      "file": "Dynamic-Movement-Remake-0.2.23-layout-7376240d.zip",
+      "sha256": "7daf7e2a98840774a30e5b251e363ede4744265828ca121df9fea99e91d0ef8f"
+    },
+    {
+      "role": "mod",
+      "file": "LinkSpan-Mic-Ocarina-0.2.9-layout-7376240d.zip",
+      "sha256": "f82cd36729fa8ef33a14a8769a2ef0991ed2de8097d566956cc89a51b0006d44"
+    },
+    {
+      "role": "mod",
+      "file": "LinkSpan-NEI-0.3.24-layout-7376240d.shipmod",
+      "sha256": "8201a9687626edca29df8279e38ca23888431471e8a536d65384d3b74d2dd99f"
+    },
+    {
+      "role": "sdk",
+      "file": "LinkSpan-OoT-SDK-oot-0.5.0-rc9-layout-7376240d-Win64.zip",
+      "sha256": "07178fc89632cecdc396f792b40b98d4a00ae55d7356650e95ccc373d87bf122"
+    },
+    {
+      "role": "overlay",
+      "file": "LinkSpan-Shipwright-9.3.0-Upstream-ecd889c20-layout-7376240d-Win64-overlay.zip",
+      "sha256": "b9bead0a604795b47244b4d402bb6118ad28391b9d7267c941eb451a20d96ad0"
+    },
+    {
+      "role": "mod",
+      "file": "LinkSpan-Shovel-Demo-0.1.5-layout-7376240d-0d35242f.zip",
+      "sha256": "f5f67f866cb8337aab26de8a4df68ecdfb26c9ab21c91b965d45c7325e694bc8"
+    },
+    {
+      "role": "mod",
+      "file": "LinkSpan-Unbound09-Actors-Demo.o2r",
+      "sha256": "ff4d7e74b0d7a2b29fa82a0008b9729a2aec9f051b0a7226aa2b64be6d183fb1"
+    },
+    {
+      "role": "mod",
+      "file": "LinkSpan-Unbound-Framework-0.6.14-layout-7376240d.shipmod",
+      "sha256": "8f8e4be01634a7b4886f55e4e98f232f8484a9add212d4b8a3a4d4f77d93aaa3"
+    },
+    {
+      "role": "mod",
+      "file": "LinkSpan-WindWakerStyle-0.1.5.shipmod",
+      "sha256": "bcbdedd662c99d6f02b36d5afd6a155af95fc4fa70ae2e40799988fb812b914c"
+    }
+  ],
+  "native_examples": [
+    {
+      "name": "cel-render-demo",
+      "id": "linkspan.cel_render_demo",
+      "project": "oot-native/cel-render-demo",
+      "diagnostic": false
+    },
+    {
+      "name": "crash-demo",
+      "id": "linkspan.crash-demo",
+      "project": "oot-native/crash-demo",
+      "packager": "package-crash-demo.ps1",
+      "package_pattern": "*.zip",
+      "diagnostic": true
+    },
+    {
+      "name": "escape-demo",
+      "id": "linkspan.escape-demo",
+      "project": "oot-native/escape-demo",
+      "packager": "package-escape-demo.ps1",
+      "package_pattern": "*.zip",
+      "diagnostic": false
+    },
+    {
+      "name": "familiar-demo",
+      "id": "linkspan.familiar-demo",
+      "project": "oot-native/familiar-demo",
+      "packager": "package-familiar-demo.ps1",
+      "package_pattern": "*.zip",
+      "diagnostic": false
+    },
+    {
+      "name": "hooks-demo",
+      "id": "linkspan.hooks-demo",
+      "project": "oot-native/hooks-demo",
+      "packager": "package-hooks-demo.ps1",
+      "package_pattern": "*.zip",
+      "diagnostic": false
+    },
+    {
+      "name": "item-demo",
+      "id": "linkspan.item-demo",
+      "project": "oot-native/item-demo",
+      "packager": "package-item-demo.ps1",
+      "package_pattern": "*.zip",
+      "diagnostic": false
+    },
+    {
+      "name": "save-demo",
+      "id": "linkspan.save-demo",
+      "project": "oot-native/save-demo",
+      "packager": "package-save-demo.ps1",
+      "package_pattern": "*.zip",
+      "diagnostic": false
+    },
+    {
+      "name": "view-demo",
+      "id": "linkspan.view-demo",
+      "project": "oot-native/view-demo",
+      "packager": "package-view-demo.ps1",
+      "package_pattern": "*.zip",
+      "diagnostic": false
+    },
+    {
+      "name": "world-demo",
+      "id": "linkspan.world-demo",
+      "project": "oot-native/world-demo",
+      "packager": "package-world-demo.ps1",
+      "package_pattern": "*.zip",
+      "diagnostic": false
+    },
+    {
+      "name": "unbound-scene-demo",
+      "id": "linkspan.unbound.scene-demo",
+      "project": "oot-native/unbound",
+      "packager": "package-unbound-scene-demo.ps1",
+      "package_pattern": "LinkSpan-Unbound-Scene-Demo-*.zip",
+      "diagnostic": false
+    },
+    {
+      "name": "unbound-field-demo",
+      "id": "linkspan.unbound.field-demo",
+      "project": "oot-native/unbound",
+      "packager": "package-unbound-scene-demo.ps1",
+      "package_pattern": "LinkSpan-Unbound-Field-Demo-*.zip",
+      "diagnostic": false
+    },
+    {
+      "name": "native-dash",
+      "id": "example.native_dash",
+      "project": "lua/native-dash",
+      "diagnostic": false,
+      "lua_provider": true
+    }
+  ],
+  "evidence": {
+    "file": "RESUMO.txt",
+    "sha256": "daf46b39302a19f0a0058cc0a0c7c70aa66af334842e590b3609070773ed382d"
+  },
+  "validation": {
+    "date": "2026-10-12",
+    "host_ctest": {
+      "passed": 68,
+      "total": 68
+    },
+    "matrix": {
+      "passed": 9,
+      "total": 9
+    },
+    "fixtures": {
+      "passed": 9,
+      "total": 9
+    },
+    "gates": {
+      "passed": 5,
+      "total": 5
+    },
+    "save_cycle": "passed",
+    "nei_update": "0.3.23 -> 0.3.24: passed",
+    "physical_playtest": "pending",
+    "additional_examples_gameplay": "not_claimed"
+  },
+  "publication_target": {
+    "repository": "BaiterYamato/link-span",
+    "tag": "oot-0.5.0-rc9",
+    "prerelease": true,
+    "url": "https://github.com/BaiterYamato/link-span/releases/tag/oot-0.5.0-rc9"
+  }
+}

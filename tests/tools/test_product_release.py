@@ -1,0 +1,156 @@
+"""Regressões da montagem pública: integridade, conteúdo e proveniência."""
+import copy
+import hashlib
+import importlib.util
+import io
+import json
+from pathlib import Path
+import stat
+import tempfile
+import unittest
+from unittest.mock import patch
+import zipfile
+
+ROOT = Path(__file__).resolve().parents[2]
+SPEC = importlib.util.spec_from_file_location("product_release", ROOT / "tools/release/product_release.py")
+release = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(release)
+
+
+def zip_bytes(entries):
+    out = io.BytesIO()
+    with zipfile.ZipFile(out, "w") as z:
+        for name, data in entries.items():
+            z.writestr(name, data)
+    return out.getvalue()
+
+
+def definition():
+    d = json.loads((ROOT / "releases/oot-0.5.0-rc9/release.json").read_text(encoding="utf-8"))
+    d["native_examples"] = []
+    return d
+
+
+class ProductReleaseTests(unittest.TestCase):
+    def test_rejects_traversal_and_windows_paths(self):
+        for name in ("../bad", "/bad", "C:/bad", "a\\b", "a/../b", "a//b"):
+            with self.subTest(name=name), self.assertRaises(release.ReleaseError):
+                release.safe_name(name)
+
+    def test_rejects_nested_rom(self):
+        inner = zip_bytes({"game.z64": b"payload"})
+        with self.assertRaises(release.ReleaseError):
+            release.inspect_zip(zip_bytes({"nested.zip": inner}), "outer")
+
+    def test_rejects_rom_magic_under_other_extension(self):
+        with self.assertRaises(release.ReleaseError):
+            release.inspect_zip(zip_bytes({"data.bin": b"\x80\x37\x12\x40abcd"}), "outer")
+
+    def test_rejects_symlink_in_archive(self):
+        out = io.BytesIO()
+        with zipfile.ZipFile(out, "w") as z:
+            info = zipfile.ZipInfo("link")
+            info.create_system = 3
+            info.external_attr = (stat.S_IFLNK | 0o777) << 16
+            z.writestr(info, "outside")
+        with self.assertRaises(release.ReleaseError):
+            release.inspect_zip(out.getvalue(), "outer")
+
+    def test_allows_save_source_but_rejects_personal_save(self):
+        release.safe_payload("src/save/PortableSave.cpp", b"source")
+        with self.assertRaises(release.ReleaseError):
+            release.safe_payload("Save/file1.sav", b"save")
+
+    def test_determinism_is_independent_of_input_order(self):
+        self.assertEqual(release.deterministic_zip({"b": b"2", "a": b"1"}),
+                         release.deterministic_zip({"a": b"1", "b": b"2"}))
+
+    def test_definition_refuses_moving_branch(self):
+        d = definition()
+        d["sources"]["core"]["commit"] = "main"
+        with tempfile.TemporaryDirectory() as temp:
+            p = Path(temp) / "definition.json"
+            p.write_text(json.dumps(d), encoding="utf-8")
+            with self.assertRaises(release.ReleaseError):
+                release.read_definition(p)
+
+    def test_definition_requires_exactly_four_downloads(self):
+        d = definition()
+        del d["downloads"]["source"]
+        with tempfile.TemporaryDirectory() as temp:
+            p = Path(temp) / "definition.json"
+            p.write_text(json.dumps(d), encoding="utf-8")
+            with self.assertRaises(release.ReleaseError):
+                release.read_definition(p)
+
+    def test_host_must_record_approved_core(self):
+        d = definition()
+        with patch.object(release, "git", side_effect=lambda repo, *args: d["sources"][repo]["commit"].encode()), \
+             patch.object(release, "submodules", return_value=[{"path": "extern/ship-lua", "commit": "0" * 40}]):
+            with self.assertRaisesRegex(release.ReleaseError, "outro commit"):
+                release.validate_sources(d, {r: r for r in d["sources"]})
+
+    def test_mod_requires_entrypoint_and_dll(self):
+        manifest = b'id="example"\nversion="0.1.0"\nentrypoint="main.lua"\n[provider]\nwin64="provider/missing.dll"\n'
+        with self.assertRaises(release.ReleaseError):
+            release.validate_package(zip_bytes({"manifest.toml": manifest, "main.lua": b""}), definition())
+
+    def test_mod_cannot_pin_other_host(self):
+        manifest = b'id="example"\nversion="0.1.0"\n[provider]\nhost_fingerprints=["wrong"]\n'
+        with self.assertRaisesRegex(release.ReleaseError, "outro executável"):
+            release.validate_package(zip_bytes({"manifest.toml": manifest, "main.lua": b""}), definition())
+
+    def test_examples_separate_mm_only_and_preserve_packages(self):
+        d = definition()
+        d["inputs"] = [{"file": "a.zip", "role": "mod", "sha256": "a" * 64}]
+        files = {
+            "lua/oot/manifest.toml": b'id="example.oot"\nversion="0.1.0"\ngames=["oot"]\n',
+            "lua/oot/main.lua": b"return true",
+            "lua/mm/manifest.toml": b'id="example.mm"\nversion="0.1.0"\ngames=["mm"]\n',
+            "lua/mm/main.lua": b"return true"}
+        with tempfile.TemporaryDirectory() as temp:
+            p = Path(temp)
+            (p / "native-lock.json").write_text(json.dumps({"examples_commit": d["sources"]["examples"]["commit"],
+                "layout": d["host"]["layout"], "packages": {}}))
+            packed, catalog = release.examples_archive(d, files, {"a.zip": b"original"}, p)
+            with zipfile.ZipFile(io.BytesIO(packed)) as z:
+                self.assertIn("lua-mm/mm.shipmod", z.namelist())
+                self.assertIn("lua-oot/oot.shipmod", z.namelist())
+                self.assertEqual(z.read("mods-do-release/a.zip"), b"original")
+            self.assertEqual(len(catalog), 3)
+
+    def test_native_catalog_cannot_silently_skip_demo(self):
+        d = definition()
+        d["native_examples"] = [{"name": "missing", "id": "example.missing"}]
+        with tempfile.TemporaryDirectory() as temp:
+            p = Path(temp)
+            (p / "native-lock.json").write_text(json.dumps({"examples_commit": d["sources"]["examples"]["commit"],
+                "layout": d["host"]["layout"], "packages": {}}))
+            with self.assertRaisesRegex(release.ReleaseError, "incompleto"):
+                release.examples_archive(d, {}, {}, p)
+
+    def test_public_links_stay_on_central_repository(self):
+        d = definition()
+        text = release.release_body(d)
+        for item in d["downloads"].values():
+            self.assertIn(f"https://github.com/BaiterYamato/link-span/releases/download/{d['tag']}/{item['file']}", text)
+        self.assertNotIn("releases/download/oot-0.5.0-rc9/oot.o2r", text)
+
+    def test_download_labels_preserve_unicode(self):
+        text = release.release_body(definition())
+        self.assertIn("OoT Overlay — Windows", text)
+        self.assertIn("Mod Examples — ZIP", text)
+        self.assertNotIn("â€", text)
+
+    def test_output_rejects_extra_file(self):
+        with tempfile.TemporaryDirectory() as temp:
+            p = Path(temp)
+            (p / "release-lock.json").write_text(json.dumps({"downloads": {r: {} for r in release.ROLES}}))
+            (p / "SHA256SUMS.txt").write_text(release.file_digest(p / "release-lock.json") + "  release-lock.json\n")
+            (p / "unexpected.zip").write_bytes(b"unexpected")
+            with self.assertRaisesRegex(release.ReleaseError, "exatamente"):
+                release.verify_output(p)
+
+
+if __name__ == "__main__":
+    unittest.main()
