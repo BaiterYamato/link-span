@@ -13,7 +13,7 @@ Read the game log beside the executable: `logs/Ship of Harkinian.log` for OoT or
 - Validate the actual installed package with `python tools/shipmod.py validate <package>`. Use the compiled validator, not only the CLI's basic fallback.
 - Check the API range against **0.5.0**, the declared game and host version, required capabilities and dependencies. An old `>=0.4 <0.5` range excludes 0.5.0. Widening a range does not fix incompatible code; test before changing it.
 - A missing required capability needs a suitable host or a revised mod. For an optional feature, use `ship.capabilities.has(...)` before invoking it.
-- On Windows, try a short game path, such as `C:\Games\SoH`. RC8 still has a 260-character path limit and extracts packages under `mods/.shiplua-cache/`.
+- On Windows, try a short game path, such as `C:\Games\SoH`. RC9 still has a 260-character path limit and extracts packages under `mods/.shiplua-cache/`.
 
 ## Native layout or fingerprint mismatch
 
@@ -31,7 +31,7 @@ Check the configured binding and other mods using the same key. Actor creation c
 
 For cross-world content, inspect the archive mount diagnostic and correct sibling folders or `SHIPLUA_MM_ROOT` / `SHIPLUA_OOT_ROOT`. Generate both archives through their normal game flows. See [Cross-World Assets](Cross-World-Assets).
 
-For NEI, confirm `nei-assets/nei-assets-core.o2r` was generated locally following its README. Without it, RC8 only supplies Roc's Feather and Roc's Cape. Other NEI assets are not part of the release. For Unbound data, install the required Unbound Framework; otherwise RC8 skips those archive layers.
+For NEI, if items show up without an icon or model, find NEI's status line in the game log and check that it reads `assets: pacote: core+...` (the log text is in Portuguese). From NEI 0.3.24 on the assets are inside the `LinkSpan-NEI-*.shipmod` package, so there is nothing to generate; reinstall the package if that line shows no core. An older package (before 0.3.24) still depends on `nei-assets/nei-assets-core.o2r` beside the game; without it only Roc's Feather and Roc's Cape are available. For Unbound data, install the required Unbound Framework; otherwise RC9 skips those archive layers.
 
 ## Report a reproducible problem
 

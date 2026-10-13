@@ -2,7 +2,7 @@
 
 # Mods de exemplo
 
-Os exemplos ficam em [`link-span-examples`](https://github.com/BaiterYamato/link-span-examples), separados do core. Não acompanham o checkout do core. Uma release pode selecionar um demo individual, como o Shovel Demo do RC8, sem incluir todo o repositório de exemplos.
+Os exemplos ficam em [`link-span-examples`](https://github.com/BaiterYamato/link-span-examples), separados do core. Não acompanham o checkout do core. Uma release pode selecionar um demo individual, como o Shovel Demo do RC9, sem incluir todo o repositório de exemplos.
 
 ## Pastas Lua (23)
 
