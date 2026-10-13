@@ -38,3 +38,6 @@ jobs:
 
       - name: Test
         run: ctest --test-dir build --output-on-failure --timeout 120
+
+      - name: Testar montagem central dos releases
+        run: python -m unittest discover -s tests/tools -p test_product_release.py -v

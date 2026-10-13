@@ -1520,3 +1520,29 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
   (`5550620`). README e wiki em `docs/wiki` passam a apontar o RC8.
 - **Pendente:** prova física da reaplicação das opções com o DMR, controle/câmera e microfone; publicar a wiki;
   OOT-FORMAT-001 no começo do próximo ciclo.
+
+### PLAN RELEASE-ORG-001 — centralização das entregas no Link-Span (2026-10-13)
+
+- Status: in_progress
+- Escopo: tooling/docs; sem mudança da API, do host ou de release publicada.
+- Objetivo: três repositórios de desenvolvimento, uma entrega pública com OoT Overlay Windows, OoT SDK, Mod Examples ZIP e Source no link-span.
+- Marcos: (1) registrar o RC9 e os commits verificados; (2) contrato e página com quatro downloads; (3) ferramenta de montagem/verificação com caminhos explícitos; (4) exemplos e fontes por revisão fixa; (5) testes, pacote local e handoff para revisão.
+- Fonte canônica de release: releases/<tag>/release.json; evidências de montagem são geradas fora dos arquivos versionados.
+- Restrições: preservar hashes e tags históricos; nenhum commit, push ou publicação nesta tarefa sem autorização explícita; testes físicos anteriores mantêm a identidade da versão usada.
+- Referências: coordination/claims/RELEASE-ORG-001.md; coordination/handoffs/NEI-BUNDLE-001.md; docs/releases/README.pt-BR.md.
+### UPDATE RELEASE-ORG-001 — montagem central do RC9 verificada (2026-10-13)
+
+- Status: in_progress (implementação local concluída; review e publicação pendentes).
+- Entregue: ficha do RC9, contrato, quatro botões SVG, scripts versionados de build de demos e montagem/verificação, ZIP completo de mods/exemplos e ZIP Source.
+- Verificado: 15 testes; 12 builds/pacotes nativos; 40 manifestos do catálogo; quatro downloads reprodutíveis em duas montagens; overlay/SDK com os hashes originais; prévia no BrowserOS neo.
+- Evidência local: build/central-rc9-v2/{preview.html,RELEASE.md,release-lock.json,SHA256SUMS.txt}. Binários gerados continuam ignorados pelo Git.
+- Pendências: aprovação para Git/publicação, revisão dos fragmentos de documentação compartilhada, playtest físico e gameplay dos exemplos extras. O gate de coordenação aponta sobreposições históricas; nenhuma claim alheia foi alterada.
+- Handoff: coordination/handoffs/RELEASE-ORG-001.md. Nenhuma alteração de API/host, tag ou release publicada.
+### UPDATE RELEASE-ORG-001 — publicação autorizada e revisão do diff (2026-10-13)
+
+- PlanId: PLN-RELEASE-ORG-001 (plano RELEASE-ORG-001).
+- Status: in_progress; mantenedor autorizou commit, push, PR, merge após revisão/CI e pré-release central do RC9.
+- Escopo adicional declarado: botões centrais nos dois READMEs, guias de instalação e teste da montagem nos workflows Linux/Windows.
+- Revisão dos fragmentos compartilhados aprovada no escopo desta tarefa; claims históricas preservadas.
+- Testes locais: 16/16. Registro da definição usa JSON UTF-8/LF e separa destino de publicação da prova de montagem.
+- Próximo: PR e CI; depois, publicação dos quatro arquivos e conferência de uploads.

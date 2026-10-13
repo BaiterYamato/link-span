@@ -27,13 +27,25 @@ end)
 - Namespaces de assets entre mundos, seleção de jogo pelo launcher e viagens quando os hosts oferecem suporte.
 - Providers nativos e core extensions com serviços versionados. Código nativo roda no processo, fora da sandbox Lua.
 
+## Downloads
+
+[![OoT Overlay — Windows](docs/assets/download-overlay.svg)](https://github.com/BaiterYamato/link-span/releases/download/oot-0.5.0-rc9/LinkSpan-Shipwright-9.3.0-Upstream-ecd889c20-layout-7376240d-Win64-overlay.zip) [![OoT SDK](docs/assets/download-sdk.svg)](https://github.com/BaiterYamato/link-span/releases/download/oot-0.5.0-rc9/LinkSpan-OoT-SDK-oot-0.5.0-rc9-layout-7376240d-Win64.zip)
+
+[![Mod Examples — ZIP](docs/assets/download-examples.svg)](https://github.com/BaiterYamato/link-span/releases/download/oot-0.5.0-rc9/LinkSpan-Mod-Examples-oot-0.5.0-rc9-Win64.zip) [![Source](docs/assets/download-source.svg)](https://github.com/BaiterYamato/link-span/releases/download/oot-0.5.0-rc9/LinkSpan-Source-oot-0.5.0-rc9.zip)
+
 ## Para jogadores: instalar
 
-No OoT, use o **overlay oot-0.5.0 RC9 para Shipwright 9.3.0** e os mods independentes correspondentes na [release do host](https://github.com/BaiterYamato/Shipwright/releases/tag/oot-0.5.0-rc9). Comece por uma instalação oficial do Shipwright 9.3.0 funcionando, gere `oot.o2r` da sua própria ROM pelo fluxo normal, faça backup da pasta e troque `soh.exe`, `soh.o2r` e `soh.symbols` juntos pelo overlay. Coloque os pacotes escolhidos em `mods/`, sem extrair.
+No OoT, use o **overlay oot-0.5.0 RC9 para Shipwright 9.3.0** e os mods correspondentes do Mod Examples ZIP na [release do Link-Span](https://github.com/BaiterYamato/link-span/releases/tag/oot-0.5.0-rc9). Comece por uma instalação oficial do Shipwright 9.3.0 funcionando, gere `oot.o2r` da sua própria ROM pelo fluxo normal, faça backup da pasta e troque `soh.exe`, `soh.o2r` e `soh.symbols` juntos pelo overlay. Coloque os pacotes escolhidos em `mods/`, sem extrair.
 
 No MM, use um [host 2Ship com Link-Span](https://github.com/BaiterYamato/2ship2harkinian), gere `mm.o2r` pelo fluxo normal do 2Ship e instale os mods ao lado do executável. O overlay OoT não instala Link-Span no MM.
 
 Instalação completa, onde ficam os assets do NEI, atualização e rollback: [Primeiros passos](https://github.com/BaiterYamato/link-span/wiki/Getting-Started-pt-BR). Uma instalação com os dois hosts está em [Launcher](docs/launcher.pt-BR.md).
+
+## Organização das entregas
+
+A entrega pública passa a concentrar quatro downloads no `link-span`: **OoT Overlay — Windows**, **OoT SDK**, **Mod Examples — ZIP** e **Source**. O [contrato de release](docs/releases/README.pt-BR.md) descreve o fluxo, as responsabilidades dos três repositórios e a verificação dos pacotes.
+
+A [definição do RC9](releases/oot-0.5.0-rc9/release.json) registra os commits e hashes usados. A origem no fork do Shipwright permanece registrada na ficha; os quatro downloads desta entrega ficam na release central do `link-span`.
 
 ## Para modders
 

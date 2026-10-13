@@ -4,12 +4,12 @@
 
 ## Instalar no OoT: overlay e mods independentes
 
-Use os arquivos **oot-0.5.0 RC9** e suas notas de release no [fork Shipwright com Link-Span](https://github.com/BaiterYamato/Shipwright/releases/tag/oot-0.5.0-rc9). Escolha o overlay somente para **Shipwright 9.3.0**, não o ZIP do SDK de autor. Confira os arquivos baixados com o `SHA256SUMS.txt` da release.
+Use os arquivos **oot-0.5.0 RC9** e suas notas de release no [release do Link-Span](https://github.com/BaiterYamato/link-span/releases/tag/oot-0.5.0-rc9). Escolha o overlay somente para **Shipwright 9.3.0**, não o ZIP do SDK de autor. Confira os arquivos baixados com o `SHA256SUMS.txt` da release.
 
 1. Extraia o Shipwright 9.3.0 oficial (`SoH-Dewey-Alpha-Win64.zip`) numa pasta nova com caminho curto, como `C:\Jogos\SoH`. Use o fluxo normal de extração do Shipwright para gerar `oot.o2r` da sua própria ROM do jogo. Abra o jogo uma vez e feche.
 2. Faça backup da pasta inteira. Guarde ao menos `Save/`, `shipofharkinian.json`, `mods/`, `soh.exe`, `soh.o2r` e `soh.symbols`.
 3. Extraia `LinkSpan-Shipwright-9.3.0-Upstream-ecd889c20-layout-7376240d-Win64-overlay.zip` na raiz do jogo. Troque **`soh.exe`, `soh.o2r` e `soh.symbols` juntos**.
-4. Coloque os ZIPs dos mods escolhidos em `mods/`, sem extrair. Abra `soh.exe` e confira os mods carregados ou recusados em `logs/Ship of Harkinian.log`.
+4. Extraia o download **Mod Examples — ZIP** numa pasta separada e escolha os pacotes em `mods-do-release/`, `lua-oot/` ou `nativos-oot/`. Coloque apenas os ZIPs/.shipmod escolhidos em `mods/`, sem extrair esses pacotes. Os arquivos em `diagnosticos/` provocam falhas de propósito e são somente para testes; `lua-mm/` contém exemplos exclusivos de MM. Abra `soh.exe` e confira os mods carregados ou recusados em `logs/Ship of Harkinian.log`.
 
 ```text
 SoH/
@@ -22,7 +22,7 @@ SoH/
 └── mods/               # pacotes escolhidos ou pastas de desenvolvimento
 ```
 
-O RC9 oferece pacotes separados de Not Enough Items 0.3.24, Unbound Framework 0.6.14, Dynamic Movement Remake 0.2.23, Mic Ocarina 0.2.9, Wind Waker Style 0.1.5 e Shovel Demo 0.1.5, além do archive de dados Unbound Actors Demo e do SDK de autor. Instale o que quiser; o overlay é o host, e esses pacotes são mods.
+O Mod Examples ZIP do RC9 reúne pacotes de Not Enough Items 0.3.24, Unbound Framework 0.6.14, Dynamic Movement Remake 0.2.23, Mic Ocarina 0.2.9, Wind Waker Style 0.1.5 e Shovel Demo 0.1.5, além do archive de dados Unbound Actors Demo e do SDK de autor. Instale o que quiser; o overlay é o host, e esses pacotes são mods.
 
 Com o Unbound Framework instalado, a primeira execução gera `oot-unbound.o2r` e `oot-unbound.o2r.source.json` ao lado de `oot.o2r`. O log detalhado é `logs/linkspan-unbound.log`. Archives de dados Unbound precisam do framework; o RC9 ignora essas camadas quando ele não está presente.
 
