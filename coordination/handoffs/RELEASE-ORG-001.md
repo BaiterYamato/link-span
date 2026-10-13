@@ -2,7 +2,7 @@
 
 ## Estado
 
-review — implementação e montagem locais verificadas; commit, PR, integração e publicação pendentes de autorização.
+done — PR #52 integrada e RC9 central publicado em 13/10/2026 às 14:06. Prova de publicação em releases/oot-0.5.0-rc9/publication.json.
 
 ## Resultado
 
@@ -16,7 +16,9 @@ review — implementação e montagem locais verificadas; commit, PR, integraç�
 
 ## Commits
 
-Nenhum. Branch agent/RELEASE-ORG-001-centralized, base origin/main 58bf807. Nenhum push, PR, merge, tag ou release criado.
+- 3671c56: implementação da organização, arquivos e CI.
+- c493841: merge da PR #52 em main; tag central oot-0.5.0-rc9.
+- Encerramento e prova de publicação em commit posterior, sem mover a tag ou alterar os pacotes.
 
 ## Arquivos alterados
 
@@ -45,7 +47,7 @@ Montagem, proveniência, conteúdo, reprodutibilidade e apresentação aprovados
 
 ## Pendências
 
-- Autorização para commit/push/PR; integração após revisão/CI; publicação central de pré-release.
+- Git e publicação concluídos; restam somente gameplay físico e gameplay dos demos extras, fora desta organização.
 - Revisão do integrador dos fragmentos compartilhados de README.pt-BR.md e Plans.md. O gate aponta Plans.md com CEL-004, COREEXT-006/008/009/010, MODSDK-001-MSVC/004-MSVC, OOT-CORE-006, OOT-COREMODS-PLAN-001, OOT-MOVE-004 e OOT-UNBOUND-003B/003C; README com MODSDK-005 e NATIVE-001. README.md foi declarado inicialmente, mas não modificado. Nenhuma claim alheia foi fechada para passar o gate.
 - Playtest físico do RC9; testes de gameplay dos exemplos extras conforme seus requisitos.
 
@@ -69,3 +71,13 @@ Revisar build/central-rc9-v2/preview.html e RELEASE.md. Após autorização, int
 - Escopo de CI declarado na claim: teste Python adicionado ao core-linux e core-windows, sem remover checks anteriores.
 - Testes locais atualizados: 16/16. Artefatos finais: build/central-rc9-publish-v2 (quatro ZIPs; originais preservados).
 - PlanId: PLN-RELEASE-ORG-001, associado ao plano RELEASE-ORG-001 do ledger.
+
+## Resultado publicado — 2026-10-13
+
+- Release: https://github.com/BaiterYamato/link-span/releases/tag/oot-0.5.0-rc9 (pre-release, não draft).
+- PR: https://github.com/BaiterYamato/link-span/pull/52, merge c493841. CI Linux/Windows aprovado no PR e em main.
+- Uploads: 11/11 com digest SHA-256 idêntico aos arquivos locais; quatro botões públicos e SVGs conferidos no BrowserOS neo.
+- Binários do host e SDK mantêm os hashes do RC9 original; os nove pacotes originais e a data de publicação no Shipwright foram rechecados.
+- A página pública usa somente os quatro botões de download no topo. Notas arquivadas nos assets e tag permanecem como snapshots da montagem; não houve alteração de ZIPs após publicação.
+- publication.json registra commit da tag, PR, data, URLs e hashes reais dos downloads.
+- Próxima etapa de produto: playtest físico ou próximo candidato. A autorização de Git/publicação foi atendida.

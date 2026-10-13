@@ -1,6 +1,6 @@
 # RELEASE-ORG-001
 
-- Status: review
+- Status: done
 - Agent: Codex
 - Platform: Windows
 - Branch: agent/RELEASE-ORG-001-centralized
@@ -35,3 +35,9 @@
 - Mantenedor autorizou commit, push, PR, integração em main após revisão/CI e publicação central do RC9 em 13/10/2026.
 - Escopo adicional: links centrais nos READMEs/guias de instalação e testes da montagem nos workflows do core; exceção de ownership da governança declarada nesta claim conforme AGENTS.md §17.
 - Revisão dos fragmentos compartilhados: somente nova seção de downloads, troca do destino RC9 e acréscimos append-only no ledger. Conteúdo das tarefas históricas preservado.
+
+## Encerramento
+
+- PR #52 integrada em main; Linux/Windows aprovados no PR e no commit integrado.
+- RC9 central publicado em 13/10/2026 às 14:06 (America/Sao_Paulo), com os quatro downloads e 11 arquivos conferidos por SHA-256.
+- Comprovação: releases/oot-0.5.0-rc9/publication.json. Release original do Shipwright preservada.

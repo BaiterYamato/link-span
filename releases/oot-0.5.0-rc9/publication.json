@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "repository": "BaiterYamato/link-span",
+  "tag": "oot-0.5.0-rc9",
+  "url": "https://github.com/BaiterYamato/link-span/releases/tag/oot-0.5.0-rc9",
+  "release_id": 411914607,
+  "published_at": "2026-10-13T17:06:51Z",
+  "prerelease": true,
+  "tag_commit": "c493841d6c4697008a0a9f4d09d886bf7597e047",
+  "integration_pull_request": "https://github.com/BaiterYamato/link-span/pull/52",
+  "verified_at": "2026-10-13T17:08:31.980700+00:00",
+  "verification": {
+    "uploaded_assets": 11,
+    "all_uploaded_sha256_match": true,
+    "original_release_preserved": true,
+    "public_buttons_loaded": 4
+  },
+  "downloads": {
+    "overlay": {
+      "file": "LinkSpan-Shipwright-9.3.0-Upstream-ecd889c20-layout-7376240d-Win64-overlay.zip",
+      "bytes": 31870666,
+      "sha256": "b9bead0a604795b47244b4d402bb6118ad28391b9d7267c941eb451a20d96ad0",
+      "url": "https://github.com/BaiterYamato/link-span/releases/download/oot-0.5.0-rc9/LinkSpan-Shipwright-9.3.0-Upstream-ecd889c20-layout-7376240d-Win64-overlay.zip"
+    },
+    "sdk": {
+      "file": "LinkSpan-OoT-SDK-oot-0.5.0-rc9-layout-7376240d-Win64.zip",
+      "bytes": 632587,
+      "sha256": "07178fc89632cecdc396f792b40b98d4a00ae55d7356650e95ccc373d87bf122",
+      "url": "https://github.com/BaiterYamato/link-span/releases/download/oot-0.5.0-rc9/LinkSpan-OoT-SDK-oot-0.5.0-rc9-layout-7376240d-Win64.zip"
+    },
+    "examples": {
+      "file": "LinkSpan-Mod-Examples-oot-0.5.0-rc9-Win64.zip",
+      "bytes": 17263874,
+      "sha256": "16008cf39e59a70664da5a3b5a6e438a29987c122fad34e1cf16bc53818e1a5c",
+      "url": "https://github.com/BaiterYamato/link-span/releases/download/oot-0.5.0-rc9/LinkSpan-Mod-Examples-oot-0.5.0-rc9-Win64.zip"
+    },
+    "source": {
+      "file": "LinkSpan-Source-oot-0.5.0-rc9.zip",
+      "bytes": 31026873,
+      "sha256": "57c60f5fd8d72614ed2a86e16a482f0348a3bdfbce53c3ce806e025f97f45c3b",
+      "url": "https://github.com/BaiterYamato/link-span/releases/download/oot-0.5.0-rc9/LinkSpan-Source-oot-0.5.0-rc9.zip"
+    }
+  },
+  "original_release": "https://github.com/BaiterYamato/Shipwright/releases/tag/oot-0.5.0-rc9",
+  "body_sha256": "49d29408bf0d7b92fe89b9c57ef30686b1054f9c987fb54f41c6b1379dfa8c1a",
+  "ci": {
+    "pull_request": {
+      "linux": "success",
+      "windows": "success"
+    },
+    "integrated_commit": {
+      "linux": "success",
+      "windows": "success"
+    }
+  }
+}

@@ -1546,3 +1546,12 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
 - Revisão dos fragmentos compartilhados aprovada no escopo desta tarefa; claims históricas preservadas.
 - Testes locais: 16/16. Registro da definição usa JSON UTF-8/LF e separa destino de publicação da prova de montagem.
 - Próximo: PR e CI; depois, publicação dos quatro arquivos e conferência de uploads.
+
+### UPDATE RELEASE-ORG-001 — RC9 central publicado (2026-10-13)
+
+- PlanId: PLN-RELEASE-ORG-001. Status: done.
+- PR #52 integrada (c493841); CI Linux/Windows aprovado no PR e em main.
+- Pré-release central: https://github.com/BaiterYamato/link-span/releases/tag/oot-0.5.0-rc9, publicada às 14:06 (America/Sao_Paulo).
+- Quatro downloads, 11 assets verificados por SHA-256; quatro botões/SVGs públicos conferidos; release original do Shipwright preservada.
+- Comprovação: releases/oot-0.5.0-rc9/publication.json. Definição e artefatos da montagem preservados; tag não é movida pelo encerramento.
+- Pendências de produto: playtest físico e gameplay dos demos extras; não bloqueiam a conclusão da organização/publicação autorizada.
