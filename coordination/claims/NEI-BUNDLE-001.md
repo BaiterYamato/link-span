@@ -1,6 +1,6 @@
 # NEI-BUNDLE-001
 
-- Status: review
+- Status: done
 - Agent: Claude
 - Platform: Windows
 - Branch: agent/NEI-BUNDLE-001 (link-span, BaiterYamato/Shipwright e BaiterYamato/link-span-examples)
@@ -8,7 +8,7 @@
 - Depends on: OOT-CREDITS-001 (o host nasce do commit 8b75e3c326), OOT-UPSTREAM-003 (RC8 publicado)
 - Files:
   - README.md, README.pt-BR.md
-  - docs/wiki/{Getting-Started,Troubleshooting}{,-pt-BR}.md
+  - docs/wiki/{Home,Getting-Started,Native-Mods,Example-Mods,Troubleshooting}{,-pt-BR}.md
   - OOT-UPSTREAM-78DC-001/soh/native-sdk/nei-core/{assets.cpp,assets.h,assets/README.md,fork_save.cpp,tests.cpp,NOTICE.md,README*.md}
   - OOT-UPSTREAM-78DC-001/soh/native-sdk/nei-core/fork/{extracted-fixes.txt,fork_items.c,inventory_unit.c,nei_host_overrides.h,resource_guard.c}
   - OOT-UPSTREAM-78DC-001/tools/{build-nei-assets.py,package-nei-core.ps1}
