@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review
 
 ## Resultado
@@ -122,3 +124,12 @@ playtest RELEASE-UNIFICADA\OOT-teste-nei-003 (soh.exe 0D7D8899), evidência buil
 
 - Review do NEI-HOST-001 junto com o NEI-008.
 - Depois, NEI-009 (onda B), sem nova rodada de host, conforme o Gate F revisado.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Host 4f40d1126 na integração; RC3–RC9 (já no RC2 local). Coordenação/RFC na main.
+- Core: na main: d5aba71.
+- Host: 4f40d1126 (RC3–RC9; já no RC2 local).
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

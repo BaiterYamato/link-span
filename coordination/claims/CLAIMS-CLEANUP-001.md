@@ -1,0 +1,21 @@
+# CLAIMS-CLEANUP-001
+
+- Status: review
+- Agent: Claude (Claude Code)
+- Platform: Windows 11 / Claude Code
+- Branch: agent/CLAIMS-CLEANUP-001
+- Started: 2026-10-16T18:27:56.2111543Z
+- Depends on: levantamento logs/claims-cleanup-2026-10 (16/10), aprovado pelo usuário
+- Files:
+  - coordination/claims/*.md
+  - coordination/claims/*.en.md
+  - coordination/handoffs/*.md
+  - coordination/handoffs/*.en.md
+  - docs/agents/Plans.md
+  - coordination/claims/CLAIMS-CLEANUP-001.md
+  - coordination/handoffs/CLAIMS-CLEANUP-001.md
+- Goal:
+  - Fechar como done os 123 claims em review/claimed já entregues (main do core, integração do host ou RC3–RC9), com a evidência e as ressalvas no handoff.
+  - Registrar OOT-GORON-001 como done com `Superseded by` (entregue no host ccbad7d, refeita pela OOT-GORON-002/003) e passar OOT-GORON-003-port-skijer de claimed para review.
+  - Completar as seções e campos que o gate closed exige nos 12 apontados, sem promover pendência a concluída.
+  - Não tocar em coordination/STATUS.md nem nos claims MM-*, OOT-COREMODS-PLAN-001 e TEMPLATE.

@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review
 
 ## Resultado
@@ -98,3 +100,12 @@ Sessões em jogo em RELEASE-UNIFICADA/OOT-teste-cenas-20260914 (soh.exe EA18F55F
 
 - Fechar o `COREEXT-GATE`: overlay `3e3f59ad` com o validador do `shipmod.py doctor` (core `59a760b`). Depois
   NEI-001 e a fase E (framework Unbound com os JSONs de cena, colisão e texto sobre este substrato).
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Host 16c4622d5 e outros na integração; RC3–RC9 (já no RC2 local). Coordenação/RFC na main.
+- Core: commits na main que citam a tarefa: eb00019.
+- Host: 16c4622d5 68687c480 43cb7e01e (RC3–RC9; já no RC2 local).
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

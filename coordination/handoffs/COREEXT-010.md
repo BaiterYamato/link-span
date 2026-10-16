@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review
 
 ## Resultado
@@ -141,3 +143,12 @@ cmake --build build/nei-core-native --config Release
 
 Review da COREEXT-010 (rodadas 1 e 2) e push quando autorizado. Com a cota do Codex de volta, uma passada estática
 sobre o `f29505c` e o `7d26819bb`.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Host 5c4138b80 e outros na integração; RC3–RC9 (já no RC2 local). Coordenação/RFC na main.
+- Core: na main: 6731d60 f29505c.
+- Host: 5c4138b80 7d26819bb d1b76ff56 (RC3–RC9; já no RC2 local).
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

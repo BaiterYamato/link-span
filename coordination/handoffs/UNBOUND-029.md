@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 Em review. Commit local no host (`1a825be0f`), sem push.
 
 ## Resultado
@@ -107,3 +109,12 @@ Acesso negado"; `rodada3-cache/`). Repetida, passou.
 UNBOUND-030 (framework 0.6.9, teto de 8 192 atores por sala) e a aprovação da rodada de host
 (`rfc0027-host/RODADA-HOST-v7.md`). Com a arena e o RoomActors aplicados, repetir o roteiro: a8100 com 8 100 vivas,
 a8192 com 2 avisos de teto, a8200 carregando com exit 0.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Host 1a825be0f e outros na integração; RC3–RC9. Coordenação/RFC na main.
+- Core: commits na main que citam a tarefa: 4bccd9a.
+- Host: 1a825be0f 5ebef3ba7 9cd2db2c9 (RC3–RC9).
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

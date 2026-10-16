@@ -1,6 +1,7 @@
 # COREEXT-008
 
-- Status: review
+- Status: done
+- Closed: 2026-10-16 (CLAIMS-CLEANUP-001; evidência no handoff, seção «Encerramento 2026-10-16»)
 - Agent: Claude (Opus 5)
 - Platform: Windows
 - Branch: agent/NATIVE-001-provider-runtime

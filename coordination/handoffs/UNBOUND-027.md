@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 Em review. Commit local no host (`517b0ac16`), sem push.
 
 ## Resultado
@@ -84,3 +86,12 @@ da 023/024/026 (M16, R02, M12, M17, M19, M15) continuam passando na mesma sessã
 1. Fechar a UNBOUND-025 (boot com as notas herdadas da base fora).
 2. Prioridade 5 completa: seguir o plano do Gate OoT (família de ROM, playtest do NEI) e juntar os itens de host
    para a RFC 0027.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Host 517b0ac16 e outros na integração; RC3–RC9. Coordenação/RFC na main.
+- Core: commits na main que citam a tarefa: da72d13.
+- Host: 517b0ac16 e86e643ee (RC3–RC9).
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

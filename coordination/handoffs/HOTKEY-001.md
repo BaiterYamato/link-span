@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review
 
 ## Resultado
@@ -20,7 +22,7 @@ review
 - `110641a` — Testes de registro e fallback.
 - `c04f1cc` — Lifecycle seguro no unload.
 
-## Arquivos centrais alterados
+## Arquivos alterados
 
 - `include/shiplua/input/HotkeyRegistry.h`
 - `src/input/HotkeyRegistry.cpp`
@@ -61,3 +63,11 @@ ctest --test-dir build-msvc -C Release --output-on-failure
 ## Próxima ação recomendada
 
 Revisar o PR #21 e, depois, os bridges OOT-HOTKEY-001 e MM-HOTKEY-001.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: link-span#21 mergeada (13/07); a branch é ancestral da main.
+- Core: link-span#21; na main: 110641a 1d034c2 6065b5d 9d6563f; a branch agent/HOTKEY-001-hotkey-api é ancestral da main.
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review
 
 ## Resultado
@@ -69,3 +71,11 @@ rtk git diff --check
 
 Implementar o binding mínimo de `ship.game`, `ship.api`, `ship.runtime`,
 `ship.capabilities`, `ship.events` e `ship.log` para o primeiro vertical slice.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: link-span#12 foi fechada como pilha; integrada pelo 64a76fa; 6a718f6 na main.
+- Core: na main: 6a718f6.
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

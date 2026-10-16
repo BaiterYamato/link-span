@@ -1,6 +1,8 @@
 # OOT-GORON-001
 
-- Status: review
+- Status: done
+- Closed: 2026-10-16 (CLAIMS-CLEANUP-001; evidência no handoff, seção «Encerramento 2026-10-16»)
+- Superseded by: OOT-GORON-002-port-mm, OOT-GORON-003-port-skijer
 - Agent: codex-windows
 - Platform: Windows 11 / Codex
 - Branch: local worktree (branch to be confirmed before integration)

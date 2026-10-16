@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review — o D-pad do Dynamic Movement Remake 0.2.8 e os atalhos nativos de ocarina,
 trajes e botas estão implementados e commitados. O host foi recompilado junto do
 OOT-UNBOUND-003B; pacote, overlay e smoke de boot estão válidos. Falta o playtest
@@ -137,3 +139,13 @@ package-linkspan-overlay.ps1 -HostExecutable x64/Release/soh.exe -HostResources 
 
 - Instalar o overlay MovementV2-D-pad e o DM 0.2.8 na RELEASE-UNIFICADA e fazer o
   playtest físico do D-pad.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Host 893474a09 e outros na integração; RC3–RC9 (já no RC2 local). Coordenação/RFC na main.
+- Core: na main: 4244f7d.
+- Host: 893474a09 8d082255c (RC3–RC9; já no RC2 local).
+- Ressalva mantida, não promovida a concluída: playtest físico do D-pad listado; o DMR foi jogado no RC5.
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

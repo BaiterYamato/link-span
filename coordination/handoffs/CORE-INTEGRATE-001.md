@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review
 
 ## Resultado
@@ -58,3 +60,18 @@ python -m unittest tests.tools.test_shipmod
 ## Próxima ação recomendada
 
 Apontar `extern/ship-lua` do host OoT para esta branch, compilar o `soh.exe`, confirmar o layout id `9a593a6e` e gerar o SDK bundle.
+
+## Arquivos alterados
+
+- Merge `416d227` (main → MENU-001): claims e handoffs, `docs/wiki`, `docs/api`, `docs/plans`, `docs/architecture`, `generated/docs`, `tools/shipmod.py`, `tools/generate_api_docs.py`, `tools/manifest_validator.cpp`, `tools/mod_test_runner.cpp` e testes em `tests/schema`, `tests/tools` e `tests/unit`.
+- `4766532`: `README.md`/`README.pt-BR.md`, `docs/README*`, `docs/manifest*`, `docs/native-mods*`, `docs/native-providers*`, `docs/shipmod-cli*`, `docs/writing-mods*`, `generated/docs/api-reference*`, `generated/lua/shiplua.lua` e este handoff.
+- Seção completada em 2026-10-16 pela CLAIMS-CLEANUP-001 a partir do registro acima, do Git e do PR. Fonte: `git diff --name-only 4dc1754 4766532`.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: link-span#48 mergeada (797a13a, 10/10); o extern/ship-lua do host aponta para o 4766532.
+- Core: link-span#48; na main: 416d227; a branch agent/CORE-INTEGRATE-001-main-menu é ancestral da main.
+- Host: 7764c2f45 d01e63fa0 (RC6–RC9).
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

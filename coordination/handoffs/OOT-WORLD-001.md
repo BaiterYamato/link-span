@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review
 
 ## Resultado
@@ -60,3 +62,14 @@ cmake --build build-msvc-world --config Release --target soh
 ## Próxima ação recomendada
 
 Implementar `MM-WORLD-001`, mantendo os mesmos IDs canônicos e as traduções explícitas do catálogo.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Host 4d0c8c9df (HyliaFoundry) é ancestral do 8f19f1220, topo da pilha OOT-001→OOT-WORLD-002 (conferido pela API de compare). A pilha foi portada para o host atual no 8778337 (18/07, "integrar modloader ShipLua no Shipwright upstream puro"), que está na integração desde o RC2: RC3–RC9. O lado core (4fc821a, ad469cc) está na main.
+- Core: na main: 4fc821a ad469cc; a branch agent/OOT-WORLD-001-portable-save é ancestral da main.
+- Host: 8778337 (port; HyliaFoundry 4d0c8c9df) (RC3–RC9; já no RC2 local).
+- Outras evidências: OotWorldAdapter.cpp está na ponta do host.
+- Ressalva mantida, não promovida a concluída: smoke com save descartável não registrado.
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

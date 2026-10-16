@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 Review. Commit local no host (`c6c46379c`), sem push. Framework Unbound 0.6.4 empacotado só na evidência.
 
 ## Resultado
@@ -101,3 +103,12 @@ No `logs/linkspan-unbound.log` da `mundo` saem as quatro notas: spawn `0=1048577
 ## Próxima ação recomendada
 
 Levar o 0.6.4 para a próxima RC. Continuar a prioridade 5 com R02 e M12 na e-fixtures.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Host c6c46379c na integração; RC3–RC9. Coordenação/RFC na main.
+- Core: commits na main que citam a tarefa: 4c18c16.
+- Host: c6c46379c (RC3–RC9).
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

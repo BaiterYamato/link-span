@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review
 
 ## Resultado
@@ -114,3 +116,12 @@ Prova em jogo: RELEASE-UNIFICADA/OOT-teste-cenas-20260914, evidência build/oot-
 
 - OOT-CORE-003: registro de itens, inventário e tipos de ator (a maior dependência do NEI), usando hooks e escape
   hatch onde couber.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Host 01ef736b6 e outros na integração; RC3–RC9 (já no RC2 local). Coordenação/RFC na main.
+- Core: na main: 256fbf0; a branch agent/NATIVE-001-provider-runtime é ancestral da main.
+- Host: 01ef736b6 6d9cca4da (RC3–RC9; já no RC2 local).
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

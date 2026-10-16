@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review
 
 ## Resultado
@@ -67,3 +69,11 @@ reuso, lifecycle, limite de memória).
 
 Confirmar bootstrap GitHub (GOV-001/GOV-002) OU seguir local com CORE-002
 (gerenciador multi-mod) e MOD-001/MOD-002 (schema + parser de manifesto TOML).
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Commits 3d56f20 e b301723 na main (12/07).
+- Core: na main: 3d56f20 b301723.
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review: peça de host na rodada W, lado framework e prova em jogo no D3D11.
 
 ## Resultado
@@ -54,3 +56,11 @@ instalados, com `gDeveloperTools.DebugEnabled=1`, `gDeveloperTools.BetterDebugWa
 ## Próxima ação recomendada
 
 Review conjunta da rodada W (com UNBOUND-013, UNBOUND-014, CEL-002 e CEL-003).
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Host 11d4afcbb e outros na integração; RC3–RC9 (já no RC2 local).
+- Host: 11d4afcbb f811f71d6 (RC3–RC9; já no RC2 local).
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

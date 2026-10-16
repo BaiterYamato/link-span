@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review
 
 ## Resultado
@@ -84,3 +86,13 @@ Slate/bomba/recarga de cena, modelo/seletor de estações, mira/Recall do Hourgl
 - Pacote final SHA-256 `a2aed5eee8a1f1f72655cda7eb9c4dde42a488d4925f5d16d20390cde206753d`; DLL `af659981ea3cc90a9c2d4e16ff7c90f14c102b39a4c8fd861e44a696680e6ed1`; host/layout preservados. Probes, fixtures Winter e diagnóstico não instalados.
 - `build/nei-motion-visuals-20261001/evidence/installation.json` comprova preservação dos saves/configuração/storage/ImGui e outros cinco mods pelos hashes atuais de antes/depois. Pacote 0.3.15 guardado em backup.
 - Relatório: `OOT-UPSTREAM-78DC-001/build/nei-motion-visuals-20261001/RESULT.md`. Sem commit, push, merge ou alteração de STATUS.md. Controle físico e matriz completa de estações/cenas continuam pendentes.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Host 62ea72d89 e outros na integração; RC3–RC9 (já no RC2 local). Coordenação/RFC na main.
+- Core: na main: 4a75770.
+- Host: 62ea72d89 a76045848 d6ac301e4 (RC3–RC9; já no RC2 local).
+- Ressalva mantida, não promovida a concluída: Sensor, adaptadores de estação e playtest físico das habilidades viraram tarefas próprias.
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

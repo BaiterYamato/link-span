@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review
 
 ## Resultado
@@ -111,3 +113,12 @@ Provas em jogo: RELEASE-UNIFICADA/OOT-teste-cenas-20260914, evidência em build/
 - Fase C: OOT-CORE-007 (layouts ampliados) para fechar o `COREEXT-GATE`, e o validador de exports no
   `shipmod.py doctor` (Fase B).
 - Depois, as fases E e F.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Host f4f6ad525 na integração; RC3–RC9 (já no RC2 local). Coordenação/RFC na main.
+- Core: commits na main que citam a tarefa: 26d9da8.
+- Host: f4f6ad525 (RC3–RC9; já no RC2 local).
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

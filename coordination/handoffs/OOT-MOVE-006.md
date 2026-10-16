@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review — host, DMR 0.2.9 e testes validados, com commits locais e instalação na pasta de teste. O D-pad do HUD foi conferido em jogo por print. O usuário relatou que, em primeira pessoa, o vertical do analógico direito estava invertido e o esquerdo ainda girava a visão; o mod passou a ligar o `MoveInFirstPerson` e a desinverter a mira. Faltam, no playtest com controle, olhar e andar em primeira pessoa e a cruz de fundo do D-pad.
 
 ## Resultado
@@ -134,3 +136,13 @@ prepare-runtime-session.ps1 + invoke-input-sequence.ps1 -Execute (save aberto, C
 ## Próxima ação recomendada
 
 - Com o retorno do playtest, ajustar o necessário, gerar o overlay novo e levar host e mods para a `RELEASE-UNIFICADA\OOT`.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Host 373d970db e outros na integração; RC3–RC9 (já no RC2 local). Coordenação/RFC na main.
+- Core: commits na main que citam a tarefa: 22ee169 4356f63 7e7660e.
+- Host: 373d970db 76972835f 7710ac73e cc825b99b (RC3–RC9; já no RC2 local).
+- Ressalva mantida, não promovida a concluída: playtest com controle listado; o DMR foi jogado no RC5.
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

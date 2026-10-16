@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 Em review. Commit local no host (`e86e643ee`), sem push.
 
 ## Resultado
@@ -82,3 +84,12 @@ Capturas `9-m15-*.png` (as 2 049 caixas aparecem à frente). Roteiro em `evidenc
 
 1. M24 em jogo a partir do desenho do Codex (`codex-m24-design`). Com ele, fecha a prioridade 5 da matriz.
 2. Rodada de host da RFC 0027: guarda da sentinela 32 767 no `DynaPoly_SetBgActor` e checagem do `malloc` das listas.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Host a51bf6a68 e outros na integração; RC3–RC9. Coordenação/RFC na main.
+- Core: commits na main que citam a tarefa: e0ba318.
+- Host: a51bf6a68 e86e643ee (RC3–RC9).
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review
 
 ## Resultado
@@ -46,3 +48,12 @@ cmake --build build-msvc-shiplua --config Release --target soh
 ## Próxima ação recomendada
 
 Revisar o PR #10 após integrar HOTKEY-001 e a pilha OOT-001 a OOT-005.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Host 24ebcc161 (HyliaFoundry) é ancestral do 8f19f1220, topo da pilha OOT-001→OOT-WORLD-002 (conferido pela API de compare). A pilha foi portada para o host atual no 8778337 (18/07, "integrar modloader ShipLua no Shipwright upstream puro"), que está na integração desde o RC2: RC3–RC9.
+- Host: 8778337 (port; HyliaFoundry 24ebcc161) (RC3–RC9; já no RC2 local).
+- Outras evidências: OotHotkeyRegistry.cpp está na ponta do host.
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

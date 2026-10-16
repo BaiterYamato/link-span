@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review — a integração está commitada localmente (merge `a19372c00` e correção `ae5e14577`), testada e empacotada. O core e a libultraship estão publicados. Falta publicar o host: o `BaiterYamato/Shipwright-HyliaFoundry`, legado segundo o usuário, está arquivado (push 403), e o GitHub não permite um segundo fork do Shipwright na mesma conta. Em 2026-09-13 o usuário decidiu pausar a publicação do host: o merge fica só local até nova decisão.
 
 No mesmo dia, o host caiu na `RELEASE-UNIFICADA` do usuário. O Codex começou a investigar e parou no meio; o Claude continuou e corrigiu no commit `ae5e14577`. A causa era o tinyxml2 misturado entre header e lib, detalhada em "Resultado".
@@ -145,3 +147,12 @@ Validação anterior ao crash, ainda válida para o resto do merge:
 ## Próxima ação recomendada
 
 - O usuário extrai o overlay corrigido na `RELEASE-UNIFICADA` e joga com save. Depois, decide a publicação do host e o destino do Mic 0.1.2.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Merge a19372c00 + ae5e14577 na integração, publicada no BaiterYamato/Shipwright desde 10/10. A pendência "publicar o host" foi resolvida.
+- Core: na main: 4244f7d.
+- Host: a19372c00 ae5e14577 (RC3–RC9; já no RC2 local).
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

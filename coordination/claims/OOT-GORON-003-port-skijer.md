@@ -1,6 +1,7 @@
 # OOT-GORON-003-port-skijer
 
-- Status: claimed
+- Status: review
+- Reviewed: 2026-10-16 (CLAIMS-CLEANUP-001: claimed → review; integrado no host dee22fa, sem prova em jogo)
 - Agent: Codex
 - Platform: Windows
 - Branch: shiplua-unificada

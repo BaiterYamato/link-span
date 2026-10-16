@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review
 
 ## Resultado
@@ -64,3 +66,12 @@ ctest --test-dir build -R "hello_world_(conformance_tests|package_validation|pac
 ## Próxima ação recomendada
 
 Após integrar OOT-005 e MM-005, executar o pacote gerado nos dois hosts e registrar a evidência do log.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: link-span#20 mergeada (13/07). Desde 10/10 o hello-world está em link-span-examples/lua/hello-world.
+- Core: link-span#20; na main: 134c2c8 6e42d36 af004a5.
+- Outras evidências: link-span-examples main.
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

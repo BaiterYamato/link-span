@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review
 
 ## Resultado
@@ -59,3 +61,11 @@ Contagem das linhas da tabela: 180 + 18 arquivos listados
 ## Próxima ação recomendada
 
 - OOT-CORE-007 pelo plano de port do inventário.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Inventário na main (373b1ae, pela release/v0.2.0-alpha.1).
+- Core: link-span#47, link-span#46, link-span#45; commits na main que citam a tarefa: 373b1ae; a branch release/v0.2.0-alpha.1 é ancestral da main.
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

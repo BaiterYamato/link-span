@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review — alterações locais, sem commit.
 
 ## Resultado
@@ -56,3 +58,12 @@ cmake --build build/x64 --config Release --target soh_symbols -- /m:1
 ## Próxima ação recomendada
 
 - Revisar BIND-002, depois integrar o core e o host juntos. Reempacotar mods vinculados ao SHA de qualquer executável recompilado.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Core 4a75770 na main (pela MENU-001, #48); host a76045848 (RC2+).
+- Core: na main: 4a75770; a branch agent/MENU-001-mod-menu é ancestral da main.
+- Host: a76045848 (RC3–RC9; já no RC2 local).
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

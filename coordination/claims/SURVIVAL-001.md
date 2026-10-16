@@ -1,6 +1,7 @@
 # SURVIVAL-001
 
-- Status: review
+- Status: done
+- Closed: 2026-10-16 (CLAIMS-CLEANUP-001; evidência no handoff, seção «Encerramento 2026-10-16»)
 - Agent: codex-windows-01
 - Platform: Windows 11 / Codex
 - Branch: release/v0.2.0-alpha.1

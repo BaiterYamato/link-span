@@ -1,6 +1,7 @@
 # OOT-UPSTREAM-001
 
-- Status: review
+- Status: done
+- Closed: 2026-10-16 (CLAIMS-CLEANUP-001; evidência no handoff, seção «Encerramento 2026-10-16»)
 - Agent: Claude (Opus 5), com Kimi k3 como subagente de revisão
 - Taken over from: Codex GPT-6 (parado em 2026-09-13T19:27Z, depois de gerar soh.exe/soh.o2r e antes dos testes nativos; retomado a pedido do usuário)
 - Platform: Windows

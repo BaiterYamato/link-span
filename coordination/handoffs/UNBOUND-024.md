@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 Em review. Commit local no host (`a51bf6a68`), sem push.
 
 ## Resultado
@@ -128,3 +130,12 @@ Roteiros e o scan das colisões base em `evidence/unbound-024/scripts/`.
    as salas, câmera das portas contra a tabela da colisão). Desenho e protótipo com o Codex (`codex-graph-025`).
 2. M15 e M24 em jogo (o resto da prioridade 5), dentro do limite de 1 024 entradas por pacote.
 3. Re-revisão da v3 do R04; se aprovada, entra no pacote da rodada de host com as outras guardas.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Host 23ac3e5c6 e outros na integração; RC3–RC9. Coordenação/RFC na main.
+- Core: commits na main que citam a tarefa: e0f5d74.
+- Host: 23ac3e5c6 a51bf6a68 (RC3–RC9).
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

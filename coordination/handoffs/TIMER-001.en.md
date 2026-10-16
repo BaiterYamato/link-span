@@ -4,6 +4,8 @@
 
 ## State
 
+done (2026-10-16, CLAIMS-CLEANUP-001; see “Closure 2026-10-16” at the end). Previous record below.
+
 review
 
 ## Result
@@ -70,3 +72,10 @@ rtk git diff --check
 
 Start `CODEGEN-001` to generate C++ contracts from the canonical schemas,
 without manually duplicating the public API in future bindings.
+
+## Closure 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Final state: done.
+- Delivery evidence: link-span#9 was closed as part of the stack; b2ce9df is on main.
+- Pending items recorded above remain as history; this closure attests the delivery of the claim scope, not of those items.
+- Survey: `claims-review-2026-10-16.csv` in the workspace `logs/claims-cleanup-2026-10`, approved by the user on 2026-10-16.

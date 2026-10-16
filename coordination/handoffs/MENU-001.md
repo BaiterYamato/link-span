@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review
 
 ## Resultado
@@ -135,3 +137,13 @@ powershell -File tools/package-nei-core.ps1
 Seguir na mesma rodada de host com os pontos de extensão da CEL-004 (render V3, `linkspan.oot.lights`,
 `oot.light.point_color` V2, `oot.light.fairy`). Depois reempacotar todos os mods nativos para o layout final e
 rodar a prova limpa do overlay.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: agent/MENU-001-mod-menu é ancestral da main (#48); host 5844dd4aa e 48c858c01 (RC2+), ABI 1.3 no RC6+.
+- Core: na main: 6731d60 8110748 e38ecc1; a branch agent/MENU-001-mod-menu é ancestral da main.
+- Host: 48c858c01 5844dd4aa 600f83b06 6ba757d7b (RC3–RC9; já no RC2 local).
+- Ressalva mantida, não promovida a concluída: o host MM não tem adaptador de menu.
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

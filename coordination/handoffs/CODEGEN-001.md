@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review
 
 ## Resultado
@@ -72,3 +74,11 @@ rtk git diff --check
 
 Implementar `CODEGEN-002` e `CODEGEN-003` no mesmo gerador ou em módulos
 compartilhados, mantendo gates de drift separados por artefato.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: link-span#10 mergeada (13/07); f1be716 na main.
+- Core: link-span#10; na main: f1be716.
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

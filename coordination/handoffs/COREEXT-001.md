@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review — primeira fatia da ABI de core extensions implementada e validada.
 
 ## Resultado
@@ -85,3 +87,11 @@ ZIPs de demonstração passaram no `shiplua_manifest_validator`.
 - Executar `OOT-CORE-001` até o playtest: publicar `linkspan.oot.resources` v1
   no host OoT e provar leitura, enumeração e montagem de archive em jogo, antes
   de abrir os registries de objetos, atores, itens e UI.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: A branch agent/NATIVE-001-provider-runtime é ancestral da main (894ba40).
+- Core: na main: 894ba40; a branch agent/NATIVE-001-provider-runtime é ancestral da main.
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 Review. RFC 0028 em rascunho, commitada no core (branch `agent/MENU-001-mod-menu`, sem push). Nada foi implementado no
 host.
 
@@ -112,3 +114,12 @@ quem grava por último vence. A fase 2, `linkspan.oot.pause` com lease por provi
 que já altere o layout id. Recompilar o host exige reempacotar os mods que fixam o fingerprint.
 
 **Próxima ação:** fase 1 provada no RC5; fica a prova da queda do setting com o seletor aberto. Fase 2 junto da próxima mudança de ABI.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: RFC 0028 (55ece4b) na main pela #48; a fase 1 está no host 45530b8789 (RC5); aceita em 09/10.
+- Core: na main: 55ece4b; a branch agent/MENU-001-mod-menu é ancestral da main.
+- Host: 45530b878 (RC5–RC9).
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

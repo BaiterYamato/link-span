@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 Review. Commit local no host (`23ac3e5c6`), sem push. Framework 0.6.5 e e-fixtures 0.1.4 empacotados só na
 evidência (a e-fixtures tem dados do jogo e fica em `build/`).
 
@@ -113,3 +115,12 @@ UNBOUND-024: M17/M19 na e-fixtures, a partir do rascunho do Codex (`codex-m17-m1
 faixas 255/256/300; água nas rooms 63/64/32766 com 32 767 slots apontando para um room). Junto, as notas locais da
 colisão: câmera fora da tabela (o host lê fora de `cameraDataList`, `z_bgcheck.c:3992`), câmera acima de 32 767 e
 `positionIndex` além das posições.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Host 23ac3e5c6 na integração; RC3–RC9. Coordenação/RFC na main.
+- Core: commits na main que citam a tarefa: 4995175.
+- Host: 23ac3e5c6 (RC3–RC9).
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.
