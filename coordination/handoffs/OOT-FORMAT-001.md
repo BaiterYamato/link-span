@@ -23,7 +23,7 @@ review
 
 ## Commits
 
-Host (BaiterYamato/Shipwright, branch `agent/OOT-FORMAT-001-clang-format`, sem push):
+Host (BaiterYamato/Shipwright, branch `agent/OOT-FORMAT-001-clang-format`, PR BaiterYamato/Shipwright#6 na integração):
 
 - `f08c524b3f` — style: clang-format 14 no código do Link-Span em soh/
 - `6cac57eb0a` — style: segunda passada do clang-format 14 no MmAudioTypes.h
@@ -58,7 +58,9 @@ logs/rc-pipeline-oot-next/rc-build.ps1 -Tag oot-format-001-check (Windows 11, MS
 
 ## Pendências
 
-- Push e PR no fork só com autorização do mantenedor.
+- Push e PRs autorizados em 2026-10-16: BaiterYamato/Shipwright#6 (código) e BaiterYamato/link-span#55
+  (coordenação). O #6 ainda não teve nenhuma run de CI (nem depois de fechar e reabrir); o `clang-format` verde
+  segue sem prova no GitHub.
 - RC10: reversionar e reempacotar NEI, Unbound, DMR, Mic, WW, Shovel e as fixtures para o layout novo; bateria
   inteira.
 - Pré-existente, sem efeito hoje: três resoluções em `overlay-merges/` têm assinatura velha desde antes da formatação
@@ -74,5 +76,5 @@ logs/rc-pipeline-oot-next/rc-build.ps1 -Tag oot-format-001-check (Windows 11, MS
 
 ## Próxima ação recomendada
 
-- Com o ok do mantenedor: push da branch e PR na integração `agent/OOT-UPSTREAM-001-78dc6d970-integration`, para o
-  job `clang-format` provar o verde; depois, o RC10 sobre o layout `ee6449e8`.
+- Ver o job `clang-format` verde no BaiterYamato/Shipwright#6, mergear na integração e começar o RC10 sobre o
+  layout `ee6449e8`.
