@@ -1555,3 +1555,14 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
 - Quatro downloads, 11 assets verificados por SHA-256; quatro botões/SVGs públicos conferidos; release original do Shipwright preservada.
 - Comprovação: releases/oot-0.5.0-rc9/publication.json. Definição e artefatos da montagem preservados; tag não é movida pelo encerramento.
 - Pendências de produto: playtest físico e gameplay dos demos extras; não bloqueiam a conclusão da organização/publicação autorizada.
+
+### UPDATE 2026-10-16 (Claude) — OOT-FORMAT-001: clang-format 14 no host, layout `ee6449e8`
+
+- **Formatação:** `./run-clang-format.sh` com clang-format 14.0.6 a partir da integração `0097e4e518` (RC9), branch
+  `agent/OOT-FORMAT-001-clang-format` (host `f08c524b3f`, `6cac57eb0a`, `bedff27262`). 198 arquivos, nenhum token de
+  código muda. O `MmAudioTypes.h` só chega ao ponto fixo na segunda passada.
+- **NEI:** um literal partido deixava velha a adaptação do `Message_DecodeChecked` (318/1); assinatura regravada,
+  overlay de volta a 319 sobrepostas e 0 conflitos.
+- **Validação:** `rc-build.ps1` BUILD-OK (CTest 68/68, NEI, Unbound, WW, assets do NEI e demos do link-span-examples).
+  Layout `ee6449e8` (RC9: `7376240d`), `soh.exe` `0332742A`.
+- **Pendente:** push e PR na integração (ok do mantenedor); RC10 com todos os mods nativos reversionados.
