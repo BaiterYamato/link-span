@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 Em review. Commit local no host (`9cd2db2c9`), sem push.
 
 ## Resultado
@@ -84,3 +86,12 @@ jogo, a sala de 8 200 com o 0.6.9 fecha com exit 0, onde o 0.6.8 caía.
 
 Aprovação da rodada de host (`rfc0027-host/RODADA-HOST-v7.md`, 7 patches). Depois, um RC3 com o host novo, o
 framework 0.6.9 e a e-fixtures 0.1.8, e as provas da tabela.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Host 9cd2db2c9 na integração; RC3–RC9. Coordenação/RFC na main.
+- Core: commits na main que citam a tarefa: 4bccd9a.
+- Host: 9cd2db2c9 (RC3–RC9).
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

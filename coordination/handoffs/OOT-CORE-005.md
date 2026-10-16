@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review
 
 ## Resultado
@@ -106,3 +108,12 @@ Prova em jogo: RELEASE-UNIFICADA/OOT-teste-cenas-20260914, evidência build/oot-
 ## Próxima ação recomendada
 
 - OOT-CORE-004: colisão e mundo (raycast, floor, wall e water, colliders e dano).
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Host 0f64fe5c2 na integração; RC3–RC9 (já no RC2 local). Coordenação/RFC na main.
+- Core: commits na main que citam a tarefa: 246b3be.
+- Host: 0f64fe5c2 (RC3–RC9; já no RC2 local).
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

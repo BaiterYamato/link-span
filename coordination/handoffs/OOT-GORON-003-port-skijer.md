@@ -2,6 +2,8 @@
 
 ## Estado
 
+review (2026-10-16, CLAIMS-CLEANUP-001: passou de claimed para review; ver «Revisão de status 2026-10-16» no fim). Registro anterior abaixo.
+
 **Referência rápida de caminhos, assets e funções:**
 [`OOT-GORON-003-quick-reference.md`](OOT-GORON-003-quick-reference.md) — assets
 do `mm.o2r` com contagem de frames, as funções do decomp com linha exata, e os
@@ -1033,7 +1035,7 @@ dos tambores na Etapa 5. Em 30/07/2026, squash/tilt/kick/azul da bola e a
 cutscene completa da máscara passaram em duas execuções consecutivas, com
 cleanup e retorno ao idle.
 
-## Próxima ação
+## Próxima ação recomendada
 
 **Testar em jogo o build de 01/08/2026 17:06**
 (SHA-256 `7BCEBA8258B864426769A1262510BD9EF0F3F4D68F3D112D383D504ACFD88D7C`).
@@ -1078,3 +1080,44 @@ SHA-256
 Nota: `mods/survival-demo.shipmodss` tem extensão inválida — o loader exige
 `.shipmod`, então não carrega. Se um mod de survival aparecer em jogo mesmo
 assim, é bug de filtro do loader e vira investigação própria.
+
+## Resultado
+
+- Máquina de formas do Goron portada (incrementos 1 a 5: bola, socos, defesa, instrumento, Land, Damage, squash/tilt/kick e cutscene da máscara).
+- A auditoria de 01/08 contra o decomp do MM corrigiu 13 divergências (ver «AUDITORIA DE 01/08/2026»).
+- Seção completada em 2026-10-16 pela CLAIMS-CLEANUP-001 a partir do registro acima, do Git e do PR.
+
+## Commits
+
+- Host `dee22fa` (01/08): oot: máquina de formas do Goron e auditoria contra o decomp do MM, na integração desde o RC2.
+- Core `233f47c` (auditoria) e `90b35e9` (referência rápida), na main pela link-span#44.
+- Release `goron-form-v0.1.41` no link-span (01/08).
+
+## Arquivos alterados
+
+- Host: `soh/soh/mmform/MmGoronForm.h`, `soh/soh/mmform/MmGoronForm.cpp`, `soh/soh/ShipLuaBootstrap.cpp`.
+- Core: `examples/goron-form/main.lua`, hoje em `link-span-examples/lua/goron-form`.
+
+## Validação executada
+
+- Runtime das Etapas 1 a 5 em 27–30/07 (seções acima); build da auditoria de 01/08 compilado sem aviso.
+
+## Resultado da validação
+
+- As Etapas 1 a 5 passaram em runtime.
+- As 13 correções da auditoria e a cutscene compilam, mas não rodaram em jogo.
+
+## Pendências
+
+- Testar em jogo o build de 01/08 (ver «Próxima ação recomendada»).
+
+## Riscos
+
+- Correções sem prova em jogo; o knockback relatado pelo usuário (item 12 da auditoria) pode persistir.
+
+## Revisão de status 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado: review (era claimed).
+- Integrado: host `dee22fa` na integração desde o RC2 (RC3–RC9); core `233f47c`/`90b35e9` na main (link-span#44); release `goron-form-v0.1.41`; `mmform/MmGoronForm.cpp` presente na ponta do host.
+- Fica em review até o teste em jogo do build de 01/08, ou até o usuário aceitar sem a prova.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

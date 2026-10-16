@@ -2,6 +2,8 @@
 
 ## Status
 
+done (2026-10-16, CLAIMS-CLEANUP-001; see “Closure 2026-10-16” at the end). Previous record below.
+
 review
 
 PR: https://github.com/BaiterYamato/link-span/pull/41
@@ -33,3 +35,9 @@ Update the OoT host submodule, make `OotActorProvider` implement the public
 interface, inject it through `LuaApiHostContext::actors`, rebuild `soh.exe`, and
 run the adapter contract test. A real-assets smoke remains required later.
 
+## Closure 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Final state: done.
+- Delivery evidence: link-span#41 merged (3e948cc, 2026-07-19). The host side was done later: `OotActorProvider` is injected into `LuaApiHostContext::actors` in the published Shipwright integration.
+- Pending items recorded above remain as history; this closure attests the delivery of the claim scope, not of those items.
+- Survey: `claims-review-2026-10-16.csv` in the workspace `logs/claims-cleanup-2026-10`, approved by the user on 2026-10-16.

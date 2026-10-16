@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review — registro dinâmico genérico v1 implementado e provado no Shipwright
 9.2.3 com provider externo.
 
@@ -114,3 +116,12 @@ O CTest desta configuração informa zero testes porque o projeto raiz não cham
 Portar o substrato `UNBOUND-002/003` para o overlay e, sobre ele, criar a
 primeira fatia vertical: um `.shipmod` registra uma cena sintética por nome e o
 adapter resolve uma entrada real sem tabela compilada por mod.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Host 8a1ca5244 e outros na integração; RC3–RC9 (já no RC2 local). Coordenação/RFC na main.
+- Core: na main: 894ba40 b15d67c; a branch agent/NATIVE-001-provider-runtime é ancestral da main.
+- Host: 8a1ca5244 a068ec711 (RC3–RC9; já no RC2 local).
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

@@ -1,6 +1,7 @@
 # NEI-UI-001
 
-- Status: review
+- Status: done
+- Closed: 2026-10-16 (CLAIMS-CLEANUP-001; evidência no handoff, seção «Encerramento 2026-10-16»)
 - Agent: codex-desktop
 - Platform: Windows / Codex
 - Branch: agent/MENU-001-mod-menu

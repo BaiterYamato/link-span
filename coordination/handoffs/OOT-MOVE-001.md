@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 in_progress
 
 ## Resultado
@@ -90,3 +92,13 @@ pwsh tools/package-linkspan-overlay.ps1 ...
 ## Próxima ação recomendada
 
 - Implementar a camada de eixos/gatilhos para ZL/ZR e a ação de item equipada.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Status hoje: claimed. A fatia X/A/Y/B do DMR está no host 3b28204fa (RC2+); as fatias seguintes viraram OOT-MOVE-002..007; o mantenedor jogou o DMR no RC5 (10/10).
+- Core: commits na main que citam a tarefa: 6b8393b.
+- Host: 3b28204fa (RC3–RC9; já no RC2 local).
+- Ressalva mantida, não promovida a concluída: teste com Switch Pro físico; o DMR foi jogado pelo mantenedor no RC5.
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

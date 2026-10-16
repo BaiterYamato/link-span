@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review
 
 ## Resultado
@@ -56,3 +58,11 @@ rg --files | rg "\.(z64|n64|v64|o2r)$"
 ## Próxima ação recomendada
 
 Integrar a pilha em ordem e iniciar ARCH-001/ARCH-002 antes da API pública.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: link-span#5 foi fechada como pilha; c6705a9 está na main.
+- Core: na main: c6705a9.
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

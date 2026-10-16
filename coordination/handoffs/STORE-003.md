@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review
 
 ## Resultado
@@ -58,3 +60,11 @@ ctest --test-dir build-store003-msvc -C Release --output-on-failure
 ## Próxima ação recomendada
 
 Implementar `WORLD-002` usando `AtomicFile` como etapa final da publicação do envelope autenticado.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: link-span#27 mergeada (13/07).
+- Core: link-span#27; na main: 85f5e6d; a branch agent/STORE-003-atomic-write é ancestral da main.
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

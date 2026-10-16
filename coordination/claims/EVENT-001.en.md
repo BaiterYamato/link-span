@@ -2,7 +2,8 @@
 
 # EVENT-001 / EVENT-002 / EVENT-003
 
-- Status: review
+- Status: done
+- Closed: 2026-10-16 (CLAIMS-CLEANUP-001; evidence in the handoff, “Closure 2026-10-16” section)
 - Agent: codex-windows-01
 - Platform: Windows 11 / Codex / MinGW g++ 15.2 + Ninja
 - Branch: agent/EVENT-001-dispatcher

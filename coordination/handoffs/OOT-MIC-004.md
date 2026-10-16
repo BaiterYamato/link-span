@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review — interface implementada, build/pacotes e cinco testes passaram. Partitura,
 songbook e abertura do instrumento conferidos no jogo. Captura real recusada pelo
 Windows; execução de notas e músicas com controle físico ainda não validada.
@@ -104,3 +106,13 @@ as pastas jogáveis anteriores nem liberar o gate físico da câmera sem evidên
 - Build e três testes passaram, incluindo o caminho de cancelamento independente da tela. Sessão mic-y-release-001 carregou os seis mods e Mic 0.2.1 sem erros. Sessão estrita e validador passaram. Controle/microfone físicos ainda não certificados.
 - Pacote instalado em `OOT-UPSTREAM-78DC-001/build/oot-upstream-001/playable-nei-completion-20260930`. SHA-256 D704A4EAFBC6E17AA91C063F47A734F3ECCF84A38113A8C8F3C4EC2DFBA4F33A.
 - Evidências em `OOT-UPSTREAM-78DC-001/build/mic-y-cancel-fix-20261001/RESULT.md`. Save e sessão original do usuário preservados. Review permanece pelos gates físicos anteriores.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Host 51c417edc e outros na integração; RC3–RC9 (já no RC2 local). Coordenação/RFC na main.
+- Core: commits na main que citam a tarefa: 1b8129e.
+- Host: 51c417edc 62ea72d89 (RC3–RC9; já no RC2 local).
+- Ressalva mantida, não promovida a concluída: captura real recusada pelo Windows nesta máquina; o mantenedor jogou o Mic no RC5.
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

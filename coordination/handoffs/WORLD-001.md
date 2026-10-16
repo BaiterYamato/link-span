@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review
 
 ## Resultado
@@ -59,3 +61,12 @@ ctest --test-dir build-msvc -C Release --output-on-failure
 ## Próxima ação recomendada
 
 Implementar WORLD-003 e então os adaptadores de snapshot OoT/MM sobre tabelas de tradução explícitas.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: link-span#23 foi fechada, mas a branch é ancestral da main; src/world/ e o RFC 0004 estão na main.
+- Core: na main: 162316970; a branch agent/WORLD-001-portable-session é ancestral da main.
+- Ressalva mantida, não promovida a concluída: supervisor entre processos e adaptadores reais nunca viraram tarefa.
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

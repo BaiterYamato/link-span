@@ -1,6 +1,7 @@
 # MODSDK-005
 
-- Status: review
+- Status: done
+- Closed: 2026-10-16 (CLAIMS-CLEANUP-001; evidence in the handoff, “Closure 2026-10-16” section)
 - Agent: Codex
 - Platform: Windows 11 / MSVC 2022 / CMake
 - Repository: BaiterYamato/ship-lua

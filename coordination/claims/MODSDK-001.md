@@ -1,6 +1,7 @@
 # MODSDK-001
 
-- Status: review
+- Status: done
+- Closed: 2026-10-16 (CLAIMS-CLEANUP-001; evidência no handoff, seção «Encerramento 2026-10-16»)
 - Agent: kimi-subagent-modsdk-001
 - Platform: Windows 11 / Kimi Work / CMake + Ninja (MinGW g++)
 - Repository: BaiterYamato/link-span (ship-lua)

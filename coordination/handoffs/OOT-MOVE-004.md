@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review — `linkspan.oot.movement` v2 e Dynamic Movement Remake 0.2.7 estão commitados
 localmente e validados sem ROM. Overlay e pacotes saíram do mesmo `soh.exe` que
 publica o serviço de ocarina do OOT-MIC-001, e o smoke de boot com os dois mods foi
@@ -148,3 +150,13 @@ powershell -File scripts/move004-smoke.ps1     # prepare/finish-runtime-session 
 
 - Instalar overlay, DM 0.2.7 e Mic Ocarina na RELEASE-UNIFICADA e fazer o playtest
   físico; ajustar `follow_delay_ms` e o limiar do ZR conforme o retorno.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Host 5f39d7e82 e outros na integração; RC3–RC9 (já no RC2 local). Coordenação/RFC na main.
+- Core: na main: 519b45a.
+- Host: 5f39d7e82 78dc1106c (RC3–RC9; já no RC2 local).
+- Ressalva mantida, não promovida a concluída: playtest físico listado; o DMR foi jogado no RC5.
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

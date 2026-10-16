@@ -1,6 +1,7 @@
 # CORE-001
 
-- Status: review
+- Status: done
+- Closed: 2026-10-16 (CLAIMS-CLEANUP-001; evidência no handoff, seção «Encerramento 2026-10-16»)
 - Agent: claude-opus-windows-01 (coordenador) + fable-5 (implementação de código)
 - Platform: Windows 11 / Claude Code / MinGW g++ 15.2 + Ninja
 - Branch: main (repo local ship-lua recém-iniciado; ainda sem remote)

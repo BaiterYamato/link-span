@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review — host OoT ABI 1.1 compilado, ZIPs separados executados no Shipwright
 9.2.3 e overlay instalável gerado, sem alterar a instalação normal do usuário.
 
@@ -105,3 +107,12 @@ Próprios desta fatia:
 - Retomar `OOT-CORE-001`, que já tem contrato e testes mas foi interrompida
   antes do playtest, e só então abrir os registries de objetos, atores, itens e
   UI.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Host 3b28204fa (RC2+); core 894ba40 na main.
+- Core: na main: 894ba40; a branch agent/NATIVE-001-provider-runtime é ancestral da main.
+- Host: 3b28204fa (RC3–RC9; já no RC2 local).
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

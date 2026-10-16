@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 Em review.
 - A e-fixtures 0.1.9 a 0.1.12 estão em commits locais na integração.
 - A rodada de host foi **aprovada pelo usuário em 2026-10-04 (tudo até o 15)** e aplicada na integração: cherry-pick
@@ -161,3 +163,12 @@ Em review.
 1. Apresentar o `RODADA-HOST-v10.md` para aprovação.
 2. Aprovado: cherry-pick dos commits aprovados do candidato na integração (e dos 4 do libultraship no branch das
    extensões), nota de luzes v2 e RC3.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Rodada aprovada em 04/10 e aplicada por cherry-pick (14d240116..33f3c7c6f). Os hashes do candidato (03ef2009d…) não estão na integração; os cherry-picks sim (RC3+). Host 2886655204/a564af1ac.
+- Core: commits na main que citam a tarefa: 979f3ae a5ea7e1 d793160.
+- Host: 288665520 7e1e5bec3 878150563 a564af1ac (RC3–RC9).
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

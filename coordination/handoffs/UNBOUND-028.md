@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 Em review. Commit local no host (`5ebef3ba7`), sem push.
 
 ## Resultado
@@ -133,3 +135,12 @@ Os grafos da `ydan` e da `ice_doukutu` (deltas sobre a base) não deram nota nem
    em preparo pelo Codex, `codex-rodada-host`).
 2. Prova em jogo do efeito do minimapa (entrar na sala 13 de uma `ydan` com 14 salas e no mapa da pausa), se for
    preciso mais que a leitura do código.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Host 5ebef3ba7 e outros na integração; RC3–RC9. Coordenação/RFC na main.
+- Core: commits na main que citam a tarefa: 648ba8f 55c76fc.
+- Host: 5ebef3ba7 f2e2acaa0 (RC3–RC9).
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review — implementação e validação Windows concluídas nesta worktree; sem integração nos jogos.
 
 ## Resultado
@@ -120,3 +122,13 @@ Publicar no adaptador uma interface ampla de engine e validar um mod externo no
 executável real. O critério permanece: mudar gameplay no mod sem adicionar uma
 API específica ou recompilar o loader a cada ideia. Não voltar a funções nativas
 dedicadas a cada mod dentro de ShipLuaBootstrap.cpp.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: A branch agent/NATIVE-001-provider-runtime é ancestral da main; o host consome o resultado desde o merge a19372c00 (RC2+).
+- Core: na main: c90ec98; a branch agent/NATIVE-001-provider-runtime é ancestral da main.
+- Host: a19372c00 (RC3–RC9; já no RC2 local).
+- Ressalva mantida, não promovida a concluída: Linux, macOS e ARM não testados.
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.
