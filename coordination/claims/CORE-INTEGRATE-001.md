@@ -1,6 +1,7 @@
 # CORE-INTEGRATE-001
 
-- Status: review
+- Status: done
+- Closed: 2026-10-16 (CLAIMS-CLEANUP-001; evidência no handoff, seção «Encerramento 2026-10-16»)
 - Agent: claude-opus-windows
 - Platform: Windows 11 / Claude Code
 - Branch: agent/CORE-INTEGRATE-001-main-menu

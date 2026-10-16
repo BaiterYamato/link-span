@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review
 
 ## Resultado
@@ -98,3 +100,12 @@ Prova em jogo, 2 sessões: RELEASE-UNIFICADA/OOT-teste-cenas-20260914, evidênci
 
 - COREEXT-008: escape hatch (símbolos, detours com dono e fingerprint do executável).
 - Em seguida, OOT-CORE-003 (item, inventário e tipos de ator).
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Host a19d83b1b na integração; RC3–RC9 (já no RC2 local). Coordenação/RFC na main.
+- Core: na main: 106a536.
+- Host: a19d83b1b (RC3–RC9; já no RC2 local).
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

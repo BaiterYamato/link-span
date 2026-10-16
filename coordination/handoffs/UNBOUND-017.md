@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review: parte de host do Unbound 0.8 (`97e8893`), com o layout `0d86df42` mantido.
 
 ## Resultado
@@ -188,3 +190,12 @@ evidência build/oot-upstream-001/evidence/unbound-017 e unbound-017-diag
 ## Próxima ação recomendada
 
 Review conjunta com a UNBOUND-016.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Host 6fa3f2a2a e outros na integração; RC3–RC9 (já no RC2 local). Coordenação/RFC na main.
+- Core: commits na main que citam a tarefa: 872d681 051aafe.
+- Host: 6fa3f2a2a e77f09d17 (RC3–RC9; já no RC2 local).
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

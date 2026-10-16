@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review. O Claude assumiu a tarefa a pedido do usuário, com o Codex suspenso. O código está commitado localmente
 em `cfcf23c75`, e build, testes nativos, prova independente e smoke de boot passaram. Falta o playtest com save.
 
@@ -117,3 +119,13 @@ finish-runtime-session.ps1 ... -RequireTrackedUnchanged -Strict
 ## Próxima ação recomendada
 
 - Playtest com save nas cenas acima usando o overlay MovementV2-D-pad.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Host cfcf23c75 e outros na integração; RC3–RC9 (já no RC2 local). Coordenação/RFC na main.
+- Core: commits na main que citam a tarefa: 8ef4b03.
+- Host: cfcf23c75 8ef12c061 (RC3–RC9; já no RC2 local).
+- Ressalva mantida, não promovida a concluída: playtest com save nos templos (Forest/Water/Shadow) pendente.
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

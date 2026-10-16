@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 Em review. Commits locais no host (`a29c0ba8c` e o follow-up da re-revisão `f2e2acaa0`), sem push.
 
 ## Resultado
@@ -149,3 +151,12 @@ vanilla da `spot04` (10 notas agregadas na rodada 4) ficam em `herdadas=17`. A l
 ## Próxima ação recomendada
 
 1. Grafo a partir de colisão ou sala de mod sobre cena da base (índice reverso do VFS), se aparecer mod assim.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Host 517b0ac16 e outros na integração; RC3–RC9. Coordenação/RFC na main.
+- Core: commits na main que citam a tarefa: 827d126 97104ae.
+- Host: 517b0ac16 a29c0ba8c f2e2acaa0 (RC3–RC9).
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

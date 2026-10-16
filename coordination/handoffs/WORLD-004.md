@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review
 
 ## Resultado
@@ -51,3 +53,11 @@ ctest --test-dir build-world004-msvc -C Release --output-on-failure
 ## Próxima ação recomendada
 
 Implementar o supervisor que consome o handoff autenticado, ativa o host de destino e executa o round-trip OoT/MM.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: link-span#30 mergeada (13/07); WorldAssetCatalog.* e o RFC 0007 estão na main.
+- Core: link-span#30; na main: a22d89c ff2a996; a branch agent/WORLD-004-asset-catalog é ancestral da main.
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

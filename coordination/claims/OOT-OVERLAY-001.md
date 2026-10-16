@@ -1,6 +1,7 @@
 # OOT-OVERLAY-001
 
-- Status: review
+- Status: done
+- Closed: 2026-10-16 (CLAIMS-CLEANUP-001; evidência no handoff, seção «Encerramento 2026-10-16»)
 - Agent: Codex
 - Platform: Windows
 - Branch: agent/OOT-NATIVE-001-native-engine

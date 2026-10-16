@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review
 
 ## Resultado
@@ -68,3 +70,11 @@ rtk git diff --check
 
 Iniciar `CODEGEN-001` para gerar contratos C++ a partir dos schemas canônicos,
 sem duplicar manualmente a API pública nos futuros bindings.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: link-span#9 foi fechada como pilha; b2ce9df está na main.
+- Core: na main: b2ce9df.
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

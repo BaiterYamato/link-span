@@ -2,7 +2,8 @@
 
 #CORE-001
 
-- Status: review
+- Status: done
+- Closed: 2026-10-16 (CLAIMS-CLEANUP-001; evidence in the handoff, “Closure 2026-10-16” section)
 - Agent: claude-opus-windows-01 (coordinator) + fable-5 (code implementation)
 - Platform: Windows 11 / Claude Code / MinGW g++ 15.2 + Ninja
 - Branch: main (newly started ship-lua local repo; no remote yet)

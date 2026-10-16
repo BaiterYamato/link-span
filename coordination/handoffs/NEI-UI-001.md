@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review
 
 ## Resultado
@@ -55,3 +57,13 @@ review
 ## Próxima ação recomendada
 
 - Com a janela isolada em foco e o arquivo aberto, clicar em um item não possuído, verificar o destaque e o item no inventário, clicar novamente para removê-lo e confirmar a remoção após salvar/reabrir o mesmo arquivo; repetir com a Cane. Resolver os claims sobrepostos antes da integração.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Core 4a75770 na main; host a76045848 e d6ac301e4 (RC2+).
+- Core: na main: 4a75770; a branch agent/MENU-001-mod-menu é ancestral da main.
+- Host: a76045848 d6ac301e4 (RC3–RC9; já no RC2 local).
+- Ressalva mantida, não promovida a concluída: confirmação da 0.3.10 (remover célula, salvar e reabrir) pendente no handoff.
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review
 
 ## Resultado
@@ -66,3 +68,12 @@ O tag determinístico também foi comparado com `hmac.new(..., hashlib.sha256)` 
 ## Próxima ação recomendada
 
 Criar o supervisor cross-process e uma conformance OoT → MM → OoT que consuma o mesmo envelope sem alterar o contrato portátil.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: link-span#28 mergeada (13/07); WorldHandoff.* e o RFC 0006 estão na main.
+- Core: link-span#28; na main: 05cd347; a branch agent/WORLD-002-authenticated-handoff é ancestral da main.
+- Ressalva mantida, não promovida a concluída: supervisor entre processos nunca virou tarefa.
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

@@ -2,7 +2,8 @@
 
 # CODEGEN-002 / CODEGEN-003
 
-- Status: review
+- Status: done
+- Closed: 2026-10-16 (CLAIMS-CLEANUP-001; evidence in the handoff, “Closure 2026-10-16” section)
 - Agent: codex-windows-01
 - Platform: Windows 11 / Codex / Python 3.14
 - Branch: agent/CODEGEN-002-003-api-docs

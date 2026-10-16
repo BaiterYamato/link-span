@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review
 
 ## Resultado
@@ -193,7 +195,7 @@ O Release foi compilado. O host copiado para o pacote tem SHA-256
 com o host compilado. Todos os comandos validaram o pacote
 `baiteryamato.goron_form` na versão `0.1.12`.
 
-## Pendência
+## Pendências
 
 - Testar visualmente em jogo, em terreno plano e inclinado, segurar R na forma
   Goron e receber dano. Se os pés ainda não coincidirem com o chão, usar a
@@ -210,3 +212,32 @@ com o host compilado. Todos os comandos validaram o pacote
   recuperações somente após o último golpe.
 - Testar bounce: em velocidade alta, uma parede sólida deve refletir a bola;
   objetos/dynapoly acertados pelo cylinder não devem ser antecipados pelo bounce.
+
+## Commits
+
+- Host `ccbad7d` (24/07): feat(goron): sistema de transformação Goron completo (0.1.12→0.1.33), na integração desde o RC2.
+- Core `44bc22c` (24/07): feat(goron): API de corpo customizado completa + pesquisa externa (0.1.33), na main.
+- Seção completada em 2026-10-16 pela CLAIMS-CLEANUP-001 a partir do registro acima, do Git e do PR.
+
+## Resultado da validação
+
+- Release compilado; o host copiado para o pacote coincide com o compilado (SHA-256 `1DE32D1D…`); `shipmod validate` e o empacotamento passaram (registro acima).
+- A validação visual em jogo não foi registrada neste handoff.
+
+## Riscos
+
+- O comportamento visual não teve prova em jogo neste handoff; o trabalho foi refeito pela OOT-GORON-002/003.
+
+## Próxima ação recomendada
+
+- Nenhuma: substituída pela OOT-GORON-002-port-mm (closed) e pela OOT-GORON-003-port-skijer.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Entregue e depois substituída. O host ccbad7d (24/07, "sistema de transformação Goron completo (0.1.12→0.1.33)") está na integração desde o RC2 (RC3–RC9), e o core 44bc22c (0.1.33) está na main. A forma foi refeita na OOT-GORON-002 (closed) e na OOT-GORON-003: `ground_offset` -30 (f19ba4a), -10 (22f7e52) e máquina de formas dee22fa. A branch "a confirmar" nunca existiu.
+- Core: commits na main que citam a tarefa: 6b8393b.
+- Host: ccbad7d05 (RC3–RC9; já no RC2 local).
+- O claim registra `Superseded by: OOT-GORON-002-port-mm, OOT-GORON-003-port-skijer`; o status `done` reflete a entrega no host e na main.
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

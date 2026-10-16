@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review — integração, build Windows, prova independente e playtest real concluídos;
 sem commit, push ou alteração da instalação normal.
 
@@ -97,3 +99,12 @@ worktrees; o isolamento físico e a branch foram conferidos.
 
 Criar o serviço `linkspan.mm.engine` no 2Ship e compilar o mesmo conceito de mod
 contra o SDK MM, mantendo o ZIP e a ABI C comuns.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: A branch local agent/OOT-NATIVE-001-native-engine entrou na integração pelo merge a19372c00 (2º pai 8ef12c061, RC2+). Commit 3b28204fa.
+- Core: commits na main que citam a tarefa: 8686ca4 894ba40.
+- Host: a19372c00 3b28204fa (RC3–RC9; já no RC2 local).
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

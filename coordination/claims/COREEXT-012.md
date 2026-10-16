@@ -1,6 +1,7 @@
 # COREEXT-012
 
-- Status: review
+- Status: done
+- Closed: 2026-10-16 (CLAIMS-CLEANUP-001; evidência no handoff, seção «Encerramento 2026-10-16»)
 - Agent: Claude (Opus 5.5)
 - Platform: Windows
 - Branch: agent/MENU-001-mod-menu (core `extern/ship-lua`, a mesma da RFC 0027)

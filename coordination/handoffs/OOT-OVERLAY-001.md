@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review — overlay ZIP reproduzível gerado e validado sobre uma extração limpa da
 release oficial Shipwright 9.2.3 para Windows x64.
 
@@ -74,3 +76,11 @@ Artefato ignorado pelo Git:
 
 - Separar uma release pública do overlay, com os experimentos não relacionados
   desativados, e publicar o ZIP e seu `.sha256` junto à versão correspondente.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: O overlay ZIP reproduzível veio com o host da OOT-NATIVE-001 (a19372c00, RC2+). A sonda de áudio MM foi retirada no fc27099 (RC2), e o overlay foi publicado no RC8 e no RC9.
+- Core: commits na main que citam a tarefa: 6b8393b.
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

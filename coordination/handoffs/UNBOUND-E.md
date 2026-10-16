@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review
 
 ## Resultado
@@ -123,3 +125,13 @@ O `soh.symbols` passou a trazer 17 756 variáveis como `[data]`, para o escape h
 
 - Aceite da fase E pelo usuário. Os limites e a review estão fechados; o que resta é instalação limpa, licença e o
   delta do Unbound na fase W.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Host 56193b774 e outros na integração; RC3–RC9 (já no RC2 local). Coordenação/RFC na main.
+- Core: commits na main que citam a tarefa: 6f2ec3b.
+- Host: 56193b774 68687c480 (RC3–RC9; já no RC2 local).
+- Ressalva mantida, não promovida a concluída: licença de terceiros (Unbound) não registrada; CC0 vale só para o código próprio (09/10).
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

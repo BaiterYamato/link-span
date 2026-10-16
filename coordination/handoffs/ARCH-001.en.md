@@ -4,6 +4,8 @@
 
 ## State
 
+done (2026-10-16, CLAIMS-CLEANUP-001; see “Closure 2026-10-16” at the end). Previous record below.
+
 review
 
 ## Result
@@ -60,3 +62,10 @@ git diff --check
 ## Recommended next action
 
 Review the RFC and start API-001, API-002 and API-003 in core.
+
+## Closure 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Final state: done.
+- Delivery evidence: link-span#6 was closed as part of the PR stack; handoff commit 13ddf71 is on main.
+- Pending items recorded above remain as history; this closure attests the delivery of the claim scope, not of those items.
+- Survey: `claims-review-2026-10-16.csv` in the workspace `logs/claims-cleanup-2026-10`, approved by the user on 2026-10-16.

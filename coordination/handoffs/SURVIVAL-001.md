@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review
 
 ## Resultado
@@ -76,3 +78,21 @@ review
 Abrir `SURVIVAL-002` para RFC + `game.state` + `input.actions`, seguido da
 correção segura da prova de conceito quando `LINK-003` liberar os caminhos
 compartilhados.
+
+## Commits
+
+- Core, todos na main: `1f1c013` (24/07, `ship.hud.*` e o exemplo de sobrevivência); `31cd568`, `1827e13`, `3ce608e`, `7277074` (24/07, regras de stamina); `708d8a8`, `fe9621a`, `a31674e`, `21cbdd5`, `d2e4357` (25/07, HUD 0.2.x); `aca5cbb` (26/07, `docs/wiki/Research-Survival-System.md`).
+- Seção completada em 2026-10-16 pela CLAIMS-CLEANUP-001 a partir do registro acima, do Git e do PR.
+
+## Resultado da validação
+
+- O registro original lista os comandos sem anotar o resultado.
+- Conferência de 2026-10-16: o documento de pesquisa está na main, e a SURVIVAL-002 implementou o que esta auditoria pediu (`game.state` e `input.actions`).
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Auditoria e plano na main (release/v0.2.0-alpha.1, #42–#47); docs/wiki/Research-Survival-System.md está na main; a fase 0 veio na SURVIVAL-002.
+- Core: link-span#47, link-span#46, link-span#45; commits na main que citam a tarefa: 6b8393b; a branch release/v0.2.0-alpha.1 é ancestral da main.
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

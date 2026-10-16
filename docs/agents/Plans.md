@@ -1555,3 +1555,37 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
 - Quatro downloads, 11 assets verificados por SHA-256; quatro botões/SVGs públicos conferidos; release original do Shipwright preservada.
 - Comprovação: releases/oot-0.5.0-rc9/publication.json. Definição e artefatos da montagem preservados; tag não é movida pelo encerramento.
 - Pendências de produto: playtest físico e gameplay dos demos extras; não bloqueiam a conclusão da organização/publicação autorizada.
+
+### UPDATE 2026-10-16 (Claude) — CLAIMS-CLEANUP-001: claims já entregues fechados
+
+- **Status:** review. O commit está local na `agent/CLAIMS-CLEANUP-001`; push e PR aguardam autorização.
+- **Origem:** levantamento de 16/10, aprovado pelo usuário (CSV e resumo em `logs/claims-cleanup-2026-10` do
+  workspace). Eram 136 claims ativos: 133 em review e 3 em claimed.
+- **O que mudou:**
+  - 123 claims passaram a `done`, com uma seção «Encerramento 2026-10-16» no handoff; 21 têm par `.en`.
+  - OOT-GORON-001 ganhou `Superseded by: OOT-GORON-002-port-mm, OOT-GORON-003-port-skijer`. Ela foi entregue no
+    host `ccbad7d` e refeita depois.
+  - OOT-GORON-003-port-skijer passou de claimed para review: está integrada no host `dee22fa`, sem prova em jogo.
+- **Evidência de cada claim:**
+  - PR mergeada ou commit do handoff na `main` do core;
+  - ou commit na integração do host, com o primeiro RC que o contém (do RC2 local em diante, logo RC3–RC9);
+  - OOT-001..005, OOT-HOTKEY-001 e OOT-WORLD-001/002 entraram pelo port `8778337` (18/07) da pilha do HyliaFoundry.
+- **Seguem ativos:**
+  - MM-001..005, MM-HOTKEY-001, MM-JUMP-001, MM-WORLD-001/002 e MM-NATIVE-001: a pilha do `2ship2harkinian` está
+    fora da `lua/main`;
+  - OOT-COREMODS-PLAN-001: a Fase V da grama está na `agent/OOT-COREMODS-PLAN-001-grass-phase`;
+  - OOT-GORON-003-port-skijer e o TEMPLATE.
+- **Gate `test-task-lifecycle.ps1`:**
+  - os 123 fechados passam na fase closed;
+  - os achados de sobreposição entre claims ativos caíram de 1 516 para 62: 60 dentro da pilha MM e 2 entre esta
+    tarefa e a OOT-COREMODS-PLAN-001, em `docs/agents/Plans.md`.
+- **Ressalvas mantidas nos encerramentos (28):**
+  - playtest físico de MIC, MOVE e NEI (o mantenedor jogou no RC5);
+  - licença de terceiros (CEL-004/005, UNBOUND-E, NEI-016);
+  - gates visuais (CEL-006, NEI-UI-001).
+- **Fora do escopo, sem alteração:**
+  - `coordination/STATUS.md`;
+  - claims já fechados com handoff fora do formato: LINK-003-CONFLICTS, LINK-004, LINK-005, MM-PARITY-001,
+    MODSDK-006, OOT-AUDIO-001-port-mm-sfx, OOT-GORON-002-port-mm e OOT-GORON-003-quick-reference;
+  - OOT-VANILLA-001: o texto depois de `done` no Status faz o gate tratá-la como ativa;
+  - MM-JUMP-001, que está sem `Branch`.

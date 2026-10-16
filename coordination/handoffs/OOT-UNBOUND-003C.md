@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review — registro de cenas e entradas por nome implementado no host e no framework Unbound, testado sem ROM e provado em jogo numa cópia separada da pasta de teste. Commits locais, sem push.
 
 ## Resultado
@@ -86,3 +88,12 @@ prepare-runtime-session.ps1 + invoke-input-sequence.ps1 -Execute (save aberto, e
 ## Próxima ação recomendada
 
 - Abrir o recorte da slice 1 (patch JSON da lista de atores de uma sala vanilla sobre este registro) e, em paralelo, a persistência das flags de cena de mod no save.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Host d62addd71 na integração; RC3–RC9 (já no RC2 local). Coordenação/RFC na main.
+- Core: na main: ecbbd60.
+- Host: d62addd71 (RC3–RC9; já no RC2 local).
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

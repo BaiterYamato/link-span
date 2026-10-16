@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review
 
 ## Resultado
@@ -64,3 +66,11 @@ ctest --test-dir build-world003-msvc -C Release --output-on-failure
 
 Implementar OOT-WORLD-001 e MM-WORLD-001 em branches separadas, usando este catálogo
 e mantendo todos os enums brutos nos respectivos adaptadores.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: link-span#24 foi fechada, mas a branch é ancestral da main; PortableItemCatalog.* e o RFC 0005 estão na main.
+- Core: na main: 4a7c389 f02f393; a branch agent/WORLD-003-item-catalog é ancestral da main.
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

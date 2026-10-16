@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 Review. Commits locais no host (`e06663aa5` e `3e3c4946f`, da revisão), sem push. E-fixtures 0.1.3 empacotada só na
 evidência (tem dados do jogo copiados da base convertida, como as anteriores).
 
@@ -110,3 +112,12 @@ novo (`piso=` na wide = 39562, acima de s16, e na many = 22349). Nenhuma linha d
 ## Próxima ação recomendada
 
 R02 e M12 com display lists próprias, no mesmo gerador (rascunho do Codex em `codex-r02-m12`).
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Host 3e3c4946f e outros na integração; RC3–RC9. Coordenação/RFC na main.
+- Core: commits na main que citam a tarefa: 4995175 4c18c16 7e21545.
+- Host: 3e3c4946f e06663aa5 23ac3e5c6 (RC3–RC9).
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

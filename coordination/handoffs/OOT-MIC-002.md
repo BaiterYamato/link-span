@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review — feedback visual implementado inteiramente no mod. O pacote 0.1.1 foi validado pelo Codex no host
 MovementV2-OcarinaV1 e reempacotado e validado pelo Claude no host do OOT-UNBOUND-003B.
 
@@ -94,3 +96,13 @@ shiplua_manifest_validator.exe build/distribution/Mic-Ocarina-0.1.1-layout-bceac
 - Instalar o overlay MovementV2-D-pad com `Mic-Ocarina-0.1.1-layout-bceacd08.zip`, abrir a ocarina, apertar
   Start/+ e registrar uma captura com a tarja visível; ajustar somente o Lua se o usuário preferir outra posição,
   cor ou tamanho.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Host 8ef12c061 e outros na integração; RC3–RC9 (já no RC2 local). Coordenação/RFC na main.
+- Core: commits na main que citam a tarefa: 51deb30 8ef4b03.
+- Host: 8ef12c061 7a8701d82 (RC3–RC9; já no RC2 local).
+- Ressalva mantida, não promovida a concluída: captura do aviso com microfone real pendente; o mantenedor jogou o Mic no RC5.
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

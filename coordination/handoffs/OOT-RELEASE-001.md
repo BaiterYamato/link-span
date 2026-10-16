@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review — o **`oot-0.5.0-rc6`** passou na bateria em jogo e nos cinco gates em 2026-10-10/11, pela pipeline
 `logs/rc-pipeline-oot-next`, mas não foi publicado: o host passou ao Shipwright 9.3.0. O RC7 (OOT-UPSTREAM-002)
 também ficou só em rascunho, e o candidato publicado é o **`oot-0.5.0-rc8`**, pre-release de 2026-10-12 no
@@ -625,3 +627,12 @@ Histórico do RC2:
    de cenas, a RFC que regulariza as recompilações do host depois do COREEXT-GATE e a generalização do
    `dpadHudOwned`.
 3. Com o Gate verde e a licença decidida, autorizar o push e a publicação.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: RC3 (0ff8f2ff4), RC4 (e855b88ea), RC5 (ddeffeadf) e RC6 (ee97c6752) validados por esta tarefa; a publicação seguiu nas OOT-UPSTREAM-002/003 (done), com o RC8 e o RC9 em pre-release.
+- Core: na main: 13482b1 45d5162 55ece4b 8182f84.
+- Host: 4ae2fc4ed 4c45d5c3a 5827e580a 75b7d1a57 (RC3–RC9; já no RC2 local).
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

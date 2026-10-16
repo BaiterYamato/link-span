@@ -1,6 +1,7 @@
 # OOT-UNBOUND-003B
 
-- Status: review
+- Status: done
+- Closed: 2026-10-16 (CLAIMS-CLEANUP-001; evidência no handoff, seção «Encerramento 2026-10-16»)
 - Agent: Claude
 - Taken over from: Codex GPT-6, a pedido do usuário em 2026-09-13 (Codex suspenso sem concluir)
 - Platform: Windows

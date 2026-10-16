@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 Review. RFC 0027 em rascunho commitada no core (`d189ce1`, branch `agent/MENU-001-mod-menu`, sem push).
 
 **2026-10-04: o usuário aprovou a rodada de host da RFC** (`RODADA-HOST-v10.md`, tudo até o patch 15: lote de 7,
@@ -118,3 +120,12 @@ chamadas específicas: continua exigida a demonstração anterior de insuficiên
 generalização conforme a RFC.
 
 **Próxima ação:** provas do RC5 anexadas à OOT-RELEASE-001; acompanhar as saídas de áudio/camadas antes da Fase H.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: RFC 0027 (d189ce1) na main pela #48; a rodada de host foi aplicada (RC3); o handoff registra a RFC aceita em 09/10 ("Fechamento para o RC5").
+- Core: na main: d189ce1; a branch agent/MENU-001-mod-menu é ancestral da main.
+- Host: 54053353d (RC3–RC9).
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

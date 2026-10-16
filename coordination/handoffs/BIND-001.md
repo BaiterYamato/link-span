@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review
 
 ## Resultado
@@ -80,3 +82,11 @@ rtk git diff --check
 
 Após integrar os PRs de codegen e binding, iniciar `OOT-001` e `MM-001` para
 adicionar ShipLua como submódulo e conectar o bootstrap mínimo nos dois hosts.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: link-span#13 foi fechada como pilha; integrada pelo 64a76fa ("CODEGEN-001/002/003 + BIND-001 into main"); ad5aad6 na main.
+- Core: na main: ad5aad6.
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

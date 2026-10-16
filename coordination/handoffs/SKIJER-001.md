@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review
 
 ## Resultado
@@ -78,3 +80,13 @@ Host OoT CTest Release após inclusão da suíte raiz: oot_native_engine_tests, 
 - O NEI 0.3.5 publica `catalog` e `test_give` na DLL e registra a página **Mods > Installed Mods > Not Enough Items - Testar itens** por `ship.menu`. A lista inclui os itens definidos nesta sessão; o botão concede o item selecionado instantaneamente ao save aberto. Pacote novo: `build/nei-core-menu-20260928/LinkSpan-NEI-0.3.5-layout-c97ff67f.shipmod`, SHA-256 `A70A22EEBE852F49E202F74321C89B7423ED7E08F0E83B7419076C1E8E867551`.
 - Stage isolado com os cinco mods, save preservado e executável `6655B205...`: `build/oot-upstream-001/smoke-oot-shovel-inventory-20260928/`. O build Release das duas DLLs, o teste `linkspan_nei_core_tests`, os dois validadores de pacote e o boot dos cinco mods passaram. O log mostra `nei=1` no demo, `fork: ativo (23 itens)` e nenhum erro de menu/carregamento. O boot ficou na tela inicial: a concessão pela interface, a célula da pá, equipar, usar e save/reload ainda exigem conferência visual em gameplay antes de declarar o gate concluído.
 - O stage anterior `smoke-oot-combined-c97ff67f-20260927` e o runtime de produção não foram alterados. Nenhum push, merge ou instalação foi feito; os commits locais estão em "Commits".
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Core 4a75770 na main; host 451c2b476 e a76045848 (RC2+).
+- Core: na main: 45d5162 4a75770; a branch agent/MENU-001-mod-menu é ancestral da main.
+- Host: 451c2b476 a76045848 (RC3–RC9; já no RC2 local).
+- Ressalva mantida, não promovida a concluída: colisão e reuso de registro em jogo depende de hot reload.
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

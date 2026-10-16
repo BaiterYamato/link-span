@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review
 
 ## Resultado
@@ -45,3 +47,13 @@ YAML do workflow: parser local aceitou; git diff --check sem erro.
 ## Próxima ação recomendada
 
 - Revisar o diff, integrar o recorte e observar os jobs Windows e Linux do workflow `generate-builds`.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Host 26b8ca2a8 na integração; RC3–RC9 (já no RC2 local). Coordenação/RFC na main.
+- Core: commits na main que citam a tarefa: 13482b1 4a75770.
+- Host: 26b8ca2a8 (RC3–RC9; já no RC2 local).
+- Ressalva mantida, não promovida a concluída: o clang-format reprova arquivos antigos (exceção do mantenedor; a OOT-FORMAT-001 resolve).
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

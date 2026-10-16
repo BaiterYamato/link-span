@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 Review. Commit local no host (`d68af6968`), sem push. Framework Unbound 0.6.2 empacotado só na evidência.
 
 ## Resultado
@@ -111,3 +113,12 @@ ignorado, não recusado). Correções e integração: minhas.
 ## Próxima ação recomendada
 
 Usar o 0.6.2 na próxima RC; seguir para os limites do Prelude (UNBOUND-020).
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Host d68af6968 na integração; RC3–RC9. Coordenação/RFC na main.
+- Core: commits na main que citam a tarefa: c75e5f0.
+- Host: d68af6968 (RC3–RC9).
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

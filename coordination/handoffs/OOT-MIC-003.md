@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review — o Mic Ocarina 0.1.4 está compilado, testado ROM-free, empacotado e instalado na pasta de teste, com boot check OK. Falta o reteste com microfone. O 0.1.3 foi validado com microfone real às 06:20 de 14/09 (Saria's Song reconhecida).
 
 ## Resultado
@@ -124,3 +126,13 @@ prepare-runtime-session.ps1 + boot de 45 s na pasta de teste + finish-runtime-se
 ## Próxima ação recomendada
 
 - Com o reteste do usuário (notas da oitava 6 e músicas), levar o 0.1.4 para a `RELEASE-UNIFICADA/OOT` junto com o host do OOT-MOVE-006 e decidir a `OOT-NATIVE-001`.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Host 7a8701d82 na integração; RC3–RC9 (já no RC2 local). Coordenação/RFC na main.
+- Core: commits na main que citam a tarefa: 51deb30.
+- Host: 7a8701d82 (RC3–RC9; já no RC2 local).
+- Ressalva mantida, não promovida a concluída: reteste com microfone (oitava 6) pendente; o mantenedor jogou o Mic no RC5.
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review
 
 ## Resultado
@@ -116,3 +118,12 @@ Prova em jogo: RELEASE-UNIFICADA/OOT-teste-cenas-20260914, evidência build/oot-
 
 - OOT-CORE-006: serviço de save por namespace numa seção `linkspan` do SaveManager, persistindo também as flags das
   cenas de mod.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Host 0426f771a na integração; RC3–RC9 (já no RC2 local). Coordenação/RFC na main.
+- Core: na main: a274387; a branch agent/NATIVE-001-provider-runtime é ancestral da main.
+- Host: 0426f771a (RC3–RC9; já no RC2 local).
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.

@@ -2,6 +2,8 @@
 
 ## Estado
 
+done (2026-10-16, CLAIMS-CLEANUP-001; ver «Encerramento 2026-10-16» no fim). Registro anterior abaixo.
+
 review — DMR 0.2.12 compilado e instalado em pasta jogável separada. Testes
 automatizados e inicialização real conferidos; falta playtest com controle físico.
 
@@ -61,3 +63,13 @@ substitui a sensação de câmera em gameplay físico.
 Usar a pasta jogável indicada no playtest de controle e, após resultado positivo,
 fechar OOT-MOVE-007. Preservar NEI 0.3.12, HUD recente e o conjunto dos sete
 pacotes da pasta jogável.
+
+## Encerramento 2026-10-16 (CLAIMS-CLEANUP-001)
+
+- Estado final: done.
+- Evidência de entrega: Host 62ea72d89 na integração; RC3–RC9 (já no RC2 local). Coordenação/RFC na main.
+- Core: commits na main que citam a tarefa: 1b8129e.
+- Host: 62ea72d89 (RC3–RC9; já no RC2 local).
+- Ressalva mantida, não promovida a concluída: retomada da câmera com controle físico pendente.
+- As pendências registradas acima ficam como histórico; este encerramento atesta a entrega do recorte do claim, não a das pendências.
+- Levantamento: `claims-review-2026-10-16.csv` em `logs/claims-cleanup-2026-10` do workspace, aprovado pelo usuário em 2026-10-16.
