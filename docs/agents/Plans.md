@@ -1589,3 +1589,15 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
     MODSDK-006, OOT-AUDIO-001-port-mm-sfx, OOT-GORON-002-port-mm e OOT-GORON-003-quick-reference;
   - OOT-VANILLA-001: o texto depois de `done` no Status faz o gate tratá-la como ativa;
   - MM-JUMP-001, que está sem `Branch`.
+
+### UPDATE 2026-10-16 (Claude) — OOT-FORMAT-001: clang-format 14 no host, layout `ee6449e8`
+
+- **Formatação:** `./run-clang-format.sh` com clang-format 14.0.6 a partir da integração `0097e4e518` (RC9), branch
+  `agent/OOT-FORMAT-001-clang-format` (host `f08c524b3f`, `6cac57eb0a`, `bedff27262`). 198 arquivos, nenhum token de
+  código muda. O `MmAudioTypes.h` só chega ao ponto fixo na segunda passada.
+- **NEI:** um literal partido deixava velha a adaptação do `Message_DecodeChecked` (318/1); assinatura regravada,
+  overlay de volta a 319 sobrepostas e 0 conflitos.
+- **Validação:** `rc-build.ps1` BUILD-OK (CTest 68/68, NEI, Unbound, WW, assets do NEI e demos do link-span-examples).
+  Layout `ee6449e8` (RC9: `7376240d`), `soh.exe` `0332742A`.
+- **PRs:** BaiterYamato/Shipwright#6 (código) e BaiterYamato/link-span#55 (coordenação), abertos em 16/10.
+- **Pendente:** CI do #6 e merge na integração; RC10 com todos os mods nativos reversionados.
