@@ -23,7 +23,7 @@ O Link-Span é um modloader Lua 5.4 compartilhado para Ocarina of Time no Shipwr
 - Namespaces de recursos entre mundos e launcher para seleção de jogo e viagens, quando os hosts instalados oferecem suporte.
 - Providers nativos e core extensions. Código nativo roda no processo do jogo; o isolamento Lua não cria uma sandbox para DLLs.
 
-A instalação OoT descrita aqui usa o **overlay oot-0.5.0 RC9 para Shipwright 9.3.0**. MM e launcher têm requisitos próprios; veja [Primeiros passos](Getting-Started-pt-BR).
+A instalação OoT descrita aqui usa o **overlay oot-0.5.0 RC10 para Shipwright 9.3.0**. MM e launcher têm requisitos próprios; veja [Primeiros passos](Getting-Started-pt-BR).
 
 ## Referências completas
 

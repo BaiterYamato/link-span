@@ -116,7 +116,9 @@ class ProductReleaseTests(unittest.TestCase):
             with zipfile.ZipFile(io.BytesIO(packed)) as z:
                 self.assertIn("lua-mm/mm.shipmod", z.namelist())
                 self.assertIn("lua-oot/oot.shipmod", z.namelist())
-                self.assertEqual(z.read("mods-do-release/a.zip"), b"original")
+                self.assertEqual(z.read("release-mods/a.zip"), b"original")
+                self.assertIn("README.txt", z.namelist())
+                self.assertIn("CATALOG.json", z.namelist())
             self.assertEqual(len(catalog), 3)
 
     def test_native_catalog_cannot_silently_skip_demo(self):
@@ -138,12 +140,37 @@ class ProductReleaseTests(unittest.TestCase):
 
     def test_playtest_line_follows_definition(self):
         d = definition()
-        self.assertIn("Playtest físico do RC9: pendente.", release.release_body(d))
+        self.assertIn("Physical playtest of RC9: pending.", release.release_body(d))
         d["title"] = "Link-Span OoT 0.5.0 RC10"
         d["validation"]["physical_playtest"] = "passed"
         text = release.release_body(d)
-        self.assertIn("Playtest físico do RC10: feito.", text)
+        self.assertIn("Physical playtest of RC10: done.", text)
         self.assertNotIn("RC9", text)
+
+    def test_public_page_is_english(self):
+        text = release.release_body(definition()) + release.preview(definition())
+        for portuguese in ("Instalação", "Verificação", "Fontes da entrega", "LEIA-ME", "CATALOGO", "Prévia", "pendente"):
+            self.assertNotIn(portuguese, text)
+        self.assertIn("## Install", text)
+
+    def test_notes_replace_generic_install_and_are_pinned(self):
+        notes = b"## What changed since RC9\r\n\r\n- New layout.\r\n"
+        d = definition()
+        d["notes"] = {"file": "NOTES.md", "sha256": hashlib.sha256(notes.replace(b"\r\n", b"\n")).hexdigest()}
+        with tempfile.TemporaryDirectory() as temp:
+            p = Path(temp) / "release.json"
+            p.write_text(json.dumps(d), encoding="utf-8")
+            (Path(temp) / "NOTES.md").write_bytes(notes)
+            text = release.release_body(release.read_definition(p), release.read_notes(d, p))
+            self.assertIn("## What changed since RC9\n\n- New layout.\n", text)
+            self.assertNotIn("## Install\n\nGenerate", text)
+            (Path(temp) / "NOTES.md").write_bytes(notes + b"edited\n")
+            with self.assertRaisesRegex(release.ReleaseError, "Notas"):
+                release.read_notes(d, p)
+            d["notes"]["file"] = "../NOTES.md"
+            p.write_text(json.dumps(d), encoding="utf-8")
+            with self.assertRaises(release.ReleaseError):
+                release.read_definition(p)
 
     def test_download_labels_preserve_unicode(self):
         text = release.release_body(definition())

@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "repository": "BaiterYamato/link-span",
+  "tag": "oot-0.5.0-rc10",
+  "url": "https://github.com/BaiterYamato/link-span/releases/tag/oot-0.5.0-rc10",
+  "release_id": 415824734,
+  "published_at": "2026-10-17T13:41:43Z",
+  "prerelease": true,
+  "tag_commit": "f7bfef5f11fb4084a55f0a2e8dd0ff85c73f403f",
+  "integration_pull_request": "https://github.com/BaiterYamato/link-span/pull/57",
+  "verified_at": "2026-10-17T13:42:25.689820+00:00",
+  "verification": {
+    "uploaded_assets": 11,
+    "all_uploaded_sha256_match": true,
+    "body_matches_release_md": true,
+    "public_buttons_loaded": 4
+  },
+  "downloads": {
+    "overlay": {
+      "file": "LinkSpan-Shipwright-9.3.0-Upstream-ecd889c20-layout-ee6449e8-Win64-overlay.zip",
+      "bytes": 31870688,
+      "sha256": "9de493f8301397872933c1b358f5c2aa8e87e568f0f98ec38190ef9266bfcf98",
+      "url": "https://github.com/BaiterYamato/link-span/releases/download/oot-0.5.0-rc10/LinkSpan-Shipwright-9.3.0-Upstream-ecd889c20-layout-ee6449e8-Win64-overlay.zip"
+    },
+    "sdk": {
+      "file": "LinkSpan-OoT-SDK-oot-0.5.0-rc10-layout-ee6449e8-Win64.zip",
+      "bytes": 632655,
+      "sha256": "6dfa74247fc62a6e28c0c51385653813a48a1dfb5559c48de245b516c572d08b",
+      "url": "https://github.com/BaiterYamato/link-span/releases/download/oot-0.5.0-rc10/LinkSpan-OoT-SDK-oot-0.5.0-rc10-layout-ee6449e8-Win64.zip"
+    },
+    "examples": {
+      "file": "LinkSpan-Mod-Examples-oot-0.5.0-rc10-Win64.zip",
+      "bytes": 17261823,
+      "sha256": "f8c09b19ffde24d1595ea98d7a699c54dd0273f132d43cdd6f6362319b894284",
+      "url": "https://github.com/BaiterYamato/link-span/releases/download/oot-0.5.0-rc10/LinkSpan-Mod-Examples-oot-0.5.0-rc10-Win64.zip"
+    },
+    "source": {
+      "file": "LinkSpan-Source-oot-0.5.0-rc10.zip",
+      "bytes": 31028158,
+      "sha256": "86781b4937877de17dba3d5d1912b44136c7ad2781aab2bf8399248d70fb1b33",
+      "url": "https://github.com/BaiterYamato/link-span/releases/download/oot-0.5.0-rc10/LinkSpan-Source-oot-0.5.0-rc10.zip"
+    }
+  },
+  "body_sha256": "32abc6b1dd162e1948e558370fbc0770384e4b6f3d1810a2cd82b76d34b5a6ed",
+  "ci": {
+    "pull_request": {
+      "linux": "success",
+      "windows": "success"
+    }
+  }
+}

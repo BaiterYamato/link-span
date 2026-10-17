@@ -29,13 +29,13 @@ end)
 
 ## Downloads
 
-[![OoT Overlay — Windows](docs/assets/download-overlay.svg)](https://github.com/BaiterYamato/link-span/releases/download/oot-0.5.0-rc9/LinkSpan-Shipwright-9.3.0-Upstream-ecd889c20-layout-7376240d-Win64-overlay.zip) [![OoT SDK](docs/assets/download-sdk.svg)](https://github.com/BaiterYamato/link-span/releases/download/oot-0.5.0-rc9/LinkSpan-OoT-SDK-oot-0.5.0-rc9-layout-7376240d-Win64.zip)
+[![OoT Overlay — Windows](docs/assets/download-overlay.svg)](https://github.com/BaiterYamato/link-span/releases/download/oot-0.5.0-rc10/LinkSpan-Shipwright-9.3.0-Upstream-ecd889c20-layout-ee6449e8-Win64-overlay.zip) [![OoT SDK](docs/assets/download-sdk.svg)](https://github.com/BaiterYamato/link-span/releases/download/oot-0.5.0-rc10/LinkSpan-OoT-SDK-oot-0.5.0-rc10-layout-ee6449e8-Win64.zip)
 
-[![Mod Examples — ZIP](docs/assets/download-examples.svg)](https://github.com/BaiterYamato/link-span/releases/download/oot-0.5.0-rc9/LinkSpan-Mod-Examples-oot-0.5.0-rc9-Win64.zip) [![Source](docs/assets/download-source.svg)](https://github.com/BaiterYamato/link-span/releases/download/oot-0.5.0-rc9/LinkSpan-Source-oot-0.5.0-rc9.zip)
+[![Mod Examples — ZIP](docs/assets/download-examples.svg)](https://github.com/BaiterYamato/link-span/releases/download/oot-0.5.0-rc10/LinkSpan-Mod-Examples-oot-0.5.0-rc10-Win64.zip) [![Source](docs/assets/download-source.svg)](https://github.com/BaiterYamato/link-span/releases/download/oot-0.5.0-rc10/LinkSpan-Source-oot-0.5.0-rc10.zip)
 
 ## For players: install
 
-For OoT, use the **oot-0.5.0 RC9 overlay for Shipwright 9.3.0** and the matching mods in Mod Examples ZIP from the [Link-Span release](https://github.com/BaiterYamato/link-span/releases/tag/oot-0.5.0-rc9). Start from a working official Shipwright 9.3.0 installation, generate `oot.o2r` from your own ROM through its normal flow, back up the game folder, then replace `soh.exe`, `soh.o2r` and `soh.symbols` together with the overlay. Put selected mod packages in `mods/` without extracting them.
+For OoT, use the **oot-0.5.0 RC10 overlay for Shipwright 9.3.0** and the matching mods in Mod Examples ZIP from the [Link-Span release](https://github.com/BaiterYamato/link-span/releases/tag/oot-0.5.0-rc10). Start from a working official Shipwright 9.3.0 installation, generate `oot.o2r` from your own ROM through its normal flow, back up the game folder, then replace `soh.exe`, `soh.o2r` and `soh.symbols` together with the overlay. Put selected mod packages from the ZIP's `release-mods/` folder in `mods/` without extracting them. Coming from RC9, replace **all** mods: RC10 has a new layout id and the RC9 native packages do not load on it.
 
 For MM, use a Link-Span-enabled [2Ship host](https://github.com/BaiterYamato/2ship2harkinian), generate `mm.o2r` through the normal 2Ship flow and install mods beside its executable. The OoT overlay does not install Link-Span into MM.
 

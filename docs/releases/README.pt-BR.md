@@ -53,13 +53,15 @@ A montagem lê os arquivos dos commits fixados, não inclui mudanças locais e n
 | Mod Examples — ZIP | Pacotes dos mods do RC, exemplos Lua e demos nativos; catálogo indica jogo, requisitos e testes destrutivos |
 | Source | Fontes dos três repositórios nos commits usados, licenças, avisos e registro dos submódulos necessários |
 
-O ZIP de exemplos é um catálogo: escolha os mods que quer instalar. Exemplos exclusivos de MM ficam em uma pasta separada. Demos que provocam falhas de propósito ficam em `diagnosticos/`; nunca copie o ZIP inteiro para `mods/`. Fontes e scripts de build dos demos também estão no download Source.
+O ZIP de exemplos é um catálogo: escolha os mods que quer instalar. Os mods do RC ficam em `release-mods/`, os demos nativos em `native-oot/` e os exemplos exclusivos de MM em `lua-mm/`. Demos que provocam falhas de propósito ficam em `diagnostics/`; nunca copie o ZIP inteiro para `mods/`. `README.txt` e `CATALOG.json` descrevem o conteúdo (até o RC9, `LEIA-ME.txt`, `CATALOGO.json`, `mods-do-release/`, `nativos-oot/` e `diagnosticos/`). Fontes e scripts de build dos demos também estão no download Source.
 
 O pacote Source mantém os três diretórios separados. Dependências Git externas são registradas com suas revisões em `SOURCE-LOCK.json`; devem ser obtidas pelos mecanismos próprios do build. Os ZIPs automáticos de código do GitHub incluem apenas o repositório central, por isso não substituem esse download.
 
 ## Evidência e publicação
 
 Teste da ferramenta: `python -m unittest discover -s tests/tools -p test_product_release.py`.
+
+A página da release, a prévia e os textos dentro dos ZIPs são públicos e saem em inglês (desde o RC10). As notas da entrega ficam em inglês ao lado da ficha (`releases/<tag>/NOTES.md`), fixadas pelo campo `notes` com o SHA-256 do arquivo em LF; com notas, a página usa esse texto no lugar da instalação genérica.
 
 `release.json` registra o estado histórico da entrega e a localização original dos arquivos. `release-lock.json`, `SHA256SUMS.txt`, o catálogo dos exemplos, `RELEASE.md` e `preview.html` são gerados durante a montagem. As evidências anteriores continuam associadas à versão em que foram executadas. Montagem e verificação de hashes não substituem gameplay, controle físico ou microfone.
 
