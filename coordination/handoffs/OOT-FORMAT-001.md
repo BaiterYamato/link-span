@@ -2,7 +2,9 @@
 
 ## Estado
 
-review
+done — BaiterYamato/Shipwright#6 mergeado na integração em `b5ab20d820` (CI 7/7, com o primeiro `clang-format`
+verde no fork) e BaiterYamato/link-span#55 em `154659da07`. O RC10 no layout `ee6449e8` foi validado e publicado pela
+OOT-RELEASE-002. Fechada com o ok do mantenedor em 17/10/2026.
 
 ## Resultado
 
@@ -58,11 +60,8 @@ logs/rc-pipeline-oot-next/rc-build.ps1 -Tag oot-format-001-check (Windows 11, MS
 
 ## Pendências
 
-- Push e PRs autorizados em 2026-10-16: BaiterYamato/Shipwright#6 (código) e BaiterYamato/link-span#55
-  (coordenação). O #6 ainda não teve nenhuma run de CI (nem depois de fechar e reabrir); o `clang-format` verde
-  segue sem prova no GitHub.
-- RC10: reversionar e reempacotar NEI, Unbound, DMR, Mic, WW, Shovel e as fixtures para o layout novo; bateria
-  inteira.
+- Resolvidas: o CI do #6 não rodava porque o GitHub tinha suspendido o Actions do fork; reativado pelo mantenedor,
+  passou 7/7. O RC10 com todos os mods reversionados é a OOT-RELEASE-002.
 - Pré-existente, sem efeito hoje: três resoluções em `overlay-merges/` têm assinatura velha desde antes da formatação
   (`code_800EC960.AudioOcarina_PlaybackSong`, `z_file_choose.FileChoose_UpdateQuestMenu` e
   `z_file_choose.FileChoose_UpdateRandomizerMenu`). Não aparecem como conflito porque a mescla automática dessas
