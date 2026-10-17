@@ -1,6 +1,6 @@
 # OOT-RELEASE-002
 
-- Status: review
+- Status: done
 - Agent: Claude (Opus 5.5)
 - Platform: Windows
 - Branch: agent/OOT-RELEASE-002-english-page

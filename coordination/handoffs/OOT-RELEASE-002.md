@@ -2,7 +2,10 @@
 
 ## Estado
 
-review
+done — RC10 `oot-0.5.0-rc10` publicado como pre-release central em 17/10/2026 (tag em `f7bfef5`), com a página
+em inglês. PRs integrados: BaiterYamato/Shipwright#7 (`04059701e2`), BaiterYamato/link-span-examples#4
+(`ea536d1cbe`), BaiterYamato/link-span#56 (`94c176bc99`) e #57 (`90834ec1eb`); wiki publicada no RC10
+(`link-span.wiki` `24f25d4`). Fechada com o ok do mantenedor em 17/10/2026.
 
 ## Resultado
 
@@ -109,11 +112,12 @@ Evidência: `build/oot-upstream-001/evidence/release-g/rc10/` no host (`RESUMO.t
   verde; pre-release [`oot-0.5.0-rc10`](https://github.com/BaiterYamato/link-span/releases/tag/oot-0.5.0-rc10)
   publicada com a página em inglês, tag no `f7bfef5` (PR BaiterYamato/link-span#57), 11 arquivos com digest
   conferido contra o `SHA256SUMS.txt` (`releases/oot-0.5.0-rc10/publication.json`).
-- Com o ok do mantenedor: merge do link-span#57; fechar o claim da OOT-FORMAT-001 (em review na main); trocar a
-  página do RC9 publicada (em português) pelo texto em inglês.
+- Feito em 17/10: merge do link-span#57 e fechamento dos claims da OOT-FORMAT-001 e desta tarefa.
+- Em aberto, com o ok do mantenedor: trocar a página do RC9 publicada (em português) pelo texto em inglês.
+- Playtest físico do RC10 (controle, câmera e microfone).
 - README e `docs/wiki` passaram ao RC10 no PR BaiterYamato/link-span#57: links dos quatro downloads, versões dos
   mods, pastas novas do ZIP de exemplos e o aviso de trocar todos os mods vindo do RC9 (links conferidos com curl).
-  Falta publicar a wiki no clone `link-span.wiki`, com o ok do mantenedor.
+  Wiki publicada no clone `link-span.wiki` em 17/10 (`24f25d4`).
 - Pré-existente, sem efeito hoje: três resoluções em `overlay-merges/` do NEI com assinatura velha (ver handoff da
   OOT-FORMAT-001).
 - O Actions do BaiterYamato/Shipwright já foi suspenso por uso uma vez; o `generate-builds` roda em todo push e PR.

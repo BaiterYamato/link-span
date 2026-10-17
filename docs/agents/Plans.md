@@ -1616,3 +1616,15 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
 - **Pendente:** push, PRs, publicação como pre-release no BaiterYamato/link-span e fechamento da OOT-FORMAT-001, cada
   um com o ok do mantenedor; playtest físico.
 - Handoff: `coordination/handoffs/OOT-RELEASE-002.md`.
+
+### UPDATE 2026-10-17 (Claude) — OOT-RELEASE-002: RC10 publicado em inglês; OOT-FORMAT-001 e OOT-RELEASE-002 fechadas
+
+- **Publicação:** pre-release central [`oot-0.5.0-rc10`](https://github.com/BaiterYamato/link-span/releases/tag/oot-0.5.0-rc10)
+  com a tag em `f7bfef5`; 11 arquivos com digest conferido (`releases/oot-0.5.0-rc10/publication.json`).
+- **Inglês:** o mantenedor apontou que a página do RC9 saiu em português. Desde o RC10, `product_release.py` gera
+  página, prévia e textos dos ZIPs em inglês (`release-mods/`, `native-oot/`, `diagnostics/`, `README.txt`,
+  `CATALOG.json`), e as notas ficam em `releases/<tag>/NOTES.md` (campo `notes` da ficha).
+- **Merges:** BaiterYamato/Shipwright#7 (`04059701e2`), link-span-examples#4 (`ea536d1cbe`), link-span#56
+  (`94c176bc99`) e #57 (`90834ec1eb`, com README e wiki no RC10); wiki publicada (`24f25d4`).
+- **Fechadas:** OOT-FORMAT-001 e OOT-RELEASE-002 (`done`, ok do mantenedor em 17/10).
+- **Pendente:** trocar a página publicada do RC9 pelo texto em inglês (com ok); playtest físico.

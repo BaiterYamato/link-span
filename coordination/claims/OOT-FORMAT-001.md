@@ -1,6 +1,6 @@
 # OOT-FORMAT-001
 
-- Status: review
+- Status: done
 - Agent: Claude (Opus 5.5)
 - Platform: Windows
 - Branch: agent/OOT-FORMAT-001-clang-format
