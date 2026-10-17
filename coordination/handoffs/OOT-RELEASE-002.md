@@ -104,10 +104,14 @@ Evidência: `build/oot-upstream-001/evidence/release-g/rc10/` no host (`RESUMO.t
 
 ## Pendências
 
-- Com o ok do mantenedor, um por vez: push das três branches; PRs (host contra a integração, exemplos e core contra
-  a main); montagem central (`build-native-examples.ps1` + `product_release.py prepare/verify`), tag e pre-release
-  `oot-0.5.0-rc10` no BaiterYamato/link-span; fechar o claim da OOT-FORMAT-001 (em review na main).
-- Wiki (`docs/wiki`) e README seguem apontando o RC9 até a publicação.
+- Feito em 17/10 com o ok do mantenedor: push das três branches; PRs BaiterYamato/Shipwright#7 (`04059701e2`),
+  BaiterYamato/link-span-examples#4 (`ea536d1cbe`) e BaiterYamato/link-span#56 (`94c176bc99`), mergeados com CI
+  verde; pre-release [`oot-0.5.0-rc10`](https://github.com/BaiterYamato/link-span/releases/tag/oot-0.5.0-rc10)
+  publicada com a página em inglês, tag no `f7bfef5` (PR BaiterYamato/link-span#57), 11 arquivos com digest
+  conferido contra o `SHA256SUMS.txt` (`releases/oot-0.5.0-rc10/publication.json`).
+- Com o ok do mantenedor: merge do link-span#57; fechar o claim da OOT-FORMAT-001 (em review na main); trocar a
+  página do RC9 publicada (em português) pelo texto em inglês.
+- Wiki (`docs/wiki`) e README seguem apontando o RC9 e os nomes antigos do ZIP de exemplos; passar para o RC10.
 - Pré-existente, sem efeito hoje: três resoluções em `overlay-merges/` do NEI com assinatura velha (ver handoff da
   OOT-FORMAT-001).
 - O Actions do BaiterYamato/Shipwright já foi suspenso por uso uma vez; o `generate-builds` roda em todo push e PR.
