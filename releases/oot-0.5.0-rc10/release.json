@@ -188,6 +188,10 @@
     "file": "RESUMO-FINAL.txt",
     "sha256": "763723842449d58ad17151593c8c5c0f5aeed5e25fa21eae352d61edf5e97781"
   },
+  "notes": {
+    "file": "NOTES.md",
+    "sha256": "077062f26128d7ccaac3a8be2c22c2a3cbb26e6299d3060dfd764f2daffe6fd4"
+  },
   "validation": {
     "date": "2026-10-17",
     "host_ctest": {
