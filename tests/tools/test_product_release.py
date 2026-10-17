@@ -136,6 +136,15 @@ class ProductReleaseTests(unittest.TestCase):
             self.assertIn(f"https://github.com/BaiterYamato/link-span/releases/download/{d['tag']}/{item['file']}", text)
         self.assertNotIn("releases/download/oot-0.5.0-rc9/oot.o2r", text)
 
+    def test_playtest_line_follows_definition(self):
+        d = definition()
+        self.assertIn("Playtest físico do RC9: pendente.", release.release_body(d))
+        d["title"] = "Link-Span OoT 0.5.0 RC10"
+        d["validation"]["physical_playtest"] = "passed"
+        text = release.release_body(d)
+        self.assertIn("Playtest físico do RC10: feito.", text)
+        self.assertNotIn("RC9", text)
+
     def test_download_labels_preserve_unicode(self):
         text = release.release_body(definition())
         self.assertIn("OoT Overlay — Windows", text)

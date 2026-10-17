@@ -1601,3 +1601,18 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
   Layout `ee6449e8` (RC9: `7376240d`), `soh.exe` `0332742A`.
 - **PRs:** BaiterYamato/Shipwright#6 (código) e BaiterYamato/link-span#55 (coordenação), abertos em 16/10.
 - **Pendente:** CI do #6 e merge na integração; RC10 com todos os mods nativos reversionados.
+
+### UPDATE 2026-10-17 (Claude) — OOT-RELEASE-002: RC10 `oot-0.5.0-rc10` validado no layout `ee6449e8`, não publicado
+
+- **RC10:** host `e9da99b515` sobre a integração com a OOT-FORMAT-001 (`b5ab20d820`), `soh.exe` `40C8A725…`, layout
+  `ee6449e8` (RC9: `7376240d`), CTest 68/68, pacotes reprodutíveis. Sem mudança de comportamento; todo mod nativo
+  reversionado: NEI 0.3.25, Unbound 0.6.15, DMR 0.2.24, Mic 0.2.10, WW 0.1.6, Shovel 0.1.6 (link-span-examples
+  `1a2aa9f`).
+- **Validação (16–17/10):** instalação fresca, sem mods, matriz 9/9, ciclo de save, atualização NEI 0.3.24 → 0.3.25,
+  fixtures 9/9 (a `luzes` repetida com o M2 refeito para o layout novo), probe do SDK, autocontenção e cinco gates
+  verdes, com rollback RC10 → RC9 → RC10.
+- **Ficha central:** `releases/oot-0.5.0-rc10/release.json`. A página da release passa a tirar o RC e o estado do
+  playtest da ficha (`product_release.py`).
+- **Pendente:** push, PRs, publicação como pre-release no BaiterYamato/link-span e fechamento da OOT-FORMAT-001, cada
+  um com o ok do mantenedor; playtest físico.
+- Handoff: `coordination/handoffs/OOT-RELEASE-002.md`.
