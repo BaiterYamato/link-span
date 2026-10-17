@@ -13,7 +13,7 @@ Leia o log ao lado do executável: `logs/Ship of Harkinian.log` no OoT ou `logs/
 - Valide o pacote realmente instalado com `python tools/shipmod.py validate <pacote>`. Use o validador compilado, não só o fallback básico da CLI.
 - Confira a faixa de API com **0.5.0**, jogo, versão do host, capabilities obrigatórias e dependências. Uma faixa antiga `>=0.4 <0.5` exclui 0.5.0. Ampliar a faixa não corrige código incompatível; teste antes de alterar.
 - Uma capability obrigatória ausente exige host adequado ou revisão do mod. Para recurso opcional, use `ship.capabilities.has(...)` antes de chamar.
-- No Windows, experimente um caminho curto, como `C:\Jogos\SoH`. O RC9 ainda tem limite de 260 caracteres e extrai pacotes em `mods/.shiplua-cache/`.
+- No Windows, experimente um caminho curto, como `C:\Jogos\SoH`. O RC10 ainda tem limite de 260 caracteres e extrai pacotes em `mods/.shiplua-cache/`.
 
 ## Layout ou fingerprint nativo diferente
 
@@ -31,7 +31,7 @@ Confira o binding configurado e outros mods na mesma tecla. Criar atores pode ex
 
 Para conteúdo entre mundos, confira o diagnóstico de montagem e corrija as pastas irmãs ou `SHIPLUA_MM_ROOT` / `SHIPLUA_OOT_ROOT`. Gere ambos os archives pelos fluxos normais dos jogos. Veja [Assets entre mundos](Cross-World-Assets-pt-BR).
 
-Para NEI, se itens aparecerem sem ícone ou modelo, procure a linha de status do NEI no log do jogo e confira se ela diz `assets: pacote: core+...`. A partir do NEI 0.3.24 os assets vão dentro do pacote `LinkSpan-NEI-*.shipmod`, então não há nada a gerar; reinstale o pacote se essa linha não mostrar o núcleo. Um pacote antigo (anterior à 0.3.24) ainda depende de `nei-assets/nei-assets-core.o2r` ao lado do jogo; sem ele só Roc's Feather e Roc's Cape ficam disponíveis. Para dados Unbound, instale o Unbound Framework exigido; sem ele, o RC9 ignora essas camadas de archive.
+Para NEI, se itens aparecerem sem ícone ou modelo, procure a linha de status do NEI no log do jogo e confira se ela diz `assets: pacote: core+...`. A partir do NEI 0.3.24 os assets vão dentro do pacote `LinkSpan-NEI-*.shipmod`, então não há nada a gerar; reinstale o pacote se essa linha não mostrar o núcleo. Um pacote antigo (anterior à 0.3.24) ainda depende de `nei-assets/nei-assets-core.o2r` ao lado do jogo; sem ele só Roc's Feather e Roc's Cape ficam disponíveis. Para dados Unbound, instale o Unbound Framework exigido; sem ele, o RC10 ignora essas camadas de archive.
 
 ## Relate um problema reproduzível
 

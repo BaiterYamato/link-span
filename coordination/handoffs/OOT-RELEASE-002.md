@@ -111,7 +111,9 @@ Evidência: `build/oot-upstream-001/evidence/release-g/rc10/` no host (`RESUMO.t
   conferido contra o `SHA256SUMS.txt` (`releases/oot-0.5.0-rc10/publication.json`).
 - Com o ok do mantenedor: merge do link-span#57; fechar o claim da OOT-FORMAT-001 (em review na main); trocar a
   página do RC9 publicada (em português) pelo texto em inglês.
-- Wiki (`docs/wiki`) e README seguem apontando o RC9 e os nomes antigos do ZIP de exemplos; passar para o RC10.
+- README e `docs/wiki` passaram ao RC10 no PR BaiterYamato/link-span#57: links dos quatro downloads, versões dos
+  mods, pastas novas do ZIP de exemplos e o aviso de trocar todos os mods vindo do RC9 (links conferidos com curl).
+  Falta publicar a wiki no clone `link-span.wiki`, com o ok do mantenedor.
 - Pré-existente, sem efeito hoje: três resoluções em `overlay-merges/` do NEI com assinatura velha (ver handoff da
   OOT-FORMAT-001).
 - O Actions do BaiterYamato/Shipwright já foi suspenso por uso uma vez; o `generate-builds` roda em todo push e PR.

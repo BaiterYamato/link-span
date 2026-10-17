@@ -2,7 +2,7 @@
 
 # Example Mods
 
-Examples live in [`link-span-examples`](https://github.com/BaiterYamato/link-span-examples), separate from the core. They do not accompany the core checkout. A release may select an individual demo, such as RC9's Shovel Demo, without bundling the entire examples repository.
+Examples live in [`link-span-examples`](https://github.com/BaiterYamato/link-span-examples), separate from the core. They do not accompany the core checkout. A release may select an individual demo, such as RC10's Shovel Demo, without bundling the entire examples repository.
 
 ## Lua folders (23)
 

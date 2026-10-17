@@ -16,6 +16,8 @@
   - tools/release/product_release.py, tests/tools/test_product_release.py (a página dizia "RC9" fixo; página e ZIPs
     públicos em inglês desde 17/10)
   - docs/releases/README.pt-BR.md (nomes em inglês do ZIP de exemplos e as notas da ficha)
+  - README.md, README.pt-BR.md, docs/wiki/{Getting-Started,Home,Native-Mods,Troubleshooting,Example-Mods}{,-pt-BR}.md
+    (RC9 -> RC10 depois da publicação)
   - coordination/claims/OOT-RELEASE-002.md, coordination/handoffs/OOT-RELEASE-002.md
 - Goal:
   - RC10 `oot-0.5.0-rc10` pela rc-pipeline-oot-next sobre a integração com a OOT-FORMAT-001 (layout `ee6449e8`).
