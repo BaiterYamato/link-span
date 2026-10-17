@@ -19,6 +19,8 @@ import zipfile
 
 STAMP = (1980, 1, 1, 0, 0, 0)
 ROLES = {"overlay", "sdk", "examples", "source"}
+# validation.physical_playtest da ficha -> texto da página
+PLAYTEST = {"pending": "pendente", "passed": "feito", "failed": "reprovado"}
 SHA = re.compile(r"^[0-9a-f]{64}$")
 COMMIT = re.compile(r"^[0-9a-f]{40}$")
 PROTECTED = {".z64", ".n64", ".v64", ".rom", ".sav", ".sra", ".fla", ".eep", ".dmp"}
@@ -277,6 +279,8 @@ def release_body(definition):
         return f"[![{download['label']}]({badges}/download-{role}.svg)]({base}/{download['file']})"
     sources = "\n".join(f"- {role}: [`{s['commit'][:12]}`](https://github.com/{s['repository']}/commit/{s['commit']})"
                         for role, s in definition["sources"].items())
+    candidate = definition["title"].split()[-1]
+    playtest = PLAYTEST.get(definition["validation"].get("physical_playtest"), "pendente")
     origin = definition.get("historical_publication")
     history = ("\n\n## Publicação anterior\n\nEsta montagem reutiliza os pacotes originais sem mudar seus bytes. "
                f"[Publicação original]({origin['url']}). A origem histórica permanece preservada.\n") if origin else "\n"
@@ -288,7 +292,7 @@ def release_body(definition):
             "O SDK e o Source são para desenvolvimento. Veja LEIA-ME.txt e CATALOGO.json dentro do ZIP.\n\n"
             "## Verificação\n\nHashes: SHA256SUMS.txt. Proveniência: release-lock.json. Evidência histórica: RESUMO.txt. "
             "Os demos adicionais têm validação de build/pacote; isso não comprova gameplay de todos os exemplos. "
-            "Playtest físico do RC9: pendente.\n\n"
+            f"Playtest físico do {candidate}: {playtest}.\n\n"
             f"## Fontes da entrega\n\n{sources}\n\n"
             f"API {definition['api_version']}; layout `{definition['host']['layout'][:8]}`. "
             "Dependências externas e suas revisões estão em SOURCE-LOCK.json dentro do Source.\n\n"
