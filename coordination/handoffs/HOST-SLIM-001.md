@@ -95,8 +95,10 @@ fixtures válidas contra o schema novo.
 
 - O layout id do host muda quando a F2 subir o submódulo com esta ABI (`include/shiplua/native` entra no hash).
   Mods nativos compilados com o header novo levam descriptor minor 4 e são recusados por hosts antigos.
-- Até a F4, o host com este core continua expondo os bindings Lua retirados do schema; o contrato gerado não os
-  testa mais.
+- O submódulo com este core não sobe sozinho no host: `ValidateLuaApiHostContext` recusa capabilities que o core
+  não conhece, então o mesmo commit do bump tira `oot.audio`, `oot.spawn_dog` e `oot.player.bunny_hood` do
+  `CreateHostContext` e dos `RegisterHostCapability` do bootstrap (F2a, tarefa 3 do plano da F2). Os bindings Lua
+  retirados do schema continuam no host até a F4; o contrato gerado não os testa mais.
 - Layout igual garante declarações iguais, não semântica igual; uma função pública pode mudar de comportamento sem
   mudar a assinatura.
 
