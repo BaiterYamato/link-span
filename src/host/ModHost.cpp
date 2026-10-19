@@ -262,9 +262,9 @@ Result<void> ModHost::LoadMod(const Manifest& manifest, const std::string& luaSo
     if (manifest.kind == ModKind::CoreExtension &&
         (manifest.loadPhase != ModLoadPhase::PreGame || !manifest.provider ||
          (manifest.provider->abiVersion != "1.1" && manifest.provider->abiVersion != "1.2" &&
-          manifest.provider->abiVersion != "1.3"))) {
+          manifest.provider->abiVersion != "1.3" && manifest.provider->abiVersion != "1.4"))) {
         return Result<void>::err(ErrorCode::InvalidArgument,
-                                 "core_extension requires pre_game and provider ABI 1.1, 1.2 or 1.3");
+                                 "core_extension requires pre_game and provider ABI 1.1, 1.2, 1.3 or 1.4");
     }
     if (manifest.kind == ModKind::Mod && manifest.loadPhase == ModLoadPhase::PreGame) {
         return Result<void>::err(ErrorCode::InvalidArgument,

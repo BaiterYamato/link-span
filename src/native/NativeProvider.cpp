@@ -2,6 +2,7 @@
 #include "shiplua/native/NativeDiagnostics.h"
 
 #include <algorithm>
+#include <cctype>
 #include <cstddef>
 #include <cstdio>
 #include <cstring>
@@ -49,6 +50,12 @@ class EscapeBatch {
   private:
     NativeEscapeHatch* mHatch = nullptr;
 };
+
+bool IsSha256Hex(std::string_view text) {
+    return text.size() == 64 && std::all_of(text.begin(), text.end(), [](char c) {
+        return std::isxdigit(static_cast<unsigned char>(c)) != 0;
+    });
+}
 
 bool ValidPath(const std::string& text) {
     if (text.empty() || text.size() > 1024 || text.front() == '/' ||
@@ -112,8 +119,13 @@ ShipNativeStatus SHIP_NATIVE_CALL Write(void* context, const char* bytes, uint32
 
 Result<void> ValidateNativeManifest(const NativeProviderManifest& provider) {
     if (provider.abiVersion != "1.0" && provider.abiVersion != "1.1" && provider.abiVersion != "1.2" &&
-        provider.abiVersion != "1.3") {
-        return Result<void>::err(ErrorCode::Unsupported, "provider.abi_version must be 1.0, 1.1, 1.2 or 1.3");
+        provider.abiVersion != "1.3" && provider.abiVersion != "1.4") {
+        return Result<void>::err(ErrorCode::Unsupported,
+                                 "provider.abi_version must be 1.0, 1.1, 1.2, 1.3 or 1.4");
+    }
+    if (!provider.hostLayoutId.empty() && !IsSha256Hex(provider.hostLayoutId)) {
+        return Result<void>::err(ErrorCode::InvalidArgument,
+                                 "provider.host_layout_id must be a 64-digit hex layout id");
     }
     if (provider.win64.empty() && provider.linux64.empty() && provider.macos.empty()) {
         return Result<void>::err(ErrorCode::InvalidArgument, "provider needs a platform library");

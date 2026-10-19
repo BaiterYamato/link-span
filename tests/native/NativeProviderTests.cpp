@@ -722,6 +722,31 @@ int main(int argc, char** argv) {
     Check(!ParseManifestString(ManifestText("test.invalid")+
         "load_phase='pre_game'\n"+ProviderText()).isOk(),
         "pre_game phase is reserved for core extensions");
+    {   // ABI 1.4 (RFC 0029): host_layout_id só em core extension 1.4; fingerprints em 1.3 e 1.4.
+        const std::string core = "kind='core_extension'\nload_phase='pre_game'\n";
+        const std::string layout = "host_layout_id='" + std::string(64, 'C') + "'\n";
+        const auto v14 = ProviderText("provider/module.bin", "1.4");
+        const auto parsed = ParseManifestString(ManifestText("test.layout") + core + v14 + layout);
+        Check(parsed.isOk() && parsed.value->provider->hostLayoutId == std::string(64, 'c'),
+              "1.4 core extension accepts host_layout_id normalized to lowercase");
+        Check(ParseManifestString(ManifestText("test.layout") + core + v14).isOk(),
+              "1.4 core extension without layout or fingerprints");
+        Check(ParseManifestString(ManifestText("test.layout") + core + v14 + layout +
+                                  "host_fingerprints=['" + std::string(64, 'a') + "']\n").isOk(),
+              "1.4 core extension accepts both gates");
+        Check(ParseManifestString(ManifestText("test.layout") + v14).isOk(), "ordinary mod may negotiate ABI 1.4");
+        Check(!ParseManifestString(ManifestText("test.layout") + core +
+                                   ProviderText("provider/module.bin", "1.3") + layout).isOk(),
+              "host_layout_id requires ABI 1.4");
+        Check(!ParseManifestString(ManifestText("test.layout") + v14 + layout).isOk(),
+              "host_layout_id requires a core extension");
+        for (const auto& bad : std::vector<std::string>{
+                 "host_layout_id='xyz'\n", "host_layout_id='" + std::string(63, 'a') + "'\n",
+                 "host_layout_id='" + std::string(64, 'g') + "'\n", "host_layout_id=7\n"}) {
+            Check(!ParseManifestString(ManifestText("test.layout") + core + v14 + bad).isOk(),
+                  "reject malformed host_layout_id: " + bad);
+        }
+    }
     for (const std::string range : {">=0.4.1", "*", ">0.4.999", ">=0.5.0-alpha"}) {
         auto source = ManifestText("test.invalid") + ProviderText();
         source.replace(source.find(">=0.5 <1.0"), std::string(">=0.5 <1.0").size(), range);

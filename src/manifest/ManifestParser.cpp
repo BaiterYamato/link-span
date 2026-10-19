@@ -159,6 +159,11 @@ Result<Manifest> ParseTable(const toml::table& table, const std::string& sourceN
             else if (key.str() == "win64") native.win64 = *value;
             else if (key.str() == "linux64") native.linux64 = *value;
             else if (key.str() == "macos") native.macos = *value;
+            else if (key.str() == "host_layout_id") {
+                native.hostLayoutId = *value;
+                std::transform(native.hostLayoutId.begin(), native.hostLayoutId.end(), native.hostLayoutId.begin(),
+                               [](char c) { return static_cast<char>(std::tolower(static_cast<unsigned char>(c))); });
+            }
             else return Result<Manifest>::err(ErrorCode::InvalidArgument,
                 sourceName + ": unknown provider field: " + std::string(key.str()));
         }
@@ -173,9 +178,15 @@ Result<Manifest> ParseTable(const toml::table& table, const std::string& sourceN
         manifest.provider = std::move(native);
     }
     if (manifest.provider && !manifest.provider->hostFingerprints.empty() &&
-        (manifest.kind != ModKind::CoreExtension || manifest.provider->abiVersion != "1.3")) {
+        (manifest.kind != ModKind::CoreExtension ||
+         (manifest.provider->abiVersion != "1.3" && manifest.provider->abiVersion != "1.4"))) {
         return Result<Manifest>::err(ErrorCode::InvalidArgument,
-            sourceName + ": provider.host_fingerprints requires a core_extension with ABI 1.3");
+            sourceName + ": provider.host_fingerprints requires a core_extension with ABI 1.3 or 1.4");
+    }
+    if (manifest.provider && !manifest.provider->hostLayoutId.empty() &&
+        (manifest.kind != ModKind::CoreExtension || manifest.provider->abiVersion != "1.4")) {
+        return Result<Manifest>::err(ErrorCode::InvalidArgument,
+            sourceName + ": provider.host_layout_id requires a core_extension with ABI 1.4");
     }
 
     if (manifest.kind == ModKind::CoreExtension) {
@@ -185,9 +196,9 @@ Result<Manifest> ParseTable(const toml::table& table, const std::string& sourceN
         }
         if (!manifest.provider ||
             (manifest.provider->abiVersion != "1.1" && manifest.provider->abiVersion != "1.2" &&
-             manifest.provider->abiVersion != "1.3")) {
+             manifest.provider->abiVersion != "1.3" && manifest.provider->abiVersion != "1.4")) {
             return Result<Manifest>::err(ErrorCode::InvalidArgument,
-                sourceName + ": core_extension requires provider ABI 1.1, 1.2 or 1.3");
+                sourceName + ": core_extension requires provider ABI 1.1, 1.2, 1.3 or 1.4");
         }
     } else if (manifest.loadPhase == ModLoadPhase::PreGame) {
         return Result<Manifest>::err(ErrorCode::InvalidArgument,
