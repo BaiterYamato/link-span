@@ -110,7 +110,7 @@ Execute `python tools/shipmod.py doctor` no ambiente de desenvolvimento. Ele ver
 
 ### Valide mods nativos: `doctor [path ...] [--host HOST]`
 
-Com um ou mais caminhos, `doctor` inspeciona a biblioteca do `[provider]` sem carregá-la. Cada caminho pode ser uma pasta, `.zip` ou `.shipmod`. Use `--host` para conferir fingerprints ABI 1.3 contra um executável de jogo:
+Com um ou mais caminhos, `doctor` inspeciona a biblioteca do `[provider]` sem carregá-la. Cada caminho pode ser uma pasta, `.zip` ou `.shipmod`. Use `--host` para conferir fingerprints ABI 1.3/1.4 contra um executável de jogo:
 
 ```powershell
 python tools/shipmod.py doctor build/my-mod.shipmod --host x64/Release/soh.exe
@@ -124,9 +124,10 @@ Os nomes dos checks são em inglês nos dois idiomas:
 | --- | --- |
 | `Manifest` | Manifesto do mod |
 | `Provider` | Presença de `[provider]`; mods sem ele passam sem checks nativos |
-| `ABI` | `abi_version` entre 1.0 e o minor do `ship_native_abi.h` deste core (1.3) |
+| `ABI` | `abi_version` entre 1.0 e o minor do `ship_native_abi.h` deste core (1.4) |
 | `Kind` | Regras de `kind` / `load_phase` de core extension |
 | `Fingerprints` | Regras de `host_fingerprints`; com `--host`, avisa se o SHA-256 do executável não está na lista |
+| `Layout` | Regras de `host_layout_id`: 64 dígitos hex, só em `core_extension` com ABI 1.4; avisa quando uma core extension 1.4 não tem layout nem fingerprints |
 | `win64 library` | Biblioteca `win64` relativa, contida no mod e existente; PE x86-64 marcado como DLL |
 | `Exports` | `ShipNative_Query` exportado |
 | `Imports` | Falha ao linkar o executável, Lua ou shiplua; aviso para CRT de debug |
@@ -135,7 +136,7 @@ Os marcadores de status são `[ok]`, `[warn]` e `[fail]`, e a execução termina
 
 ```text
 shipmod doctor — LinkSpan-NEI-0.3.20-layout-9a593a6e.shipmod
-[ok]   ABI: 1.3 (core accepts up to 1.3)
+[ok]   ABI: 1.3 (core accepts up to 1.4)
 [ok]   Kind: core_extension, pre_game
 [ok]   Fingerprints: 1 host(s); use --host to check
 [ok]   win64 library: provider/linkspan_nei_core.dll: x86-64 DLL, 4758016 bytes

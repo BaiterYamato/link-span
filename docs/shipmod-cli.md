@@ -110,7 +110,7 @@ Run `python tools/shipmod.py doctor` from your development environment. It check
 
 ### Check native mods: `doctor [path ...] [--host HOST]`
 
-With one or more paths, `doctor` inspects the `[provider]` library without loading it. Each path can be a directory, `.zip` or `.shipmod`. Use `--host` to check ABI 1.3 fingerprints against a game executable:
+With one or more paths, `doctor` inspects the `[provider]` library without loading it. Each path can be a directory, `.zip` or `.shipmod`. Use `--host` to check ABI 1.3/1.4 fingerprints against a game executable:
 
 ```powershell
 python tools/shipmod.py doctor build/my-mod.shipmod --host x64/Release/soh.exe
@@ -124,9 +124,10 @@ The checks are named in English in both locales:
 | --- | --- |
 | `Manifest` | The mod's manifest |
 | `Provider` | Whether `[provider]` is present; mods without it pass without native checks |
-| `ABI` | `abi_version` between 1.0 and this core's `ship_native_abi.h` minor (1.3) |
+| `ABI` | `abi_version` between 1.0 and this core's `ship_native_abi.h` minor (1.4) |
 | `Kind` | Core-extension `kind` / `load_phase` rules |
 | `Fingerprints` | `host_fingerprints` rules; with `--host`, warns if the executable's SHA-256 is not listed |
+| `Layout` | `host_layout_id` rules: 64 hex digits, only in a `core_extension` with ABI 1.4; warns when a 1.4 core extension has neither layout nor fingerprints |
 | `win64 library` | A relative, contained and existing `win64` library; x86-64 PE marked as a DLL |
 | `Exports` | Exported `ShipNative_Query` |
 | `Imports` | Failure for links to the executable, Lua or shiplua; warning for a debug CRT |
@@ -135,7 +136,7 @@ The status markers are `[ok]`, `[warn]` and `[fail]`, and the run ends with `Sum
 
 ```text
 shipmod doctor — LinkSpan-NEI-0.3.20-layout-9a593a6e.shipmod
-[ok]   ABI: 1.3 (core accepts up to 1.3)
+[ok]   ABI: 1.3 (core accepts up to 1.4)
 [ok]   Kind: core_extension, pre_game
 [ok]   Fingerprints: 1 host(s); use --host to check
 [ok]   win64 library: provider/linkspan_nei_core.dll: x86-64 DLL, 4758016 bytes

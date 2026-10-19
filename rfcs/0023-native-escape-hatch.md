@@ -2,6 +2,9 @@
 
 Status: implementação experimental COREEXT-008.
 
+> A ABI 1.4 ([RFC 0029](0029-host-limpo-conteudo-mm-em-mods.md)) separa deste escape hatch a resolução de símbolos
+> públicos, presa ao layout id. Desvios e símbolos privados seguem as regras abaixo, agora em 1.3 e 1.4.
+
 ## Motivação
 
 Os hooks da RFC 0021 cobrem pontos que o host declara. Portar forks como o Not

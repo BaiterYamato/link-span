@@ -108,7 +108,7 @@ Num mod real, confira callbacks necessários, versão/tamanho do runtime antes d
 
 `LINKSPAN_OOT_LAYOUT_ID` é um identificador SHA-256 de 64 caracteres gerado a partir dos headers públicos da fronteira, tamanho de ponteiro, ID/versão do compilador, plataforma e flags. As entradas públicas incluem `soh/include`, `soh/soh/native` e `shiplua/native`; finais de linha são normalizados. Os oito caracteres nos nomes dos pacotes são só um rótulo. Compare o ID **completo** no init. Um provider compilado para outro layout deve recusar inicialização; não edite o ID para burlar a checagem. Recompile e reempacote com o SDK correspondente.
 
-Uma mudança só na implementação interna pode manter o layout. Isso não garante compatibilidade de mod com escape hatch: detours ABI 1.3 também exigem core extension, SHA-256 exato de `soh.exe` em `[provider].host_fingerprints` e `soh.symbols` correspondente. Layout identifica a fronteira; fingerprint identifica os bytes do executável.
+Uma mudança só na implementação interna pode manter o layout. A partir do RC11, uma core extension que declara esse layout id em `[provider].host_layout_id` (ABI 1.4) continua resolvendo símbolos públicos (`functions.h`, `variables.h`) entre esses rebuilds. Desvios e símbolos privados continuam exigindo o SHA-256 exato de `soh.exe` em `[provider].host_fingerprints` e `soh.symbols` correspondente. Layout identifica a fronteira; fingerprint identifica os bytes do executável.
 
 ## Compilar com `OotNativeSdk.cmake`
 
@@ -134,7 +134,7 @@ python "$sdk/tools/shipmod.py" doctor .\probe-build\mod --host .\game\soh.exe
 & "$sdk/tools/package-linkspan-mod.ps1" -Source .\probe-build\mod -OutputPath .\SDK-Probe.shipmod
 ```
 
-`validate` usa checagem estrutural básica quando o validador C++ canônico está ausente. `doctor <mod> --host <exe>` inspeciona exports/imports PE, ABI e fingerprints **sem carregar a DLL**. `doctor` sem esses argumentos mira um repositório completo e pode informar schemas/codegen ausentes no recorte do SDK. A CLI não tem comando `pack`. `shipmod test` precisa de runner externo por `SHIPLUA_MOD_TEST_RUNNER`; o binário não acompanha o SDK.
+`validate` usa checagem estrutural básica quando o validador C++ canônico está ausente. `doctor <mod> --host <exe>` inspeciona exports/imports PE, ABI, layout id e fingerprints **sem carregar a DLL**. `doctor` sem esses argumentos mira um repositório completo e pode informar schemas/codegen ausentes no recorte do SDK. A CLI não tem comando `pack`. `shipmod test` precisa de runner externo por `SHIPLUA_MOD_TEST_RUNNER`; o binário não acompanha o SDK.
 
 O empacotador recebe `-Source` e `-OutputPath`, aceita `.zip` ou `.shipmod`, exige `manifest.toml` na raiz e recusa sobrescrever saída existente. Usa `linkspan-zip.ps1` para nomes com `/`, ordem e horários fixos. Evite `Compress-Archive` e `ZipFile.CreateFromDirectory` no Windows PowerShell 5.1; seus separadores podem impedir o loader de encontrar o manifesto.
 

@@ -36,7 +36,7 @@ Use `package-linkspan-mod.ps1` do host para pacotes Windows. Ele grava nomes de 
 
 ## Versões da ABI: use os headers do alvo
 
-O header é `shiplua/native/ship_native_abi.h`. O core implementa ABI C **1.0 a 1.3**, incluindo hooks e escape hatch: `SHIP_NATIVE_ABI_MAJOR` é 1 e `SHIP_NATIVE_ABI_MINOR` é 3. ABI 1.0 continua válida para mods nativos comuns. Use os headers distribuídos com o runtime e o SDK alvo; não misture snapshots.
+O header é `shiplua/native/ship_native_abi.h`. O core implementa ABI C **1.0 a 1.4**, incluindo hooks, escape hatch e símbolos públicos presos ao layout: `SHIP_NATIVE_ABI_MAJOR` é 1 e `SHIP_NATIVE_ABI_MINOR` é 4. ABI 1.0 continua válida para mods nativos comuns. Use os headers distribuídos com o runtime e o SDK alvo; não misture snapshots.
 
 | ABI | Contrato |
 | --- | --- |
@@ -44,6 +44,7 @@ O header é `shiplua/native/ship_native_abi.h`. O core implementa ABI C **1.0 a 
 | 1.1 | Acrescenta `register_service` para core extensions durante init. |
 | 1.2 | Hooks nativos observe, transform e replace onde o host os permite. |
 | 1.3 | Fingerprint do executável e resolução de símbolos/detours condicionada à autorização do contrato. |
+| 1.4 | Símbolos públicos presos ao layout id do host; `ShipNativeRuntime` mantém o layout da 1.3. |
 
 O manifesto declara a minor exigida. O descritor informa a ABI realmente compilada no provider. O loader confere tamanho do descritor, compatibilidade major/minor e callbacks init/shutdown. Uma versão no manifesto não faz um runtime antigo expor campos novos. Confira tamanho e versão do runtime antes de acessar membros acrescentados. `linkspan-sdk.json` do SDK OoT registra a ABI nativa e a toolchain.
 
@@ -86,7 +87,7 @@ runtime->register_service(runtime->context, "author.framework.items", 1,
 
 `items_api` é o contrato e o armazenamento do próprio framework; deve sobreviver até o shutdown. Publicação é restrita a core extensions no init. Consumidores consultam o mesmo nome/versão/tamanho e declaram a dependência do framework no manifesto. O loader ordena dependências e recusa descarregar o dono de um serviço enquanto houver consumidor carregado. O encerramento completo segue a ordem inversa de carga/dependências.
 
-Num runtime ABI 1.2, uma core extension também pode declarar e despachar seus próprios pontos de hook; modos aceitos e payload pertencem ao contrato do dono do ponto. No runtime OoT ABI 1.3, `resolve_symbol`, `install_patch` e `remove_patch` exigem core extension com `abi_version = "1.3"` e `[provider].host_fingerprints` correspondente. Consulte [o escape hatch do host](https://github.com/BaiterYamato/Shipwright/blob/agent/OOT-UPSTREAM-001-78dc6d970-integration/docs/native-mods.md#escape-hatch-coreext-008). Só o layout correspondente não basta para essas operações.
+Num runtime ABI 1.2, uma core extension também pode declarar e despachar seus próprios pontos de hook; modos aceitos e payload pertencem ao contrato do dono do ponto. No runtime OoT, `install_patch`, `remove_patch` e símbolos privados exigem core extension com ABI 1.3 ou 1.4 e `[provider].host_fingerprints` correspondente (veja [o escape hatch do host](https://github.com/BaiterYamato/Shipwright/blob/agent/OOT-UPSTREAM-001-78dc6d970-integration/docs/native-mods.md#escape-hatch-coreext-008)). Com ABI 1.4, símbolos públicos só precisam de `[provider].host_layout_id` igual; veja [Símbolos públicos](#símbolos-públicos-abi-14). Layout igual nunca autoriza desvio.
 
 ## Hooks nativos (ABI 1.2)
 
@@ -113,7 +114,7 @@ dispara com `dispatch_hook`. Detalhes na [RFC 0021](../rfcs/0021-native-hooks.md
 ## Escape hatch (ABI 1.3)
 
 Para mudanças que nenhum serviço ou hook cobre, uma core extension com `load_phase = "pre_game"` e
-`abi_version = "1.3"` pode resolver funções do executável por nome e desviá-las:
+`abi_version = "1.3"` (ou `"1.4"`) pode resolver funções do executável por nome e desviá-las:
 
 ```toml
 [provider]
@@ -141,6 +142,31 @@ if (runtime->resolve_symbol(runtime->context, "z_player.c!Player_Action_Roll", &
   `install_patch` e `remove_patch` vale no retorno.
 - Recompile e republique o mod a cada executável novo. Detalhes em
   [RFC 0023](../rfcs/0023-native-escape-hatch.md).
+
+## Símbolos públicos (ABI 1.4)
+
+Uma core extension que só **chama** funções do jogo ou **lê** variáveis do jogo não precisa do fingerprint do executável. Com ABI 1.4, ela declara o layout id do SDK com que foi compilada:
+
+```toml
+kind = "core_extension"
+load_phase = "pre_game"
+
+[provider]
+abi_version = "1.4"
+win64 = "provider/framework.dll"
+host_layout_id = "<layout id de 64 caracteres do SDK>"
+```
+
+- `resolve_symbol` procura primeiro o nome simples no catálogo público do host: funções e variáveis declaradas diretamente em `soh/include/functions.h` e `soh/include/variables.h`. O catálogo não lê `soh.symbols`, PDB nem o hash do executável.
+- O core compara `host_layout_id` com o layout do host antes de consultar o catálogo. Layout ausente ou diferente deixa o caminho público em `UNSUPPORTED`; o mod carrega mesmo assim, e o `init` decide se falha ou degrada.
+- Nome qualificado (`arquivo.c!Nome`) nunca usa o caminho público.
+- Nome fora do catálogo só segue para o caminho privado quando `host_fingerprints` lista o executável atual. Falha do catálogo não segue.
+- Endereço público não autoriza `install_patch`: desvio continua exigindo `host_fingerprints`.
+- Em qualquer falha, o core escreve 0 em `*address`.
+- `ShipNativeRuntime` e `ShipNativeDescriptor` mantêm o layout da 1.3; o descriptor precisa informar minor 4 ou maior. Manifesto 1.3 nunca usa o caminho público, mesmo com DLL 1.4.
+- O layout id garante declarações iguais, não comportamento igual: uma função pode manter a assinatura e mudar o que faz. Veja a [RFC 0029](../rfcs/0029-host-limpo-conteudo-mm-em-mods.md).
+
+O host OoT publica o catálogo a partir do RC11.
 
 ## Crash e proteção de boot
 
@@ -179,7 +205,7 @@ como removido. Isso evita um detour apontar para código já descarregado. O
 provider não deve depender de patch ativo durante o próprio init e não deve
 instalar patch no `shutdown`.
 
-O escape hatch continua restrito a core extension ABI 1.3, ao fingerprint do
+Desvios continuam restritos a core extension com ABI 1.3 ou 1.4, ao fingerprint do
 executável declarado no manifesto e ao limite de 1024 patches por provider.
 
 ## Confiança, política e isolamento
