@@ -76,7 +76,7 @@ bool IsLibraryLoaded(const fs::path& path) {
 }
 
 int main(int argc, char** argv) {
-    if (argc != 12) return 2;
+    if (argc != 13) return 2;
     const auto root = fs::temp_directory_path() / ("shiplua-native-" +
         std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
     fs::create_directories(root);
@@ -498,6 +498,137 @@ int main(int argc, char** argv) {
                 Check(host.LoadModFromDirectory((escapeRoot / "allowed").string()).isOk() && alreadyCreated == 0,
                       "same target reloads without ALREADY_CREATED");
                 Check(host.UnloadMod("test.escape.allowed").isOk(), "reloaded provider unloads cleanly");
+            }
+        }
+        {
+            // ABI 1.4 (RFC 0029): catálogo público preso ao layout, separado do escape hatch preso ao hash.
+            const std::string layout(64, 'c');
+            int publicLookups = 0, privateLookups = 0, installs = 0, removes = 0, batches = 0;
+            auto symbols = std::make_shared<NativePublicSymbols>();
+            symbols->layoutId = layout;
+            symbols->resolve = [&publicLookups](const char* name, uintptr_t* address) -> ShipNativeStatus {
+                ++publicLookups;
+                const std::string text(name);
+                if (text == "PublicFn") { *address = 0x2000; return SHIP_NATIVE_OK; }
+                if (text == "gPublicVar") { *address = 0x3000; return SHIP_NATIVE_OK; }
+                return SHIP_NATIVE_UNSUPPORTED;
+            };
+            auto hatch = std::make_shared<NativeEscapeHatch>();
+            hatch->fingerprint = [] { return std::string(64, 'a'); };
+            hatch->resolve = [&privateLookups](const char* name, uintptr_t* address) -> ShipNativeStatus {
+                ++privateLookups;
+                const std::string text(name);
+                if (text == "PrivateFn") { *address = 0x4000; return SHIP_NATIVE_OK; }
+                if (text == "z_test.c!PublicFn") { *address = 0x5000; return SHIP_NATIVE_OK; }
+                return SHIP_NATIVE_UNSUPPORTED;
+            };
+            hatch->install = [&installs](std::string_view, uintptr_t target, void*, void** original,
+                                         uint64_t* id) -> ShipNativeStatus {
+                if (target < 0x1000) return SHIP_NATIVE_INVALID_ARGUMENT;
+                *original = reinterpret_cast<void*>(target);
+                *id = static_cast<uint64_t>(++installs);
+                return SHIP_NATIVE_OK;
+            };
+            hatch->remove = [&removes](uint64_t) -> ShipNativeStatus { ++removes; return SHIP_NATIVE_OK; };
+            hatch->beginBatch = [&batches](std::string_view) { ++batches; };
+            hatch->commitBatch = [] { return SHIP_NATIVE_OK; };
+            auto publicPolicy = policy;
+            publicPolicy.escapeHatch = hatch;
+            publicPolicy.publicSymbols = symbols;
+            const std::string core = "kind='core_extension'\nload_phase='pre_game'\n";
+            const auto publicRoot = root / ("public-" + game);
+            const auto makePublic = [&](const std::string& name, const std::string& abi, const std::string& extra,
+                                        const fs::path& library) {
+                MakeMod(publicRoot / name, library, "test.public." + name, "loaded=true", core, abi);
+                std::ofstream(publicRoot / name / "manifest.toml", std::ios::app) << extra;
+            };
+            const auto report = [&](ModHost& host, const std::string& name, const std::string& expected) {
+                Run(host, "test.public." + name,
+                    "local r=require('ship').native.call('report','')\nassert(r=='" + expected + "', r)");
+            };
+            const std::string layoutLine = "host_layout_id='" + layout + "'\n";
+            const std::string otherLayout = "host_layout_id='" + std::string(63, 'c') + "d'\n";
+            const std::string pinned = "host_fingerprints=['" + std::string(64, 'a') + "']\n";
+            makePublic("only", "1.4", layoutLine, argv[12]);
+            makePublic("mixed", "1.4", layoutLine + pinned, argv[12]);
+            makePublic("other", "1.4", otherLayout, argv[12]);
+            makePublic("hashonly", "1.4", otherLayout + pinned, argv[12]);
+            makePublic("legacy", "1.3", {}, argv[12]);
+            makePublic("old", "1.4", layoutLine, argv[11]);
+            {
+                ModHost host(context, {}, publicPolicy);
+                Check(host.LoadModFromDirectory((publicRoot / "only").string()).isOk(), "public-only provider loads");
+                report(host, "only", "fn=0:2000 var=0:3000 qual=2:0 priv=2:0 miss=2:0 ins=2");
+                Check(privateLookups == 0 && installs == 0 && batches == 0,
+                      "layout alone never reaches the private path, patches or the activation batch");
+                Check(host.LoadModFromDirectory((publicRoot / "mixed").string()).isOk(), "mixed provider loads");
+                report(host, "mixed", "fn=0:2000 var=0:3000 qual=0:5000 priv=0:4000 miss=2:0 ins=0");
+                Check(installs == 1, "fingerprint authorizes the patch on a public address");
+                Check(host.UnloadMod("test.public.mixed").isOk() && removes == 1, "mixed unload removes its patch");
+                Check(host.LoadModFromDirectory((publicRoot / "other").string()).isOk(), "other layout still loads");
+                report(host, "other", "fn=2:0 var=2:0 qual=2:0 priv=2:0 miss=2:0 ins=2");
+                const auto lookups = publicLookups;
+                Check(host.LoadModFromDirectory((publicRoot / "hashonly").string()).isOk(), "hash-only 1.4 loads");
+                report(host, "hashonly", "fn=2:0 var=2:0 qual=0:5000 priv=0:4000 miss=2:0 ins=1");
+                Check(host.LoadModFromDirectory((publicRoot / "legacy").string()).isOk(), "1.3 manifest, 1.4 DLL");
+                report(host, "legacy", "fn=2:0 var=2:0 qual=2:0 priv=2:0 miss=2:0 ins=2");
+                Check(publicLookups == lookups, "different layout or 1.3 manifest never consults the catalog");
+                Check(!host.LoadModFromDirectory((publicRoot / "old").string()).isOk(),
+                      "1.4 manifest rejects a 1.3 descriptor");
+            }
+            {
+                auto noCatalog = publicPolicy;
+                noCatalog.publicSymbols.reset();
+                ModHost host(context, {}, noCatalog);
+                Check(host.LoadModFromDirectory((publicRoot / "only").string()).isOk(), "host without catalog");
+                report(host, "only", "fn=2:0 var=2:0 qual=2:0 priv=2:0 miss=2:0 ins=2");
+            }
+            {
+                // Falha do catálogo não abre o caminho privado, mesmo com fingerprint.
+                auto broken = std::make_shared<NativePublicSymbols>();
+                broken->layoutId = layout;
+                broken->resolve = [](const char*, uintptr_t*) -> ShipNativeStatus {
+                    throw std::runtime_error("catalog");
+                };
+                auto everything = std::make_shared<NativeEscapeHatch>(*hatch);
+                everything->resolve = [](const char*, uintptr_t* address) -> ShipNativeStatus {
+                    *address = 0x6000;
+                    return SHIP_NATIVE_OK;
+                };
+                auto throwing = publicPolicy;
+                throwing.publicSymbols = broken;
+                throwing.escapeHatch = everything;
+                ModHost host(context, {}, throwing);
+                Check(host.LoadModFromDirectory((publicRoot / "mixed").string()).isOk(), "broken catalog still loads");
+                report(host, "mixed", "fn=3:0 var=3:0 qual=0:6000 priv=3:0 miss=3:0 ins=1");
+            }
+            {
+                // Carga direta, sem parser: o loader repete as regras.
+                auto parsed = ParseManifestString(ManifestText("test.public.direct") + core +
+                                                  ProviderText("provider/module.bin", "1.4") + layoutLine);
+                Check(parsed.isOk(), "direct 1.4 manifest parses");
+                if (parsed.isOk()) {
+                    auto manifest = *parsed.value;
+                    const auto callReport = [&](const Manifest& value) {
+                        auto provider = NativeProvider::Load(value, publicRoot / "only", publicPolicy);
+                        if (!provider.isOk()) return "load: " + provider.message;
+                        char buffer[256];
+                        const auto result = (*provider.value)->Call("report", "", 0, buffer, sizeof(buffer));
+                        return result.code == ErrorCode::Ok ? std::string(buffer, result.size) : std::string("call");
+                    };
+                    manifest.provider->hostLayoutId = std::string(64, 'C');
+                    Check(callReport(manifest) == "fn=0:2000 var=0:3000 qual=2:0 priv=2:0 miss=2:0 ins=2",
+                          "direct load compares the layout without case");
+                    manifest.kind = ModKind::Mod;
+                    manifest.loadPhase = ModLoadPhase::Runtime;
+                    Check(callReport(manifest) == "fn=2:0 var=2:0 qual=2:0 priv=2:0 miss=2:0 ins=2",
+                          "direct load keeps the public path closed to ordinary mods");
+                    manifest.kind = ModKind::CoreExtension;
+                    manifest.loadPhase = ModLoadPhase::PreGame;
+                    manifest.provider->hostLayoutId = "xyz";
+                    Check(!NativeProvider::Load(manifest, publicRoot / "only", publicPolicy).isOk(),
+                          "direct load rejects a malformed layout id");
+                }
             }
         }
         {

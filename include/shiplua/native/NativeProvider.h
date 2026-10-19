@@ -41,6 +41,15 @@ struct NativeEscapeHatch {
     std::function<ShipNativeStatus()> commitBatch;
 };
 
+// ABI 1.4 (RFC 0029): catálogo público do host, nome simples → endereço, gerado das declarações diretas de
+// functions.h e variables.h. Independe do escape hatch: não lê soh.symbols, PDB nem o hash do executável.
+struct NativePublicSymbols {
+    // Layout id do SDK com que o host foi compilado (SHA-256, 64 dígitos hex).
+    std::string layoutId;
+    // OK com *address != 0 para nome do catálogo; UNSUPPORTED para nome fora dele. Roda na thread do jogo.
+    std::function<ShipNativeStatus(const char* name, uintptr_t* address)> resolve;
+};
+
 struct NativeProviderPolicy {
     // Escolha única do host de permitir código nativo. Não é uma allowlist de
     // mecânicas, nomes de função ou mods. Lua não pode modificar esta política.
@@ -54,6 +63,8 @@ struct NativeProviderPolicy {
     std::shared_ptr<NativeHookRegistry> hooks;
     // ABI 1.3: ausente = get_host_fingerprint e o escape hatch retornam UNSUPPORTED.
     std::shared_ptr<NativeEscapeHatch> escapeHatch;
+    // ABI 1.4: ausente = resolve_symbol só tem o caminho privado do escape hatch.
+    std::shared_ptr<NativePublicSymbols> publicSymbols;
     // Chamado uma vez, na thread do host, depois de remover hooks e patches e
     // antes do shutdown da DLL. Serviços que guardam estado por mod usam isto
     // para devolver o comportamento-padrão mesmo se o mod não o fizer.
@@ -118,6 +129,8 @@ class NativeProvider {
     std::vector<NativeHostService> mPublishedServices;
     std::shared_ptr<NativeHookRegistry> mHooks;
     std::shared_ptr<NativeEscapeHatch> mEscapeHatch;
+    std::shared_ptr<NativePublicSymbols> mPublicSymbols;
+    bool mPublicAllowed = false;
     std::function<void(std::string_view owner)> mOnProviderUnload;
     std::vector<std::string> mHostFingerprints;
     std::vector<uint64_t> mPatches;
