@@ -168,14 +168,19 @@
       ],
       "properties": {
         "abi_version": {
-          "enum": ["1.0", "1.1", "1.2", "1.3"]
+          "enum": ["1.0", "1.1", "1.2", "1.3", "1.4"]
         },
         "host_fingerprints": {
           "type": "array",
-          "description": "ABI 1.3, só core_extension: SHA-256 dos executáveis em que o escape hatch pode ser usado.",
+          "description": "ABI 1.3 e 1.4, só core_extension: SHA-256 dos executáveis em que símbolos privados e patches do escape hatch podem ser usados.",
           "minItems": 1,
           "maxItems": 32,
           "items": { "type": "string", "pattern": "^[0-9a-fA-F]{64}$" }
+        },
+        "host_layout_id": {
+          "type": "string",
+          "description": "ABI 1.4, só core_extension: layout id (SHA-256) do SDK com que o provider foi compilado. Igual ao do host, resolve_symbol atende os nomes do catálogo público sem fingerprint.",
+          "pattern": "^[0-9a-fA-F]{64}$"
         },
         "win64": {
           "type": "string",
@@ -241,7 +246,7 @@
         "properties": {
           "load_phase": { "const": "pre_game" },
           "provider": {
-            "properties": { "abi_version": { "enum": ["1.1", "1.2", "1.3"] } }
+            "properties": { "abi_version": { "enum": ["1.1", "1.2", "1.3", "1.4"] } }
           }
         }
       }
@@ -254,6 +259,32 @@
       "then": {
         "required": ["kind"],
         "properties": { "kind": { "const": "core_extension" } }
+      }
+    },
+    {
+      "if": {
+        "required": ["provider"],
+        "properties": { "provider": { "required": ["host_layout_id"] } }
+      },
+      "then": {
+        "required": ["kind"],
+        "properties": {
+          "kind": { "const": "core_extension" },
+          "provider": { "properties": { "abi_version": { "const": "1.4" } } }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": ["provider"],
+        "properties": { "provider": { "required": ["host_fingerprints"] } }
+      },
+      "then": {
+        "required": ["kind"],
+        "properties": {
+          "kind": { "const": "core_extension" },
+          "provider": { "properties": { "abi_version": { "enum": ["1.3", "1.4"] } } }
+        }
       }
     }
   ],
