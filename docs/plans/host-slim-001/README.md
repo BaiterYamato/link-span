@@ -14,5 +14,6 @@ jogo. As linhas citadas valem para esses commits; confira de novo antes de imple
 | [contratos-servicos.md](contratos-servicos.md) | Contratos C propostos: `player-body` V1, `skeletons` V2, `movement` V3, `camera` V2, `colliders` V2 | F2 |
 | [inventario-unbound.md](inventario-unbound.md) | O que o exe sabe do Unbound, política que sai, auditoria da chave "sem mods = vanilla" (V1–V8), impacto de renomes no layout id | F4 |
 | [impacto.md](impacto.md) | Consumidores de tudo o que sai: NEI, exemplos, schema e capabilities, bateria do RC, docs e wiki; ordem de migração | F1, F3–F6 |
+| [plano-f1-core.md](plano-f1-core.md) | Plano de implementação da F1 no core: ABI 1.4 com símbolos públicos presos ao layout, manifesto, `shipmod`, release, retirada das 7 funções e 3 capabilities, docs | F1 |
 
 Os contratos C destes arquivos são propostas. O contrato que vale é o que a fase F2 fixar na RFC 0029.
