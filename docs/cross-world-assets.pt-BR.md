@@ -104,7 +104,7 @@ Isso combina os nomes usados por `elegy-statue` e `rauru`. Exige um host que rea
 
 A renderização estrangeira depende de factories compatíveis, formatos de esqueleto/animação e caminho de desenho do host. Um caminho válido ou spawn bem-sucedido não comprova que toda textura, animação ou material renderize corretamente. Teste transições de cena, destruição do ator e unload, além do desenho inicial.
 
-Reutilizar recursos não importa lógica de atores, execução de cenas ou sequências do outro motor. Áudio precisa de bridge explícito suportado; o schema atual inclui `oot.audio`, portanto a afirmação antiga de que apenas dados de renderização podem atravessar é ampla demais. Isso ainda não promete reprodução arbitrária de áudio MM no OoT.
+Reutilizar recursos não importa lógica de atores, execução de cenas ou sequências do outro motor. Áudio precisa de uma ponte explícita. Desde a [RFC 0029](../rfcs/0029-host-limpo-conteudo-mm-em-mods.md) ela vem de um mod (MM Base), não do schema do host OoT, que não tem mais a capability `oot.audio`. Nada promete reproduzir qualquer áudio do MM no OoT.
 
 O guia antigo descrevia aliases de hash e sanitização de opcodes de display lists. São detalhes de implementação do host, não chamadas Lua nem etapas de criação, e não são verificáveis na fonte disponível do core. Não reescreva hashes/opcodes estrangeiros num mod Lua com base nessa descrição.
 
