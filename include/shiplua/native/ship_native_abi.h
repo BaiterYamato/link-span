@@ -17,7 +17,7 @@ extern "C" {
 #endif
 
 #define SHIP_NATIVE_ABI_MAJOR 1u
-#define SHIP_NATIVE_ABI_MINOR 3u
+#define SHIP_NATIVE_ABI_MINOR 4u
 #define SHIP_NATIVE_MAX_BYTES 65536u
 
 typedef uint32_t ShipNativeStatus;
@@ -127,13 +127,20 @@ typedef struct ShipNativeRuntime {
         ShipNativeHookOriginalFn original, void* original_context);
     /* ABI 1.3: escape hatch (RFC 0023). get_host_fingerprint vale para qualquer
        provider e escreve o SHA-256 hex do executável (64 bytes, sem NUL); com
-       output NULL e capacity 0 só informa o tamanho. As outras três exigem core
-       extension com abi_version "1.3" cujo provider.host_fingerprints contém o
+       output NULL e capacity 0 só informa o tamanho. install_patch, remove_patch
+       e os símbolos privados de resolve_symbol exigem core extension com
+       abi_version "1.3" ou "1.4" cujo provider.host_fingerprints contém o
        fingerprint atual; fora disso retornam UNSUPPORTED. */
     ShipNativeStatus (SHIP_NATIVE_CALL *get_host_fingerprint)(
         void* context, char* output, uint32_t capacity, uint32_t* output_size);
-    /* Nome "Funcao" quando único no executável, ou "arquivo.c!Funcao" para
-       funções static repetidas. Ausente ou ambíguo = UNSUPPORTED. */
+    /* Dois caminhos. Público (ABI 1.4, RFC 0029): core extension pre_game com
+       abi_version "1.4" e provider.host_layout_id igual ao layout do host
+       resolve nomes simples do catálogo público (declarações diretas de
+       functions.h e variables.h), sem fingerprint. Privado: com fingerprint
+       autorizado, "Funcao" quando único no executável ou "arquivo.c!Funcao"
+       para static repetida. Nome qualificado nunca usa o caminho público, e
+       endereço público não autoriza patch. Ausente ou ambíguo = UNSUPPORTED.
+       O core escreve 0 em *address em qualquer falha. */
     ShipNativeStatus (SHIP_NATIVE_CALL *resolve_symbol)(
         void* context, const char* name, uintptr_t* address);
     /* Desvia `target` (dentro do executável) para `detour`; *original recebe o
