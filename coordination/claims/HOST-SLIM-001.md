@@ -1,6 +1,6 @@
 # HOST-SLIM-001
 
-- Status: claimed
+- Status: review
 - Agent: Claude (Opus 5.5), com subagentes Codex (gpt-6.1-sol) nas análises
 - Platform: Windows
 - Branch: agent/HOST-SLIM-001-f1-core
