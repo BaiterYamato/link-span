@@ -59,7 +59,7 @@
   - Decisões do mantenedor em 19/10/2026: extensões de motor ficam no exe como API; as 7 funções Lua de conteúdo
     saem já, sem ciclo de depreciação; caminho por hooks públicos (sem escape hatch); ligação por nome presa ao
     layout (ABI 1.4); fases F0–F6; corrigir V2–V5 e V7 da chave vanilla e aceitar V1, V6 e V8.
-- Status (fase F2i-0): review
+- Status (fase F2i-0): done (PR #62 mergeado na `main` em `a44965f`, 20/10/2026)
 - Branch (fase F2i-0): agent/HOST-SLIM-001-f2i-core
 - Agent (fase F2i-0): Claude (Sonnet 5.5), a pedido do mantenedor; base `origin/main` @ `acd96ff` (F1 mergeada), integrada com `7b191a6` (F2-0, PR #61) por merge
 - Started (fase F2i-0): 2026-10-20
@@ -80,3 +80,20 @@
     de RPG nem mudança de ABI; `api_version` fica 0.5.0. O host só consome depois do merge na `main`.
 - Esta fase não altera as linhas `Status` e `Branch` do topo (claim compartilhado com a F2-0); o estado da F2i-0 é o
   das linhas "(fase F2i-0)" acima.
+- F2-0: PR #61 mergeado na `main` em `7b191a6` (20/10/2026).
+- Status (fase F2a): review
+- Branch (fase F2a): `agent/HOST-SLIM-001-f2a-catalogo` em `BaiterYamato/Shipwright` (PR Shipwright#8, base
+  `agent/OOT-UPSTREAM-001-78dc6d970-integration` @ `04059701e2`); worktree `HOST-SLIM-001-host`
+- Agent (fase F2a): Claude (Opus 5.5); Codex (gpt-6.1-sol) só na conferência de âncoras da F2b
+- Started (fase F2a): 2026-10-20
+- Files (fase F2a, tarefas 3–9 do plano da F2, no host):
+  - extern/ship-lua (submódulo)
+  - soh/soh/ShipLuaBootstrap.cpp (só as capabilities do CreateHostContext)
+  - soh/native-sdk/ExportSdk.cmake, soh/native-sdk/tests/EngineTests.cpp
+  - soh/native-sdk/tests/public-probe/**, soh/native-sdk/tests/test_public_probe.py
+  - soh/soh/native/OotNativeEngine.cpp, soh/soh/native/OotNativePublicSymbols.h,
+    soh/soh/native/OotNativePublicSymbolsLookup.cpp
+  - soh/soh/native/OotNativeHostKeep.c, soh/soh/native/OotNativePublicSymbols.c (gerados)
+  - tools/gen-host-keep.py, tools/tests/test_gen_host_keep.py, tools/public-symbols-exclude.txt,
+    tools/public-symbols-report.txt, tools/check-public-symbols.py
+  - coordination/claims/HOST-SLIM-001.md e coordination/handoffs/HOST-SLIM-001.md (no core, só os blocos da F2a)
