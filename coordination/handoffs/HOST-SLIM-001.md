@@ -232,3 +232,72 @@ git diff --check
 
 Revisar e mergear o PR (CI verde). Depois do merge, registrar o SHA da `main` aqui e abrir a F2i no host, que faz o
 bump do submódulo para esse SHA, emite o evento pela ponte da tarefa 32 e fecha o corte 0..255 no host.
+
+F2i-0 mergeada na `main` em `a44965f` (PR #62, 20/10/2026): é a referência mínima do submódulo para a F2i do host.
+
+## F2a (host): catálogo público e core na ABI 1.4
+
+Estado: review. PR [Shipwright#8](https://github.com/BaiterYamato/Shipwright/pull/8), branch
+`agent/HOST-SLIM-001-f2a-catalogo` sobre a integração `04059701e2`, worktree `HOST-SLIM-001-host`. Tarefas 3–9 do
+plano da F2.
+
+### Resultado
+
+- Submódulo `extern/ship-lua` `4766532` → `a44965f` (F1 + F2-0 + F2i-0). Desvio do plano: a F2a sobe direto para a
+  `main` com a F2i-0, porque o #62 entrou antes do bump; a F2i do host não precisa de outro bump.
+- O host deixa de anunciar `oot.audio`, `oot.spawn_dog` e `oot.player.bunny_hood` (lista e `RegisterHostCapability`).
+  O resultado do `oot.env` passa a ser conferido.
+- `OotNativeSdk.cmake` exporta `OOT_NATIVE_LAYOUT_ID`.
+- `tools/gen-host-keep.py` foi reescrito, com 6 testes, `--check` e `--output-dir`. Saídas:
+  - retenção com 2105 entradas (+3 `AudioLoad_*`);
+  - catálogo com 2088 funções e 181 variáveis;
+  - 132 declarações fora, no relatório, com o motivo de cada uma.
+- `policy.publicSymbols = CreateOotPublicSymbols()`, com busca binária, ordem conferida uma vez e saída zerada em toda
+  recusa.
+- O CTest do host ganha `linkspan_host_keep_generator`, `linkspan_host_keep_sync`, `oot_native_public_probe` e
+  `linkspan_public_symbols_pe`.
+
+### Commits (host)
+
+`3418199b0c` submódulo e capabilities; `fdcd466e71` layout no SDK; `4c173d2a3b` gerador; `8628840079` política;
+`8f77c6cad9` probe 1.4; `8c4fc0d119` checagem do PE.
+
+### Validação
+
+Windows 11, MSVC v143, x64, Release.
+
+- Linha de base: ctest 6/6, layout `ee6449e8…`.
+- Depois: os 6 testes antigos e os 4 novos, todos verdes.
+- Layout:
+  - `1682920f…` depois do bump;
+  - `e6fa180f…` final, porque `OotNativePublicSymbols.h` entra no hash, como o plano previa;
+  - `soh.exe` `1D1EB7C9…`.
+- Probe: `public-probe sin=ok:1.000 icons=ok:1 extra=unsupported:0 qual=unsupported:0 miss=unsupported:0`.
+- PE: 2269 entradas, 0 divergências.
+- Provas negativas:
+  - `--check` com a retenção do RC10 sai com 1;
+  - layout zerado no probe é recusado;
+  - RVA de `Math_SinS` trocado sai com 1.
+- Em jogo, numa cópia em `logs/host-slim-f2a/runtime` (base 9.3.0, `soh.o2r` do RC10), duas sessões válidas da skill
+  `soh-runtime-playtest`, sem alteração nos arquivos rastreados (evidência em `logs/host-slim-f2a/evidencia`):
+  - com `soh.symbols`: DMR 0.2.24 (1.3, privado) e o probe 1.4 carregam, a linha do probe é a esperada e nenhuma
+    capability é recusada;
+  - sem `soh.symbols`: a mesma linha do probe e o DMR carregado; o log traz `escape hatch: ... ausente; resolve_symbol
+    indisponível`.
+
+### Pendências
+
+- O pulo de 7.0 do DMR com controle físico não foi testado. O DMR lê o botão X real, e o fallback de teclado é zero.
+  Fica para o mantenedor.
+- As 181 variáveis contam com o `soh/src/boot/build.c` que o configure gera (`gBuildVersion`, `gGitBranch`,
+  `gGitCommitHash`). Sem configure, o gerador dá 178 e o `--check` acusa diferença.
+- A conferência de âncoras da F2b (Codex) achou 133 de 138 referências ok. Faltam corrigir:
+  - `Declare` em `OotNativeHooks.cpp`: usar a definição `uint64_t Declare(`;
+  - `Player_PlayVoiceSfx`: está na linha 1744, e a âncora da voz é multilinha, nas linhas 1745–1747;
+  - `sMaskDlists`: usar a declaração `static Gfx* sMaskDlists[...]`;
+  - `Player_DrawGameplay`: usar a definição `void Player_DrawGameplay(`.
+
+### Próxima ação recomendada
+
+Mergear o Shipwright#8 com o CI verde e seguir para a F2b (tarefas 10–13), com as âncoras corrigidas acima. A F2c e a
+F2h podem ir em paralelo depois da F2a.
