@@ -262,6 +262,19 @@ plano da F2.
 `3418199b0c` submódulo e capabilities; `fdcd466e71` layout no SDK; `4c173d2a3b` gerador; `8628840079` política;
 `8f77c6cad9` probe 1.4; `8c4fc0d119` checagem do PE.
 
+Depois de aberto o PR:
+
+- `44da6bfc0e`: correções da revisão do Codex no gerador. Ele passa a ler definições em `.inc` (`gDbgCamEnabled`, do
+  `z_camera_data.inc`) e ignora variável local com nome de global. O catálogo fica com 2088 funções e 182 variáveis. O
+  `check-public-symbols.py` sai com 77 (pula) quando o `soh.symbols` é de outro exe.
+- `12c6efc8cb`: formatação do clang-format 14 que o CI pedia. O gerador cerca a tabela do catálogo com
+  `clang-format off/on`, porque o formatador quebrava as entradas longas e o `--check` acusaria a diferença. Só espaço
+  no `OotNativePublicSymbols.h`, mas o header entra no hash: o layout da F2a sozinha deixa de ser o `e6fa180f…` (não
+  medido; o que vale é o da F2b, abaixo).
+- Três achados P2 da revisão não foram corrigidos, porque nenhum header atual tem esses casos: declaração com
+  continuação de macro, declaradores separados por vírgula e função que devolve ponteiro de função. O `--check` e a
+  checagem do PE pegariam um símbolo errado.
+
 ### Validação
 
 Windows 11, MSVC v143, x64, Release.
