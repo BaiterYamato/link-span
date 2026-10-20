@@ -132,3 +132,103 @@ compilação antes da implementação), `generate_api_docs.py`, `generate_cpp_ap
 --check` sincronizados.
 
 Próximo: PR F2-0 na `main`; depois a F2a no host sobe o submódulo para a `main` com F1 + F2-0.
+
+## F2i-0 — tarefa 30
+
+### Estado
+
+review (fase F2i-0; o estado das demais fases não muda por esta seção)
+
+### Resultado
+
+- Evento Lua `hook.oot.actor.damage` registrado no core: `kind: transform`, `phase: hook_bridge`,
+  `support: ["oot"]`, `capability: hooks.bridge`, `cancellable: false`.
+- Nove campos obrigatórios: `target_id`, `target_category`, `attacker_id`, `attacker_category` (-1 sem atacante),
+  `attacker_is_player` (boolean), `dmg_flags` (u32 sem perda, integer), `damage_effect`, `base_damage` e `damage`
+  (number).
+- `ship.hooks.result(12)` chega ao host como int64 e `(12.5)` como double; `false` e `'12'` ficam bool e string (o
+  corte e a decisão de ignorar tipo não numérico são do host); NaN, infinito, `nil`, tabela e chamada fora do
+  callback dão erro Lua; sem resultado válido não surge `__hook_result`.
+- Nota da F2i na RFC 0029 (antes de "Fora de escopo"), com a semântica. `api_version` fica 0.5.0. Sem header do jogo,
+  hook nativo, política de RPG nem mudança de ABI. Os mocks (`shiplua_mock.lua`, `mock_contract.lua`) não mudaram.
+- Os 3 geradores mudam 7 arquivos: `ApiBindings.h`, `shiplua.lua`, `shiplua_validate.lua`, `api_contract.lua`,
+  `api-reference.md`, `api-reference.pt-BR.md` e `compatibility-matrix.md`.
+
+### Commits
+
+Base: `origin/main` @ `acd96ff` (F1 mergeada, PRs #59 e #60). Branch `agent/HOST-SLIM-001-f2i-core`. O PR #61 (F2-0)
+entrou na `main` (`7b191a6`) antes deste PR; a branch recebeu esse merge (sem rebase), com o único conflito no
+handoff, resolvido mantendo as duas seções (F2-0 primeiro, F2i-0 depois). Build e ctest foram refeitos depois do
+merge.
+
+- `2942b75` — chore(coordination): abre a fase F2i-0 da HOST-SLIM-001
+- `f68f218` — docs(rfc): nota da F2i na RFC 0029, evento Lua de dano de ator
+- `939bbda` — feat(events): adiciona hook Lua de dano de ator (hook.oot.actor.damage)
+- o commit do handoff, STATUS e ledger vem logo depois (um commit não carrega o próprio SHA)
+
+### Arquivos alterados
+
+- `rfcs/0029-host-limpo-conteudo-mm-em-mods.md`, `schema/events.yml`
+- `tests/schema/test_validate_api_schemas.py`, `tests/unit/GeneratedApiBindingsTests.cpp`,
+  `tests/unit/LuaApiBindingTests.cpp`
+- `generated/` (os 7 arquivos acima)
+- `coordination/claims/HOST-SLIM-001.md` (só o bloco da F2i-0), esta seção, `coordination/STATUS.md`,
+  `docs/agents/Plans.md`
+
+### Validação executada
+
+Windows 11, MSVC 19.44.35213.0 (Visual Studio 2022, toolset v143), x64, Release, CMake 4.1.0-rc4, Python 3.14.3:
+
+```powershell
+cmake -S . -B build/core-tests -G "Visual Studio 17 2022" -A x64 -T v143
+cmake --build build/core-tests --config Release --parallel          # linha de base
+ctest --test-dir build/core-tests -C Release --output-on-failure    # linha de base: 61/61
+# RED (testes escritos, schema ainda sem o evento)
+python tests/schema/test_validate_api_schemas.py SchemaValidationTests.test_actor_damage_event_contract
+cmake --build build/core-tests --config Release --target generated_api_bindings_tests lua_api_binding_tests
+ctest --test-dir build/core-tests -C Release -R '^(generated_api_bindings_tests|lua_api_binding_tests)$'
+# GREEN
+python tools/validate_api_schemas.py
+python tools/generate_cpp_api.py ; python tools/generate_api_docs.py ; python tools/generate_api_contracts.py
+python tools/generate_cpp_api.py --check ; python tools/generate_api_docs.py --check ; python tools/generate_api_contracts.py --check
+python tests/schema/test_validate_api_schemas.py
+cmake --build build/core-tests --config Release --target generated_api_bindings_tests lua_api_binding_tests api_contract_tests mock_runtime_tests
+ctest --test-dir build/core-tests -C Release -R '^(generated_api_bindings_tests|lua_api_binding_tests|api_contract_tests|mock_runtime_tests|api_schema_validation.*|api_cpp_codegen_.*|api_docs_codegen_.*|api_contract_codegen_.*)$'
+cmake --build build/core-tests --config Release --parallel
+ctest --test-dir build/core-tests -C Release --output-on-failure
+git diff --check
+```
+
+### Resultado da validação
+
+- Linha de base antes da tarefa: ctest 61/61.
+- RED: o teste Python falhou com `1 != 0 : evento de dano ausente ou duplicado`; `generated_api_bindings_tests`
+  falhou com "evento hook.oot.actor.damage deve estar nos gerados" (1 verificação); `lua_api_binding_tests` falhou com
+  10 verificações (uma por caso), todas por a inscrição ser recusada. Os dois alvos compilaram (o RED é de contrato).
+- GREEN: validador de schema, os três geradores com `--check` e `git diff --check` limpos; testes de schema 15/15
+  (eram 14); alvo de contrato 12/12; build completo sem erro; ctest completo 61/61, zero falhas. A contagem não sobe
+  porque os novos casos entram em executáveis que já existiam.
+- CI Linux e Windows do PR ainda não rodaram quando esta seção foi escrita.
+
+### Pendências
+
+- Não executado: CI Linux/macOS, prova em jogo (não há host neste PR), `test_shipmod.py` e `test_product_release.py`
+  (fora do escopo; a F1 já os rodou e esta tarefa não toca nesses arquivos).
+- Host (F2i, tarefas 31–32): ponto nativo `oot.actor.damage`, despacho, `ShipLua_TransformActorDamage` no bootstrap,
+  corte 0..255 e aplicação no collider, caminho sem mods bit a bit, prova em jogo.
+
+### Riscos
+
+- O host só pode subir `extern/ship-lua` para um commit da `main` que contenha esta fase; o SHA integrado na `main`
+  (merge do PR) é a referência mínima e deve ser registrado aqui depois do merge. Não apontar o host para a branch.
+- O core ainda aceita a inscrição em contexto MM (`support` é metadado; `ModHost` define todos os eventos). Esta fase
+  não muda isso, e não há teste que espere recusa em MM.
+- Desvio do plano no RED: a inscrição em evento ausente chega ao Lua como `feature not supported by the ship API`
+  (`LuaApiBinding.cpp:277` traduz `ErrorCode::Unsupported` para essa frase), não como
+  `event is not defined: '...'` (mensagem do `EventDispatcher`, descartada na tradução). A causa é a mesma; o
+  comportamento do core não mudou e nenhum teste depende do texto.
+
+### Próxima ação recomendada
+
+Revisar e mergear o PR (CI verde). Depois do merge, registrar o SHA da `main` aqui e abrir a F2i no host, que faz o
+bump do submódulo para esse SHA, emite o evento pela ponte da tarefa 32 e fecha o corte 0..255 no host.

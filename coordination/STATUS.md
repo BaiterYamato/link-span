@@ -1,5 +1,13 @@
 # STATUS.md
 
+## Atualização — HOST-SLIM-001 F2i-0 (20/10/2026)
+
+`review` (fase F2i-0; claim e handoff compartilhados com as outras fases): evento Lua `hook.oot.actor.damage`
+(transform, `hook_bridge`, `support: ["oot"]`, `hooks.bridge`, nove campos) registrado no schema, nos gerados e na
+RFC 0029; `api_version` segue 0.5.0, sem mudança de ABI. `ctest` 61/61 no Windows Release (a base também dava 61/61).
+O host só sobe o submódulo para um commit da `main` que contenha esta fase. Branch
+`agent/HOST-SLIM-001-f2i-core`; ver `coordination/handoffs/HOST-SLIM-001.md`, seção «F2i-0 — tarefa 30».
+
 ## Atualização desta worktree — SDK NATIVE-001 (08/09/2026)
 
 `review`: providers nativos externos implementados no core, API 0.5.0, ABI C 1.0.

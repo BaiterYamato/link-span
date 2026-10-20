@@ -112,6 +112,36 @@ int main() {
            "storage API should retain its capability contract");
     Check(FindFunction("ship.storage.get").version == "0.3.0" && FindFunction("ship.storage.get").stability == "experimental",
            "storage API should retain its version and stability contract");
+    {
+        const EventBinding* damageEvent = nullptr;
+        for (const auto& event : kEvents) {
+            if (event.name == "hook.oot.actor.damage") damageEvent = &event;
+        }
+        Check(damageEvent != nullptr, "evento hook.oot.actor.damage deve estar nos gerados");
+        if (damageEvent != nullptr) {
+            Check(damageEvent->kind == EventKind::Transform &&
+                      damageEvent->phase == "hook_bridge" && !damageEvent->cancellable &&
+                      damageEvent->supportsOot && !damageEvent->supportsMm &&
+                      damageEvent->capability == "hooks.bridge",
+                  "metadata de dano deve manter o contrato OoT transform");
+            constexpr FieldBinding expected[] = {
+                {"target_id", "integer", true}, {"target_category", "integer", true},
+                {"attacker_id", "integer", true}, {"attacker_category", "integer", true},
+                {"attacker_is_player", "boolean", true}, {"dmg_flags", "integer", true},
+                {"damage_effect", "integer", true}, {"base_damage", "number", true},
+                {"damage", "number", true},
+            };
+            Check(damageEvent->payload.size() == 9, "payload de dano tem nove campos");
+            if (damageEvent->payload.size() == 9) {
+                for (std::size_t i = 0; i < 9; ++i) {
+                    const auto& actual = damageEvent->payload[i];
+                    Check(actual.name == expected[i].name && actual.type == expected[i].type &&
+                              actual.required == expected[i].required,
+                          "nome, tipo e obrigatoriedade do payload de dano devem coincidir");
+                }
+            }
+        }
+    }
 
     if (failures != 0) {
         std::cerr << failures << " check(s) failed\n";

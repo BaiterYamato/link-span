@@ -94,6 +94,7 @@ nunca registra `ship.oot.*` ou `ship.mm.*` (RFC 0001).
 | `hook.oot.player.health_change` | `hook_bridge` | não | sim | — | `hooks.bridge` |
 | `hook.oot.player.bonk` | `hook_bridge` | não | sim | — | `hooks.bridge` |
 | `hook.oot.enemy.defeat` | `hook_bridge` | não | sim | — | `hooks.bridge` |
+| `hook.oot.actor.damage` | `hook_bridge` | não | sim | — | `hooks.bridge` |
 | `hook.oot.item.give` | `hook_bridge` | não | sim | — | `hooks.bridge` |
 | `hook.oot.hud.draw` | `hook_bridge` | não | sim | — | `hud.draw` |
 | `hook.oot.player.first_person_control` | `hook_bridge` | não | sim | — | `hooks.bridge` |

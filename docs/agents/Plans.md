@@ -1638,3 +1638,16 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
 - **Ferramentas:** parser, `ModHost`, schema do manifesto, `shipmod doctor` e `product_release.py` conhecem
   `host_layout_id`. `ctest` 61/61 antes e depois.
 - **Pendente:** push/PR (com ok), F2 no host. Handoff: `coordination/handoffs/HOST-SLIM-001.md`.
+
+### UPDATE 2026-10-20 (Claude) — HOST-SLIM-001 F2i-0: evento Lua `hook.oot.actor.damage` no core
+
+- **Status (fase F2i-0):** review. Branch `agent/HOST-SLIM-001-f2i-core`, base `origin/main` @ `acd96ff` (F1
+  mergeada). Tarefa 30 do plano da F2 (`docs/plans/host-slim-001/plano-f2-host.md`, decisão 9 e §5.1.1).
+- **Resultado:** `ctest` 61/61 (base 61/61), schema 15/15, três geradores `--check` limpos; RED confirmado antes do
+  schema (Python, `generated_api_bindings_tests` e `lua_api_binding_tests`). Sete gerados mudam; mocks não.
+- **Escopo:** nota da F2i na RFC 0029, entrada em `schema/events.yml` (transform, `hook_bridge`, `support: ["oot"]`,
+  `hooks.bridge`, nove campos), gerados pelos três geradores e testes (schema, metadados, contrato Lua). Sem header do
+  jogo, hook nativo, política de RPG ou mudança de ABI; `api_version` fica 0.5.0.
+- **Dependência:** o host só atualiza `extern/ship-lua` para um commit da `main` que já contenha a F2i-0.
+- **Claim e handoff:** blocos/seções da F2i-0 em `coordination/claims/HOST-SLIM-001.md` e
+  `coordination/handoffs/HOST-SLIM-001.md`; as linhas `Status` e `Branch` do topo do claim ficam como estão.

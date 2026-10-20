@@ -782,6 +782,93 @@ assert(not pcall(ship.player.set_speed_multiplier))
           "advertised player.speed should require a host handler");
 }
 
+void TestActorDamageLuaContract() {
+    struct Case {
+        const char* body;
+        int resultKind; // 0 ausente, 1 int64, 2 double, 3 bool, 4 string
+    };
+    const Case cases[] = {
+        {"", 0},
+        {"assert(ship.hooks.result(12))", 1},
+        {"assert(ship.hooks.result(12.5))", 2},
+        {"assert(ship.hooks.result(false))", 3},
+        {"assert(ship.hooks.result('12'))", 4},
+        {"assert(not pcall(ship.hooks.result, 0/0))", 0},
+        {"assert(not pcall(ship.hooks.result, math.huge))", 0},
+        {"assert(not pcall(ship.hooks.result, -math.huge))", 0},
+        {"assert(not pcall(ship.hooks.result, {}))", 0},
+        {"assert(not pcall(ship.hooks.result, nil))", 0},
+    };
+    for (const auto& test : cases) {
+        ShipLua::LuaApiHostContext context{"oot", "test-host", "0.5.0", {"hooks.bridge"}};
+        ShipLua::ModHost host(context);
+        const std::string source = std::string(R"lua(
+local ship = require("ship")
+assert(not pcall(ship.events.on, "hook.oot.actor.damage.unknown", function() end))
+assert(not pcall(ship.hooks.result, 1))
+calls = 0
+subscription = ship.events.on("hook.oot.actor.damage", function(event)
+    calls = calls + 1
+    local fields = 0
+    for _ in pairs(event) do fields = fields + 1 end
+    assert(fields == 9)
+    assert(math.type(event.target_id) == "integer" and event.target_id == 7)
+    assert(math.type(event.target_category) == "integer" and event.target_category == 5)
+    assert(math.type(event.attacker_id) == "integer" and event.attacker_id == -1)
+    assert(math.type(event.attacker_category) == "integer" and event.attacker_category == -1)
+    assert(type(event.attacker_is_player) == "boolean" and not event.attacker_is_player)
+    assert(math.type(event.dmg_flags) == "integer" and event.dmg_flags == 4294967295)
+    assert(math.type(event.damage_effect) == "integer" and event.damage_effect == 15)
+    assert(type(event.base_damage) == "number" and event.base_damage == 4.5)
+    assert(type(event.damage) == "number" and event.damage == 6.25)
+)lua") + test.body + "\nend)\n";
+        const auto loaded = host.LoadModFromManifestAndSource(MakeManifest("test.actor_damage"), source);
+        Check(loaded.isOk(), "contrato Lua de dano deve carregar: " + loaded.message);
+        if (!loaded.isOk()) continue;
+        ShipLua::EventPayload payload{
+            {"target_id", std::int64_t{7}}, {"target_category", std::int64_t{5}},
+            {"attacker_id", std::int64_t{-1}}, {"attacker_category", std::int64_t{-1}},
+            {"attacker_is_player", false}, {"dmg_flags", std::int64_t{4294967295LL}},
+            {"damage_effect", std::int64_t{15}}, {"base_damage", 4.5}, {"damage", 6.25},
+        };
+        const auto dispatched = host.DispatchEvent("hook.oot.actor.damage", payload);
+        Check(dispatched.isOk() && dispatched.value->failures.empty() &&
+                  dispatched.value->callbacksInvoked == 1,
+              "evento de dano deve executar um callback sem falha");
+        const auto result = payload.find("__hook_result");
+        if (test.resultKind == 0) {
+            Check(result == payload.end(), "sem resultado válido não deve existir __hook_result");
+        } else {
+            Check(result != payload.end(), "resultado Lua deve chegar ao payload do host");
+            if (result != payload.end()) {
+                const auto& value = result->second.value;
+                if (test.resultKind == 1)
+                    Check(std::holds_alternative<std::int64_t>(value) && std::get<std::int64_t>(value) == 12,
+                          "inteiro Lua deve chegar como int64");
+                if (test.resultKind == 2)
+                    Check(std::holds_alternative<double>(value) && std::get<double>(value) == 12.5,
+                          "decimal Lua deve chegar como double");
+                if (test.resultKind == 3)
+                    Check(std::holds_alternative<bool>(value) && !std::get<bool>(value),
+                          "false continua bool, sem conversão numérica no core");
+                if (test.resultKind == 4)
+                    Check(std::holds_alternative<std::string>(value) && std::get<std::string>(value) == "12",
+                          "texto numérico continua string no core");
+            }
+        }
+        Check(host.GetRuntime("test.actor_damage")->DoString(R"lua(
+assert(calls == 1)
+assert(not pcall(require("ship").hooks.result, 1))
+assert(require("ship").events.off(subscription))
+)lua").isOk(), "callback deve encerrar o escopo transform e permitir off");
+        payload.erase("__hook_result");
+        const auto withoutListener = host.DispatchEvent("hook.oot.actor.damage", payload);
+        Check(withoutListener.isOk() && withoutListener.value->callbacksInvoked == 0 &&
+                  withoutListener.value->failures.empty() && !payload.contains("__hook_result"),
+              "sem ouvinte, não deve aparecer resultado de dano");
+    }
+}
+
 } // namespace
 
 int main() {
@@ -803,6 +890,7 @@ int main() {
     TestSharedStorageAcrossGamesAndModIsolation();
     TestSharedStorageRequiresItsOwnBackend();
     TestHookResultTransformAndScope();
+    TestActorDamageLuaContract();
     TestSpeedMultiplierAvailableInEntrypoint();
     if (failures != 0) {
         std::cerr << failures << " check(s) failed\n";

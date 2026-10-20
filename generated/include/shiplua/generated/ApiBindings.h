@@ -706,6 +706,17 @@ inline constexpr std::array<FieldBinding, 5> kHookOotEnemyDefeatPayload{{
     {"pos_y", "number", true},
     {"pos_z", "number", true},
 }};
+inline constexpr std::array<FieldBinding, 9> kHookOotActorDamagePayload{{
+    {"target_id", "integer", true},
+    {"target_category", "integer", true},
+    {"attacker_id", "integer", true},
+    {"attacker_category", "integer", true},
+    {"attacker_is_player", "boolean", true},
+    {"dmg_flags", "integer", true},
+    {"damage_effect", "integer", true},
+    {"base_damage", "number", true},
+    {"damage", "number", true},
+}};
 inline constexpr std::array<FieldBinding, 2> kHookOotItemGivePayload{{
     {"item_id", "integer", true},
     {"get_item_id", "integer", true},
@@ -761,7 +772,7 @@ inline constexpr std::array<FieldBinding, 1> kHookMmItemShouldGivePayload{{
     {"item", "integer", true},
 }};
 
-inline constexpr std::array<EventBinding, 30> kEvents{{
+inline constexpr std::array<EventBinding, 31> kEvents{{
     {"game.ready", EventKind::Observe, "mvp", false, true, true, {}, kGameReadyPayload},
     {"game.frame", EventKind::Observe, "mvp", false, true, true, {}, kGameFramePayload},
     {"game.shutdown", EventKind::Observe, "mvp", false, true, true, {}, kGameShutdownPayload},
@@ -780,6 +791,7 @@ inline constexpr std::array<EventBinding, 30> kEvents{{
     {"hook.oot.player.health_change", EventKind::Observe, "hook_bridge", false, true, false, "hooks.bridge", kHookOotPlayerHealthChangePayload},
     {"hook.oot.player.bonk", EventKind::Observe, "hook_bridge", false, true, false, "hooks.bridge", kHookOotPlayerBonkPayload},
     {"hook.oot.enemy.defeat", EventKind::Observe, "hook_bridge", false, true, false, "hooks.bridge", kHookOotEnemyDefeatPayload},
+    {"hook.oot.actor.damage", EventKind::Transform, "hook_bridge", false, true, false, "hooks.bridge", kHookOotActorDamagePayload},
     {"hook.oot.item.give", EventKind::Transform, "hook_bridge", false, true, false, "hooks.bridge", kHookOotItemGivePayload},
     {"hook.oot.hud.draw", EventKind::Observe, "hook_bridge", false, true, false, "hud.draw", kHookOotHudDrawPayload},
     {"hook.oot.player.first_person_control", EventKind::Observe, "hook_bridge", false, true, false, "hooks.bridge", kHookOotPlayerFirstPersonControlPayload},

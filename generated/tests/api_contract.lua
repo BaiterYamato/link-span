@@ -67,7 +67,7 @@ local FUNCTIONS = {
   { name = "ship.native.call", availability = "common", required_arguments = 2, error_mode = "return" },
 }
 
-local EVENTS = { "game.ready", "game.frame", "game.shutdown", "scene.enter", "actor.init", "actor.update", "actor.destroy", "save.loaded", "text.open", "audio.sequence_started", "input.hotkey", "input.action", "hook.oot.player.speed.run", "hook.oot.player.fall_damage", "hook.oot.item.receive", "hook.oot.player.health_change", "hook.oot.player.bonk", "hook.oot.enemy.defeat", "hook.oot.item.give", "hook.oot.hud.draw", "hook.oot.player.first_person_control", "hook.oot.player.arrow_type_select", "hook.oot.player.body_anim_select", "hook.mm.player.speed.walk", "hook.mm.player.goron_roll.consume_magic", "hook.mm.player.goron_roll.disable_spike_mode", "hook.mm.player.goron_roll.increase_spike_level", "hook.mm.item.give", "hook.mm.enemy.defeat", "hook.mm.item.should_give" }
+local EVENTS = { "game.ready", "game.frame", "game.shutdown", "scene.enter", "actor.init", "actor.update", "actor.destroy", "save.loaded", "text.open", "audio.sequence_started", "input.hotkey", "input.action", "hook.oot.player.speed.run", "hook.oot.player.fall_damage", "hook.oot.item.receive", "hook.oot.player.health_change", "hook.oot.player.bonk", "hook.oot.enemy.defeat", "hook.oot.actor.damage", "hook.oot.item.give", "hook.oot.hud.draw", "hook.oot.player.first_person_control", "hook.oot.player.arrow_type_select", "hook.oot.player.body_anim_select", "hook.mm.player.speed.walk", "hook.mm.player.goron_roll.consume_magic", "hook.mm.player.goron_roll.disable_spike_mode", "hook.mm.player.goron_roll.increase_spike_level", "hook.mm.item.give", "hook.mm.enemy.defeat", "hook.mm.item.should_give" }
 
 local ENUM_VALUES = {
   game_id = { "oot", "mm" },
