@@ -48,7 +48,7 @@
   - Decisões do mantenedor em 19/10/2026: extensões de motor ficam no exe como API; as 7 funções Lua de conteúdo
     saem já, sem ciclo de depreciação; caminho por hooks públicos (sem escape hatch); ligação por nome presa ao
     layout (ABI 1.4); fases F0–F6; corrigir V2–V5 e V7 da chave vanilla e aceitar V1, V6 e V8.
-- Status (fase F2i-0): claimed
+- Status (fase F2i-0): review
 - Branch (fase F2i-0): agent/HOST-SLIM-001-f2i-core
 - Agent (fase F2i-0): Claude (Sonnet 5.5), a pedido do mantenedor; base `origin/main` @ `acd96ff` (F1 mergeada)
 - Started (fase F2i-0): 2026-10-20
