@@ -217,6 +217,46 @@ mudar uma vez só.
 - O schema do manifesto passa a recusar `host_fingerprints` e `host_layout_id` fora de core extension, como o parser.
 - Plano: [docs/plans/host-slim-001/plano-f1-core.md](../docs/plans/host-slim-001/plano-f1-core.md).
 
+### F2i (core e host): evento Lua de dano de ator
+
+- Motivação: portar o mod leveled (RPG) como mod, sem política de RPG no host. O host só abre o ponto central de
+  dano de colisão. Plano: [plano-f2-host.md](../docs/plans/host-slim-001/plano-f2-host.md), decisão 9 e §5.1.1.
+- F2i-0 registra `hook.oot.actor.damage` no core; a F2i emite o evento no host OoT, depois do ponto nativo
+  `oot.actor.damage`.
+- Contrato: `kind: transform`, `phase: hook_bridge`, `support: ["oot"]`, `capability: hooks.bridge`,
+  `cancellable: false`.
+
+| Campo | Tipo | Semântica |
+|---|---|---|
+| `target_id` | integer | `Actor.id` do dono do AC |
+| `target_category` | integer | categoria do alvo |
+| `attacker_id` | integer | `Actor.id` do dono do collider AT que acertou o elemento; -1 sem atacante |
+| `attacker_category` | integer | categoria do atacante; -1 sem atacante |
+| `attacker_is_player` | boolean | o AT tem `AT_TYPE_PLAYER`, com ou sem atacante |
+| `dmg_flags` | integer | `toucher.dmgFlags` do elemento AT (u32 sem perda) |
+| `damage_effect` | integer | efeito de dano do alvo |
+| `base_damage` | number | dano calculado pelo jogo, antes dos hooks nativos |
+| `damage` | number | dano depois dos hooks nativos, antes do Lua |
+
+- OoT: um evento por elemento acertado em `CollisionCheck_ApplyDamage`, no ramo sem `AC_HARD`, antes da soma em
+  `colChkInfo.damage` e do multiplicador do modo cooperativo. Fica fora o dano que não passa por ali: débitos de chefes
+  que não usam o dano central, agarrões com `play->damagePlayer`, empurrões com dano, queda, fogo e armadilhas.
+- `ship.hooks.result(n)` com inteiro ou decimal troca o dano. O host corta em 0..255 e, quando algum hook trocou o
+  valor, no que falta para 255 no acumulador `u8` do alvo, antes do multiplicador cooperativo. Sem resultado, ou com
+  booleano ou texto, mantém `damage`. Não cancela. Com vários ouvintes, vale o último resultado; `event.damage` não
+  muda entre eles.
+- Erros: `ship.hooks.result` fora de transform, com `nil`, tabela, NaN ou infinito dá erro Lua (binding atual). Falhas
+  seguem a política de isolamento e de desativação depois de falhas seguidas.
+- MM: sem emissão. `support` é metadado; o core ainda aceita a inscrição em contexto MM, e esta fase não muda isso.
+- Compatibilidade: adição durante a pré-release 0.5.0; `api_version` fica em 0.5.0. O host precisa do core com o
+  schema e os bindings regenerados.
+- Segurança: só valores escalares chegam ao Lua, nenhum ponteiro. A ponte roda na thread do jogo e não deixa exceção
+  C++ atravessar a fronteira C.
+- Testes: schema e metadados gerados (RED/GREEN); `ModHost` e Lua reais com os nove campos, inteiro e decimal,
+  ausência de resultado, tipos não numéricos, erros, escopo e `off`. No host: despacho nativo, contrato Lua, cortes,
+  caminho sem mods bit a bit e prova em jogo.
+- Depreciação: nada sai nem é depreciado.
+
 ## Fora de escopo
 
 - A rota fixa OoT → MM do `ship.world.travel` no bootstrap. É infraestrutura de viagem entre jogos, não conteúdo do
