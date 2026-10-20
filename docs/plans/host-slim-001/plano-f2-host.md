@@ -5,8 +5,8 @@
 
 **Objetivo:** dar ao host OoT (`BaiterYamato/Shipwright`) tudo o que as fases F3–F5 da RFC 0029 precisam para tirar
 o conteúdo do MM e a política do Unbound do `soh.exe` sem mexer de novo no layout: catálogo público da ABI 1.4,
-os 8 hooks genéricos, o hook de archives de mods para o level mod (Unbound), os 6 serviços versionados e o despacho
-de áudio.
+os 8 hooks genéricos, o hook de archives de mods para o Unbound, o hook genérico de dano para o port do leveled,
+os 6 serviços versionados e o despacho de áudio.
 
 **Arquitetura:** o core ganha antes um PR pequeno (F2-0) que deixa o host despachar um ponto fora da thread do jogo.
 No host, cada fatia é um PR próprio sobre a integração, na ordem da seção 3. O catálogo sai de um gerador Python
@@ -44,8 +44,10 @@ ctest --test-dir build/x64 -C Release -R "oot_native|linkspan_" --output-on-fail
 ```
 
 Os alvos do build são todos os executáveis que o `ctest -R` seleciona (`ExportSdk.cmake:33`, :60, :73;
-`extern/ship-lua/CMakeLists.txt:114`); teste novo só entra no CTest depois do `cmake -S . -B build/x64`. O `soh.exe` sai em `x64/Release/soh.exe`; `soh.symbols` sai com `cmake --build build/x64 --config Release --target
-soh_symbols`. Python vem do `find_package(Python3 REQUIRED COMPONENTS Interpreter)` da raiz (`CMakeLists.txt:414`).
+`extern/ship-lua/CMakeLists.txt:114`); teste novo só entra no CTest depois do `cmake -S . -B build/x64`. O `soh.exe`
+sai em `x64/Release/soh.exe`; `soh.symbols` sai com
+`cmake --build build/x64 --config Release --target soh_symbols`. Python vem do `find_package(Python3 REQUIRED COMPONENTS
+Interpreter)` da raiz (`CMakeLists.txt:414`).
 
 ## 2. Decisões deste plano
 
@@ -59,7 +61,7 @@ soh_symbols`. Python vem do `find_package(Python3 REQUIRED COMPONENTS Interprete
 3. **Vetos genéricos.** `roll_allowed` e `ledge_grab_allowed` partem de `!ShipLua_ShouldBlockRoll()` e
    `!ShipLua_ShouldBlockLedgeGrabs()` (o `set_roll_blocked` da API Lua e o corpo customizado continuam valendo até a
    F4); o resultado dos hooks entra com E, então um hook só veta.
-4. **Level mod (Unbound): hook `oot.mods.archives`, além dos 8 da RFC.** A F4 tira do bootstrap a política do
+4. **Unbound: hook `oot.mods.archives`, além dos 8 da RFC.** A F4 tira do bootstrap a política do
    Unbound (`IsUnboundLayerArchive`, ID do framework, fila e montagem na raiz, `ShipLuaBootstrap.cpp:6395-6580`) e
    não pode mudar headers. O contrato que o `unbound-core` vai usar entra aqui: depois do `LoadModsFromRoot`, na
    janela em que o bootstrap monta as camadas hoje, o host entrega num ponto OBSERVE os archives candidatos aceitos
@@ -73,17 +75,33 @@ soh_symbols`. Python vem do `find_package(Python3 REQUIRED COMPONENTS Interprete
    dos headers atuais: a tabela nova repete os campos da anterior na mesma ordem (como `ShipOotMovementV2` e
    `ShipOotResourcesV3`), campo novo só no fim, `layout_id` só onde a versão anterior não tem e depois de todos os
    campos antigos. A seção 5 traz o texto C final.
-6. **Seção de save `unbound`.** Mantém o nome (RFC §7): o level mod não precisa de API de save nova na F2.
+6. **Seção de save `unbound`.** Mantém o nome (RFC §7): o Unbound não precisa de API de save nova na F2.
 7. **Layout.** Cada PR do host que mexe em `soh/include`, `soh/soh/native` ou `extern/ship-lua/include/shiplua/native`
    muda o layout id. Nenhum RC sai no meio da F2; o RC11 (F6) é o primeiro com o layout novo, e a F4 não toca esses
    headers (RFC, "Fases").
 8. **Implementação dos serviços no molde do RC10.** Os contratos da seção 5.4 são os finais; por trás deles, cada
    serviço reaproveita um caminho que já roda no RC10 em vez de maquinaria nova: o corpo nativo copia o motor do corpo
    Lua (ator auxiliar, `SkelAnime_InitLink`, `MOVEACTOR`), os quads escrevem nos colliders do próprio Player com guards
-   só nos cinco pontos em que o jogo os reescreve, e o `mount_archive_prefixed` generaliza o `MmCrossWorldArchive`.
+   só nos seis pontos em que o jogo os reescreve, e o `mount_archive_prefixed` generaliza o `MmCrossWorldArchive`.
    Ficam para a F3, registrados em riscos: o resolver de referências internas com `STRICT` e a troca do mount do MM
    pelo V4. A vida dos serviços (epoch por `Play_Destroy`, geração do Player, dono bloqueado até o fim do processo)
    mora num módulo só, `OotNativePlayerAction`, criado na F2d e usado por F2e, F2f e F2g.
+
+9. **Hook de dano, fora da RFC (F2i).** O port do mod leveled (Arrenton/Shipwright, branch `leveled-blair`, PR #11)
+   como mod do Link-Span não pode levar nada de RPG para o host. XP por abate (`hook.oot.enemy.defeat`), save por
+   arquivo (`linkspan.oot.save`), `ship.storage` e `ship.hud.*` já existem; falta trocar o dano. O ponto é o mesmo do
+   patch do leveled: `CollisionCheck_ApplyDamage` (`z_collision_check.c`), dentro de
+   `if (!(collider->acFlags & AC_HARD))`, antes do multiplicador do modo cooperativo, uma vez por elemento acertado.
+   Primeiro roda o ponto nativo `oot.actor.damage` (TRANSFORM e OBSERVE); depois, o evento Lua
+   `hook.oot.actor.damage` (`transform`), com o valor já trocado. O host limita cada resultado a 0..255 e usa o dano
+   do jogo em caso de NaN; quando um hook troca o valor, limita também a soma no acumulador `u8` do alvo a 255,
+   antes do multiplicador do modo cooperativo (que pode passar disso, como hoje). Sem hook nem ouvinte, devolve o
+   mesmo `damage`, bit a bit. Ficam fora os débitos de chefes que não usam o dano central, agarrões com
+   `play->damagePlayer`, empurrões com dano, queda, fogo, armadilhas e HP acima de 255: o leveled remenda uns 20
+   atores à mão e amplia os tipos, a F2 não. O que o port precisa além disso é obrigação da F3
+   ([analise-leveled.md](analise-leveled.md),
+   seção 4). O evento Lua é API pública nova: a semântica entra como nota na RFC 0029 no próprio PR F2i-0, antes do
+   schema (`AGENTS.md` §14). Os headers mudam o layout id como os demais (decisão 7).
 
 ## 3. Ordem dos PRs
 
@@ -98,15 +116,22 @@ vermelho). Branch de trabalho do host: `agent/HOST-SLIM-001-f2-host`, uma branch
 | **F2a** | host | submódulo no core com F1 + F2-0; retirada das 3 capabilities do bootstrap; layout no SDK; gerador do catálogo; `OotNativePublicSymbols`; `policy.publicSymbols`; probe e verificação PE; DMR em jogo | 3–9 | F2-0 mergeada |
 | **F2b** | host | 7 hooks do Link e do Play (`voice_sfx`, `roll_allowed`, `ledge_grab_allowed`, `action`, `update_end`, `mask_draw`, `play.destroy`) | 10–13 | F2a |
 | **F2c** | host | `oot.audio.mix` com despacho próprio na thread de áudio | 14–16 | F2a |
-| **F2h** | host | `oot.mods.archives` para o level mod (Unbound): contrato e disparo com os archives aceitos, sem mudar o comportamento das camadas | 17–18 | F2a |
+| **F2h** | host | `oot.mods.archives` para o Unbound: contrato e disparo com os archives aceitos, sem mudar o comportamento das camadas | 17–18 | F2a |
 | **F2d** | host | `linkspan.oot.movement` V3 e `linkspan.oot.camera` V2 | 19–21 | F2b (ponte de ação, `oot.play.destroy`) |
 | **F2e** | host | `linkspan.oot.skeletons` V2 e `linkspan.oot.player-body` V1 | 22–24 | F2d (`action_token`) |
 | **F2f** | host | `linkspan.oot.colliders` V2 (quads do Player) | 25–26 | F2d |
 | **F2g** | host | `linkspan.oot.resources` V4 (`mount_archive_prefixed`) | 27–29 | F2d (dono e bloqueio no unload) |
-| — | host | validação final da F2 na integração: bateria, gate E do level mod, DMR, probe, NEI sem regressão | 30 | todos |
+| **F2i-0** | core | evento Lua `hook.oot.actor.damage` (`transform`) em `schema/events.yml`, nota na RFC 0029, gerados e testes de contrato | 30 | F1 mergeada |
+| **F2i** | host | `oot.actor.damage`: ponto nativo, ponte no `CollisionCheck_ApplyDamage`, evento Lua no bootstrap, bump do submódulo para o F2i-0, damage-probe e damage-swap em jogo | 31–32 | F2a, F2b (mesmo bloco de pontos) e F2i-0 |
+| — | host | validação final da F2 na integração: bateria, gate E do Unbound, DMR, probes, NEI sem regressão | 33 | todos |
 
-F2b, F2c e F2h não dependem entre si e podem ir em paralelo depois da F2a, cada um numa worktree própria. A F2d vem
-depois da F2b. F2e, F2f e F2g dependem só da F2d e podem ir em paralelo; os três mexem nas mesmas linhas de
+F2b, F2c e F2h não dependem entre si e podem ir em paralelo depois da F2a, cada um numa worktree própria. A F2i também
+parte da F2a, mas acrescenta o bloco dela em `oot_hooks.h` e em `OotNativeHooks.h/.cpp` logo depois do bloco da F2b
+(mesmo registro de pontos, `OotHookPoints`), então só abre depois da F2b mergeada. F2c, F2h e F2i mexem em
+`OotNativeHooks.h/.cpp` (F2h e F2i também em `oot_hooks.h`): quem mergeia depois rebaseia. O F2i-0, no core, depende só
+da F1: pode ir junto do F2-0 ou depois dele, e precisa estar mergeado na `main` antes de a F2i fazer o bump do
+submódulo. A F2d vem depois da F2b. F2e, F2f e F2g dependem só da F2d e podem ir em paralelo; os três mexem nas
+mesmas linhas de
 `OotNativeEngine.cpp` (inicialização, `onProviderUnload`, publicação) e na contagem de serviços do `EngineTests.cpp`,
 então quem mergeia depois rebaseia. As contagens das tarefas supõem a ordem F2e, F2f, F2g (32 depois da F2d, 34, 35,
 36); noutra ordem, cada PR soma os seus serviços ao que já estiver mergeado. A ordem final do `onProviderUnload` é:
@@ -125,13 +150,17 @@ Core (`D:\Desenvolvimento\ship-lua-worktrees\HOST-SLIM-001-core`, branch `agent/
 | `include/shiplua/host/ModHost.h`, `src/host/ModHost.cpp`, `tests/unit/ModRootLoaderTests.cpp` | `loadedDirectories`: id e pasta efetiva de carga; diretório original ou cache extraído, absoluto e normalizado |
 | `include/shiplua/native/ship_native_abi.h` | comentário: exceção de thread para ponto que o host documenta |
 | `docs/native-providers.md`, `docs/native-providers.pt-BR.md` | um item na seção de hooks |
+| `schema/events.yml` | F2i-0 (branch `agent/HOST-SLIM-001-f2i-core`): evento `hook.oot.actor.damage` (`transform`, `hook_bridge`, `oot`, `hooks.bridge`, não cancelável), 9 campos no payload, descrição PT-BR e `description_en` |
+| `rfcs/0029-host-limpo-conteudo-mm-em-mods.md` | F2i-0: nota "F2i" em "Notas de implementação" com a semântica do evento (`AGENTS.md` §14) |
+| `generated/docs/api-reference.md`, `generated/docs/api-reference.pt-BR.md`, `generated/docs/compatibility-matrix.md`, `generated/include/shiplua/generated/ApiBindings.h`, `generated/lua/shiplua.lua`, `generated/lua/shiplua_validate.lua`, `generated/tests/api_contract.lua` | F2i-0: gerados, sem edição à mão (`tools/generate_cpp_api.py`, `generate_api_docs.py`, `generate_api_contracts.py`) |
+| `tests/schema/test_validate_api_schemas.py`, `tests/unit/GeneratedApiBindingsTests.cpp`, `tests/unit/LuaApiBindingTests.cpp` | F2i-0: contrato do evento no schema e nos gerados; payload e `ship.hooks.result` inteiro (`int64`), decimal (`double`), booleano e texto |
 
 Host (`D:\Desenvolvimento\ship-lua-worktrees\HOST-SLIM-001-host`):
 
 | Arquivo | PR | Responsabilidade |
 |---|---|---|
-| `extern/ship-lua` (submódulo) | F2a | core com F1 + F2-0 |
-| `soh/soh/ShipLuaBootstrap.cpp` | F2a, F2c, F2e–F2h | tirar `oot.spawn_dog`, `oot.player.bunny_hood`, `oot.audio` de `CreateHostContext` e dos `RegisterHostCapability`; bomba do áudio; corpo Lua exclusivo com o nativo e com os quads; ponte do resources V4; lista dos candidatos e disparo de `oot.mods.archives` |
+| `extern/ship-lua` (submódulo) | F2a, F2i | F2a: core com F1 + F2-0; F2i: bump para o commit da `main` com o F2i-0 |
+| `soh/soh/ShipLuaBootstrap.cpp` | F2a, F2c, F2e–F2i | tirar `oot.spawn_dog`, `oot.player.bunny_hood`, `oot.audio` de `CreateHostContext` e dos `RegisterHostCapability`; bomba do áudio; corpo Lua exclusivo com o nativo e com os quads; ponte do resources V4; lista dos candidatos e disparo de `oot.mods.archives`; `ShipLua_TransformActorDamage` (evento `hook.oot.actor.damage`) |
 | `soh/native-sdk/ExportSdk.cmake` | F2a, F2c, F2d–F2g | `OOT_NATIVE_LAYOUT_ID` no SDK; fontes novas no `oot_native_engine_tests`; testes novos |
 | `tools/gen-host-keep.py` | F2a | gerador da retenção, do catálogo e do relatório |
 | `tools/tests/test_gen_host_keep.py` | F2a | testes do gerador |
@@ -145,17 +174,18 @@ Host (`D:\Desenvolvimento\ship-lua-worktrees\HOST-SLIM-001-host`):
 | `soh/soh/native/OotNativeEngine.cpp` | F2a, F2d–F2g | `policy.publicSymbols`; tabelas novas, inicialização e limpeza por dono; resources V4 |
 | `soh/native-sdk/tests/public-probe/*` | F2a | mod 1.4 de prova (função + variável + negativos) |
 | `soh/native-sdk/tests/test_public_probe.py` | F2a | compila o probe contra o SDK e empacota |
-| `soh/native-sdk/tests/EngineTests.cpp` | todos | catálogo falso, hooks, áudio, archives, serviços |
-| `soh/soh/native/oot_hooks.h` | F2b, F2h | 8 pontos novos e payloads |
+| `soh/native-sdk/tests/damage-probe/*`, `soh/native-sdk/tests/damage-swap/*` | F2i | provider nativo e mod Lua de prova do hook de dano (tarefa 32) |
+| `soh/native-sdk/tests/EngineTests.cpp` | todos | catálogo falso, hooks (inclui `DispatchOotActorDamage` e o contrato Lua do dano), áudio, archives, serviços |
+| `soh/soh/native/oot_hooks.h` | F2b, F2h, F2i | 9 pontos novos e payloads: 7 da F2b, `oot.mods.archives` da F2h e `oot.actor.damage` da F2i (`ShipOotActorDamageHookV1`) |
 | `soh/soh/native/oot_audio.h` | F2c | `oot.audio.mix` |
-| `soh/soh/native/OotNativeHooks.{h,cpp}` | F2b, F2c, F2h | declaração dos pontos e despachos testáveis |
-| `soh/soh/native/OotNativeHooksGame.cpp` | F2b | pontes `extern "C"` |
+| `soh/soh/native/OotNativeHooks.{h,cpp}` | F2b, F2c, F2h, F2i | declaração dos pontos e despachos testáveis; F2i: `actorDamage` e `DispatchOotActorDamage` |
+| `soh/soh/native/OotNativeHooksGame.cpp` | F2b, F2i | pontes `extern "C"`; F2i: `LinkSpan_ActorDamage` |
 | `soh/soh/native/OotNativeAudioMix.{h,cpp}` | F2c | lista publicada, despacho na thread de áudio, bomba |
-| `soh/soh/OTRGlobals.cpp` | F2c | `MixOotAudio` em `AudioPlayer_Play` |
 | `soh/src/overlays/actors/ovl_player_actor/z_player.c` | F2b, F2d, F2f | 6 pontes no Link; vida do Player e da ação; guard do golpe e snapshot dos quads |
 | `soh/src/code/z_player_lib.c` | F2f | guards das escritas nos quads e no `shieldMf` |
 | `soh/src/code/z_camera.c` | F2d | roll da câmera V2 |
 | `soh/src/code/z_play.c` | F2b, F2d, F2f | `LinkSpan_PlayDestroy`; `LinkSpan_CameraCleared` no `Play_ClearCamera`; `LinkSpan_PlayerQuadsResolved` depois do `CollisionCheck_Damage` |
+| `soh/src/code/z_collision_check.c` | F2i | declaração de `LinkSpan_ActorDamage` depois dos `#include` e a chamada em `CollisionCheck_ApplyDamage`, dentro do `if (!(collider->acFlags & AC_HARD))` |
 | `soh/soh/native/oot_engine.h`, `oot_camera.h`, `oot_colliders.h`, `oot_skeletons.h`, `oot_resources.h` | F2d–F2g | versões novas (seção 5.4) |
 | `soh/soh/native/oot_player_body.h` | F2e | serviço novo |
 | `soh/soh/native/OotNativePlayerAction.{h,cpp}` | F2d | epoch, geração do Player, dono bloqueado, árbitro da ação |
@@ -163,7 +193,7 @@ Host (`D:\Desenvolvimento\ship-lua-worktrees\HOST-SLIM-001-host`):
 | `soh/soh/native/OotNativeSkeletons.{h,cpp}`, `OotNativeSkeletonsGame.cpp`, `OotNativePlayerBody.{h,cpp}` | F2e | skeletons V2, player-body V1 e o ator do corpo |
 | `soh/soh/native/OotNativePlayerQuads.{h,cpp}`, `OotNativeWorld.{h,cpp}`, `OotNativeWorldGame.cpp` | F2f | quads do Link e colliders V2 |
 | `soh/soh/native/OotPrefixedArchive.{h,cpp}` | F2g | archive com prefixo, aliases e transform |
-| `soh/soh/OTRGlobals.cpp` | F2c, F2d, F2e | `MixOotAudio`; registro das pontes de ação e do corpo |
+| `soh/soh/OTRGlobals.cpp` | F2c, F2d, F2e | `MixOotAudio` em `AudioPlayer_Play`; registro das pontes de ação e do corpo |
 | `coordination/claims/HOST-SLIM-001.md`, `coordination/handoffs/HOST-SLIM-001.md` (core) | todos | fase F2 |
 
 ## 5. Contratos C finais
@@ -261,6 +291,51 @@ typedef struct ShipOotModArchivesHookV1 {
     uint32_t archive_stride; /* sizeof de cada entrada: percorra por ele, as entradas podem crescer */
 } ShipOotModArchivesHookV1;
 ```
+
+#### 5.1.1 Hook genérico de dano (F2i, `soh/soh/native/oot_hooks.h`)
+
+Fica no mesmo arquivo, logo depois do bloco da F2b (e do tipo de `oot.mods.archives`, se a F2h já estiver mergeada),
+antes do `#endif` final. Não está entre os 8 pontos da RFC: serve ao port do mod leveled (decisão 9; tarefas 30–32).
+Mesma regra comum da seção 5 (`size` primeiro, reservados zerados).
+
+```c
+/* oot.actor.damage: TRANSFORM ou OBSERVE, ShipOotActorDamageHookV1, thread do jogo. CollisionCheck_ApplyDamage
+ *   (z_collision_check.c) vai somar `damage` em colChkInfo.damage de `target`: um AT acertou o AC dele, sem AC_HARD,
+ *   antes do multiplicador do modo cooperativo. Roda uma vez por elemento acertado. `base_damage` é o que o jogo
+ *   calculou (tabela de dano, ou dano do AT menos a defesa); o TRANSFORM troca `damage`. O host corta o resultado em
+ *   0..255 e trata NaN como `base_damage`; se algum hook (nativo ou Lua) trocou o valor, corta também no que falta
+ *   para 255 em colChkInfo.damage (u8: a soma trunca frações), antes do multiplicador cooperativo, que pode passar
+ *   disso como hoje. Dano que não passa por aqui (débitos de chefes que não usam o dano central, play->damagePlayer
+ *   de agarrões, empurrões com dano, queda, fogo, armadilhas) fica fora. Depois dos hooks nativos, o host emite o
+ *   evento Lua hook.oot.actor.damage com o valor já trocado. */
+#define LINKSPAN_OOT_HOOK_ACTOR_DAMAGE "oot.actor.damage"
+
+typedef struct ShipOotActorDamageHookV1 {
+    uint32_t size;
+    void* play_state;
+    void* target;               /* Actor* que recebe o dano (dono do AC) */
+    void* attacker;             /* Actor* dono do collider AT que acertou o elemento; pode ser NULL */
+    uint32_t dmg_flags;         /* toucher.dmgFlags do elemento AT */
+    uint8_t damage_effect;      /* colChkInfo.damageEffect do alvo (a tabela de dano recalcula, 0..15) */
+    uint8_t attacker_is_player; /* 1 se o AT tem AT_TYPE_PLAYER (espada, flechas, bombas, o que o Link arremessa) */
+    uint8_t reserved[2];
+    float base_damage;          /* calculado pelo jogo; só leitura */
+    float damage;               /* o que vai somar; o TRANSFORM troca */
+} ShipOotActorDamageHookV1;
+```
+
+Registro e despacho (molde dos pontos da F2b): `uint64_t actorDamage = 0;` no fim de `struct OotHookPoints`, ponto
+declarado com `SHIP_NATIVE_HOOK_OBSERVE | SHIP_NATIVE_HOOK_TRANSFORM` e `LINKSPAN_OOT_HOOKS_VERSION`, despacho
+testável `float DispatchOotActorDamage(ShipOotActorDamageHookV1*)` em `OotNativeHooks.cpp`, sem tipo do jogo. A ponte
+`LinkSpan_ActorDamage` (`OotNativeHooksGame.cpp`) monta o payload, chama o despacho nativo, depois
+`ShipLua_TransformActorDamage` (`ShipLuaBootstrap.cpp`) e por fim o corte do acumulado.
+
+Evento Lua `hook.oot.actor.damage` (core, F2i-0): `kind: transform`, `phase: hook_bridge`, `support: ["oot"]`,
+`capability: hooks.bridge`, `cancellable: false`. Payload: `target_id`, `target_category`, `attacker_id` e
+`attacker_category` (-1 sem atacante), `attacker_is_player` (boolean), `dmg_flags`, `damage_effect`, `base_damage` e
+`damage` (number). `ship.hooks.result(n)` com inteiro ou decimal troca o dano; outro tipo ou nenhum resultado mantém
+(o core já recusa NaN e infinito). Entre ouvintes Lua não há encadeamento: todos recebem o mesmo payload e o último
+resultado vence, como nos demais transforms.
 
 ### 5.2 Áudio (`soh/soh/native/oot_audio.h`, novo)
 
@@ -2401,6 +2476,7 @@ SHIP_NATIVE_EXPORT const ShipNativeDescriptor* SHIP_NATIVE_CALL ShipNative_Query
 
 ```lua
 -- Prova do catálogo público (RFC 0029): o relatório da DLL vai para o log no game.ready.
+local ship = require("ship")
 ship.events.on("game.ready", function()
     local report, failure = ship.native.call("report", "")
     ship.log.info(report or ("public-probe falhou: " .. tostring(failure)))
@@ -3373,6 +3449,7 @@ SHIP_NATIVE_EXPORT const ShipNativeDescriptor* SHIP_NATIVE_CALL ShipNative_Query
 
 ```lua
 -- Contadores dos hooks da HOST-SLIM-001 no log a cada 5 s de jogo.
+local ship = require("ship")
 local frames = 0
 ship.events.on("game.frame", function()
     frames = frames + 1
@@ -4043,6 +4120,7 @@ extern "C" SHIP_NATIVE_EXPORT const ShipNativeDescriptor* SHIP_NATIVE_CALL ShipN
 
 ```lua
 -- Contadores e uma janela de mute de 100 frames.
+local ship = require("ship")
 local frames = 0
 ship.events.on("game.frame", function()
     frames = frames + 1
@@ -4065,7 +4143,7 @@ o jogo com o probe carregado sem travar (a quiescência roda no unload).
 `AudioPlayerPlayFrame(buf, len)` direto).
 - [ ] **Passo 4: fechamento** — handoff (F2c), claim, PR.
 
-### PR F2h (host): `oot.mods.archives` para o level mod
+### PR F2h (host): `oot.mods.archives` para o Unbound
 
 Branch `agent/HOST-SLIM-001-f2h-archives`, a partir da F2a (que já traz o core da F2-0).
 A F2h depende só da F2a; não usa funções nem blocos de teste da F2b/F2c.
@@ -4244,7 +4322,7 @@ E no ramo em que `AddArchive` deu certo, depois do `SPDLOG_INFO`:
 - [ ] **Passo 2: disparar** — em `LoadModsAndDispatchReady`, depois de `gPendingUnboundArchives.clear();`:
 
 ```cpp
-    // HOST-SLIM-001 (RFC 0029): archives aceitos para quem monta camadas (o level mod, na F4). Pasta de mod rejeitado
+    // HOST-SLIM-001 (RFC 0029): archives aceitos para quem monta camadas (o Unbound, na F4). Pasta de mod rejeitado
     // fica fora. A origem deve ser a pasta efetivamente carregada, não apenas outro mod com o mesmo id.
     std::vector<ShipLuaHost::OotModArchive> acceptedArchives;
     for (const auto& candidate : gModArchiveCandidates) {
@@ -4403,6 +4481,7 @@ SHIP_NATIVE_EXPORT const ShipNativeDescriptor* SHIP_NATIVE_CALL ShipNative_Query
 
 ```lua
 -- O bootstrap entrega os archives antes de game.ready.
+local ship = require("ship")
 ship.events.on("game.ready", function()
     local report, failure = ship.native.call("report", "")
     ship.log.info(report or ("archives-probe falhou: " .. tostring(failure)))
@@ -4416,7 +4495,7 @@ com a linha `fora de oot.mods.archives`. Inclua também uma pasta incompatível 
 compatível (`games = ["oot"]`) com o mesmo id, cada uma com `assets/x.o2r`. Só o archive da origem compatível
 entra. Repita com a origem compatível em `.shipmod` e em ZIP: os assets da pasta rejeitada continuam fora, e o
 cache extraído não vira candidato. As camadas das e-fixtures seguem montadas pelo bootstrap como antes (log
-"montou camada Unbound"), sem diferença no gate E (tarefa 30).
+"montou camada Unbound"), sem diferença no gate E (tarefa 33).
 
 - [ ] **Passo 5: commit e PR** — `feat(oot): bootstrap entrega os archives aceitos em oot.mods.archives`; handoff
 (F2h) registrando o que a F4 precisa fazer sem header: tirar `IsUnboundLayerArchive`/`kUnboundFrameworkId`/fila,
@@ -10489,9 +10568,1543 @@ probe e sem crash. Sem mods: captura A/B com o RC10.
 para a F3: o resolver de referências internas pelo prefixo com STRICT, e o MM montado pelo mod via V4 no lugar do
 `MmCrossWorldArchive` do bootstrap (que sai na F4).
 
+### PR F2i-0 (core): evento hook.oot.actor.damage
+
+#### Tarefa 30: schema, gerados e contrato Lua do dano de ator
+
+**Base e branch:** `main` do core com a F1 mergeada → `agent/HOST-SLIM-001-f2i-core`.
+**Repositório:** `D:\Desenvolvimento\ship-lua-worktrees\HOST-SLIM-001-core`.
+Contrato: decisão 9 e seção 5.1.1. F2i-0 depende só da F1; o PR F2i do host faz o bump do submódulo para ele.
+
+**Regras do PR:**
+
+- Uma finalidade: registrar o evento público Lua. Sem headers do jogo, hook nativo, política RPG ou mudança de ABI.
+- A semântica entra na RFC 0029 antes do schema (`AGENTS.md` §14), no passo 2.
+- Não editar gerados à mão nem mudar `api_version`: o contrato mantém `0.5.0`, como os eventos vizinhos.
+- Ler `AGENTS.md`, `PLAN.md`, `coordination/STATUS.md`, claim e handoff atuais antes da execução; preservar as seções de
+  outras fases.
+- Reivindicar os arquivos abaixo na seção F2i-0 de `coordination/claims/HOST-SLIM-001.md`, com branch acima e `Status:
+  claimed`.
+- Registrar esta tarefa no ledger `docs/agents/Plans.md` antes de implementar. Não fechar a claim global enquanto outras
+  fases estiverem ativas.
+- Commit somente com autorização explícita; push/abertura do PR depois do ok do mantenedor. Sem merge com CI vermelho.
+- O host só atualiza `extern/ship-lua` para um commit da `main` que já contenha F2i-0. Não publicar host apontando
+  apenas para a branch de trabalho do core.
+
+**Evidência conferida em 20/10/2026:** core `50e9e5b`, branch `agent/HOST-SLIM-001-f1-core`.
+As linhas abaixo são dessa revisão; usar também as âncoras literais, pois as tarefas anteriores podem deslocá-las.
+`schema/events.yml` usa JSON válido como YAML: preservar chaves, colchetes e vírgulas.
+
+| Fonte | Contrato existente |
+|---|---|
+| `schema/events.yml:50`, `:59`, `:66` | `fall_damage` transform, `enemy.defeat` observe e `item.give` transform; fase `hook_bridge`, capability `hooks.bridge` |
+| `src/host/ModHost.cpp:182-183` | define todos os eventos a partir de `Generated::kEvents` |
+| `src/events/EventDispatcher.cpp:54-56` | inscrição em evento não definido retorna `Unsupported` |
+| `src/api/LuaApiBinding.cpp:1350-1359` | o tipo transform vem dos gerados; encaminha a inscrição ao dispatcher |
+| `src/api/LuaApiBinding.cpp:741-766` | `ship.hooks.result` só funciona durante transform; inteiros viram int64, decimais double; NaN/inf são rejeitados |
+| `tests/unit/LuaApiBindingTests.cpp:701` | harness existente de eventos `hook.oot.*` com `ModHost` e Lua reais, sem jogo |
+| `tests/contract/ApiContractTests.cpp:115`, `:155-156` | contrato Lua gerado executado em contextos OoT e MM |
+| `tools/generate_api_contracts.py:648-658` | contrato gerado inscreve todos os eventos e recusa `contract.unknown` |
+
+**Conclusão de dependência:** sim, o schema **e o binding C++ regenerado** precisam chegar antes do host.
+Somente emitir um nome novo no bootstrap não permite `ship.events.on` nem habilita `ship.hooks.result` para ele.
+`support: ["oot"]` é metadata; o `ModHost` atual define todos os eventos, inclusive em contexto MM. Não acrescentar
+um teste que espere recusa desse nome em MM: isso seria mudar a política atual fora desta tarefa.
+
+**Arquivos a modificar:**
+
+- `rfcs/0029-host-limpo-conteudo-mm-em-mods.md` (nota da F2i).
+- `schema/events.yml`.
+- `tests/schema/test_validate_api_schemas.py`.
+- `tests/unit/GeneratedApiBindingsTests.cpp`.
+- `tests/unit/LuaApiBindingTests.cpp`.
+- Saídas dos três geradores (sete arquivos mudam): `generated/include/shiplua/generated/ApiBindings.h`,
+  `generated/lua/shiplua.lua`, `generated/lua/shiplua_validate.lua`, `generated/tests/api_contract.lua`,
+  `generated/docs/api-reference.md`, `generated/docs/api-reference.pt-BR.md` e
+  `generated/docs/compatibility-matrix.md`. Os mocks (`shiplua_mock.lua`, `mock_contract.lua`) não mudam.
+- Coordenação: claim, handoff, `coordination/STATUS.md` e ledger, preservando o conteúdo das demais tarefas.
+
+- [ ] **Passo 1: verificar base, preparar branch e registrar o escopo**
+
+PowerShell; os demais comandos desta tarefa partem desta localização. Não trocar a branch de uma worktree ocupada:
+o estado conferido ainda é F1, portanto este passo só roda depois de a governança liberar a worktree e integrar F1.
+
+```powershell
+$ErrorActionPreference = 'Stop'
+$core = 'D:\Desenvolvimento\ship-lua-worktrees\HOST-SLIM-001-core'
+Set-Location -LiteralPath $core
+git -c safe.directory=$core status --short --branch
+if ($LASTEXITCODE -ne 0) { throw 'Não foi possível conferir a worktree.' }
+$dirty = @(git -c safe.directory=$core status --porcelain)
+if ($LASTEXITCODE -ne 0 -or $dirty.Count -ne 0) { throw 'A worktree precisa estar limpa e liberada.' }
+git -c safe.directory=$core merge-base --is-ancestor agent/HOST-SLIM-001-f1-core main
+if ($LASTEXITCODE -ne 0) { throw 'A main ainda não contém a F1; integrar F1 antes de F2i-0.' }
+git -c safe.directory=$core switch -c agent/HOST-SLIM-001-f2i-core main
+if ($LASTEXITCODE -ne 0) { throw 'Falha ao criar a branch de F2i-0.' }
+cmake -S . -B build/core-tests -G "Visual Studio 17 2022" -A x64 -T v143
+if ($LASTEXITCODE -ne 0) { throw 'Falha ao configurar os testes do core.' }
+```
+
+Usar `build/core-tests` com esse gerador; se a pasta já tiver cache de outro gerador, parar sem apagar o cache.
+Após o gate, registrar claim e ledger. O CMake inclui os testes incondicionalmente (`CMakeLists.txt:151-152`);
+não é necessário inventar uma opção `SHIPLUA_BUILD_TESTS`.
+
+- [ ] **Passo 2: registrar a semântica na RFC 0029**
+
+`AGENTS.md` §14 proíbe implementar API pública nova antes de registrar sua semântica. Em
+`rfcs/0029-host-limpo-conteudo-mm-em-mods.md`, inserir o bloco abaixo depois das notas da F1 e antes de
+`## Fora de escopo`:
+
+```markdown
+### F2i (core e host): evento Lua de dano de ator
+
+- Motivação: portar o mod leveled (RPG) como mod, sem política de RPG no host. O host só abre o ponto central de
+  dano de colisão. Plano: [plano-f2-host.md](../docs/plans/host-slim-001/plano-f2-host.md), decisão 9 e §5.1.1.
+- F2i-0 registra `hook.oot.actor.damage` no core; a F2i emite o evento no host OoT, depois do ponto nativo
+  `oot.actor.damage`.
+- Contrato: `kind: transform`, `phase: hook_bridge`, `support: ["oot"]`, `capability: hooks.bridge`,
+  `cancellable: false`.
+
+| Campo | Tipo | Semântica |
+|---|---|---|
+| `target_id` | integer | `Actor.id` do dono do AC |
+| `target_category` | integer | categoria do alvo |
+| `attacker_id` | integer | `Actor.id` do dono do collider AT que acertou o elemento; -1 sem atacante |
+| `attacker_category` | integer | categoria do atacante; -1 sem atacante |
+| `attacker_is_player` | boolean | o AT tem `AT_TYPE_PLAYER`, com ou sem atacante |
+| `dmg_flags` | integer | `toucher.dmgFlags` do elemento AT (u32 sem perda) |
+| `damage_effect` | integer | efeito de dano do alvo |
+| `base_damage` | number | dano calculado pelo jogo, antes dos hooks nativos |
+| `damage` | number | dano depois dos hooks nativos, antes do Lua |
+
+- OoT: um evento por elemento acertado em `CollisionCheck_ApplyDamage`, no ramo sem `AC_HARD`, antes da soma em
+  `colChkInfo.damage` e do multiplicador do modo cooperativo. Fica fora o dano que não passa por ali: débitos de chefes
+  que não usam o dano central, agarrões com `play->damagePlayer`, empurrões com dano, queda, fogo e armadilhas.
+- `ship.hooks.result(n)` com inteiro ou decimal troca o dano. O host corta em 0..255 e, quando algum hook trocou o
+  valor, no que falta para 255 no acumulador `u8` do alvo, antes do multiplicador cooperativo. Sem resultado, ou com booleano ou texto, mantém `damage`.
+  Não cancela. Com vários ouvintes, vale o último resultado; `event.damage` não muda entre eles.
+- Erros: `ship.hooks.result` fora de transform, com `nil`, tabela, NaN ou infinito dá erro Lua (binding atual). Falhas
+  seguem a política de isolamento e de desativação depois de falhas seguidas.
+- MM: sem emissão. `support` é metadado; o core ainda aceita a inscrição em contexto MM, e esta fase não muda isso.
+- Compatibilidade: adição durante a pré-release 0.5.0; `api_version` fica em 0.5.0. O host precisa do core com o
+  schema e os bindings regenerados.
+- Segurança: só valores escalares chegam ao Lua, nenhum ponteiro. A ponte roda na thread do jogo e não deixa exceção
+  C++ atravessar a fronteira C.
+- Testes: schema e metadados gerados (RED/GREEN); `ModHost` e Lua reais com os nove campos, inteiro e decimal,
+  ausência de resultado, tipos não numéricos, erros, escopo e `off`. No host: despacho nativo, contrato Lua, cortes,
+  caminho sem mods bit a bit e prova em jogo.
+- Depreciação: nada sai nem é depreciado.
+```
+
+Conferir que a seção "Notas de implementação" da F1 continua igual e que o bloco fica antes de `## Fora de escopo`:
+
+```powershell
+git -c safe.directory=$core diff -- rfcs/0029-host-limpo-conteudo-mm-em-mods.md
+if ($LASTEXITCODE -ne 0) { throw 'Não foi possível revisar a nota da RFC.' }
+```
+
+- [ ] **Passo 3: escrever os testes antes do schema**
+
+Em `tests/schema/test_validate_api_schemas.py`, inserir o método abaixo em `SchemaValidationTests`, antes de
+`def test_survival_primitives_keep_safe_public_shapes(self):` (linha 35 conferida). Imports existentes bastam.
+
+```python
+    def test_actor_damage_event_contract(self):
+        matches = [event for event in self.events["events"]
+                   if event["name"] == "hook.oot.actor.damage"]
+        self.assertEqual(1, len(matches), "evento de dano ausente ou duplicado")
+        event = matches[0]
+        self.assertEqual("transform", event["kind"])
+        self.assertEqual("hook_bridge", event["phase"])
+        self.assertEqual(["oot"], event["support"])
+        self.assertEqual("hooks.bridge", event["capability"])
+        self.assertIs(False, event["cancellable"])
+        self.assertTrue(event["description"].strip())
+        self.assertTrue(event["description_en"].strip())
+        self.assertEqual([
+            {"name": "target_id", "type": "integer", "required": True},
+            {"name": "target_category", "type": "integer", "required": True},
+            {"name": "attacker_id", "type": "integer", "required": True},
+            {"name": "attacker_category", "type": "integer", "required": True},
+            {"name": "attacker_is_player", "type": "boolean", "required": True},
+            {"name": "dmg_flags", "type": "integer", "required": True},
+            {"name": "damage_effect", "type": "integer", "required": True},
+            {"name": "base_damage", "type": "number", "required": True},
+            {"name": "damage", "type": "number", "required": True},
+        ], event["payload"])
+        self.assertEqual([], self.validate())
+
+```
+
+Em `tests/unit/GeneratedApiBindingsTests.cpp`, dentro de `main`, antes de `if (failures != 0) {` (:116), inserir:
+
+```cpp
+    {
+        const EventBinding* damageEvent = nullptr;
+        for (const auto& event : kEvents) {
+            if (event.name == "hook.oot.actor.damage") damageEvent = &event;
+        }
+        Check(damageEvent != nullptr, "evento hook.oot.actor.damage deve estar nos gerados");
+        if (damageEvent != nullptr) {
+            Check(damageEvent->kind == EventKind::Transform &&
+                      damageEvent->phase == "hook_bridge" && !damageEvent->cancellable &&
+                      damageEvent->supportsOot && !damageEvent->supportsMm &&
+                      damageEvent->capability == "hooks.bridge",
+                  "metadata de dano deve manter o contrato OoT transform");
+            constexpr FieldBinding expected[] = {
+                {"target_id", "integer", true}, {"target_category", "integer", true},
+                {"attacker_id", "integer", true}, {"attacker_category", "integer", true},
+                {"attacker_is_player", "boolean", true}, {"dmg_flags", "integer", true},
+                {"damage_effect", "integer", true}, {"base_damage", "number", true},
+                {"damage", "number", true},
+            };
+            Check(damageEvent->payload.size() == 9, "payload de dano tem nove campos");
+            if (damageEvent->payload.size() == 9) {
+                for (std::size_t i = 0; i < 9; ++i) {
+                    const auto& actual = damageEvent->payload[i];
+                    Check(actual.name == expected[i].name && actual.type == expected[i].type &&
+                              actual.required == expected[i].required,
+                          "nome, tipo e obrigatoriedade do payload de dano devem coincidir");
+                }
+            }
+        }
+    }
+```
+
+Em `tests/unit/LuaApiBindingTests.cpp`, antes de `} // namespace` (:785), inserir a função completa abaixo.
+Ela exercita o transporte Lua; o clamp 0..255 pertence ao host e não deve ser implementado no core.
+
+```cpp
+void TestActorDamageLuaContract() {
+    struct Case {
+        const char* body;
+        int resultKind; // 0 ausente, 1 int64, 2 double, 3 bool, 4 string
+    };
+    const Case cases[] = {
+        {"", 0},
+        {"assert(ship.hooks.result(12))", 1},
+        {"assert(ship.hooks.result(12.5))", 2},
+        {"assert(ship.hooks.result(false))", 3},
+        {"assert(ship.hooks.result('12'))", 4},
+        {"assert(not pcall(ship.hooks.result, 0/0))", 0},
+        {"assert(not pcall(ship.hooks.result, math.huge))", 0},
+        {"assert(not pcall(ship.hooks.result, -math.huge))", 0},
+        {"assert(not pcall(ship.hooks.result, {}))", 0},
+        {"assert(not pcall(ship.hooks.result, nil))", 0},
+    };
+    for (const auto& test : cases) {
+        ShipLua::LuaApiHostContext context{"oot", "test-host", "0.5.0", {"hooks.bridge"}};
+        ShipLua::ModHost host(context);
+        const std::string source = std::string(R"lua(
+local ship = require("ship")
+assert(not pcall(ship.events.on, "hook.oot.actor.damage.unknown", function() end))
+assert(not pcall(ship.hooks.result, 1))
+calls = 0
+subscription = ship.events.on("hook.oot.actor.damage", function(event)
+    calls = calls + 1
+    local fields = 0
+    for _ in pairs(event) do fields = fields + 1 end
+    assert(fields == 9)
+    assert(math.type(event.target_id) == "integer" and event.target_id == 7)
+    assert(math.type(event.target_category) == "integer" and event.target_category == 5)
+    assert(math.type(event.attacker_id) == "integer" and event.attacker_id == -1)
+    assert(math.type(event.attacker_category) == "integer" and event.attacker_category == -1)
+    assert(type(event.attacker_is_player) == "boolean" and not event.attacker_is_player)
+    assert(math.type(event.dmg_flags) == "integer" and event.dmg_flags == 4294967295)
+    assert(math.type(event.damage_effect) == "integer" and event.damage_effect == 15)
+    assert(type(event.base_damage) == "number" and event.base_damage == 4.5)
+    assert(type(event.damage) == "number" and event.damage == 6.25)
+)lua") + test.body + "\nend)\n";
+        const auto loaded = host.LoadModFromManifestAndSource(MakeManifest("test.actor_damage"), source);
+        Check(loaded.isOk(), "contrato Lua de dano deve carregar: " + loaded.message);
+        if (!loaded.isOk()) continue;
+        ShipLua::EventPayload payload{
+            {"target_id", std::int64_t{7}}, {"target_category", std::int64_t{5}},
+            {"attacker_id", std::int64_t{-1}}, {"attacker_category", std::int64_t{-1}},
+            {"attacker_is_player", false}, {"dmg_flags", std::int64_t{4294967295LL}},
+            {"damage_effect", std::int64_t{15}}, {"base_damage", 4.5}, {"damage", 6.25},
+        };
+        const auto dispatched = host.DispatchEvent("hook.oot.actor.damage", payload);
+        Check(dispatched.isOk() && dispatched.value->failures.empty() &&
+                  dispatched.value->callbacksInvoked == 1,
+              "evento de dano deve executar um callback sem falha");
+        const auto result = payload.find("__hook_result");
+        if (test.resultKind == 0) {
+            Check(result == payload.end(), "sem resultado válido não deve existir __hook_result");
+        } else {
+            Check(result != payload.end(), "resultado Lua deve chegar ao payload do host");
+            if (result != payload.end()) {
+                const auto& value = result->second.value;
+                if (test.resultKind == 1)
+                    Check(std::holds_alternative<std::int64_t>(value) && std::get<std::int64_t>(value) == 12,
+                          "inteiro Lua deve chegar como int64");
+                if (test.resultKind == 2)
+                    Check(std::holds_alternative<double>(value) && std::get<double>(value) == 12.5,
+                          "decimal Lua deve chegar como double");
+                if (test.resultKind == 3)
+                    Check(std::holds_alternative<bool>(value) && !std::get<bool>(value),
+                          "false continua bool, sem conversão numérica no core");
+                if (test.resultKind == 4)
+                    Check(std::holds_alternative<std::string>(value) && std::get<std::string>(value) == "12",
+                          "texto numérico continua string no core");
+            }
+        }
+        Check(host.GetRuntime("test.actor_damage")->DoString(R"lua(
+assert(calls == 1)
+assert(not pcall(require("ship").hooks.result, 1))
+assert(require("ship").events.off(subscription))
+)lua").isOk(), "callback deve encerrar o escopo transform e permitir off");
+        payload.erase("__hook_result");
+        const auto withoutListener = host.DispatchEvent("hook.oot.actor.damage", payload);
+        Check(withoutListener.isOk() && withoutListener.value->callbacksInvoked == 0 &&
+                  withoutListener.value->failures.empty() && !payload.contains("__hook_result"),
+              "sem ouvinte, não deve aparecer resultado de dano");
+    }
+}
+
+```
+
+No `main` desse arquivo, inserir `TestActorDamageLuaContract();` imediatamente depois de
+`TestHookResultTransformAndScope();` (:805). Os headers existentes fornecem os tipos usados, inclusive `EventValue`.
+
+- [ ] **Passo 4: rodar e ver falhar**
+
+```powershell
+python tests/schema/test_validate_api_schemas.py SchemaValidationTests.test_actor_damage_event_contract
+if ($LASTEXITCODE -eq 0) { throw 'RED ausente: o teste de schema deveria falhar antes do evento.' }
+cmake --build build/core-tests --config Release --target generated_api_bindings_tests lua_api_binding_tests
+if ($LASTEXITCODE -ne 0) { throw 'O RED esperado é de contrato, não de compilação.' }
+ctest --test-dir build/core-tests -C Release -R '^(generated_api_bindings_tests|lua_api_binding_tests)$' --output-on-failure --no-tests=error
+if ($LASTEXITCODE -eq 0) { throw 'RED ausente: os bindings ainda não deveriam conhecer o evento.' }
+```
+
+Conferir a causa: Python informa evento ausente; C++ informa `hook.oot.actor.damage` ausente; Lua falha ao
+carregar a inscrição com `event is not defined: 'hook.oot.actor.damage'`. Não contar falhas de infraestrutura como RED.
+
+- [ ] **Passo 5: adicionar a entrada canônica do schema**
+
+Em `schema/events.yml`, inserir **antes** da entrada `hook.oot.item.give` (:66), depois do fechamento com vírgula
+de `hook.oot.enemy.defeat` (:65). Este bloco é YAML em sintaxe JSON, como o restante do arquivo, e já inclui a vírgula
+final:
+
+```yaml
+    {"name": "hook.oot.actor.damage", "description": "Emitido antes de somar dano de colisão a um ator sem AC_HARD, antes do multiplicador cooperativo, uma vez por elemento acertado. target_id e target_category identificam o alvo; attacker_id e attacker_category identificam o dono do collider AT que acertou o elemento e valem -1 sem atacante. attacker_is_player indica AT_TYPE_PLAYER; dmg_flags traz toucher.dmgFlags e damage_effect traz o efeito já calculado. base_damage é o dano calculado pelo jogo e damage é o valor após os hooks nativos. ship.hooks.result com número finito substitui damage, limitado pelo host a 0..255; se algum hook nativo ou Lua trocou o valor, o host limita também ao que falta para 255 no dano acumulado u8 do alvo, antes do multiplicador cooperativo. Sem resultado ou com resultado não numérico, mantém damage. Dano que não passa por esse funil não é coberto: débitos de chefes que não usam o dano central, agarrões via play->damagePlayer, empurrões com dano, queda, fogo e armadilhas nesses caminhos.", "description_en": "Emitted before adding collision damage to an actor without AC_HARD, before the cooperative multiplier, once per hit element. target_id and target_category identify the target; attacker_id and attacker_category identify the owner of the AT collider that hit the element and are -1 without an attacker. attacker_is_player indicates AT_TYPE_PLAYER; dmg_flags carries toucher.dmgFlags and damage_effect carries the computed effect. base_damage is the damage calculated by the game and damage is the value after native hooks. ship.hooks.result with a finite number replaces damage, clamped by the host to 0..255; if any native or Lua hook changed the value, the host also clamps it to what is left up to 255 in the target's accumulated u8 damage, before the cooperative multiplier. No result or a nonnumeric result preserves damage. Damage outside this path is not covered: boss health deductions that do not use central damage, grabs using play->damagePlayer, knockback damage, falls, fire and traps on those paths.", "kind": "transform", "phase": "hook_bridge", "cancellable": false, "support": ["oot"], "capability": "hooks.bridge", "payload": [
+      {"name": "target_id", "type": "integer", "required": true},
+      {"name": "target_category", "type": "integer", "required": true},
+      {"name": "attacker_id", "type": "integer", "required": true},
+      {"name": "attacker_category", "type": "integer", "required": true},
+      {"name": "attacker_is_player", "type": "boolean", "required": true},
+      {"name": "dmg_flags", "type": "integer", "required": true},
+      {"name": "damage_effect", "type": "integer", "required": true},
+      {"name": "base_damage", "type": "number", "required": true},
+      {"name": "damage", "type": "number", "required": true}
+    ]},
+```
+
+- [ ] **Passo 6: gerar pelos comandos do repositório**
+
+```powershell
+python tools/validate_api_schemas.py
+if ($LASTEXITCODE -ne 0) { throw 'Schema inválido.' }
+foreach ($generator in @('tools/generate_cpp_api.py', 'tools/generate_api_docs.py', 'tools/generate_api_contracts.py')) {
+    python $generator
+    if ($LASTEXITCODE -ne 0) { throw "Falha no gerador $generator" }
+}
+git -c safe.directory=$core diff --stat -- schema/events.yml generated tests
+if ($LASTEXITCODE -ne 0) { throw 'Não foi possível revisar o diff.' }
+```
+
+O primeiro gerador atualiza a metadata C++; o segundo atualiza LuaDoc e as referências nos dois idiomas;
+o terceiro atualiza validadores, contratos e demais artefatos derivados. O contrato gerado passa a inscrever
+o novo evento automaticamente; o teste manual acima cobre também payload e retorno transform.
+Não alterar geradores nem seus testes apenas para acomodar contagem fixa de eventos.
+
+- [ ] **Passo 7: ver passar os contratos e depois a bateria do core**
+
+```powershell
+python tools/validate_api_schemas.py
+if ($LASTEXITCODE -ne 0) { throw 'Schema inválido.' }
+foreach ($generator in @('tools/generate_cpp_api.py', 'tools/generate_api_docs.py', 'tools/generate_api_contracts.py')) {
+    python $generator --check
+    if ($LASTEXITCODE -ne 0) { throw "Gerado divergente: $generator" }
+}
+python tests/schema/test_validate_api_schemas.py
+if ($LASTEXITCODE -ne 0) { throw 'Falha nos testes de schema.' }
+cmake --build build/core-tests --config Release --target generated_api_bindings_tests lua_api_binding_tests api_contract_tests mock_runtime_tests
+if ($LASTEXITCODE -ne 0) { throw 'Falha ao compilar os contratos.' }
+ctest --test-dir build/core-tests -C Release -R '^(generated_api_bindings_tests|lua_api_binding_tests|api_contract_tests|mock_runtime_tests|api_schema_validation.*|api_cpp_codegen_.*|api_docs_codegen_.*|api_contract_codegen_.*)$' --output-on-failure --no-tests=error
+if ($LASTEXITCODE -ne 0) { throw 'Contrato de F2i-0 ainda falha.' }
+cmake --build build/core-tests --config Release --parallel
+if ($LASTEXITCODE -ne 0) { throw 'Falha no build completo do core.' }
+ctest --test-dir build/core-tests -C Release --output-on-failure --no-tests=error
+if ($LASTEXITCODE -ne 0) { throw 'Bateria do core falhou; não publicar.' }
+git -c safe.directory=$core diff --check
+if ($LASTEXITCODE -ne 0) { throw 'Diff com erro de whitespace.' }
+```
+
+Os nomes dos testes e alvos estão em `tests/CMakeLists.txt:136-144`, `:194-205`, `:223-240`.
+Registrar contagem e saída reais, sem presumir a contagem antiga da F1. CI Linux e Windows também precisam passar.
+
+- [ ] **Passo 8: commit revisável, quando autorizado**
+
+Atualizar o ledger e `coordination/STATUS.md` com o resultado da tarefa 30; preencher no handoff a seção
+`F2i-0 — tarefa 30` com: base, branch, nove campos, comandos/resultado RED e GREEN, plataforma, compilador,
+configuração, verificações não executadas e dependência do host. Usar `Status: review` enquanto aguarda revisão.
+Revisar o diff completo, inclusive os gerados. Não afirmar que o hook em jogo foi validado neste PR.
+
+```powershell
+git -c safe.directory=$core diff -- rfcs/0029-host-limpo-conteudo-mm-em-mods.md schema/events.yml tests/schema/test_validate_api_schemas.py tests/unit/GeneratedApiBindingsTests.cpp tests/unit/LuaApiBindingTests.cpp generated coordination/claims/HOST-SLIM-001.md coordination/handoffs/HOST-SLIM-001.md coordination/STATUS.md docs/agents/Plans.md
+if ($LASTEXITCODE -ne 0) { throw 'Revisão do diff indisponível.' }
+git -c safe.directory=$core add -- rfcs/0029-host-limpo-conteudo-mm-em-mods.md schema/events.yml tests/schema/test_validate_api_schemas.py tests/unit/GeneratedApiBindingsTests.cpp tests/unit/LuaApiBindingTests.cpp generated coordination/claims/HOST-SLIM-001.md coordination/handoffs/HOST-SLIM-001.md coordination/STATUS.md docs/agents/Plans.md
+if ($LASTEXITCODE -ne 0) { throw 'Falha ao preparar o commit.' }
+git -c safe.directory=$core diff --cached --check
+if ($LASTEXITCODE -ne 0) { throw 'Diff preparado inválido.' }
+git -c safe.directory=$core commit -m "feat(events): adiciona hook Lua de dano de ator"
+if ($LASTEXITCODE -ne 0) { throw 'Falha no commit de F2i-0.' }
+git -c safe.directory=$core rev-parse HEAD
+if ($LASTEXITCODE -ne 0) { throw 'Não foi possível obter o SHA do handoff.' }
+```
+
+Aplicar o trailer `Co-Authored-By` configurado para o agente executor; não inventar identidade.
+Registrar o SHA exibido no handoff em atualização posterior, preservando as outras fases.
+
+- [ ] **Passo 9: PR/handoff para o host**
+
+Depois da autorização de publicação, abrir PR da branch `agent/HOST-SLIM-001-f2i-core` para `main` do core,
+com título `F2i-0: evento Lua hook.oot.actor.damage`. Descrever a nota da RFC, metadados, payload e testes RED/GREEN;
+anexar os resultados reais e o handoff. Aguardar CI e revisão, sem merge automático.
+No handoff do merge, registrar o SHA **integrado na main** como referência mínima da F2i-0. O SHA consumido pelo
+host deve estar na main e conter tanto essa referência quanto o core já usado pela integração; pode ser o atual.
+O PR F2i do host emite o evento pela ponte da tarefa 32; a emissão não substitui o bump do submódulo.
+
+**Aceite:** inscrição Lua deixa de falhar; `ship.hooks.result(12)` e `(12.5)` chegam com tipos int64/double;
+os nove campos preservam tipos e sentinelas; sem resultado não surge `__hook_result`; geradores `--check`,
+contratos reais/mock e bateria do core passam. Clamp e aplicação no collider continuam sendo responsabilidade do host.
+
+### PR F2i (host): oot.actor.damage e hook.oot.actor.damage
+
+Branch `agent/HOST-SLIM-001-f2i-dano` a partir da integração
+`agent/OOT-UPSTREAM-001-78dc6d970-integration` com F2a e F2b mergeadas (seção 3). Trabalhe na worktree
+`D:\Desenvolvimento\ship-lua-worktrees\HOST-SLIM-001-host`. O RC10 em `OOT-UPSTREAM-78DC-001` é só referência.
+
+Regras do PR:
+
+- Abra claim da F2i na coordenação da HOST-SLIM-001 antes de editar. Preserve as entradas dos outros PRs.
+- O contrato é a seção 5.1.1 (decisão 9). Copie o bloco nativo sem mudar campos, versão ou semântica.
+- O ponto cobre a soma de dano em `CollisionCheck_ApplyDamage`, depois da tabela/defesa, dentro de `!AC_HARD` e
+  antes do multiplicador cooperativo. Dispara uma vez por elemento acertado. JntSph/Tris não são um único acerto.
+- Ficam fora os caminhos que não passam por essa soma: débitos de chefes que não usam o dano central, agarrões por
+  `play->damagePlayer`, empurrões com dano, queda, fogo e armadilhas nesses caminhos. Não acrescente remendos por
+  ator nem política de RPG ao host.
+- **Sem mods = vanilla.** Sem hook nativo e sem ouvinte Lua, devolva o mesmo `float`, sem clamp, conversão para
+  inteiro ou alteração de campos do jogo. Preserve a soma e o multiplicador cooperativo existentes.
+- Nativo primeiro; Lua depois. O Lua recebe o resultado nativo em `damage` e o valor do jogo em `base_damage`.
+- Bump de `extern/ship-lua` para o SHA da `main` do core com o PR F2i-0 (evento Lua). Não recue os commits F1/F2-0
+  trazidos pela F2a. `ShipLua_TransformActorDamage` entra no bootstrap neste PR (tarefa 32, passo 6); não coloque
+  stub para conseguir linkar.
+- As inserções abaixo exigem a F2b mergeada (tarefas 10–13, seção 3). Não recopie a F2b. O despacho usa o
+  registro diretamente, sem os helpers da F2b; a ordem de integração exige F2a, F2b e F2i-0. Use as âncoras
+  pós-F2b indicadas.
+- Só publique o PR com testes, prova e handoff. A validação conjunta da F2 fica na tarefa 33.
+
+Linhas conferidas no host de leitura, HEAD `e9da99b515edbe8e70f3f1fe8f05e342eb1f572b`.
+São linhas **antes** da F2b; use também a âncora textual para inserir depois dela. `AGENTS.md` não existe na raiz
+desse checkout de referência. A execução deve consultar as regras da worktree de implementação.
+
+Todos os comandos abaixo são PowerShell, na raiz de `HOST-SLIM-001-host`, salvo indicação explícita.
+
+```powershell
+Set-Location D:\Desenvolvimento\ship-lua-worktrees\HOST-SLIM-001-host
+git switch -c agent/HOST-SLIM-001-f2i-dano agent/OOT-UPSTREAM-001-78dc6d970-integration
+if ($LASTEXITCODE -ne 0) { throw 'Não foi possível criar a branch F2i.' }
+```
+
+#### Tarefa 31: ponto e despacho testável
+
+**Arquivos:** `soh/soh/native/oot_hooks.h`, `soh/soh/native/OotNativeHooks.h`,
+`soh/soh/native/OotNativeHooks.cpp`, `soh/native-sdk/tests/EngineTests.cpp`.
+
+Não inclua tipos do jogo no despacho. `OotNativeHooks.cpp` já entra no alvo de testes
+(`soh/native-sdk/ExportSdk.cmake:38`). `OotNativeHooksGame.cpp` não entra nele.
+
+- [ ] **Passo 1: guardar a referência vanilla e o layout anterior** — antes de editar os headers, faça o build da
+integração da seção 1 e guarde os binários. Não use um executável antigo encontrado na pasta como referência.
+
+```powershell
+cmake -S . -B build/x64 -G "Visual Studio 17 2022" -A x64 -T v143
+if ($LASTEXITCODE -ne 0) { throw 'Configure da referência falhou.' }
+cmake --build build/x64 --config Release --target soh oot_native_engine_tests oot_native_registry_tests oot_native_scenes_tests linkspan_asset_discovery_tests --parallel
+if ($LASTEXITCODE -ne 0) { throw 'Build da referência falhou.' }
+ctest --test-dir build/x64 -C Release -R "oot_native|linkspan_" --output-on-failure
+if ($LASTEXITCODE -ne 0) { throw 'Referência não está verde.' }
+cmake --build build/x64 --config Release --target soh_symbols
+if ($LASTEXITCODE -ne 0) { throw 'Símbolos da referência falharam.' }
+$evidence = Join-Path (Get-Location) ('build/f2i-evidence-' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
+New-Item -ItemType Directory -Path "$evidence/pre" -ErrorAction Stop | Out-Null
+Copy-Item x64/Release/soh.exe,x64/Release/soh.pdb,x64/Release/soh.symbols "$evidence/pre"
+Copy-Item build/x64/native-sdk/oot_layout_id.h "$evidence/pre/oot_layout_id.h"
+git rev-parse HEAD | Set-Content "$evidence/pre/host-sha.txt"
+git submodule status extern/ship-lua | Set-Content "$evidence/pre/core-sha.txt"
+Get-FileHash "$evidence/pre/soh.exe","$evidence/pre/soh.pdb","$evidence/pre/soh.symbols" |
+    Format-Table -AutoSize | Out-String | Set-Content "$evidence/pre/hashes.txt"
+$evidence | Set-Content build/f2i-evidence-path.txt
+```
+
+- [ ] **Passo 2: teste que falha** — em `EngineTests.cpp`, acrescente `#include <cstring>` e `#include <limits>` junto
+      dos
+includes da stdlib (:34–47). Insira o namespace abaixo depois de `FakeSkeletons` e antes de `int main` (:719–721).
+O `Check` existente (:111) e os globais de teste `play`/`player` (:80–81) continuam sendo usados.
+
+```cpp
+namespace HostSlimDamage {
+struct State {
+    float output = 0.0f;
+    float before = 0.0f;
+    float after = 0.0f;
+    unsigned beforeCalls = 0;
+    unsigned afterCalls = 0;
+    unsigned transformCalls = 0;
+    bool fail = false;
+    ShipOotActorDamageHookV1 seen{};
+};
+
+ShipNativeStatus SHIP_NATIVE_CALL Transform(void* user, const ShipNativeHookCall* call) {
+    auto* state = static_cast<State*>(user);
+    auto* payload = static_cast<ShipOotActorDamageHookV1*>(call->payload);
+    ++state->transformCalls;
+    payload->damage = state->output;
+    return state->fail ? SHIP_NATIVE_FAILURE : SHIP_NATIVE_OK;
+}
+
+ShipNativeStatus SHIP_NATIVE_CALL Observe(void* user, const ShipNativeHookCall* call) {
+    auto* state = static_cast<State*>(user);
+    const auto* payload = static_cast<const ShipOotActorDamageHookV1*>(call->payload);
+    if (call->phase == SHIP_NATIVE_HOOK_BEFORE) {
+        state->before = payload->damage;
+        ++state->beforeCalls;
+    } else {
+        state->after = payload->damage;
+        state->seen = *payload;
+        ++state->afterCalls;
+    }
+    return SHIP_NATIVE_OK;
+}
+
+uint64_t Hook(State& state, uint32_t mode, uint32_t phase, ShipNativeHookFn callback) {
+    const ShipNativeHookSpec spec{ sizeof(spec), LINKSPAN_OOT_HOOK_ACTOR_DAMAGE, LINKSPAN_OOT_HOOKS_VERSION,
+                                   sizeof(ShipOotActorDamageHookV1), mode, phase, 0, callback, &state };
+    uint64_t handle = 0;
+    const auto status = ShipLuaHost::GetOotHookRegistry()->Register("damage.test", spec, &handle);
+    Check(status == SHIP_NATIVE_OK && handle != 0, "registra hook de dano");
+    return handle;
+}
+
+void Run() {
+    auto* registry = ShipLuaHost::GetOotHookRegistry();
+    const auto point = ShipLuaHost::GetOotHookPoints().actorDamage;
+    Check(point && registry->FindPoint(LINKSPAN_OOT_HOOK_ACTOR_DAMAGE, LINKSPAN_OOT_HOOKS_VERSION) == point,
+          "oot.actor.damage v1 declarado");
+    State state{};
+    ShipNativeHookSpec replace{ sizeof(replace), LINKSPAN_OOT_HOOK_ACTOR_DAMAGE, LINKSPAN_OOT_HOOKS_VERSION,
+                                sizeof(ShipOotActorDamageHookV1), SHIP_NATIVE_HOOK_REPLACE, 0, 0, Transform, &state };
+    uint64_t refused = 0;
+    Check(registry->Register("damage.test", replace, &refused) == SHIP_NATIVE_UNSUPPORTED,
+          "dano recusa REPLACE");
+
+    const ShipOotActorDamageHookV1 input{ sizeof(input), &play, &player, &spawned, 0x12345678u, 3, 1, {}, 4.0f, 4.0f };
+    auto payload = input;
+    Check(ShipLuaHost::DispatchOotActorDamage(&payload) == 4.0f, "sem hook devolve o dano do jogo");
+    for (const float value : { -0.0f, -1.0f, 300.0f }) {
+        payload = input;
+        payload.damage = value;
+        const float result = ShipLuaHost::DispatchOotActorDamage(&payload);
+        Check(std::memcmp(&result, &value, sizeof(value)) == 0, "sem hook não normaliza nem perde bits");
+    }
+
+    Hook(state, SHIP_NATIVE_HOOK_OBSERVE, SHIP_NATIVE_HOOK_BEFORE, Observe);
+    Hook(state, SHIP_NATIVE_HOOK_TRANSFORM, 0, Transform);
+    Hook(state, SHIP_NATIVE_HOOK_OBSERVE, SHIP_NATIVE_HOOK_AFTER, Observe);
+    state.output = 8.0f;
+    payload = input;
+    Check(ShipLuaHost::DispatchOotActorDamage(&payload) == 8.0f && state.before == 4.0f && state.after == 8.0f &&
+              state.beforeCalls == 1 && state.afterCalls == 1 && state.transformCalls == 1,
+          "TRANSFORM troca; OBSERVE BEFORE e AFTER veem entrada e saída");
+    Check(state.seen.size == sizeof(input) && state.seen.play_state == &play && state.seen.target == &player &&
+              state.seen.attacker == &spawned && state.seen.dmg_flags == 0x12345678u &&
+              state.seen.damage_effect == 3 && state.seen.attacker_is_player == 1 &&
+              state.seen.reserved[0] == 0 && state.seen.reserved[1] == 0 && state.seen.base_damage == 4.0f,
+          "payload preserva contexto e base_damage");
+
+    const auto expect = [&](float output, float expected) {
+        state.output = output;
+        payload = input;
+        Check(ShipLuaHost::DispatchOotActorDamage(&payload) == expected && state.after == expected,
+              "host limita o resultado antes do OBSERVE AFTER");
+    };
+    expect(-2.0f, 0.0f);
+    expect(999.0f, 255.0f);
+    expect(std::numeric_limits<float>::infinity(), 255.0f);
+    expect(-std::numeric_limits<float>::infinity(), 0.0f);
+    expect(std::numeric_limits<float>::quiet_NaN(), 4.0f);
+    expect(2.5f, 2.5f);
+    registry->RemoveOwner("damage.test");
+    Check(!registry->HasHooks(point), "remove os hooks de dano do dono");
+
+    state = {};
+    state.fail = true;
+    state.output = 200.0f;
+    const auto failing = Hook(state, SHIP_NATIVE_HOOK_TRANSFORM, 0, Transform);
+    for (unsigned attempt = 1; attempt <= 3; ++attempt) {
+        payload = input;
+        Check(ShipLuaHost::DispatchOotActorDamage(&payload) == 4.0f && state.transformCalls == attempt,
+              "falha restaura o dano da entrada");
+        Check(registry->HasHooks(point) == (attempt < 3), "terceira falha desativa o hook");
+    }
+    const auto hooks = registry->Describe();
+    Check(std::any_of(hooks.begin(), hooks.end(), [&](const ShipLua::NativeHookInfo& hook) {
+              return hook.handle == failing && !hook.enabled && hook.failures == 3;
+          }),
+          "diagnóstico marca três falhas e hook desativado");
+    payload = input;
+    Check(ShipLuaHost::DispatchOotActorDamage(&payload) == 4.0f && state.transformCalls == 3,
+          "quarto acerto não chama o hook desativado");
+    registry->RemoveOwner("damage.test");
+
+    // Corte final, depois do Lua: só quando algum hook trocou o valor, e no que falta para 255 no acumulador u8.
+    uint8_t accumulated = 250;
+    accumulated += ShipLuaHost::FinalizeOotActorDamage(1.0f, 255.0f, accumulated);
+    Check(accumulated == 255, "elemento trocado usa só o que falta no acumulador");
+    accumulated += ShipLuaHost::FinalizeOotActorDamage(1.0f, 255.0f, accumulated);
+    Check(accumulated == 255, "segundo elemento trocado não passa de 255");
+    Check(ShipLuaHost::FinalizeOotActorDamage(1.0f, 2.5f, 254) == 1.0f, "fração trocada respeita o que falta");
+    Check(ShipLuaHost::FinalizeOotActorDamage(1.0f, 0.0f, 10) == 0.0f, "zerar continua zerando");
+    Check(ShipLuaHost::FinalizeOotActorDamage(4.0f, 4.0f, 254, true) == 1.0f,
+          "Lua que devolve o original não apaga a troca nativa");
+    Check(ShipLuaHost::FinalizeOotActorDamage(4.0f, 4.0f, 254) == 4.0f, "sem troca em nenhum estágio, vanilla");
+    for (const float original : { -0.0f, -1.0f, 300.0f }) {
+        const float result = ShipLuaHost::FinalizeOotActorDamage(original, original, 250);
+        Check(std::memcmp(&result, &original, sizeof(original)) == 0, "valor sem troca passa intacto");
+    }
+}
+} // namespace HostSlimDamage
+```
+
+No `main`, depois do bloco da F2b que termina em `registry->RemoveOwner("hooks.test")` e seus `Check`, insira:
+
+```cpp
+    HostSlimDamage::Run();
+```
+
+Esse bloco da F2b fica depois do catálogo público da F2a. Se a integração ainda não tiver a F2b, aguarde o merge
+dela antes de iniciar a F2i. No host atual a policy nasce em :729; a seção de hooks existente começa em :1877.
+A chamada precisa ficar depois de `CreateOotNativePolicy`, com seu registro vivo. Não crie outro registro nem
+resete a policy dos demais testes.
+
+- [ ] **Passo 3: ver falhar** — tipo, campo e despacho ainda não existem. Espere erro de compilação nesses nomes.
+
+```powershell
+cmake --build build/x64 --config Release --target oot_native_engine_tests
+if ($LASTEXITCODE -eq 0) { throw 'RED ausente: o teste deveria falhar antes da implementação.' }
+```
+
+- [ ] **Passo 4: contrato** — cole o bloco fixado abaixo em `soh/soh/native/oot_hooks.h`, depois dos payloads da
+F2b, antes do `#endif` final (:200 no host atual).
+
+```c
+/* oot.actor.damage: TRANSFORM ou OBSERVE, ShipOotActorDamageHookV1, thread do jogo. CollisionCheck_ApplyDamage
+ *   (z_collision_check.c) vai somar `damage` em colChkInfo.damage de `target`: um AT acertou o AC dele, sem AC_HARD,
+ *   antes do multiplicador do modo cooperativo. Roda uma vez por elemento acertado. `base_damage` é o que o jogo
+ *   calculou (tabela de dano, ou dano do AT menos a defesa); o TRANSFORM troca `damage`. O host corta o resultado em
+ *   0..255 e trata NaN como `base_damage`; se algum hook (nativo ou Lua) trocou o valor, corta também no que falta
+ *   para 255 em colChkInfo.damage (u8: a soma trunca frações), antes do multiplicador cooperativo, que pode passar
+ *   disso como hoje. Dano que não passa por aqui (débitos de chefes que não usam o dano central, play->damagePlayer
+ *   de agarrões, empurrões com dano, queda, fogo, armadilhas) fica fora. Depois dos hooks nativos, o host emite o
+ *   evento Lua hook.oot.actor.damage com o valor já trocado. */
+#define LINKSPAN_OOT_HOOK_ACTOR_DAMAGE "oot.actor.damage"
+
+typedef struct ShipOotActorDamageHookV1 {
+    uint32_t size;
+    void* play_state;
+    void* target;               /* Actor* que recebe o dano (dono do AC) */
+    void* attacker;             /* Actor* dono do collider AT que acertou o elemento; pode ser NULL */
+    uint32_t dmg_flags;         /* toucher.dmgFlags do elemento AT */
+    uint8_t damage_effect;      /* colChkInfo.damageEffect do alvo (a tabela de dano recalcula, 0..15) */
+    uint8_t attacker_is_player; /* 1 se o AT tem AT_TYPE_PLAYER (espada, flechas, bombas, o que o Link arremessa) */
+    uint8_t reserved[2];
+    float base_damage;          /* calculado pelo jogo; só leitura */
+    float damage;               /* o que vai somar; o TRANSFORM troca */
+} ShipOotActorDamageHookV1;
+```
+
+- [ ] **Passo 5: declarações e despacho** — em `OotNativeHooks.h`, acrescente o campo no fim de `OotHookPoints`,
+depois de `playDestroy` da F2b, antes de `};` (:33 atual):
+
+```cpp
+    uint64_t actorDamage = 0;
+```
+
+Depois das declarações de despacho da F2b, antes do fechamento do namespace (:49 atual):
+
+```cpp
+// Thread do jogo. Sem hooks, devolve damage intacto. Payload válido durante esta chamada.
+float DispatchOotActorDamage(ShipOotActorDamageHookV1* payload);
+// Parcela aplicada depois do Lua. Se algum estágio trocou o valor (nativeChanged guarda a troca nativa mesmo que
+// o Lua devolva o original), cabe no que falta para 255 no acumulador u8 do alvo; sem troca, fica o vanilla.
+float FinalizeOotActorDamage(float originalDamage, float transformedDamage, uint8_t accumulatedDamage,
+                            bool nativeChanged = false);
+```
+
+Em `OotNativeHooks.cpp`, depois do include `oot_hooks.h` (:3), acrescente:
+
+```cpp
+#include <algorithm>
+#include <cmath>
+```
+
+No namespace anônimo inicial, depois de `Declare` e antes de `} // namespace` (:18 atual), acrescente:
+
+```cpp
+ShipNativeStatus SHIP_NATIVE_CALL NormalizeActorDamage(const ShipNativeHookCall* call) {
+    auto* payload = static_cast<ShipOotActorDamageHookV1*>(call->payload);
+    const float baseDamage = *static_cast<const float*>(call->original_context);
+    payload->damage = std::clamp(std::isnan(payload->damage) ? baseDamage : payload->damage, 0.0f, 255.0f);
+    return SHIP_NATIVE_OK;
+}
+```
+
+Em `CreateOotHookRegistry`, depois da declaração de `points.playDestroy` da F2b e antes de `return registry;`
+(:62 atual), acrescente:
+
+```cpp
+    points.actorDamage = Declare(LINKSPAN_OOT_HOOK_ACTOR_DAMAGE, sizeof(ShipOotActorDamageHookV1),
+                                  SHIP_NATIVE_HOOK_OBSERVE | SHIP_NATIVE_HOOK_TRANSFORM,
+                                  LINKSPAN_OOT_HOOKS_VERSION);
+```
+
+Depois dos despachos da F2b, antes de `ResetOotHooks` (:109 atual), acrescente:
+
+```cpp
+float DispatchOotActorDamage(ShipOotActorDamageHookV1* payload) {
+    if (!payload)
+        return 0.0f;
+    if (!registry || !registry->HasHooks(points.actorDamage))
+        return payload->damage;
+    float baseDamage = payload->base_damage;
+    registry->Dispatch(points.actorDamage, payload, sizeof(*payload), NormalizeActorDamage, &baseDamage);
+    return payload->damage;
+}
+
+float FinalizeOotActorDamage(float originalDamage, float transformedDamage, uint8_t accumulatedDamage,
+                            bool nativeChanged) {
+    if (!nativeChanged && transformedDamage == originalDamage)
+        return transformedDamage;
+    // Os estágios anteriores já devolvem número finito em 0..255 quando trocam o dano.
+    const float remaining = 255.0f - static_cast<float>(accumulatedDamage);
+    return std::clamp(transformedDamage, 0.0f, remaining);
+}
+```
+
+O callback `NormalizeActorDamage` é o estágio original do registro; não chama o jogo. O registro executa BEFORE,
+TRANSFORM, original, AFTER. Assim AFTER vê o resultado limitado. A cópia local de `base_damage` protege o fallback
+de NaN. O registro já restaura o payload de um TRANSFORM que falha e desativa após três falhas consecutivas;
+não duplique esse contador no host. OBSERVE tem leitura contratual do payload, como na F2b.
+`FinalizeOotActorDamage` é o último corte: a ponte do jogo o chama depois do Lua (tarefa 32, passo 3), porque o
+acumulador `colChkInfo.damage` é `u8` e soma vários elementos no mesmo quadro (`soh/include/z64actor.h:80`).
+
+- [ ] **Passo 6: ver passar** — o alvo já contém a fonte; não altere `ExportSdk.cmake` para este despacho.
+
+```powershell
+cmake --build build/x64 --config Release --target oot_native_engine_tests
+if ($LASTEXITCODE -ne 0) { throw 'Build do despacho falhou.' }
+ctest --test-dir build/x64 -C Release -R '^oot_native_engine_tests$' --output-on-failure
+if ($LASTEXITCODE -ne 0) { throw 'Teste do despacho falhou.' }
+```
+
+Esperado: TRANSFORM e OBSERVE ordenados, limites inclusive infinito, NaN voltando a 4, fração preservada, bypass
+bit a bit, desativação na terceira falha e corte do acumulado sem tocar no valor que nenhum hook trocou. Este verde
+ainda não prova a ponte C, a ponte Lua nem o jogo.
+
+- [ ] **Passo 7: commit** — revise o diff e faça o checkpoint do despacho.
+
+```powershell
+git diff --check
+if ($LASTEXITCODE -ne 0) { throw 'Diff inválido.' }
+git add -- soh/soh/native/oot_hooks.h soh/soh/native/OotNativeHooks.h soh/soh/native/OotNativeHooks.cpp soh/native-sdk/tests/EngineTests.cpp
+git commit -m "feat(native): ponto testável de dano de atores"
+if ($LASTEXITCODE -ne 0) { throw 'Commit do despacho falhou.' }
+```
+
+#### Tarefa 32: ponte no jogo e prova
+
+**Arquivos:** `soh/soh/native/OotNativeHooksGame.cpp`, `soh/src/code/z_collision_check.c`,
+`soh/soh/ShipLuaBootstrap.cpp`, `soh/native-sdk/tests/EngineTests.cpp`, `extern/ship-lua` (gitlink); criar
+`soh/native-sdk/tests/damage-probe/{CMakeLists.txt,provider.c,manifest.toml,main.lua}` e
+`soh/native-sdk/tests/damage-swap/{manifest.toml,main.lua}`.
+
+- [ ] **Passo 1: probe nativo para a prova que falha** — crie os quatro arquivos abaixo. O molde é o hook-probe
+da tarefa 12 da F2b. Use ABI 1.4 da F2a, não copie seu descritor 1.2. O provider só usa a ABI e o serviço engine;
+não linka `soh` nem `shiplua`, não usa patches, símbolos privados ou fingerprint de escape hatch. Sem catálogo público,
+o manifesto dispensa
+`host_layout_id` (opcional na 1.4, `ManifestParser.cpp:186` do core); o descritor da 1.4 é o da 1.3 com
+`abi_minor = 4`.
+
+`soh/native-sdk/tests/damage-probe/manifest.toml`:
+
+```toml
+id = "linkspan.test.damage_probe"
+name = "Damage Probe"
+version = "0.1.0"
+api = ">=0.5.0 <0.6.0"
+entrypoint = "main.lua"
+games = ["oot"]
+kind = "core_extension"
+load_phase = "pre_game"
+
+[provider]
+abi_version = "1.4"
+win64 = "provider/damage_probe.dll"
+```
+
+`soh/native-sdk/tests/damage-probe/main.lua`:
+
+```lua
+local ship = require("ship")
+
+-- Sem ouvinte de dano Lua: a prova isola a transformação nativa.
+ship.log.info("damage-probe: ativo; acertos em damage-probe.log na raiz de dados da cópia")
+```
+
+`soh/native-sdk/tests/damage-probe/provider.c`:
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <shiplua/native/ship_native_abi.h>
+#include "oot_engine.h"
+#include "oot_hooks.h"
+#include "probe_layout.h"
+
+typedef struct DamageProbe {
+    const ShipOotEngineV1* engine;
+    FILE* log;
+    unsigned long long tick;
+    unsigned long long hits;
+} DamageProbe;
+
+static ShipNativeStatus SHIP_NATIVE_CALL Tick(void* user, const ShipNativeHookCall* call) {
+    DamageProbe* probe = (DamageProbe*)user;
+    (void)call;
+    ++probe->tick;
+    return SHIP_NATIVE_OK;
+}
+
+static ShipNativeStatus SHIP_NATIVE_CALL Transform(void* user, const ShipNativeHookCall* call) {
+    DamageProbe* probe = (DamageProbe*)user;
+    ShipOotActorDamageHookV1* payload = (ShipOotActorDamageHookV1*)call->payload;
+    void* player = probe->engine->get_player();
+    if (player != NULL && payload->target == player)
+        payload->damage = 0.0f;
+    else if (payload->attacker_is_player)
+        payload->damage *= 2.0f;
+    return SHIP_NATIVE_OK;
+}
+
+static ShipNativeStatus SHIP_NATIVE_CALL Observe(void* user, const ShipNativeHookCall* call) {
+    DamageProbe* probe = (DamageProbe*)user;
+    const ShipOotActorDamageHookV1* payload = (const ShipOotActorDamageHookV1*)call->payload;
+    void* player = probe->engine->get_player();
+    int count = fprintf(probe->log,
+                        "hit=%llu tick=%llu target=%p attacker=%p target_player=%u attacker_is_player=%u "
+                        "flags=0x%08x effect=%u base=%.9g damage=%.9g\n",
+                        ++probe->hits, probe->tick, payload->target, payload->attacker,
+                        (unsigned)(player != NULL && payload->target == player),
+                        (unsigned)payload->attacker_is_player, (unsigned)payload->dmg_flags,
+                        (unsigned)payload->damage_effect, (double)payload->base_damage, (double)payload->damage);
+    return count >= 0 && fflush(probe->log) == 0 ? SHIP_NATIVE_OK : SHIP_NATIVE_FAILURE;
+}
+
+static ShipNativeStatus Register(const ShipNativeRuntime* runtime, const char* point, uint32_t size,
+                                 uint32_t mode, uint32_t phase, ShipNativeHookFn callback, DamageProbe* probe) {
+    ShipNativeHookSpec spec = { sizeof(spec), point, LINKSPAN_OOT_HOOKS_VERSION, size, mode, phase, 0,
+                                callback, probe };
+    uint64_t handle = 0;
+    return runtime->register_hook(runtime->context, &spec, &handle);
+}
+
+static ShipNativeStatus SHIP_NATIVE_CALL Init(const ShipNativeRuntime* runtime, void** output) {
+    DamageProbe* probe;
+    ShipNativeStatus status;
+    *output = NULL;
+    if (runtime == NULL || runtime->size < sizeof(ShipNativeRuntime) || runtime->abi_major != 1u ||
+        runtime->abi_minor < 4u || runtime->get_service == NULL || runtime->register_hook == NULL)
+        return SHIP_NATIVE_UNSUPPORTED;
+    probe = (DamageProbe*)calloc(1, sizeof(*probe));
+    if (probe == NULL)
+        return SHIP_NATIVE_FAILURE;
+    *output = probe;
+    probe->engine = (const ShipOotEngineV1*)runtime->get_service(
+        runtime->context, LINKSPAN_OOT_ENGINE_SERVICE, LINKSPAN_OOT_ENGINE_VERSION, sizeof(ShipOotEngineV1));
+    if (probe->engine == NULL || probe->engine->size < sizeof(ShipOotEngineV1) ||
+        probe->engine->layout_id == NULL || strcmp(probe->engine->layout_id, DAMAGE_PROBE_LAYOUT_ID) != 0 ||
+        probe->engine->get_player == NULL)
+        return SHIP_NATIVE_UNSUPPORTED;
+    probe->log = fopen("damage-probe.log", "w");
+    if (probe->log == NULL)
+        return SHIP_NATIVE_FAILURE;
+    fprintf(probe->log, "damage-probe abi=1.4 layout=%s\n", probe->engine->layout_id);
+    fflush(probe->log);
+    status = Register(runtime, LINKSPAN_OOT_HOOK_PLAY_UPDATE, sizeof(ShipOotPlayHookV1),
+                      SHIP_NATIVE_HOOK_OBSERVE, SHIP_NATIVE_HOOK_BEFORE, Tick, probe);
+    if (status != SHIP_NATIVE_OK)
+        return status;
+    status = Register(runtime, LINKSPAN_OOT_HOOK_ACTOR_DAMAGE, sizeof(ShipOotActorDamageHookV1),
+                      SHIP_NATIVE_HOOK_TRANSFORM, 0, Transform, probe);
+    if (status != SHIP_NATIVE_OK)
+        return status;
+    return Register(runtime, LINKSPAN_OOT_HOOK_ACTOR_DAMAGE, sizeof(ShipOotActorDamageHookV1),
+                    SHIP_NATIVE_HOOK_OBSERVE, SHIP_NATIVE_HOOK_AFTER, Observe, probe);
+}
+
+static void SHIP_NATIVE_CALL Shutdown(void* instance) {
+    DamageProbe* probe = (DamageProbe*)instance;
+    if (probe == NULL)
+        return;
+    if (probe->log != NULL) {
+        fprintf(probe->log, "end ticks=%llu hits=%llu\n", probe->tick, probe->hits);
+        fclose(probe->log);
+    }
+    free(probe);
+}
+
+SHIP_NATIVE_EXPORT const ShipNativeDescriptor* SHIP_NATIVE_CALL ShipNative_Query(void) {
+    static const ShipNativeDescriptor descriptor = { sizeof(ShipNativeDescriptor), 1u, 4u, Init, Shutdown };
+    return &descriptor;
+}
+```
+
+O host remove hooks antes do shutdown, inclusive após init parcial (ABI atual :113–118, :151–154). O teste usa
+`engine.get_player()` (:26 de `oot_engine.h`) para reconhecer quem recebe dano. `attacker_is_player` reconhece a
+origem alinhada ao Player, inclusive projétil/bomba cujo Actor não é o Link. O log é escrito e descarregado por
+elemento acertado, em OBSERVE/AFTER, depois do limite nativo e antes de Lua. Nenhum ponteiro do payload fica
+guardado entre ticks; só a tabela engine, válida até shutdown, permanece no estado do probe.
+
+`soh/native-sdk/tests/damage-probe/CMakeLists.txt`:
+
+```cmake
+cmake_minimum_required(VERSION 3.26)
+project(DamageProbe LANGUAGES C)
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(OOT_NATIVE_SDK "" CACHE FILEPATH "OotNativeSdk.cmake gerado pelo host")
+if(NOT EXISTS "${OOT_NATIVE_SDK}")
+    message(FATAL_ERROR "Informe OOT_NATIVE_SDK gerado pelo host desta prova")
+endif()
+include("${OOT_NATIVE_SDK}")
+if(NOT DEFINED OOT_NATIVE_LAYOUT_ID OR OOT_NATIVE_LAYOUT_ID STREQUAL "")
+    message(FATAL_ERROR "SDK sem OOT_NATIVE_LAYOUT_ID: integre a F2a antes desta prova")
+endif()
+add_library(damage_probe SHARED provider.c)
+target_include_directories(damage_probe PRIVATE ${OOT_NATIVE_INCLUDE_DIRS} "${CMAKE_CURRENT_BINARY_DIR}")
+target_compile_definitions(damage_probe PRIVATE ${OOT_NATIVE_COMPILE_DEFINITIONS})
+if(MSVC)
+    target_compile_options(damage_probe PRIVATE /utf-8 /Zc:preprocessor)
+endif()
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/probe_layout.h"
+    "#define DAMAGE_PROBE_LAYOUT_ID \"${OOT_NATIVE_LAYOUT_ID}\"\n")
+set_target_properties(damage_probe PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/mod/provider")
+foreach(config Debug Release RelWithDebInfo MinSizeRel)
+    string(TOUPPER "${config}" upper)
+    set_target_properties(damage_probe PROPERTIES RUNTIME_OUTPUT_DIRECTORY_${upper} "${CMAKE_BINARY_DIR}/mod/provider")
+endforeach()
+configure_file(main.lua "${CMAKE_BINARY_DIR}/mod/main.lua" COPYONLY)
+configure_file(manifest.toml "${CMAKE_BINARY_DIR}/mod/manifest.toml" COPYONLY)
+```
+
+- [ ] **Passo 2: ver a prova falhar sem a ponte** — depois da tarefa 31 e antes de editar o jogo, configure e
+compile o host e o probe. Monte e lance a sessão `red` com o bloco do passo 9, usando o build deste passo; confirme
+carga, CWD e raiz
+de dados como no passo 9 e, depois do golpe e do ataque recebido, feche o PID e rode só o bloco de fechamento
+do passo 10, sem os cenários verdes. O ponto já
+existe e os hooks registram; o log contém o cabeçalho e ticks, mas nenhum `hit=` ao golpear e receber um ataque
+normal. Dano e golpes para matar continuam vanilla. Preserve esse vermelho como `red-damage-probe.log`.
+Falha de carga/ABI/layout não é o vermelho esperado. Corrija a montagem antes de prosseguir.
+
+```powershell
+cmake -S . -B build/x64 -G "Visual Studio 17 2022" -A x64 -T v143
+if ($LASTEXITCODE -ne 0) { throw 'Configure RED falhou.' }
+cmake --build build/x64 --config Release --target soh
+if ($LASTEXITCODE -ne 0) { throw 'Build RED falhou.' }
+cmake --build build/x64 --config Release --target soh_symbols
+if ($LASTEXITCODE -ne 0) { throw 'Símbolos RED falharam.' }
+$sdk = (Resolve-Path build/x64/native-sdk/Release/OotNativeSdk.cmake).Path
+cmake -S soh/native-sdk/tests/damage-probe -B build/damage-probe -G "Visual Studio 17 2022" -A x64 -T v143 "-DOOT_NATIVE_SDK=$sdk"
+if ($LASTEXITCODE -ne 0) { throw 'Configure do probe falhou.' }
+cmake --build build/damage-probe --config Release
+if ($LASTEXITCODE -ne 0) { throw 'Build do probe falhou.' }
+```
+
+- [ ] **Passo 3: ponte com tipos do jogo** — no fim de `soh/soh/native/OotNativeHooksGame.cpp` (:276 atual),
+depois das pontes que a F2b acrescenta, cole:
+
+```cpp
+// HOST-SLIM-001 (RFC 0029). Definida em ShipLuaBootstrap.cpp (passo 6).
+extern "C" float ShipLua_TransformActorDamage(Actor* target, Actor* attacker, uint32_t dmgFlags,
+                                              uint8_t damageEffect, uint8_t attackerIsPlayer,
+                                              float baseDamage, float damage);
+
+extern "C" float LinkSpan_ActorDamage(PlayState* play, Collider* collider, ColliderInfo* info, float damage) {
+    if (!collider || !collider->actor || !info || !info->acHitInfo)
+        return damage;
+    Actor* target = collider->actor;
+    // Atacante do elemento; collider->ac guarda só o último AT que acertou o collider e não serve de reserva.
+    Actor* attacker = info->acHit ? info->acHit->actor : nullptr;
+    const uint32_t dmgFlags = info->acHitInfo->toucher.dmgFlags;
+    const uint8_t damageEffect = target->colChkInfo.damageEffect;
+    const uint8_t attackerIsPlayer = info->acHit && (info->acHit->atFlags & AT_TYPE_PLAYER) ? 1 : 0;
+    ShipOotActorDamageHookV1 payload{
+        sizeof(payload), play, target, attacker, dmgFlags, damageEffect, attackerIsPlayer, {}, damage, damage
+    };
+    const float nativeDamage = ShipLuaHost::DispatchOotActorDamage(&payload);
+    const float finalDamage = ShipLua_TransformActorDamage(target, attacker, dmgFlags, damageEffect,
+                                                           attackerIsPlayer, damage, nativeDamage);
+    return ShipLuaHost::FinalizeOotActorDamage(damage, finalDamage, target->colChkInfo.damage,
+                                               nativeDamage != damage);
+}
+```
+
+Não use `collider->atFlags`: esse collider é o AC receptor. `info->acHit` é o collider AT que atingiu o elemento;
+`info->acHitInfo` é seu elemento AT (`z64collision_check.h:87–90`). O jogo preenche `collider->ac` com `at->actor`
+e os dois links do elemento em `z_collision_check.c:1742–1744`. Não substitua atacante ausente por `GET_PLAYER` nem
+por `collider->ac`. O atacante vem de `info->acHit->actor`, o dono do AT daquele elemento; sem esse collider ou sem
+seu dono, o nativo recebe `NULL` e o Lua, -1 nos identificadores.
+Os argumentos Lua usam os valores de contexto originais; só `damage` vem do resultado nativo.
+
+O dispatcher faz bypass sem hooks, mas a ponte ainda chama Lua: só o bootstrap sabe se há ouvinte. A ponte Lua
+(passo 6) devolve `nativeDamage` intacto sem host ou ouvinte, e `FinalizeOotActorDamage` não mexe em valor que
+nenhum hook trocou. Não normalize de novo no caminho vazio.
+
+- [ ] **Passo 4: ponto C** — `soh/src/code/z_collision_check.c` não tem outro `extern` no topo atual. Insira
+depois do include `<libultraship/bridge/consolevariablebridge.h>` (:7), antes dos typedefs (:9):
+
+```c
+extern f32 LinkSpan_ActorDamage(PlayState* play, Collider* collider, ColliderInfo* info, f32 damage);
+```
+
+Em `CollisionCheck_ApplyDamage` (:2996), substitua somente :3028–3030 pelo bloco do contrato:
+
+```c
+    if (!(collider->acFlags & AC_HARD)) {
+        // HOST-SLIM-001 (RFC 0029): oot.actor.damage e hook.oot.actor.damage trocam o dano; sem hook, volta `damage`.
+        collider->actor->colChkInfo.damage += LinkSpan_ActorDamage(play, collider, info, damage);
+    }
+```
+
+Preserve os returns por alvo/AC_HIT/BUMP_HIT/BUMP_NO_DAMAGE (:3001–3005), o cálculo e o efeito da tabela
+(:3010–3026) e o cooperativo (:3032–3033). Não dispare também em `CollisionCheck_Damage` ou nos wrappers.
+JntSph chama uma vez por elemento em :3046; Tris em :3067; Cylinder/Quad em :3056/:3076.
+
+- [ ] **Passo 5: contrato Lua no host, que falha antes do bump** — em `soh/native-sdk/tests/EngineTests.cpp`,
+acrescente `#include <shiplua/host/ModHost.h>` junto de `#include <shiplua/manifest/ManifestParser.h>` (:33).
+Antes de `int main(int argc, char** argv) {` (:721), insira:
+
+```cpp
+static void TestActorDamageLuaHostContract() {
+    ShipLua::LuaApiHostContext context{"oot", "test-host", "0.5.0", {"hooks.bridge"}};
+    ShipLua::ModHost host(context);
+    ShipLua::Manifest manifest;
+    manifest.id = "test.f2i_actor_damage";
+    manifest.name = "Contrato Lua de dano no host";
+    manifest.version = "0.1.0";
+    manifest.apiRange = ">=0.4 <0.6";
+    manifest.entrypoint = "main.lua";
+    manifest.loadPriority = 50;
+    const auto loaded = host.LoadModFromManifestAndSource(manifest, R"lua(
+local ship = require("ship")
+assert(not pcall(ship.hooks.result, 1))
+calls = 0
+damage_subscription = ship.events.on("hook.oot.actor.damage", function(event)
+    calls = calls + 1
+    local count = 0
+    for _ in pairs(event) do count = count + 1 end
+    assert(count == 9)
+    assert(event.target_id == 7 and event.target_category == 5)
+    assert(event.attacker_id == 0 and event.attacker_category == 2)
+    assert(event.attacker_is_player == true)
+    assert(event.dmg_flags == 4294967295 and event.damage_effect == 15)
+    assert(event.base_damage == 4.5 and event.damage == 6.25)
+    assert(ship.hooks.result(12.5))
+    assert(not pcall(ship.hooks.result, 0/0))
+    assert(not pcall(ship.hooks.result, math.huge))
+    assert(not pcall(ship.hooks.result, -math.huge))
+end)
+)lua");
+    Check(loaded.isOk(), "F2i: inscricao Lua no evento de dano deve carregar");
+    if (!loaded.isOk()) return;
+    ShipLua::EventPayload payload{
+        {"target_id", std::int64_t{7}}, {"target_category", std::int64_t{5}},
+        {"attacker_id", std::int64_t{0}}, {"attacker_category", std::int64_t{2}},
+        {"attacker_is_player", true}, {"dmg_flags", std::int64_t{4294967295LL}},
+        {"damage_effect", std::int64_t{15}}, {"base_damage", 4.5}, {"damage", 6.25},
+    };
+    const auto dispatched = host.DispatchEvent("hook.oot.actor.damage", payload);
+    Check(dispatched.isOk() && dispatched.value->callbacksInvoked == 1 &&
+              dispatched.value->failures.empty(),
+          "F2i: callback Lua deve receber o payload de dano");
+    const auto found = payload.find("__hook_result");
+    Check(found != payload.end() && std::holds_alternative<double>(found->second.value) &&
+              std::get<double>(found->second.value) == 12.5,
+          "F2i: rejeitar nao finitos preserva o ultimo resultado valido");
+    Check(host.GetRuntime(manifest.id)->DoString(R"lua(
+assert(calls == 1)
+assert(not pcall(require("ship").hooks.result, 1))
+assert(require("ship").events.off(damage_subscription))
+)lua").isOk(), "F2i: contrato de escopo e off deve passar");
+    payload.erase("__hook_result");
+    const auto empty = host.DispatchEvent("hook.oot.actor.damage", payload);
+    Check(empty.isOk() && empty.value->callbacksInvoked == 0 && empty.value->failures.empty() &&
+              !payload.contains("__hook_result"),
+          "F2i: evento sem ouvinte deve preservar a ausencia de resultado");
+}
+
+```
+
+No `main`, logo depois da abertura, acrescente:
+
+```cpp
+    TestActorDamageLuaHostContract();
+```
+
+O `Check` existe em :111; o alvo já liga `shiplua` (`ExportSdk.cmake:55`). O teste prova que o core do
+submódulo conhece o evento, os nove campos e o resultado transform; não prova a ponte C++ nem a colisão (essas
+ficam para os passos 7 e 10). Com o core da F2a, sem o F2i-0, a inscrição falha:
+
+```powershell
+cmake --build build/x64 --config Release --target oot_native_engine_tests
+if ($LASTEXITCODE -ne 0) { throw 'RED esperado no contrato, não na compilação.' }
+ctest --test-dir build/x64 -C Release -R '^oot_native_engine_tests$' --output-on-failure --no-tests=error
+if ($LASTEXITCODE -eq 0) { throw 'O evento já está presente: conferir se o F2i-0 já foi incorporado.' }
+```
+
+A falha esperada é `F2i: inscricao Lua no evento de dano deve carregar`. Falha em outro teste não prova este
+RED. Se o host já consumiu o F2i-0, registre isso e use como RED o da tarefa 30; não recue o submódulo.
+
+- [ ] **Passo 6: ponte Lua no bootstrap** — em `soh/soh/ShipLuaBootstrap.cpp`, no mesmo namespace, depois do `}`
+que fecha `ShipLua_TransformGivenItem` (:2010 no RC10) e antes de
+`std::optional<std::string> gCustomBodyOverrideAnim;` (:2011). `<algorithm>` e `<cmath>` já estão incluídos
+(:28, :30); `DispatchHookTransform` está declarada em :1186.
+
+```cpp
+// hook.oot.actor.damage: depois dos hooks nativos e antes de somar o dano ao alvo.
+// Só um resultado numérico finito substitui damage; bool e string não são números.
+extern "C" float ShipLua_TransformActorDamage(Actor* target, Actor* attacker, uint32_t dmgFlags,
+                                              uint8_t damageEffect, uint8_t attackerIsPlayer,
+                                              float baseDamage, float damage) {
+    if (gModHost == nullptr || target == nullptr) {
+        return damage;
+    }
+    // O core expõe apenas a contagem global, não uma consulta por nome de evento.
+    if (gModHost->SubscriptionCount() == 0) {
+        return damage;
+    }
+    try {
+        const auto result = DispatchHookTransform(
+            "hook.oot.actor.damage",
+            ShipLua::EventPayload{
+                { "target_id", static_cast<std::int64_t>(target->id) },
+                { "target_category", static_cast<std::int64_t>(target->category) },
+                { "attacker_id", attacker != nullptr ? static_cast<std::int64_t>(attacker->id) : std::int64_t{-1} },
+                { "attacker_category", attacker != nullptr ? static_cast<std::int64_t>(attacker->category) : std::int64_t{-1} },
+                { "attacker_is_player", attackerIsPlayer != 0 },
+                { "dmg_flags", static_cast<std::int64_t>(dmgFlags) },
+                { "damage_effect", static_cast<std::int64_t>(damageEffect) },
+                { "base_damage", static_cast<double>(baseDamage) },
+                { "damage", static_cast<double>(damage) },
+            });
+        if (!result.has_value()) {
+            return damage;
+        }
+        double replacement = 0.0;
+        if (const auto* integer = std::get_if<std::int64_t>(&result->value)) {
+            replacement = static_cast<double>(*integer);
+        } else if (const auto* number = std::get_if<double>(&result->value)) {
+            replacement = *number;
+        } else {
+            return damage;
+        }
+        if (!std::isfinite(replacement)) {
+            return damage;
+        }
+        // Limitar antes de converter evita overflow para float com doubles finitos grandes.
+        return static_cast<float>(std::clamp(replacement, 0.0, 255.0));
+    } catch (...) {
+        // Falha de alocação ou outra exceção C++ não atravessa a fronteira C.
+        return damage;
+    }
+}
+```
+
+| Entrada ou retorno | Resultado da ponte |
+|---|---|
+| sem `gModHost`, alvo nulo ou nenhuma inscrição Lua | `damage` exato, sem montar payload |
+| sem ouvinte deste evento, ou callback sem `ship.hooks.result` | `damage` |
+| inteiro (`int64`) ou decimal (`double`) finito | corta em 0..255 em `double` e devolve `float`; frações ficam |
+| booleano, texto ou outro tipo | `damage`, sem conversão |
+| NaN ou infinito (defensivo; o core já recusa) | `damage` |
+| exceção C++ | `damage`; nada atravessa a fronteira C |
+
+O core só tem `SubscriptionCount()` global, sem consulta por evento: com qualquer inscrição Lua ativa, a ponte
+monta o payload a cada acerto. Não acrescente cache de ouvintes nem API nova ao core neste PR. Com vários
+ouvintes, vale o último `ship.hooks.result`; `event.damage` não muda entre eles. O corte do acumulado fica no
+`FinalizeOotActorDamage`, chamado pela ponte do jogo (passo 3).
+
+- [ ] **Passo 7: bump do core, integração Lua e build verde** — obtenha do handoff a referência integrada da F2i-0.
+Escolha e registre um SHA aprovado da `main` que contenha essa referência e o core atual da integração. Se o core
+atual já contiver os dois, mantenha o SHA dele. Não pegue a ponta da `main` sem aprovação nem recue o submódulo.
+
+```powershell
+$coreF2i0 = (Read-Host 'SHA aprovado da main (40 caracteres) com o F2i-0 e o core atual; pode ser o atual').Trim()
+if ($coreF2i0 -notmatch '^[0-9a-fA-F]{40}$') { throw 'SHA F2i-0 inválido.' }
+$oldCore = (git -C extern/ship-lua rev-parse HEAD).Trim()
+if ($LASTEXITCODE -ne 0) { throw 'Não foi possível identificar o core atual.' }
+$coreDirty = git -C extern/ship-lua status --porcelain
+if ($LASTEXITCODE -ne 0 -or $coreDirty) { throw 'Submódulo com alterações; preserve-as antes de continuar.' }
+git -C extern/ship-lua fetch origin
+if ($LASTEXITCODE -ne 0) { throw 'Fetch do core falhou.' }
+git -C extern/ship-lua cat-file -e "$coreF2i0^{commit}"
+if ($LASTEXITCODE -ne 0) { throw 'Commit F2i-0 não está disponível.' }
+git -C extern/ship-lua merge-base --is-ancestor $oldCore $coreF2i0
+if ($LASTEXITCODE -ne 0) { throw 'F2i-0 não contém o core da integração; integrar sem perder F1/F2-0 primeiro.' }
+$schemaF2i0 = git -C extern/ship-lua show "${coreF2i0}:schema/events.yml"
+if ($LASTEXITCODE -ne 0 -or !($schemaF2i0 | Select-String -SimpleMatch 'hook.oot.actor.damage')) {
+    throw 'O SHA não contém o evento contratado.'
+}
+$schemaF2i0 | Select-String -SimpleMatch 'hook.oot.actor.damage' -Context 0,20
+git -C extern/ship-lua checkout --detach $coreF2i0
+if ($LASTEXITCODE -ne 0) { throw 'Bump do core falhou.' }
+git diff --submodule=short -- extern/ship-lua
+```
+
+Confira no SHA a entrada de evento, gerados e testes do F2i-0, além da ABI 1.4 herdada da F1. O handoff confirma
+`kind: transform`, `phase: hook_bridge`, `support: ["oot"]`, `hooks.bridge`, não cancelável e o payload fixado.
+Não altere schema nem gerados neste PR do host.
+
+Com o submódulo novo, o contrato Lua do passo 5 passa (`oot_native_engine_tests` no CTest abaixo) e o `soh` linka
+a ponte do passo 6, com o `extern "C"` do passo 3.
+
+```powershell
+cmake -S . -B build/x64 -G "Visual Studio 17 2022" -A x64 -T v143
+if ($LASTEXITCODE -ne 0) { throw 'Configure F2i falhou.' }
+cmake --build build/x64 --config Release --target soh oot_native_engine_tests oot_native_registry_tests oot_native_scenes_tests linkspan_asset_discovery_tests --parallel
+if ($LASTEXITCODE -ne 0) { throw 'Build F2i falhou.' }
+ctest --test-dir build/x64 -C Release -R "oot_native|linkspan_" --output-on-failure
+if ($LASTEXITCODE -ne 0) { throw 'Bateria F2i falhou.' }
+cmake --build build/x64 --config Release --target soh_symbols
+if ($LASTEXITCODE -ne 0) { throw 'Símbolos F2i falharam.' }
+$evidence = (Get-Content build/f2i-evidence-path.txt -Raw).Trim()
+$oldLayout = Get-Content "$evidence/pre/oot_layout_id.h" -Raw
+$newLayout = Get-Content build/x64/native-sdk/oot_layout_id.h -Raw
+if ($oldLayout -eq $newLayout) { throw 'Layout não mudou depois do novo contrato nativo.' }
+Copy-Item build/x64/native-sdk/oot_layout_id.h "$evidence/oot_layout_id.h"
+$sdk = (Resolve-Path build/x64/native-sdk/Release/OotNativeSdk.cmake).Path
+cmake -S soh/native-sdk/tests/damage-probe -B build/damage-probe -G "Visual Studio 17 2022" -A x64 -T v143 "-DOOT_NATIVE_SDK=$sdk"
+if ($LASTEXITCODE -ne 0) { throw 'Configure final do probe falhou.' }
+cmake --build build/damage-probe --config Release
+if ($LASTEXITCODE -ne 0) { throw 'Build final do probe falhou.' }
+Get-FileHash x64/Release/soh.exe,x64/Release/soh.pdb,x64/Release/soh.symbols,build/damage-probe/mod/provider/damage_probe.dll |
+    Format-Table -AutoSize | Out-String | Set-Content "$evidence/hashes.txt"
+git -C extern/ship-lua rev-parse HEAD | Set-Content "$evidence/core-sha.txt"
+```
+
+O layout muda porque `oot_hooks.h` entra no fingerprint de headers (`ExportSdk.cmake:7–22`).
+`OotNativeHooks.h` também é coberto. A adição do evento ao schema por si só não é motivo para trocar esse hash.
+Não edite o layout à mão nem fixe o id do RC10 no probe. Confira a igualdade entre o id do SDK exportado pela F2a,
+o `oot_layout_id.h` do build e o cabeçalho de `damage-probe.log`. Recompile o probe depois do último header/bump.
+
+- [ ] **Passo 8: mod Lua damage-swap** — fonte de teste versionada em `soh/native-sdk/tests/damage-swap/`, sem
+CMake nem DLL; não entra nos mods da distribuição. Mod Lua puro: sem provider, ABI ou `load_phase`; o OoT
+anuncia `hooks.bridge` (`ShipLuaBootstrap.cpp:809`, :923).
+
+`soh/native-sdk/tests/damage-swap/manifest.toml`:
+
+```toml
+id = "linkspan.test.damage_swap"
+name = "Troca de dano Lua"
+version = "0.1.0"
+api = ">=0.5.0 <0.6.0"
+entrypoint = "main.lua"
+games = ["oot"]
+
+[capabilities]
+required = ["hooks.bridge"]
+```
+
+`soh/native-sdk/tests/damage-swap/main.lua`:
+
+```lua
+local ship = require("ship")
+local hits = 0
+
+ship.events.on("hook.oot.actor.damage", function(p)
+    local result
+    if p.attacker_is_player then
+        result = math.floor(p.damage) + 1 -- inteiro Lua: int64 no core
+    else
+        result = p.damage * 0.5           -- float Lua: double no core, inclusive 0.0
+    end
+
+    assert(ship.hooks.result(result))
+    hits = hits + 1
+    ship.log.info(string.format(
+        "damage-swap: hit=%d target_id=%d target_category=%d attacker_id=%d " ..
+        "attacker_is_player=%s flags=0x%x effect=%d base_damage=%.9g damage=%.9g " ..
+        "result=%.9g result_type=%s",
+        hits, p.target_id, p.target_category, p.attacker_id,
+        tostring(p.attacker_is_player), p.dmg_flags, p.damage_effect,
+        p.base_damage, p.damage, result, math.type(result)))
+end)
+
+ship.log.info("damage-swap: ativo; hook.oot.actor.damage inscrito")
+```
+
+`result_type=integer` comprova o ramo inteiro; `result_type=float` identifica o ramo double.
+`result` no log é o número entregue à ponte, antes dos cortes do host e da conversão do acumulador para `u8`.
+O ramo `else` cobre qualquer AT sem origem Player. No roteiro, escolher um acerto normal cujo alvo seja o Link.
+Não interpretar `attacker_is_player=false` sozinho como identificação do alvo.
+
+- [ ] **Passo 9: montar a cópia de runtime** — use a skill `soh-runtime-playtest`
+(`C:\Users\leolo\.codex\skills\soh-runtime-playtest\SKILL.md`). Preserve runtime/save originais.
+Use uma cópia portátil conhecida, com recursos válidos e save adequado. Os caminhos pedidos abaixo são entradas
+da execução, não exemplos para substituir no código. Cada sessão ganha pasta nova. Não reutilize uma pasta com
+log, config ou save de outra sessão. Feche a instância de teste antes de preparar/finalizar seus logs.
+
+```powershell
+$ErrorActionPreference = 'Stop'
+$evidence = (Resolve-Path ((Get-Content build/f2i-evidence-path.txt -Raw).Trim())).Path
+$runtimeSource = (Resolve-Path (Read-Host 'Pasta do runtime portátil de origem, só para copiar')).Path
+$session = (Read-Host 'Sessão: red, green, lua, chain, vanilla-a ou vanilla-b').Trim()
+if ($session -notin @('red','green','lua','chain','vanilla-a','vanilla-b')) {
+    throw 'Sessão inválida.'
+}
+$runtime = Join-Path $evidence "runtime-$session"
+$log = Join-Path $runtime 'logs/Ship of Harkinian.log'
+$manifest = Join-Path $evidence "runtime-session-$session.json"
+
+# Cada ID é usado uma única vez. Preserve tentativas anteriores; não as apague.
+$reserved = @($runtime, $manifest,
+    "$evidence/runtime-session-$session.result.json",
+    "$evidence/$session-host.log", "$evidence/$session-damage-probe.log",
+    "$evidence/Ship of Harkinian.$session.pre.log",
+    "$evidence/Ship of Harkinian.$session.post.log")
+foreach ($path in $reserved) {
+    if (Test-Path -LiteralPath $path) { throw "Sessão/evidência já existe: $path" }
+}
+$sourcePrefix = $runtimeSource.TrimEnd('\','/') + [IO.Path]::DirectorySeparatorChar
+if ($runtime.Equals($runtimeSource, [StringComparison]::OrdinalIgnoreCase) -or
+    $runtime.StartsWith($sourcePrefix, [StringComparison]::OrdinalIgnoreCase)) {
+    throw 'O destino da cópia não pode estar dentro da origem.'
+}
+
+# vanilla-a usa o build anterior à F2i; os demais usam o build da etapa atual.
+# Execute red depois do passo 2 e antes de implementar a ponte.
+$binaryRoot = if ($session -eq 'vanilla-a') { "$evidence/pre" } else { 'x64/Release' }
+$binaryRoot = (Resolve-Path $binaryRoot).Path
+$expectedSha256 = (Get-FileHash -LiteralPath "$binaryRoot/soh.exe" -Algorithm SHA256).Hash
+foreach ($name in @('soh.exe','soh.pdb','soh.symbols')) {
+    if (!(Test-Path -LiteralPath "$binaryRoot/$name" -PathType Leaf)) {
+        throw "Artefato ausente: $binaryRoot/$name"
+    }
+}
+
+robocopy $runtimeSource $runtime /E /R:0 /W:0 /XJ /XD "$runtimeSource/mods" "$runtimeSource/logs" /XF 'soh.exe' 'soh.pdb' 'soh.symbols' '*.log' 'runtime-session-*.json'
+if ($LASTEXITCODE -ge 8) { throw "Cópia do runtime falhou: $LASTEXITCODE" }
+foreach ($name in @('soh.exe','soh.pdb','soh.symbols')) {
+    Copy-Item -LiteralPath "$binaryRoot/$name" -Destination "$runtime/$name"
+}
+New-Item -ItemType Directory -Path "$runtime/mods" | Out-Null
+if ($session -in @('red','green','chain')) {
+    Copy-Item -LiteralPath 'build/damage-probe/mod' -Destination "$runtime/mods/damage-probe" -Recurse
+}
+if ($session -in @('lua','chain')) {
+    Copy-Item -LiteralPath 'soh/native-sdk/tests/damage-swap' -Destination "$runtime/mods/damage-swap" -Recurse
+}
+
+# A exclusão de logs não dispensa a verificação da raiz efetiva e de carga.
+# Recursos, símbolos e arquivos individuais dos mods ficam estáveis;
+# saves/configs e caches gerados pelo host não entram no TrackPaths.
+$resources = @(Get-ChildItem -LiteralPath $runtime -File |
+    Where-Object { $_.Extension -in @('.otr','.o2r') } |
+    Select-Object -ExpandProperty FullName)
+if (!$resources.Count) { throw 'Nenhum archive de recursos na raiz portátil; revisar a fixture.' }
+[string[]]$tracked = @("$runtime/soh.pdb", "$runtime/soh.symbols") + $resources +
+    @(Get-ChildItem -LiteralPath "$runtime/mods" -File -Recurse |
+        Select-Object -ExpandProperty FullName)
+$preparedJson = & C:\Users\leolo\.codex\skills\soh-runtime-playtest\scripts\prepare-runtime-session.ps1 -ExePath "$runtime/soh.exe" -LogPath $log -ArchiveDirectory $evidence -ExpectedSha256 $expectedSha256 -TrackPaths $tracked -SessionId $session -Json
+if (!$?) { throw 'Preparação da sessão falhou.' }
+if (!(Test-Path -LiteralPath $manifest -PathType Leaf)) { throw 'Manifesto não foi criado.' }
+# Antes de lançar, confira na cópia as configurações e raízes extras exigidas abaixo.
+# Não altere os arquivos acompanhados depois de preparar o manifesto.
+$process = Start-Process -FilePath "$runtime/soh.exe" -WorkingDirectory $runtime -PassThru
+$process | Select-Object Id,Path
+```
+
+`vanilla-a` usa o executável, o PDB e os símbolos guardados em `$evidence/pre` na tarefa 31; `vanilla-b` usa o candidato
+desta tarefa. `red` usa o build do passo 2; `green`, `lua` e `chain`, o do passo 7. Rode a montagem uma vez por sessão e
+mantenha as variáveis até o fechamento. Raízes extras de mods, autorização do provider e raiz de dados são conferências
+manuais antes dos ataques.
+
+Confirme processo, CWD, raiz de dados, recursos e carga efetiva no log novo de cada cópia portátil.
+`red`/`green`: só `linkspan.test.damage_probe` v0.1.0.
+`lua`: só `linkspan.test.damage_swap` v0.1.0.
+`chain`: os dois mods v0.1.0. Autorize apenas o provider do damage-probe pelo mecanismo normal do host.
+`vanilla-a`/`vanilla-b`: nenhum mod. Confira também raízes extras configuradas.
+Espere `ShipLua carregou 1 mod(s)` em `lua` e `ShipLua carregou 2 mod(s)` em `chain`, com a raiz correta.
+Não aceite rejeição, erro no entrypoint ou apenas presença dos arquivos como prova de carga.
+Não use NEI, DMR, leveled, cheats, invencibilidade ou outros mods. Desative o modo cooperativo nesta fixture.
+Um build `NON_PORTABLE` que use dados externos não satisfaz esta montagem; use a cópia portátil exigida.
+
+- [ ] **Passo 10: prova verde e regressão vanilla** — restaure a mesma fixture copiando sempre a origem intacta.
+Não reutilize o save gravado pela sessão anterior. Mantenha cena, equipamento, ataque, distância e configurações.
+
+1. Com `vanilla-a`, meça o número N de golpes de uma arma fixa para matar um inimigo comum que use esse caminho.
+   Use um ataque simples, sem jump attack, sem crítico e sem golpes simultâneos de vários elementos. Escolha
+   um caso com N par e maior que 2 para demonstrar metade dos golpes. Registre HP inicial e vida do Link.
+2. Com `green`, repita o caso. Espere N/2 golpes. No log, cada elemento de ataque alinhado ao Player tem
+   `attacker_is_player=1` e `damage=2*base` até 255. Espada, flecha e bomba devem identificar origem do Player;
+   só o teste de contagem de golpes precisa usar a arma fixa. Não confunda múltiplos elementos no mesmo tick
+   com despacho duplicado do mesmo elemento.
+3. Deixe um inimigo comum acertar o corpo do Link sem escudo. Espere `target_player=1`, `base>0`, `damage=0`, e
+   vida inalterada. Dê tempo para acabar a invencibilidade entre tentativas. Registre vida antes/depois e tick.
+4. Caia de uma altura que causa dano normal, sem void-out. Espere perda de vida; esse caminho fica fora do hook.
+   Registre ticks e confirme que nenhum acerto com dano da queda foi artificialmente despachado. O probe pode
+   ter linhas de outras colisões no mesmo intervalo; identifique-as pelo cenário, flags e alvo.
+5. Em `vanilla-a` e `vanilla-b`, sem mods, repita a mesma fixture e sequência de input por tick: ataque do Link,
+   ataque recebido e queda. Capture A/B no mesmo tick de simulação, com o mesmo estado inicial, câmera, seed,
+   resolução e configurações. Exija pixels iguais nos checkpoints e mesmos HP, golpes e transições de estado.
+   Capture também um trecho sem combate. Não compare frames apenas pelo relógio de parede.
+6. Para cada captura, guarde imagem, tick, cena, HP, input e hash do executável. Se não houver controle repetível
+   do tick/seed, registre A/B pendente; comparação visual aproximada não prova igualdade bit a bit.
+
+7. **Sessão `lua`, só damage-swap.** Copie novamente a fixture intacta. Espere no log do host
+   `ShipLua [linkspan.test.damage_swap]: damage-swap: ativo; hook.oot.actor.damage inscrito` e
+   `ShipLua [linkspan.test.damage_swap]: loaded mod 'Troca de dano Lua' v0.1.0`.
+   Execute um golpe simples de espada em inimigo comum e um ataque normal recebido pelo Link sem escudo.
+   Em ambos os acertos, `damage=base_damage`, pois nenhum transform nativo está instalado.
+   No golpe de espada, espere `attacker_is_player=true`, `result=floor(base_damage)+1`, `result_type=integer`.
+   Com dano base inteiro B e valores pequenos, o inimigo perde B+1 HP por acerto, limitado à vida restante.
+   Registre HP antes/depois, tick e golpes para matar; não reutilize a expectativa N/2 da sessão `green`.
+   No ataque recebido, espere `attacker_is_player=false`, `base_damage=B>0`, `damage=B`,
+   `result=B*0.5`, `result_type=float`. Para exigir metade exata da perda de vida, use B par e pelo menos 2,
+   `DamageMult=0` (multiplicador 1), `isDoubleDefenseAcquired=0` no save e modificador de defesa neutro
+   (`GameInteractor_DefenseModifier()=0`), sem dano adicional, cura ou limitação pela morte do Link.
+   Nessas condições, vanilla perde B unidades do save e Lua perde B/2; um coração tem 16 unidades.
+   Com outras defesas/multiplicadores, calcule a perda final pelos mesmos arredondamentos de `Health_ChangeBy`;
+   não exija automaticamente metade. Base ímpar aparece fracionária no log, mas a soma em `u8` trunca.
+   Guarde a vida em unidades do save, além da captura dos corações. Espere ausência de `damage-probe.log`.
+   A leitura de HP deve acompanhar um inimigo que consuma `colChkInfo.damage` pela regra comum
+   (`soh/src/code/z_actor.c:4934`). No caminho comum do Player, esse campo também alimenta a perda de vida
+   (`soh/src/overlays/actors/ovl_player_actor/z_player.c:4562`). Evite dano adicional por knockback (`:4804`).
+8. **Sessão `chain`, damage-probe + damage-swap.** Use outra cópia da mesma origem, nunca o save de `lua`.
+   Espere as duas mensagens `loaded mod`: a do Lua acima e
+   `ShipLua [linkspan.test.damage_probe]: loaded mod 'Damage Probe' v0.1.0 [native]`.
+   Espere também o marcador `damage-probe: ativo; acertos em damage-probe.log na raiz de dados da cópia`.
+   Repita os dois acertos isolados. Correlacione tick/captura, ordem dos acertos, flags, efeito e base;
+   `hit` do Lua e `hit` do probe são contadores locais, não um identificador global de colisão.
+   No golpe da espada, `damage-probe.log` mostra `attacker_is_player=1`, `target_player=0`, `base=B`,
+   `damage=2*B` para valores abaixo dos cortes. O host mostra `base_damage=B`, `damage=2*B`,
+   `result=floor(2*B)+1`, `result_type=integer`. Com B inteiro e acumulador inicial zero,
+   o inimigo perde 2*B+1 HP, limitado à vida restante. Escolha inimigo que sobreviva ao primeiro golpe.
+   No ataque recebido pelo Link, o probe mostra `target_player=1`, `base=B>0`, `damage=0`.
+   O host mostra o mesmo `base_damage=B`, `damage=0`, `result=0`, `result_type=float` (o número Lua é 0.0).
+   A vida do Link fica inalterada. Espere o fim da invencibilidade entre tentativas.
+   O log nativo é OBSERVE/AFTER nativo, antes do Lua (passo 1).
+   Portanto, não espere que ele contenha o +1 do Lua. A prova final exige também a mudança real de HP.
+9. Preserve as evidências das duas sessões e registre-as no handoff: hashes, mods, cena, ataque, flags, tick,
+   HP antes/depois, corações e contagem de golpes. O log deve mostrar pelo menos um resultado `integer`
+   e um `float` por sessão, sem falha/desativação do callback. Não use dano fora da soma central como evidência.
+   Se não houver inimigo/acerto reproduzível ou leitura confiável de HP, registre a cadeia como pendente em jogo.
+   O contrato Lua sintético do passo 5 e logs de carga sozinhos não fecham este gate.
+
+Finalize cada sessão com o PID encerrado. O manifesto não comprova sozinho CWD nem controle físico; registre
+o que foi observado, o que veio de harness e o que foi feito no controle. Preserve o log do probe antes de
+outra execução, pois `fopen(..., "w")` inicia um log novo.
+
+```powershell
+if (Get-Process -Id $process.Id -ErrorAction SilentlyContinue) { throw 'Feche só a instância de teste e aguarde seu PID encerrar.' }
+if ($session -in @('red','green','chain')) {
+    if (!(Test-Path "$runtime/damage-probe.log")) { throw 'Log do probe ausente; carga/raiz de dados não comprovadas.' }
+    [IO.File]::Copy("$runtime/damage-probe.log", "$evidence/$session-damage-probe.log", $false)
+}
+if ($session -eq 'lua' -and (Test-Path "$runtime/damage-probe.log")) {
+    throw 'Sessão Lua contaminada por execução do probe.'
+}
+if (!(Test-Path -LiteralPath $log)) { throw 'Log do host ausente na cópia portátil.' }
+[IO.File]::Copy($log, "$evidence/$session-host.log", $false)
+& C:\Users\leolo\.codex\skills\soh-runtime-playtest\scripts\finish-runtime-session.ps1 -ManifestPath "$evidence/runtime-session-$session.json" -RequireTrackedUnchanged -Strict -Json
+if (!$?) { throw 'Fechamento da sessão falhou; preserve os arquivos para análise.' }
+```
+
+Ressalvas do contrato, sem alterá-lo:
+
+- `damage_effect` só é recalculado em 0..15 quando existe tabela (:3025–3026). Sem tabela, a ponte publica o
+  `colChkInfo.damageEffect` que já está no alvo. Não invente efeito zero nem mascare os bits nesse caminho.
+- O host corta o resultado em 0..255 por chamada e, quando algum hook troca o valor, no que falta para 255 em
+  `colChkInfo.damage` (`u8`, `soh/include/z64actor.h:80`). `base_damage` continua sendo o cálculo do jogo; no Lua,
+  `damage` é a saída nativa. O `damage-probe.log` registra o estágio nativo e o log do damage-swap a proposta Lua,
+  os dois antes do corte final. A soma em `u8` descarta frações. O cooperativo continua depois da soma
+  (`soh/src/code/z_collision_check.c:3032`) e fica desligado nesta prova. Sem hook nem ouvinte, o valor do jogo
+  passa intacto. A prova usa acumulador zerado e valores pequenos; os limites ficam nos testes da tarefa 31.
+- “Fogo/armadilhas fora” vale quando o dano não passa por esta função. Uma armadilha com AT/AC comum que passe
+  pela soma será observada. O ponto central não identifica a classe de origem para excluí-la.
+- Metade dos golpes depende da vida, dano e reação do inimigo. Com N ímpar pode haver arredondamento; efeitos de
+  stun, contador de vida próprio e dano acrescentado fora desta soma não são cobertos. Se a prova de imunidade
+  ou de queda contradisser o esperado, guarde o caso e bloqueie a aceitação; não abra outro hook silenciosamente.
+
+- [ ] **Passo 11: commit, PR e handoff** — mantenha o probe como fonte de teste; não entregue a DLL nos mods da
+distribuição. Não versione runtime, saves, binários, logs ou as capturas locais em `build`.
+
+```powershell
+git diff --check
+if ($LASTEXITCODE -ne 0) { throw 'Diff inválido.' }
+git diff --submodule=short -- extern/ship-lua
+git add -- soh/soh/native/OotNativeHooksGame.cpp soh/src/code/z_collision_check.c soh/soh/ShipLuaBootstrap.cpp soh/native-sdk/tests/EngineTests.cpp extern/ship-lua soh/native-sdk/tests/damage-probe/CMakeLists.txt soh/native-sdk/tests/damage-probe/provider.c soh/native-sdk/tests/damage-probe/manifest.toml soh/native-sdk/tests/damage-probe/main.lua soh/native-sdk/tests/damage-swap/manifest.toml soh/native-sdk/tests/damage-swap/main.lua
+git commit -m "feat(oot): ponte de dano de atores, evento Lua e provas"
+if ($LASTEXITCODE -ne 0) { throw 'Commit da ponte falhou.' }
+```
+
+Revise o diff conjunto contra a integração. Atualize claim e handoff `HOST-SLIM-001`, seção F2i, nos caminhos de
+coordenação usados pelo
+plano. Registre: SHAs do host/core, os dois commits deste PR, layout anterior/novo, comando e
+resultado do RED/GREEN, bateria, hashes de exe/PDB/símbolos/DLL, raiz de dados confirmada, IDs carregados,
+cenários por tick (inclusive `lua` e `chain`, com os dois tipos numéricos), N e N/2, HP antes/depois, queda, A/B,
+evidências e limitações. Anexe evidências ao PR por um
+meio acessível ao revisor; um caminho local no corpo não substitui o anexo.
+
+Depois de revisão, prova concluída e publicação autorizada no fluxo do projeto, crie o PR para a integração.
+O corpo abaixo é gravado com quebras reais de linha, sem interpolar código de shell.
+
+```powershell
+@'
+CollisionCheck_ApplyDamage passa a oferecer oot.actor.damage antes da soma no alvo. TRANSFORM nativo e o evento Lua hook.oot.actor.damage podem trocar o dano; sem ouvintes o valor original passa intacto.
+
+O ponto roda por elemento acertado, dentro de !AC_HARD, antes do multiplicador cooperativo. O PR inclui o bump do core para F2i-0, a ponte Lua, os cortes (0..255, NaN e acumulado u8), os testes do despacho e do contrato Lua, o damage-probe ABI 1.4 e o mod damage-swap.
+
+Validação exigida: RED/GREEN do despacho, bateria oot_native/linkspan, prova nativa de dano dobrado e dano recebido zero, cadeia nativo → Lua (sessões lua e chain), queda preservada e A/B por tick sem mods. Resultados, SHAs, layouts, hashes e evidências estão na seção F2i do handoff HOST-SLIM-001 e nos anexos deste PR.
+
+Escopo: somente dano que passa pela soma central. Casos especiais e política de RPG ficam nos mods. Validação final conjunta da F2: tarefa 33.
+'@ | Set-Content -Encoding UTF8 build/f2i-pr.md
+git push -u linkspan agent/HOST-SLIM-001-f2i-dano
+if ($LASTEXITCODE -ne 0) { throw 'Publicação da branch falhou.' }
+gh pr create --repo BaiterYamato/Shipwright --base agent/OOT-UPSTREAM-001-78dc6d970-integration --head agent/HOST-SLIM-001-f2i-dano --title "feat(oot): hook genérico de dano de atores (F2i)" --body-file build/f2i-pr.md
+if ($LASTEXITCODE -ne 0) { throw 'Criação do PR falhou.' }
+```
+
+Registre a URL do PR no handoff. CI verde é gate separado da prova em jogo. Não mergeie com CI vermelho nem
+declare a F2 concluída antes da tarefa 33.
+
 ### Validação final da F2
 
-#### Tarefa 30: bateria na integração, com o level mod
+#### Tarefa 33: bateria na integração, com o Unbound
 
 Depois do último PR da F2 mergeado, numa worktree limpa da integração. Tudo com o layout novo: provider, pacotes,
 fixtures e SDK recompilados; runtime numa cópia (skill `soh-runtime-playtest`), nunca a pasta de teste do usuário.
@@ -10501,7 +12114,7 @@ da tarefa 3 + `linkspan_host_keep_generator`, `linkspan_host_keep_sync`, `oot_na
 `linkspan_public_symbols_pe`, todos verdes; `python tools/gen-host-keep.py --check` sai 0.
 - [ ] **Passo 2: core** — no submódulo, `ctest --test-dir <build do core> -C Release` (61/61) e os `--check` dos
 geradores do core.
-- [ ] **Passo 3: level mod (Unbound), testes do provider** — na raiz do host, depois de recompilar o
+- [ ] **Passo 3: Unbound, testes do provider** — na raiz do host, depois de recompilar o
 `unbound-core` contra o SDK novo:
 
 ```powershell
@@ -10512,7 +12125,7 @@ Esperado: os 7 testes `linkspan_unbound_{json,format,converter,actor,conflict,re
 (`soh/native-sdk/unbound-core/CMakeLists.txt:54-61`). Se a bateria do RC compila o provider em outro diretório, rode
 lá também.
 
-- [ ] **Passo 4: level mod, pacotes** — framework e e-fixtures para o layout novo (`$ProviderDir`, `$Checker`,
+- [ ] **Passo 4: Unbound, pacotes** — framework e e-fixtures para o layout novo (`$ProviderDir`, `$Checker`,
 `$LayoutHeader`, `$Validator` do build novo; `$BaseArchive` = base gerada pelo framework novo no runtime de teste):
 
 ```powershell
@@ -10543,9 +12156,14 @@ Ocarina e DMR recompilados: carregam e funcionam como no RC10 (matriz da bateria
 `ledge_grab_allowed` não disparam (overlay; F5).
 - [ ] **Passo 7: probes** — public-probe, hook-probe, audio-probe e archives-probe juntos numa cópia: as quatro
 linhas esperadas no log; fechar o jogo sem travar. Depois, um por vez (os três disputam o Link): movement-probe
-(tarefa 21), body-probe (tarefa 24), quad-probe (tarefa 26) e res-probe (tarefa 29), cada um com o roteiro da sua
-tarefa.
-- [ ] **Passo 8: sem mods = vanilla** — gate `semmods` verde; captura A/B com o RC10 no mesmo tick.
+(tarefa 21), body-probe (tarefa 24), quad-probe (tarefa 26), res-probe (tarefa 29) e damage-probe com damage-swap
+(tarefa 32), cada um com o roteiro da sua tarefa. O damage-probe não disputa o Link, mas roda sozinho: troca o dano
+da cena e falsearia os roteiros de combate dos outros.
+- [ ] **Passo 8: sem mods = vanilla** — gate `semmods` verde; captura A/B com o RC10 no mesmo tick. O hook de dano
+(F2i) entra na conta: sem hook nativo e sem ouvinte Lua, `LinkSpan_ActorDamage` devolve o mesmo `damage` do jogo,
+bit a bit (teste da tarefa 31). Em jogo, um golpe de espada num inimigo e um golpe recebido, no mesmo tick do RC10,
+deixam a vida do inimigo e os corações do Link iguais; se a cena fixa da captura não tiver inimigo ao alcance, esse
+trecho vai para o registro do passo 9 como "não testado em jogo".
 - [ ] **Passo 9: registro** — handoff do core com layout id final da F2, hash do `soh.exe`, contagens do catálogo,
 resultados por passo (separando CTest, pacote/carregamento, jogo por harness e o que não foi testado); `Plans.md`;
 claim em `review`. Nada de release: o RC11 é a F6.
@@ -10569,8 +12187,28 @@ claim em `review`. Nada de release: o RC11 é a F6.
 | `oot.audio.mix` | F2-0 (tarefas 1–2) e F2c (14–16) |
 | `voice_sfx`, `roll_allowed`, `ledge_grab_allowed`, `action`, `update_end`, `mask_draw`, `play.destroy` | F2b (10–13); `action` só OBSERVE (decisão 2) |
 | player-body V1, skeletons V2, movement V3, camera V2, colliders V2, resources V4 | Seção 5.4; F2d–F2g (19–29) |
-| Layout muda só na F2 | Decisão 7; todos os headers novos estão nas tarefas desta fase, inclusive o do level mod |
+| Layout muda só na F2 | Decisão 7; todos os headers novos estão nas tarefas desta fase, inclusive o do Unbound |
 | Política do Unbound sai na F4 sem header | Decisão 4; F2h (17–18) |
+| Hook de dano para o port do leveled (fora da RFC) | Decisão 9; F2i-0 (30) e F2i (31–32) |
+
+### Port do leveled (F3)
+
+A F2i cobre o funil central de dano; o port inteiro é da F3. Resumo de [analise-leveled.md](analise-leveled.md)
+(seção 4), em ordem:
+
+1. **Dá com a F2i e os serviços de hoje:** pacote Lua + DLL; curvas, tabelas e opções no mod; XP no save por
+   arquivo (`linkspan.oot.save`, namespace próprio), opções em `ship.storage`; fórmula só no transform central,
+   com `attacker_is_player` normalizando a origem para o Link e tratamento para atacante ausente; HUD 2D, menu e
+   bônus de vida até 20 corações.
+2. **Pede primitiva genérica para Lua puro (a DLL já supre parte):** binding do serviço de save, referência de
+   instância de ator (o `target_id` é o tipo, não a instância), vida de ator, equipamento e projeção mundo→tela.
+3. **Pede primitiva genérica ou adaptação na DLL:** HP e dano acima de 255, capacidade efetiva de vida e magia,
+   observação do dano efetivamente aplicado (o hook vê o dano proposto, antes de o ator decidir).
+4. **Fora da F2i:** `play->damagePlayer`, `Actor_SetPlayerKnockback` com dano, débitos de chefes que não usam o
+   dano central e regras de fase pedem outra primitiva genérica ou adaptação na DLL; se o port os deixar fora,
+   publica a matriz de exclusões e não se diz equivalente ao leveled.
+5. **Não portar:** campos RPG em `Actor`/`SaveContext`, menu e fórmulas do leveled no host, e as mudanças do PR
+   que não são do RPG (randomizer, cutscenes, XML).
 
 ## 8. Riscos
 
@@ -10585,7 +12223,7 @@ claim em `review`. Nada de release: o RC11 é a F6.
   seguinte do jogo.
 - **Catálogo.** Mesma assinatura não garante mesma semântica; tipos de fora de `soh/include` passam pelo layout. O
   linker é a prova de que cada nome existe; o verificador PE, de que cada endereço é o do nome.
-- **Level mod.** Na F4: mount privado bruto e com prefixo único, desmontagem por identidade, rollback de camada
+- **Unbound.** Na F4: mount privado bruto e com prefixo único, desmontagem por identidade, rollback de camada
   parcial no provider e asserts do `gate-capability` trocados por logs genéricos. Pacotes `.zip`/`.shipmod` com
   `assets/*.o2r` interno continuam fora de `oot.mods.archives` (as e-fixtures montam a própria pasta); suportá-los
   pede descoberta pelo loader, não varredura do cache.
@@ -10601,5 +12239,18 @@ claim em `review`. Nada de release: o RC11 é a F6.
   `ResourceManager`: uma carga iniciada antes do unmount pode republicar o recurso, como no `mount_archive` V1 de hoje.
   Todo `RemoveArchive` refaz o VFS (`ArchiveManager.cpp:163`): cada archive com prefixo fecha, drena e reabre. As
   referências internas por hash só resolvem por alias até o resolver da F3.
-- **Tamanho.** Nove PRs no host; F2d–F2f mexem no update do Link e precisam de playtest físico do mantenedor antes do
-  RC11.
+- **Dano fora do ponto central.** O hook só vê o que passa por `CollisionCheck_ApplyDamage`. Débitos de chefes que
+  não usam esse dano, agarrões com `play->damagePlayer`, empurrões com dano, queda, fogo e armadilhas ficam de fora:
+  um mod que escala dano (o leveled) fica incoerente nesses casos. Vida própria não exclui um chefe por si só: o
+  Barinade consome `colChkInfo.damage`, mas as regras de fase dele ficam para a F3. O acumulador é `u8` e a soma
+  trunca frações; quando um hook troca o valor, a ponte limita a soma a 255 antes do multiplicador cooperativo, que
+  ainda pode passar disso, e HP acima de 255 continua fora. Mitigação: a F3 registra as lacunas como obrigação do
+  port (seção 7); o header e a descrição do evento dizem o que não passa por ali; o damage-probe e o damage-swap
+  (tarefa 32) pedem contato real com um inimigo.
+- **Composição e custo do hook de dano.** O nativo roda antes do Lua; o Lua recebe `damage` já trocado e o
+  `base_damage` do jogo. Entre ouvintes Lua não há encadeamento: o último `ship.hooks.result` vence. Dois mods que
+  escalam dano não se compõem, e um mod que parte de `base_damage` descarta o nativo; a F2 documenta, não muda. O
+  core não tem consulta de ouvinte por evento: com qualquer inscrição Lua ativa, a ponte monta o payload a cada
+  acerto (chefes de JntSph acertam vários elementos por quadro). Sem inscrição nenhuma, sai sem montar nada.
+- **Tamanho.** Nove PRs no host e dois no core; F2d–F2f mexem no update do Link e precisam de playtest físico do
+  mantenedor antes do RC11.
