@@ -100,6 +100,16 @@ class ProductReleaseTests(unittest.TestCase):
         with self.assertRaisesRegex(release.ReleaseError, "outro executável"):
             release.validate_package(zip_bytes({"manifest.toml": manifest, "main.lua": b""}), definition())
 
+    def test_mod_layout_must_match_release_host(self):
+        d = definition()
+        other = b'id="example"\nversion="0.1.0"\n[provider]\nhost_layout_id="' + b"0" * 64 + b'"\n'
+        with self.assertRaisesRegex(release.ReleaseError, "Layout do mod"):
+            release.validate_package(zip_bytes({"manifest.toml": other, "main.lua": b""}), d)
+        same = ('id="example"\nversion="0.1.0"\n[provider]\nhost_layout_id="'
+                + d["host"]["layout"].upper() + '"\n').encode()
+        self.assertEqual(release.validate_package(zip_bytes({"manifest.toml": same, "main.lua": b""}), d)["id"],
+                         "example")
+
     def test_examples_separate_mm_only_and_preserve_packages(self):
         d = definition()
         d["inputs"] = [{"file": "a.zip", "role": "mod", "sha256": "a" * 64}]

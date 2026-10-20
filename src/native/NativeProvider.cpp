@@ -2,6 +2,7 @@
 #include "shiplua/native/NativeDiagnostics.h"
 
 #include <algorithm>
+#include <cctype>
 #include <cstddef>
 #include <cstdio>
 #include <cstring>
@@ -49,6 +50,29 @@ class EscapeBatch {
   private:
     NativeEscapeHatch* mHatch = nullptr;
 };
+
+bool IsSha256Hex(std::string_view text) {
+    return text.size() == 64 && std::all_of(text.begin(), text.end(), [](char c) {
+        return std::isxdigit(static_cast<unsigned char>(c)) != 0;
+    });
+}
+
+std::string LowerAscii(std::string text) {
+    std::transform(text.begin(), text.end(), text.begin(),
+                   [](char c) { return static_cast<char>(std::tolower(static_cast<unsigned char>(c))); });
+    return text;
+}
+
+// ABI 1.4 (RFC 0029): o catálogo público atende core extension pre_game com manifesto 1.4 cujo host_layout_id é o
+// layout do host. Não depende de fingerprint, de soh.symbols nem do backend do escape hatch.
+bool PublicSymbolsAllowed(const Manifest& manifest, const NativePublicSymbols* symbols) {
+    if (!symbols || !symbols->resolve || manifest.kind != ModKind::CoreExtension ||
+        manifest.loadPhase != ModLoadPhase::PreGame || manifest.provider->abiVersion != "1.4" ||
+        !IsSha256Hex(manifest.provider->hostLayoutId) || !IsSha256Hex(symbols->layoutId)) {
+        return false;
+    }
+    return LowerAscii(manifest.provider->hostLayoutId) == LowerAscii(symbols->layoutId);
+}
 
 bool ValidPath(const std::string& text) {
     if (text.empty() || text.size() > 1024 || text.front() == '/' ||
@@ -112,8 +136,13 @@ ShipNativeStatus SHIP_NATIVE_CALL Write(void* context, const char* bytes, uint32
 
 Result<void> ValidateNativeManifest(const NativeProviderManifest& provider) {
     if (provider.abiVersion != "1.0" && provider.abiVersion != "1.1" && provider.abiVersion != "1.2" &&
-        provider.abiVersion != "1.3") {
-        return Result<void>::err(ErrorCode::Unsupported, "provider.abi_version must be 1.0, 1.1, 1.2 or 1.3");
+        provider.abiVersion != "1.3" && provider.abiVersion != "1.4") {
+        return Result<void>::err(ErrorCode::Unsupported,
+                                 "provider.abi_version must be 1.0, 1.1, 1.2, 1.3 or 1.4");
+    }
+    if (!provider.hostLayoutId.empty() && !IsSha256Hex(provider.hostLayoutId)) {
+        return Result<void>::err(ErrorCode::InvalidArgument,
+                                 "provider.host_layout_id must be a 64-digit hex layout id");
     }
     if (provider.win64.empty() && provider.linux64.empty() && provider.macos.empty()) {
         return Result<void>::err(ErrorCode::InvalidArgument, "provider needs a platform library");
@@ -171,9 +200,12 @@ Result<std::unique_ptr<NativeProvider>> NativeProvider::Load(
         instance->mHooks = policy.hooks;
         instance->mEscapeHatch = policy.escapeHatch;
         instance->mOnProviderUnload = policy.onProviderUnload;
-        if (manifest.kind == ModKind::CoreExtension && manifest.provider->abiVersion == "1.3") {
+        const auto& abi = manifest.provider->abiVersion;
+        if (manifest.kind == ModKind::CoreExtension && (abi == "1.3" || abi == "1.4")) {
             instance->mHostFingerprints = manifest.provider->hostFingerprints;
         }
+        instance->mPublicSymbols = policy.publicSymbols;
+        instance->mPublicAllowed = PublicSymbolsAllowed(manifest, policy.publicSymbols.get());
 #ifdef _WIN32
         // Não procurar dependências no CWD/PATH do processo.
         instance->mLibrary = LoadLibraryExW(resolved.value->c_str(), nullptr,
@@ -190,9 +222,8 @@ Result<std::unique_ptr<NativeProvider>> NativeProvider::Load(
         if (!query) return R::err(ErrorCode::Unsupported, "ShipNative_Query export missing");
         RegisterNativeModule(instance->mOwnerId.c_str(), instance->mLibrary);
         const auto* descriptor = query();
-        const uint32_t requiredMinor = manifest.provider->abiVersion == "1.3" ? 3u
-                                     : manifest.provider->abiVersion == "1.2" ? 2u
-                                     : manifest.provider->abiVersion == "1.1" ? 1u : 0u;
+        const uint32_t requiredMinor = abi == "1.4" ? 4u : abi == "1.3" ? 3u : abi == "1.2" ? 2u
+                                     : abi == "1.1" ? 1u : 0u;
         if (!descriptor || descriptor->size < sizeof(ShipNativeDescriptor) ||
             descriptor->abi_major != SHIP_NATIVE_ABI_MAJOR ||
             descriptor->abi_minor > SHIP_NATIVE_ABI_MINOR ||
@@ -514,11 +545,31 @@ ShipNativeStatus SHIP_NATIVE_CALL NativeProvider::ResolveSymbol(
     void* context, const char* name, uintptr_t* address) noexcept {
     auto* self = static_cast<NativeProvider*>(context);
     if (!self || self->mThread != std::this_thread::get_id()) return SHIP_NATIVE_FAILURE;
-    if (!self->EscapeHatchAllowed() || !self->mEscapeHatch->resolve) return SHIP_NATIVE_UNSUPPORTED;
+    if (address) *address = 0;
+    const bool publicPath = self->mPublicAllowed;
+    const bool privatePath = self->EscapeHatchAllowed() && self->mEscapeHatch->resolve;
+    if (!publicPath && !privatePath) return SHIP_NATIVE_UNSUPPORTED;
     if (!name || !*name || std::strlen(name) > 512 || !address) return SHIP_NATIVE_INVALID_ARGUMENT;
+    // Público primeiro, só com nome simples: "arquivo.c!Nome" nunca entra pelo layout.
+    if (publicPath && !std::strchr(name, '!')) {
+        ShipNativeStatus status = SHIP_NATIVE_FAILURE;
+        try {
+            status = self->mPublicSymbols->resolve(name, address);
+        } catch (...) {
+            status = SHIP_NATIVE_FAILURE;
+        }
+        if (status == SHIP_NATIVE_OK && *address) return SHIP_NATIVE_OK;
+        *address = 0;
+        // Falha do catálogo não abre o caminho privado; só nome fora dele segue para o hash.
+        if (status != SHIP_NATIVE_UNSUPPORTED) return status == SHIP_NATIVE_OK ? SHIP_NATIVE_FAILURE : status;
+    }
+    if (!privatePath) return SHIP_NATIVE_UNSUPPORTED;
     try {
-        return self->mEscapeHatch->resolve(name, address);
+        const auto status = self->mEscapeHatch->resolve(name, address);
+        if (status != SHIP_NATIVE_OK) *address = 0;
+        return status;
     } catch (...) {
+        *address = 0;
         return SHIP_NATIVE_FAILURE;
     }
 }

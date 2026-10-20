@@ -104,7 +104,7 @@ This combines the actor names used by `elegy-statue` and `rauru`. It requires a 
 
 Foreign rendering depends on compatible resource factories, skeleton/animation formats and the host's draw path. A valid path or a successful actor spawn is not proof that every texture, animation or material renders correctly. Test scene transitions, actor destruction and unload as well as the initial draw.
 
-Resource reuse does not import the other engine's actor logic, scene execution or sequences. Audio needs an explicit supported bridge; the current schema includes `oot.audio`, so the old blanket claim that only rendering data can ever cross is too broad. It still does not promise arbitrary MM audio playback in OoT.
+Resource reuse does not import the other engine's actor logic, scene execution or sequences. Audio needs an explicit bridge. Since [RFC 0029](../rfcs/0029-host-limpo-conteudo-mm-em-mods.md) it comes from a mod (MM Base), not from the OoT host schema, which no longer has an `oot.audio` capability. Nothing promises arbitrary MM audio playback in OoT.
 
 The old guide described hash aliases and display-list opcode sanitization. Those are host implementation details, not Lua calls or authoring steps, and they are not verified by the available core source. Do not rewrite foreign hashes/opcodes in a Lua mod based on that description.
 

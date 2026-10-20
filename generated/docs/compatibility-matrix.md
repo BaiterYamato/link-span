@@ -28,16 +28,13 @@ Derivada dos schemas canônicos em `schema/` (IDL); regenere com
 | `ship.mm.spawn_dog` | `0.3.0` | `experimental` | — | sim | `mm.spawn_dog` | — |
 | `ship.mm.player.set_sword_skin` | `0.4.0` | `experimental` | — | sim | `mm.player.sword_skin` | — |
 | `ship.oot.player.jump` | `0.3.0` | `experimental` | sim | — | `oot.player.jump` | — |
-| `ship.oot.player.set_bunny_hood` | `0.4.0` | `experimental` | sim | — | `oot.player.bunny_hood` | — |
 | `ship.oot.player.set_mask` | `0.4.0` | `experimental` | sim | — | `oot.player.mask` | — |
-| `ship.oot.player.play_mask_on_animation` | `0.4.0` | `experimental` | sim | — | `oot.player.mask` | — |
 | `ship.player.set_speed_multiplier` | `0.4.0` | `experimental` | sim | sim | `player.speed` | — |
 | `ship.player.get` | `0.4.0` | `experimental` | sim | — | `player.fields` | — |
 | `ship.player.set` | `0.4.0` | `experimental` | sim | — | `player.fields` | — |
 | `ship.oot.player.attach_model` | `0.4.0` | `experimental` | sim | — | `oot.player.attach_model` | — |
 | `ship.oot.player.set_damage_immunity` | `0.4.0` | `experimental` | sim | — | `oot.player.immunity` | — |
 | `ship.oot.player.set_weight` | `0.4.0` | `experimental` | sim | — | `oot.player.weight` | — |
-| `ship.oot.player.set_roll_mode` | `0.4.0` | `experimental` | sim | — | `oot.player.roll` | — |
 | `ship.oot.player.set_roll_blocked` | `0.4.0` | `experimental` | sim | — | `oot.player.roll` | — |
 | `ship.oot.player.set_body` | `0.4.0` | `experimental` | sim | — | `oot.player.custom_body` | — |
 | `ship.oot.player.get_body` | `0.4.0` | `experimental` | sim | — | `oot.player.custom_body` | — |
@@ -47,11 +44,7 @@ Derivada dos schemas canônicos em `schema/` (IDL); regenere com
 | `ship.oot.cutscene.start` | `0.4.0` | `experimental` | sim | — | `oot.cutscene` | `invalid_argument`, `invalid_state` |
 | `ship.oot.cutscene.stop` | `0.4.0` | `experimental` | sim | — | `oot.cutscene` | — |
 | `ship.oot.cutscene.is_active` | `0.4.0` | `experimental` | sim | — | `oot.cutscene` | — |
-| `ship.oot.audio.play_sfx` | `0.4.0` | `experimental` | sim | — | `oot.audio` | `invalid_argument` |
-| `ship.oot.audio.dump_sfx_table` | `0.4.0` | `experimental` | sim | — | `oot.audio` | `invalid_argument` |
-| `ship.oot.audio.set_voice_map` | `0.4.0` | `experimental` | sim | — | `oot.audio` | `invalid_argument` |
 | `ship.oot.env.get` | `0.4.0` | `experimental` | sim | — | `oot.env` | — |
-| `ship.oot.spawn_dog` | `0.3.0` | `experimental` | sim | — | `oot.spawn_dog` | — |
 | `ship.log.debug` | `0.1.0` | `stable` | sim | sim | — | `invalid_argument` |
 | `ship.log.info` | `0.1.0` | `stable` | sim | sim | — | `invalid_argument` |
 | `ship.log.warn` | `0.1.0` | `stable` | sim | sim | — | `invalid_argument` |
@@ -127,7 +120,6 @@ nunca registra `ship.oot.*` ou `ship.mm.*` (RFC 0001).
 | `game.state` | `contract` | sim | — |
 | `core.storage` | `contract` | sim | sim |
 | `core.storage.shared` | `contract` | sim | sim |
-| `oot.audio` | `contract` | sim | — |
 | `oot.cutscene` | `contract` | sim | — |
 | `oot.env` | `contract` | sim | — |
 | `hud.draw` | `contract` | sim | — |
@@ -149,8 +141,6 @@ nunca registra `ship.oot.*` ou `ship.mm.*` (RFC 0001).
 | `mm.spawn_dog` | `contract` | — | sim |
 | `mm.player.sword_skin` | `contract` | — | sim |
 | `oot.player.jump` | `contract` | sim | — |
-| `oot.spawn_dog` | `contract` | sim | — |
-| `oot.player.bunny_hood` | `contract` | sim | — |
 | `oot.player.mask` | `contract` | sim | — |
 | `player.speed` | `contract` | sim | sim |
 | `player.fields` | `contract` | sim | — |
@@ -171,5 +161,5 @@ nunca registra `ship.oot.*` ou `ship.mm.*` (RFC 0001).
 |---|---:|
 | `stable` | 12 |
 | `preview` | 2 |
-| `experimental` | 51 |
+| `experimental` | 44 |
 

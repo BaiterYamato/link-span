@@ -150,17 +150,18 @@ Mods só Lua normalmente omitem esses campos. Estão listados para completar a r
 
 | Campo | Requisito do schema |
 | --- | --- |
-| `[provider].abi_version` | Obrigatório quando existe `provider`; `"1.0"`, `"1.1"`, `"1.2"` ou `"1.3"` |
+| `[provider].abi_version` | Obrigatório quando existe `provider`; `"1.0"`, `"1.1"`, `"1.2"`, `"1.3"` ou `"1.4"` |
 | `[provider].win64` | String opcional de caminho por plataforma |
 | `[provider].linux64` | String opcional de caminho por plataforma |
 | `[provider].macos` | String opcional de caminho por plataforma |
-| `[provider].host_fingerprints` | Array opcional de 1 a 32 hashes SHA-256 hexadecimais de 64 caracteres; exige `core_extension` com ABI `"1.3"` |
+| `[provider].host_fingerprints` | Array opcional de 1 a 32 hashes SHA-256 hexadecimais de 64 caracteres; exige `core_extension` com ABI `"1.3"` ou `"1.4"` |
+| `[provider].host_layout_id` | Layout id hexadecimal opcional de 64 caracteres; exige `core_extension` com ABI `"1.4"` |
 
 Pelo menos um caminho de plataforma é obrigatório. Caminhos têm 1–1024 caracteres, são relativos, usam barras normais e excluem raízes absolutas, barras invertidas, dois-pontos, NUL, componentes `.`/`..`, separadores duplicados e barra final. Campos desconhecidos em provider são rejeitados. Um manifesto com provider precisa exigir API **pelo menos 0.5.0**; uma faixa como `>=0.1 <0.6` não basta.
 
-`kind = "core_extension"` exige `load_phase = "pre_game"` e ABI de provider `"1.1"`, `"1.2"` ou `"1.3"`. Um `kind = "mod"` normal não pode usar `pre_game`. Essas condições são restrições do schema/parser, não instruções para mods Lua escolherem uma fase nativa de carregamento.
+`kind = "core_extension"` exige `load_phase = "pre_game"` e ABI de provider `"1.1"`, `"1.2"`, `"1.3"` ou `"1.4"`. Um `kind = "mod"` normal não pode usar `pre_game`. Essas condições são restrições do schema/parser, não instruções para mods Lua escolherem uma fase nativa de carregamento.
 
-`host_fingerprints` é a lista de executáveis autorizados para o escape hatch ABI 1.3. Um mod comum não pode declará-la. Um fingerprint não correspondente faz as chamadas do escape hatch retornarem `UNSUPPORTED`; compatibilidade de layout não substitui o SHA-256 do executável. Consulte [native-providers.pt-BR.md](native-providers.pt-BR.md#escape-hatch-abi-13).
+`host_fingerprints` lista os executáveis autorizados para símbolos privados e desvios (ABI 1.3 e 1.4). `host_layout_id` (ABI 1.4) autoriza só símbolos públicos, em qualquer executável compilado com aquele layout. Um mod comum não pode declarar nenhum dos dois. Valor que não corresponde faz as chamadas correspondentes retornarem `UNSUPPORTED`; não impede a carga. Veja [native-providers.pt-BR.md](native-providers.pt-BR.md#símbolos-públicos-abi-14).
 
 ## Schema, parser e loader fazem verificações diferentes
 

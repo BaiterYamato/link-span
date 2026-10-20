@@ -36,7 +36,7 @@ Use the host's `package-linkspan-mod.ps1` for Windows packages. It writes ZIP en
 
 ## ABI versions: use the headers shipped with your target
 
-The ABI header is `shiplua/native/ship_native_abi.h`. The core implements C ABI **1.0 through 1.3**, including hooks and the escape hatch: `SHIP_NATIVE_ABI_MAJOR` is 1 and `SHIP_NATIVE_ABI_MINOR` is 3. ABI 1.0 remains valid for ordinary native mods. Use the headers shipped with your target runtime and SDK; do not combine snapshots.
+The ABI header is `shiplua/native/ship_native_abi.h`. The core implements C ABI **1.0 through 1.4**, including hooks, the escape hatch and layout-bound public symbols: `SHIP_NATIVE_ABI_MAJOR` is 1 and `SHIP_NATIVE_ABI_MINOR` is 4. ABI 1.0 remains valid for ordinary native mods. Use the headers shipped with your target runtime and SDK; do not combine snapshots.
 
 | ABI | Contract |
 | --- | --- |
@@ -44,6 +44,7 @@ The ABI header is `shiplua/native/ship_native_abi.h`. The core implements C ABI 
 | 1.1 | Adds `register_service` for core extensions during init. |
 | 1.2 | Native hooks, including observe, transform and replace where the host permits them. |
 | 1.3 | Executable fingerprint and gated symbol resolution/detours. |
+| 1.4 | Public symbols bound to the host layout id; `ShipNativeRuntime` keeps the 1.3 layout. |
 
 The manifest declares the required minor version. The descriptor reports the ABI actually compiled into the provider. The loader checks descriptor size, major/minor compatibility and init/shutdown callbacks. A manifest version alone cannot make an older runtime expose newer fields. Check the runtime's size and version before accessing appended members. The OoT SDK's `linkspan-sdk.json` records its native ABI and toolchain.
 
@@ -86,7 +87,7 @@ runtime->register_service(runtime->context, "author.framework.items", 1,
 
 `items_api` is the framework's own contract and storage; it must survive until shutdown. Publication is restricted to core extensions during init. Consumers query the same name/version/size and declare their framework dependency in the manifest. The loader orders dependencies and refuses to unload a service owner while a consumer remains loaded. Full shutdown runs in reverse load/dependency order.
 
-On an ABI 1.2 runtime, a core extension can also declare and dispatch its own hook points; accepted modes and payload contracts belong to the point owner. On the OoT ABI 1.3 runtime, `resolve_symbol`, `install_patch` and `remove_patch` require a core extension with `abi_version = "1.3"` and matching `[provider].host_fingerprints`. See the [host escape-hatch reference](https://github.com/BaiterYamato/Shipwright/blob/agent/OOT-UPSTREAM-001-78dc6d970-integration/docs/native-mods.md#escape-hatch-coreext-008). A matching layout is insufficient for these operations.
+On an ABI 1.2 runtime, a core extension can also declare and dispatch its own hook points; accepted modes and payload contracts belong to the point owner. On the OoT runtime, `install_patch`, `remove_patch` and private symbols require a core extension with ABI 1.3 or 1.4 and matching `[provider].host_fingerprints` (see the [host escape-hatch reference](https://github.com/BaiterYamato/Shipwright/blob/agent/OOT-UPSTREAM-001-78dc6d970-integration/docs/native-mods.md#escape-hatch-coreext-008)). With ABI 1.4, public symbols only need a matching `[provider].host_layout_id`; see [Public symbols](#public-symbols-abi-14). A matching layout never authorizes a detour.
 
 ## Native hooks (ABI 1.2)
 
@@ -108,7 +109,7 @@ A core extension publishes its own points with `declare_hook_point` and triggers
 
 ## Escape hatch (ABI 1.3)
 
-For changes no service or hook covers, a core extension with `load_phase = "pre_game"` and `abi_version = "1.3"` can resolve executable functions by name and detour them:
+For changes no service or hook covers, a core extension with `load_phase = "pre_game"` and `abi_version = "1.3"` (or `"1.4"`) can resolve executable functions by name and detour them:
 
 ```toml
 [provider]
@@ -133,6 +134,31 @@ if (runtime->resolve_symbol(runtime->context, "z_player.c!Player_Action_Roll", &
 - Patches are removed automatically on unload, before `shutdown`.
 - In the OoT host, detours installed during init become active together only after init returns; init cannot depend on them. After init, each `install_patch` and `remove_patch` takes effect when it returns.
 - Rebuild and republish the mod for every new executable. See [RFC 0023](../rfcs/0023-native-escape-hatch.md).
+
+## Public symbols (ABI 1.4)
+
+A core extension that only **calls** game functions or **reads** game variables does not need the executable fingerprint. With ABI 1.4 it declares the SDK layout id it was built against:
+
+```toml
+kind = "core_extension"
+load_phase = "pre_game"
+
+[provider]
+abi_version = "1.4"
+win64 = "provider/framework.dll"
+host_layout_id = "<64-character layout id from the SDK>"
+```
+
+- `resolve_symbol` first looks the plain name up in the host's public catalog: functions and variables declared directly in `soh/include/functions.h` and `soh/include/variables.h`. The catalog does not read `soh.symbols`, the PDB or the executable hash.
+- The core compares `host_layout_id` with the host's layout before consulting the catalog. A missing or different layout leaves the public path `UNSUPPORTED`; the mod still loads, and its `init` decides whether to fail or degrade.
+- Qualified names (`file.c!Name`) never use the public path.
+- A name outside the catalog falls through to the private path only when `host_fingerprints` lists the current executable. A catalog failure does not fall through.
+- A public address does not authorize `install_patch`: detours still need `host_fingerprints`.
+- On any failure the core writes 0 to `*address`.
+- `ShipNativeRuntime` and `ShipNativeDescriptor` keep their 1.3 layout; the descriptor must report minor 4 or later. A 1.3 manifest never uses the public path, even with a 1.4 DLL.
+- The layout id guarantees matching declarations, not identical behavior: a function can keep its signature and change what it does. See [RFC 0029](../rfcs/0029-host-limpo-conteudo-mm-em-mods.md).
+
+The OoT host publishes the catalog from RC11 on.
 
 ## Crash and boot protection
 
@@ -160,7 +186,7 @@ The core opens a batch per owner during `init` and during patch removal on unloa
 
 If the host does not confirm removal of every patch, unload is quarantined: the library stays loaded and the provider cannot be treated as removed. This prevents a detour from pointing to unloaded code. A provider must not depend on an active patch during its own init or install patches in `shutdown`.
 
-The escape hatch remains restricted to ABI 1.3 core extensions, the executable fingerprint declared in the manifest and the limit of 1024 patches per provider.
+Detours remain restricted to core extensions with ABI 1.3 or 1.4, the executable fingerprint declared in the manifest and the limit of 1024 patches per provider.
 
 ## Trust, policy and isolation
 

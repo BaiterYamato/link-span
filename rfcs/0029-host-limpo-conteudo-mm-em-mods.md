@@ -1,6 +1,6 @@
 # RFC 0029 — Host limpo: conteúdo do MM em mods
 
-Status: rascunho para revisão (HOST-SLIM-001, fase F0). Design aprovado pelo mantenedor em 19/10/2026.
+Status: aceita em 19/10/2026 (HOST-SLIM-001). F1 implementada no core; F2–F6 pendentes.
 Inventários e contratos propostos: [docs/plans/host-slim-001](../docs/plans/host-slim-001/README.md).
 
 ## Motivação
@@ -204,6 +204,18 @@ mudar uma vez só.
 - **Ligação por nome:** mesma assinatura com semântica diferente e tipos de fora de `soh/include` passam pelo
   layout. O layout dá compatibilidade, não isolamento.
 - **Tamanho:** é a maior mudança do projeto até aqui; seis fases com PRs próprios.
+
+## Notas de implementação
+
+### F1 (core)
+
+- `api_version` fica em `0.5.0`: a 0.5.0 só saiu em pre-releases, e a retirada da §6 acontece antes da versão final.
+- O core zera `*address` em toda falha de `resolve_symbol`, em qualquer minor.
+- `host_layout_id` é normalizado para minúsculas; a carga C++ direta compara sem diferenciar maiúsculas.
+- Layout diferente não recusa a carga; o caminho público fica `UNSUPPORTED` e o `init` decide.
+- Falha do catálogo (exceção ou status diferente de OK/UNSUPPORTED) não cai no caminho privado.
+- O schema do manifesto passa a recusar `host_fingerprints` e `host_layout_id` fora de core extension, como o parser.
+- Plano: [docs/plans/host-slim-001/plano-f1-core.md](../docs/plans/host-slim-001/plano-f1-core.md).
 
 ## Fora de escopo
 

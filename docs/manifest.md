@@ -150,17 +150,18 @@ Lua-only mods normally omit these. They are listed here for manifest completenes
 
 | Field | Schema requirement |
 | --- | --- |
-| `[provider].abi_version` | Required when `provider` exists; `"1.0"`, `"1.1"`, `"1.2"` or `"1.3"` |
+| `[provider].abi_version` | Required when `provider` exists; `"1.0"`, `"1.1"`, `"1.2"`, `"1.3"` or `"1.4"` |
 | `[provider].win64` | Optional platform path string |
 | `[provider].linux64` | Optional platform path string |
 | `[provider].macos` | Optional platform path string |
-| `[provider].host_fingerprints` | Optional array of 1–32 hexadecimal SHA-256 hashes, each 64 characters; requires `core_extension` with ABI `"1.3"` |
+| `[provider].host_fingerprints` | Optional array of 1–32 hexadecimal SHA-256 hashes, each 64 characters; requires `core_extension` with ABI `"1.3"` or `"1.4"` |
+| `[provider].host_layout_id` | Optional 64-character hexadecimal layout id; requires `core_extension` with ABI `"1.4"` |
 
 At least one platform path is required. Paths are 1–1024 characters, relative, use forward slashes, and exclude absolute roots, backslashes, colons, NUL, `.`/`..` path components, duplicate separators and a trailing slash. Unknown provider keys are rejected. A provider manifest must require API **at least 0.5.0**; a range such as `>=0.1 <0.6` is not sufficient for it.
 
-`kind = "core_extension"` requires `load_phase = "pre_game"` and provider ABI `"1.1"`, `"1.2"` or `"1.3"`. A normal `kind = "mod"` cannot use `pre_game`. These conditions are schema/parser constraints, not instructions for Lua mods to select a native loading phase.
+`kind = "core_extension"` requires `load_phase = "pre_game"` and provider ABI `"1.1"`, `"1.2"`, `"1.3"` or `"1.4"`. A normal `kind = "mod"` cannot use `pre_game`. These conditions are schema/parser constraints, not instructions for Lua mods to select a native loading phase.
 
-`host_fingerprints` lists executables authorized for the ABI 1.3 escape hatch. An ordinary mod cannot declare it. A nonmatching fingerprint makes escape-hatch calls return `UNSUPPORTED`; layout compatibility does not replace the executable SHA-256. See [native-providers.md](native-providers.md#escape-hatch-abi-13).
+`host_fingerprints` lists executables authorized for private symbols and detours (ABI 1.3 and 1.4). `host_layout_id` (ABI 1.4) authorizes only public symbols, on any executable built with that layout. An ordinary mod cannot declare either. A nonmatching value makes the corresponding calls return `UNSUPPORTED`; it does not block loading. See [native-providers.md](native-providers.md#public-symbols-abi-14).
 
 ## Schema, parser and loader are different checks
 

@@ -23,9 +23,14 @@ struct NativeProviderManifest {
     std::string win64;
     std::string linux64;
     std::string macos;
-    // ABI 1.3: SHA-256 (hex minúsculo) dos executáveis em que a core extension
-    // aceita usar o escape hatch. Vazio = escape hatch indisponível.
+    // ABI 1.3 e 1.4: SHA-256 (hex minúsculo) dos executáveis em que a core
+    // extension aceita resolver símbolos privados e instalar patches. Vazio =
+    // caminho privado indisponível.
     std::vector<std::string> hostFingerprints;
+    // ABI 1.4 (RFC 0029): layout id do SDK (hex minúsculo, 64 dígitos) com que a
+    // core extension foi compilada. Igual ao do host = resolve_symbol atende os
+    // nomes do catálogo público sem fingerprint. Vazio = sem caminho público.
+    std::string hostLayoutId;
 };
 
 // In-memory representation of a mod's manifest.toml.

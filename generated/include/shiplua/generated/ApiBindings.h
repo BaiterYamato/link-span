@@ -114,16 +114,13 @@ enum class FunctionId {
     ShipMmSpawnDog,
     ShipMmPlayerSetSwordSkin,
     ShipOotPlayerJump,
-    ShipOotPlayerSetBunnyHood,
     ShipOotPlayerSetMask,
-    ShipOotPlayerPlayMaskOnAnimation,
     ShipPlayerSetSpeedMultiplier,
     ShipPlayerGet,
     ShipPlayerSet,
     ShipOotPlayerAttachModel,
     ShipOotPlayerSetDamageImmunity,
     ShipOotPlayerSetWeight,
-    ShipOotPlayerSetRollMode,
     ShipOotPlayerSetRollBlocked,
     ShipOotPlayerSetBody,
     ShipOotPlayerGetBody,
@@ -133,11 +130,7 @@ enum class FunctionId {
     ShipOotCutsceneStart,
     ShipOotCutsceneStop,
     ShipOotCutsceneIsActive,
-    ShipOotAudioPlaySfx,
-    ShipOotAudioDumpSfxTable,
-    ShipOotAudioSetVoiceMap,
     ShipOotEnvGet,
-    ShipOotSpawnDog,
     ShipLogDebug,
     ShipLogInfo,
     ShipLogWarn,
@@ -295,19 +288,10 @@ inline constexpr std::array<FieldBinding, 0> kShipOotPlayerJumpArguments{{
 }};
 inline constexpr std::array<std::string_view, 0> kShipOotPlayerJumpErrors{{
 }};
-inline constexpr std::array<FieldBinding, 1> kShipOotPlayerSetBunnyHoodArguments{{
-    {"equipped", "boolean", true},
-}};
-inline constexpr std::array<std::string_view, 0> kShipOotPlayerSetBunnyHoodErrors{{
-}};
 inline constexpr std::array<FieldBinding, 1> kShipOotPlayerSetMaskArguments{{
     {"mask", "string", true},
 }};
 inline constexpr std::array<std::string_view, 0> kShipOotPlayerSetMaskErrors{{
-}};
-inline constexpr std::array<FieldBinding, 0> kShipOotPlayerPlayMaskOnAnimationArguments{{
-}};
-inline constexpr std::array<std::string_view, 0> kShipOotPlayerPlayMaskOnAnimationErrors{{
 }};
 inline constexpr std::array<FieldBinding, 1> kShipPlayerSetSpeedMultiplierArguments{{
     {"factor", "number", true},
@@ -341,11 +325,6 @@ inline constexpr std::array<FieldBinding, 1> kShipOotPlayerSetWeightArguments{{
     {"weight", "string", true},
 }};
 inline constexpr std::array<std::string_view, 0> kShipOotPlayerSetWeightErrors{{
-}};
-inline constexpr std::array<FieldBinding, 1> kShipOotPlayerSetRollModeArguments{{
-    {"mode", "string", true},
-}};
-inline constexpr std::array<std::string_view, 0> kShipOotPlayerSetRollModeErrors{{
 }};
 inline constexpr std::array<FieldBinding, 1> kShipOotPlayerSetRollBlockedArguments{{
     {"blocked", "boolean", true},
@@ -396,36 +375,10 @@ inline constexpr std::array<FieldBinding, 0> kShipOotCutsceneIsActiveArguments{{
 }};
 inline constexpr std::array<std::string_view, 0> kShipOotCutsceneIsActiveErrors{{
 }};
-inline constexpr std::array<FieldBinding, 2> kShipOotAudioPlaySfxArguments{{
-    {"index", "integer", true},
-    {"font", "integer", false},
-}};
-inline constexpr std::array<std::string_view, 1> kShipOotAudioPlaySfxErrors{{
-    "invalid_argument",
-}};
-inline constexpr std::array<FieldBinding, 3> kShipOotAudioDumpSfxTableArguments{{
-    {"first", "integer", false},
-    {"count", "integer", false},
-    {"font", "integer", false},
-}};
-inline constexpr std::array<std::string_view, 1> kShipOotAudioDumpSfxTableErrors{{
-    "invalid_argument",
-}};
-inline constexpr std::array<FieldBinding, 2> kShipOotAudioSetVoiceMapArguments{{
-    {"base", "integer", false},
-    {"offset", "integer", false},
-}};
-inline constexpr std::array<std::string_view, 1> kShipOotAudioSetVoiceMapErrors{{
-    "invalid_argument",
-}};
 inline constexpr std::array<FieldBinding, 1> kShipOotEnvGetArguments{{
     {"field", "string", true},
 }};
 inline constexpr std::array<std::string_view, 0> kShipOotEnvGetErrors{{
-}};
-inline constexpr std::array<FieldBinding, 0> kShipOotSpawnDogArguments{{
-}};
-inline constexpr std::array<std::string_view, 0> kShipOotSpawnDogErrors{{
 }};
 inline constexpr std::array<FieldBinding, 1> kShipLogDebugArguments{{
     {"message", "string", true},
@@ -618,7 +571,7 @@ inline constexpr std::array<std::string_view, 6> kShipNativeCallErrors{{
     "host_failure",
 }};
 
-inline constexpr std::array<FunctionBinding, 65> kFunctions{{
+inline constexpr std::array<FunctionBinding, 58> kFunctions{{
     {FunctionId::ShipGameId, "ship.game.id", "0.1.0", "stable", "game_id", "raise", {}, "common", {}, kShipGameIdArguments, kShipGameIdErrors},
     {FunctionId::ShipGameHostVersion, "ship.game.host_version", "0.1.0", "stable", "string", "raise", {}, "common", {}, kShipGameHostVersionArguments, kShipGameHostVersionErrors},
     {FunctionId::ShipGameState, "ship.game.state", "0.4.0", "experimental", "game_state", "raise", {}, "oot", "game.state", kShipGameStateArguments, kShipGameStateErrors},
@@ -638,16 +591,13 @@ inline constexpr std::array<FunctionBinding, 65> kFunctions{{
     {FunctionId::ShipMmSpawnDog, "ship.mm.spawn_dog", "0.3.0", "experimental", "boolean", "raise", {}, "mm", "mm.spawn_dog", kShipMmSpawnDogArguments, kShipMmSpawnDogErrors},
     {FunctionId::ShipMmPlayerSetSwordSkin, "ship.mm.player.set_sword_skin", "0.4.0", "experimental", "boolean", "raise", {}, "mm", "mm.player.sword_skin", kShipMmPlayerSetSwordSkinArguments, kShipMmPlayerSetSwordSkinErrors},
     {FunctionId::ShipOotPlayerJump, "ship.oot.player.jump", "0.3.0", "experimental", "boolean", "raise", {}, "oot", "oot.player.jump", kShipOotPlayerJumpArguments, kShipOotPlayerJumpErrors},
-    {FunctionId::ShipOotPlayerSetBunnyHood, "ship.oot.player.set_bunny_hood", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.player.bunny_hood", kShipOotPlayerSetBunnyHoodArguments, kShipOotPlayerSetBunnyHoodErrors},
     {FunctionId::ShipOotPlayerSetMask, "ship.oot.player.set_mask", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.player.mask", kShipOotPlayerSetMaskArguments, kShipOotPlayerSetMaskErrors},
-    {FunctionId::ShipOotPlayerPlayMaskOnAnimation, "ship.oot.player.play_mask_on_animation", "0.4.0", "experimental", "integer", "raise", {}, "oot", "oot.player.mask", kShipOotPlayerPlayMaskOnAnimationArguments, kShipOotPlayerPlayMaskOnAnimationErrors},
     {FunctionId::ShipPlayerSetSpeedMultiplier, "ship.player.set_speed_multiplier", "0.4.0", "experimental", "boolean", "raise", {}, "common", "player.speed", kShipPlayerSetSpeedMultiplierArguments, kShipPlayerSetSpeedMultiplierErrors},
     {FunctionId::ShipPlayerGet, "ship.player.get", "0.4.0", "experimental", "any", "raise", {}, "oot", "player.fields", kShipPlayerGetArguments, kShipPlayerGetErrors},
     {FunctionId::ShipPlayerSet, "ship.player.set", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "player.fields", kShipPlayerSetArguments, kShipPlayerSetErrors},
     {FunctionId::ShipOotPlayerAttachModel, "ship.oot.player.attach_model", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.player.attach_model", kShipOotPlayerAttachModelArguments, kShipOotPlayerAttachModelErrors},
     {FunctionId::ShipOotPlayerSetDamageImmunity, "ship.oot.player.set_damage_immunity", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.player.immunity", kShipOotPlayerSetDamageImmunityArguments, kShipOotPlayerSetDamageImmunityErrors},
     {FunctionId::ShipOotPlayerSetWeight, "ship.oot.player.set_weight", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.player.weight", kShipOotPlayerSetWeightArguments, kShipOotPlayerSetWeightErrors},
-    {FunctionId::ShipOotPlayerSetRollMode, "ship.oot.player.set_roll_mode", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.player.roll", kShipOotPlayerSetRollModeArguments, kShipOotPlayerSetRollModeErrors},
     {FunctionId::ShipOotPlayerSetRollBlocked, "ship.oot.player.set_roll_blocked", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.player.roll", kShipOotPlayerSetRollBlockedArguments, kShipOotPlayerSetRollBlockedErrors},
     {FunctionId::ShipOotPlayerSetBody, "ship.oot.player.set_body", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.player.custom_body", kShipOotPlayerSetBodyArguments, kShipOotPlayerSetBodyErrors},
     {FunctionId::ShipOotPlayerGetBody, "ship.oot.player.get_body", "0.4.0", "experimental", "any", "raise", {}, "oot", "oot.player.custom_body", kShipOotPlayerGetBodyArguments, kShipOotPlayerGetBodyErrors},
@@ -657,11 +607,7 @@ inline constexpr std::array<FunctionBinding, 65> kFunctions{{
     {FunctionId::ShipOotCutsceneStart, "ship.oot.cutscene.start", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.cutscene", kShipOotCutsceneStartArguments, kShipOotCutsceneStartErrors},
     {FunctionId::ShipOotCutsceneStop, "ship.oot.cutscene.stop", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.cutscene", kShipOotCutsceneStopArguments, kShipOotCutsceneStopErrors},
     {FunctionId::ShipOotCutsceneIsActive, "ship.oot.cutscene.is_active", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.cutscene", kShipOotCutsceneIsActiveArguments, kShipOotCutsceneIsActiveErrors},
-    {FunctionId::ShipOotAudioPlaySfx, "ship.oot.audio.play_sfx", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.audio", kShipOotAudioPlaySfxArguments, kShipOotAudioPlaySfxErrors},
-    {FunctionId::ShipOotAudioDumpSfxTable, "ship.oot.audio.dump_sfx_table", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.audio", kShipOotAudioDumpSfxTableArguments, kShipOotAudioDumpSfxTableErrors},
-    {FunctionId::ShipOotAudioSetVoiceMap, "ship.oot.audio.set_voice_map", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "oot.audio", kShipOotAudioSetVoiceMapArguments, kShipOotAudioSetVoiceMapErrors},
     {FunctionId::ShipOotEnvGet, "ship.oot.env.get", "0.4.0", "experimental", "any", "raise", {}, "oot", "oot.env", kShipOotEnvGetArguments, kShipOotEnvGetErrors},
-    {FunctionId::ShipOotSpawnDog, "ship.oot.spawn_dog", "0.3.0", "experimental", "boolean", "raise", {}, "oot", "oot.spawn_dog", kShipOotSpawnDogArguments, kShipOotSpawnDogErrors},
     {FunctionId::ShipLogDebug, "ship.log.debug", "0.1.0", "stable", "nil", "raise", {}, "common", {}, kShipLogDebugArguments, kShipLogDebugErrors},
     {FunctionId::ShipLogInfo, "ship.log.info", "0.1.0", "stable", "nil", "raise", {}, "common", {}, kShipLogInfoArguments, kShipLogInfoErrors},
     {FunctionId::ShipLogWarn, "ship.log.warn", "0.1.0", "stable", "nil", "raise", {}, "common", {}, kShipLogWarnArguments, kShipLogWarnErrors},
@@ -855,7 +801,7 @@ struct CapabilityBinding {
     bool supportsMm;
 };
 
-inline constexpr std::array<CapabilityBinding, 46> kCapabilities{{
+inline constexpr std::array<CapabilityBinding, 43> kCapabilities{{
     {"core.events", "contract", true, true},
     {"hooks.bridge", "contract", true, true},
     {"core.timers", "contract", true, true},
@@ -865,7 +811,6 @@ inline constexpr std::array<CapabilityBinding, 46> kCapabilities{{
     {"game.state", "contract", true, false},
     {"core.storage", "contract", true, true},
     {"core.storage.shared", "contract", true, true},
-    {"oot.audio", "contract", true, false},
     {"oot.cutscene", "contract", true, false},
     {"oot.env", "contract", true, false},
     {"hud.draw", "contract", true, false},
@@ -887,8 +832,6 @@ inline constexpr std::array<CapabilityBinding, 46> kCapabilities{{
     {"mm.spawn_dog", "contract", false, true},
     {"mm.player.sword_skin", "contract", false, true},
     {"oot.player.jump", "contract", true, false},
-    {"oot.spawn_dog", "contract", true, false},
-    {"oot.player.bunny_hood", "contract", true, false},
     {"oot.player.mask", "contract", true, false},
     {"player.speed", "contract", true, true},
     {"player.fields", "contract", true, false},

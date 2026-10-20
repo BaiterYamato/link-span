@@ -26,6 +26,14 @@ const ShipLua::Generated::CapabilityBinding& FindCapability(std::string_view nam
     Check(false, "missing expected capability");
     return ShipLua::Generated::kCapabilities.front();
 }
+bool HasFunction(std::string_view name) {
+    for (const auto& entry : ShipLua::Generated::kFunctions) if (entry.name == name) return true;
+    return false;
+}
+bool HasCapability(std::string_view name) {
+    for (const auto& entry : ShipLua::Generated::kCapabilities) if (entry.name == name) return true;
+    return false;
+}
 
 } // namespace
 
@@ -77,11 +85,20 @@ int main() {
            "OOT jump should carry its host and capability contract");
     Check(FindFunction("ship.oot.player.jump").version == "0.3.0" && FindFunction("ship.oot.player.jump").stability == "experimental",
            "OOT jump should retain its version and stability contract");
-    Check(FindFunction("ship.oot.spawn_dog").name == "ship.oot.spawn_dog" && FindFunction("ship.oot.spawn_dog").availability == "oot" &&
-              FindFunction("ship.oot.spawn_dog").capability == "oot.spawn_dog",
-           "OOT spawn_dog should carry its host and capability contract");
-    Check(FindFunction("ship.oot.spawn_dog").version == "0.3.0" && FindFunction("ship.oot.spawn_dog").stability == "experimental",
-           "OOT spawn_dog should retain its version and stability contract");
+    // RFC 0029: conteúdo do MM sai do host OoT; o cachorro do OoT vem de ship.actor.spawn.
+    for (const auto* removed : {"ship.oot.spawn_dog", "ship.oot.player.set_bunny_hood",
+                                "ship.oot.player.play_mask_on_animation", "ship.oot.player.set_roll_mode",
+                                "ship.oot.audio.play_sfx", "ship.oot.audio.dump_sfx_table",
+                                "ship.oot.audio.set_voice_map"}) {
+        Check(!HasFunction(removed), "API removed by RFC 0029 must not be generated");
+    }
+    for (const auto* removed : {"oot.audio", "oot.spawn_dog", "oot.player.bunny_hood"}) {
+        Check(!HasCapability(removed), "capability removed by RFC 0029 must not be generated");
+    }
+    Check(FindFunction("ship.oot.player.set_mask").capability == "oot.player.mask" &&
+              FindFunction("ship.oot.player.set_roll_blocked").capability == "oot.player.roll" &&
+              HasCapability("oot.player.custom_body"),
+          "generic player capabilities stay");
     Check(FindCapability("oot.player.jump").name == "oot.player.jump" && FindCapability("oot.player.jump").supportsOot &&
               !FindCapability("oot.player.jump").supportsMm,
            "OOT jump capability should be host-specific");

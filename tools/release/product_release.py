@@ -190,9 +190,9 @@ def validate_package(data, definition):
         provider = manifest.get("provider", {})
         if provider.get("win64"):
             require(safe_name(provider["win64"]) in z.namelist(), "DLL do provider ausente")
-        layout = provider.get("oot_layout_id") or provider.get("layout_id")
+        layout = provider.get("host_layout_id") or provider.get("oot_layout_id") or provider.get("layout_id")
         if layout:
-            require(layout == definition["host"]["layout"], "Layout do mod incompatível")
+            require(str(layout).lower() == definition["host"]["layout"].lower(), "Layout do mod incompatível")
         fingerprints = provider.get("host_fingerprints", [])
         if fingerprints:
             require(definition["host"]["executable_sha256"] in fingerprints, "Mod exige outro executável")

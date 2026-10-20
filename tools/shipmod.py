@@ -514,7 +514,7 @@ def _check_examples() -> tuple[str, str, str]:
 
 # --- validador de ABI e exports de mods nativos (COREEXT-009, plan §9.9) ---
 
-NATIVE_ABI_VERSIONS = ("1.0", "1.1", "1.2", "1.3")
+NATIVE_ABI_VERSIONS = ("1.0", "1.1", "1.2", "1.3", "1.4")
 NATIVE_QUERY_EXPORT = "ShipNative_Query"
 PE_MACHINE_AMD64 = 0x8664
 PE_FILE_DLL = 0x2000
@@ -674,13 +674,14 @@ def check_native_mod(path: Path, host_sha256: str | None = None) -> list[tuple[s
     elif phase == "pre_game":
         checks.append(("falha", "Kind", "load_phase = \"pre_game\" is reserved for core_extension"))
     fingerprints = provider.get("host_fingerprints")
+    layout = provider.get("host_layout_id")
     if fingerprints is not None:
         valid = isinstance(fingerprints, list) and 0 < len(fingerprints) <= 32 and \
             all(isinstance(item, str) and SHA256_HEX.match(item) for item in fingerprints)
         if not valid:
             checks.append(("falha", "Fingerprints", "host_fingerprints needs 1-32 hex SHA-256 values"))
-        elif kind != "core_extension" or abi != "1.3":
-            checks.append(("falha", "Fingerprints", "host_fingerprints requires a core_extension with ABI 1.3"))
+        elif kind != "core_extension" or abi not in ("1.3", "1.4"):
+            checks.append(("falha", "Fingerprints", "host_fingerprints requires a core_extension with ABI 1.3 or 1.4"))
         elif host_sha256 is not None:
             listed = host_sha256.lower() in (item.lower() for item in fingerprints)
             checks.append(("ok" if listed else "aviso", "Fingerprints",
@@ -689,6 +690,16 @@ def check_native_mod(path: Path, host_sha256: str | None = None) -> list[tuple[s
             checks.append(("ok", "Fingerprints", f"{len(fingerprints)} host(s); use --host to check"))
     elif abi == "1.3" and kind == "core_extension":
         checks.append(("aviso", "Fingerprints", "ABI 1.3 without host_fingerprints: resolve/detour stay UNSUPPORTED"))
+    if layout is not None:
+        if not isinstance(layout, str) or not SHA256_HEX.match(layout):
+            checks.append(("falha", "Layout", "host_layout_id needs the 64-digit hex layout id"))
+        elif kind != "core_extension" or abi != "1.4":
+            checks.append(("falha", "Layout", "host_layout_id requires a core_extension with ABI 1.4"))
+        else:
+            checks.append(("ok", "Layout", "public symbols resolve on hosts built with this layout id"))
+    elif abi == "1.4" and kind == "core_extension" and fingerprints is None:
+        checks.append(("aviso", "Layout",
+                       "ABI 1.4 without host_layout_id or host_fingerprints: resolve/detour stay UNSUPPORTED"))
 
     library = provider.get("win64")
     if not isinstance(library, str) or not library:

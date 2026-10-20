@@ -402,6 +402,30 @@ class NativeDoctorTests(unittest.TestCase):
         self.assertEqual(listed["Fingerprints"], "ok")
         self.assertEqual(other["Fingerprints"], "aviso")
 
+    def test_abi_14_is_known(self) -> None:
+        dll = build_pe(["ShipNative_Query"], ["KERNEL32.dll"])
+        with tempfile.TemporaryDirectory() as temporary:
+            mod = self.make_mod(temporary, dll, abi="1.4")
+            self.assertEqual(self.statuses(shipmod.check_native_mod(mod))["ABI"], "ok")
+
+    def test_layout_rules(self) -> None:
+        dll = build_pe(["ShipNative_Query"], ["KERNEL32.dll"])
+        core = 'kind = "core_extension"\nload_phase = "pre_game"'
+        layout = f'host_layout_id = "{"C" * 64}"'
+        cases = [
+            ("1.4", core, layout, "Layout", "ok"),
+            ("1.3", core, layout, "Layout", "falha"),
+            ("1.4", "", layout, "Layout", "falha"),
+            ("1.4", core, 'host_layout_id = "xyz"', "Layout", "falha"),
+            ("1.4", core, "", "Layout", "aviso"),
+            ("1.4", core, f'host_fingerprints = ["{"a" * 64}"]', "Fingerprints", "ok"),
+        ]
+        for abi, extra, provider_extra, check, expected in cases:
+            with self.subTest(abi=abi, extra=extra, provider_extra=provider_extra), \
+                    tempfile.TemporaryDirectory() as temporary:
+                mod = self.make_mod(temporary, dll, abi=abi, extra=extra, provider_extra=provider_extra)
+                self.assertEqual(self.statuses(shipmod.check_native_mod(mod)).get(check), expected)
+
     def test_lua_mod_has_nothing_to_validate(self) -> None:
         code, out, _ = run_cli(["doctor", str(REPO_ROOT / "tests" / "fixtures" / "mods" / "hello-runtime")])
         self.assertEqual(code, shipmod.EXIT_OK, out)

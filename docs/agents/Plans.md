@@ -1628,3 +1628,13 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
   (`94c176bc99`) e #57 (`90834ec1eb`, com README e wiki no RC10); wiki publicada (`24f25d4`).
 - **Fechadas:** OOT-FORMAT-001 e OOT-RELEASE-002 (`done`, ok do mantenedor em 17/10).
 - **Pendente:** trocar a página publicada do RC9 pelo texto em inglês (com ok); playtest físico.
+
+### UPDATE 2026-10-19 (Claude) — HOST-SLIM-001 F1: ABI 1.4 e schema no core
+
+- **ABI 1.4:** `resolve_symbol` público preso a `[provider].host_layout_id` (core extension `pre_game`), separado do
+  escape hatch preso a `host_fingerprints`, que passa a valer em 1.3 e 1.4. Patches não mudam. Layout C da ABI igual.
+- **API:** saem `ship.oot.audio.*` (3), `play_mask_on_animation`, `set_bunny_hood`, `set_roll_mode`,
+  `ship.oot.spawn_dog` e as capabilities `oot.audio`, `oot.spawn_dog`, `oot.player.bunny_hood`; `api_version` 0.5.0.
+- **Ferramentas:** parser, `ModHost`, schema do manifesto, `shipmod doctor` e `product_release.py` conhecem
+  `host_layout_id`. `ctest` 61/61 antes e depois.
+- **Pendente:** push/PR (com ok), F2 no host. Handoff: `coordination/handoffs/HOST-SLIM-001.md`.

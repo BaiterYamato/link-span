@@ -233,7 +233,6 @@ ship.storage = ship.storage or {}
 ship.timer = ship.timer or {}
 ship.world = ship.world or {}
 ship.mm.player = ship.mm.player or {}
-ship.oot.audio = ship.oot.audio or {}
 ship.oot.cutscene = ship.oot.cutscene or {}
 ship.oot.env = ship.oot.env or {}
 ship.oot.player = ship.oot.player or {}
@@ -353,22 +352,11 @@ function ship.mm.player.set_sword_skin(skin) end
 ---@return boolean
 function ship.oot.player.jump() end
 
---- Equips or removes the Bunny Hood with MM running and jumping behavior, restoring previous settings on removal. Returns false without a living player and true when applied.
---- API oot; stability: experimental; since: 0.4.0; capability: oot.player.bunny_hood; errors: none.
----@param equipped boolean
----@return boolean
-function ship.oot.player.set_bunny_hood(equipped) end
-
 --- Equips a mask by name without occupying a C button and returns true; none removes it and restores previous persistence. Returns false without a living player or for an unknown name.
 --- API oot; stability: experimental; since: 0.4.0; capability: oot.player.mask; errors: none.
 ---@param mask string
 ---@return boolean
 function ship.oot.player.set_mask(mask) end
-
---- Starts the mask-on animation and transition and returns its duration in frames. Requires human Link idle on the ground; returns 0 if the state or assets prevent entry.
---- API oot; stability: experimental; since: 0.4.0; capability: oot.player.mask; errors: none.
----@return integer
-function ship.oot.player.play_mask_on_animation() end
 
 --- Applies a movement multiplier through the host and returns whether it was accepted. OoT accepts factors from 0.1 to 5.0; 1.0 restores the previous setting. Without a host service, it raises a Lua error.
 --- API common; stability: experimental; since: 0.4.0; capability: player.speed; errors: none.
@@ -408,12 +396,6 @@ function ship.oot.player.set_damage_immunity(kind, enabled) end
 ---@param weight string
 ---@return boolean
 function ship.oot.player.set_weight(weight) end
-
---- Selects chain to chain and steer rolls or vanilla to disable that mode. Returns true for a recognized mode and false for any other name.
---- API oot; stability: experimental; since: 0.4.0; capability: oot.player.roll; errors: none.
----@param mode string
----@return boolean
-function ship.oot.player.set_roll_mode(mode) end
 
 --- Enables or disables blocking the start of a player roll and returns true.
 --- API oot; stability: experimental; since: 0.4.0; capability: oot.player.roll; errors: none.
@@ -471,38 +453,11 @@ function ship.oot.cutscene.stop() end
 ---@return boolean
 function ship.oot.cutscene.is_active() end
 
---- Plays a sound effect entry from an MM soundfont mounted in OoT and returns whether playback succeeded. Returns false for an index or soundfont outside the accepted range.
---- API oot; stability: experimental; since: 0.4.0; capability: oot.audio; errors: invalid_argument.
----@param index integer
----@param font? integer
----@return boolean
-function ship.oot.audio.play_sfx(index, font) end
-
---- Logs information about sound effect entries in the requested soundfont to help identify sounds. Returns true after invoking diagnostics, without confirming that every entry exists.
---- API oot; stability: experimental; since: 0.4.0; capability: oot.audio; errors: invalid_argument.
----@param first? integer
----@param count? integer
----@param font? integer
----@return boolean
-function ship.oot.audio.dump_sfx_table(first, count, font) end
-
---- Configures voice remapping by an offset within the block starting at base and returns true; nil base or offset 0 disables it. Returns false for out-of-range values; missing samples preserve the original voice.
---- API oot; stability: experimental; since: 0.4.0; capability: oot.audio; errors: invalid_argument.
----@param base? integer
----@param offset? integer
----@return boolean
-function ship.oot.audio.set_voice_map(base, offset) end
-
 --- Reads time_of_day normalized from 0 to 1, is_night as 0 or 1, or scene_id. Returns nil for an unknown field and -1 for scene_id without an available scene.
 --- API oot; stability: experimental; since: 0.4.0; capability: oot.env; errors: none.
 ---@param field string
 ---@return any
 function ship.oot.env.get(field) end
-
---- Spawns a dog at the player's position and returns whether it succeeded. Only accepts daytime or nighttime Market with the dog object loaded; otherwise returns false.
---- API oot; stability: experimental; since: 0.3.0; capability: oot.spawn_dog; errors: none.
----@return boolean
-function ship.oot.spawn_dog() end
 
 --- Logs a debug message identified by the mod. Returns no value; a non-string message raises a Lua error.
 --- API common; stability: stable; since: 0.1.0; capability: common; errors: invalid_argument.
