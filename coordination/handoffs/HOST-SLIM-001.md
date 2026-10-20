@@ -2,7 +2,8 @@
 
 ## Estado
 
-review (fase F1 da RFC 0029; F0 commitada na branch `agent/HOST-SLIM-001-rfc`)
+F0 e F1 mergeadas na `main` (#59 `e8ee09a`, #60 `acd96ff`); F2-0 em review (seção "F2-0" no fim). As seções
+abaixo até "Próxima ação recomendada" descrevem a F1.
 
 ## Resultado
 
@@ -106,3 +107,28 @@ fixtures válidas contra o schema novo.
 
 Abrir a F2 no host (`BaiterYamato/Shipwright`): gerar o catálogo público e ligá-lo à política, com os testes 7 e 8
 da matriz da análise (`docs/plans/host-slim-001/analise-ligacao-por-nome.md` §5.3).
+
+## F2-0 (core): ponto com despacho próprio e origem dos mods
+
+Estado: review, branch `agent/HOST-SLIM-001-f2-core` a partir da `main` `acd96ff`. Tarefas 1 e 2 do
+`docs/plans/host-slim-001/plano-f2-host.md`, executadas como escritas, sem desvio.
+
+- `NativeHookRegistry` (base da F2c, `oot.audio.mix`): `SetPointListener` (só o dono do ponto; vazio apaga),
+  `Snapshot` (hooks habilitados na ordem de despacho; vazio fora da thread do registro) e `Disable` (pelo dono do
+  ponto, motivo no log). O ouvinte recebe um aviso por mudança efetiva na lista de habilitados: registro vivo,
+  `Unregister`, `RemoveOwner` e `Disable` avisam na hora, mesmo dentro de `Dispatch`; registro pendente e
+  desativação pela terceira falha avisam ao fim do `Dispatch` externo. Ouvinte que lança é contido e logado; o
+  ouvinte de um ponto que sai com o dono recebe a retirada e é apagado antes da compactação.
+- `ModLoadReport::loadedDirectories` (base da F2h, `oot.mods.archives`): id → pasta absoluta e normalizada de onde
+  o mod carregou (origem em `mods/` para pasta, diretório extraído do cache para `.shipmod`/ZIP). Fora do layout id.
+- `ship_native_abi.h`: o comentário dos hooks admite ponto com despacho próprio em outra thread. Muda o layout id do
+  host quando o submódulo subir (esperado, F2a). `docs/native-providers*.md` ganham o item correspondente.
+
+Commits: `1f3b0d2` (ouvinte, Snapshot, Disable), `0140ce0` (origem dos mods) e o commit de docs/ABI desta seção.
+
+Validação (Windows 11, MSVC v143, x64, Release): `cmake --build build/core-tests --config Release --parallel`,
+`ctest` 61/61 antes e depois (blocos novos em `native_hook_tests` e `mod_root_loader_tests`, que falharam na
+compilação antes da implementação), `generate_api_docs.py`, `generate_cpp_api.py` e `generate_api_contracts.py
+--check` sincronizados.
+
+Próximo: PR F2-0 na `main`; depois a F2a no host sobe o submódulo para a `main` com F1 + F2-0.
