@@ -145,6 +145,18 @@
 ---@field pos_y number
 ---@field pos_z number
 
+--- `hook.oot.actor.damage`: Emitted before adding collision damage to an actor without AC_HARD, before the cooperative multiplier, once per hit element. target_id and target_category identify the target; attacker_id and attacker_category identify the owner of the AT collider that hit the element and are -1 without an attacker. attacker_is_player indicates AT_TYPE_PLAYER; dmg_flags carries toucher.dmgFlags and damage_effect carries the computed effect. base_damage is the damage calculated by the game and damage is the value after native hooks. ship.hooks.result with a finite number replaces damage, clamped by the host to 0..255; if any native or Lua hook changed the value, the host also clamps it to what is left up to 255 in the target's accumulated u8 damage, before the cooperative multiplier. No result or a nonnumeric result preserves damage. Damage outside this path is not covered: boss health deductions that do not use central damage, grabs using play->damagePlayer, knockback damage, falls, fire and traps on those paths.
+---@class ShipLuaEventHookOotActorDamage
+---@field target_id integer
+---@field target_category integer
+---@field attacker_id integer
+---@field attacker_category integer
+---@field attacker_is_player boolean
+---@field dmg_flags integer
+---@field damage_effect integer
+---@field base_damage number
+---@field damage number
+
 --- `hook.oot.item.give`: Emitted before giving an item; item_id and get_item_id describe the current entry. ship.hooks.result with a valid integer get_item_id replaces the entry using the vanilla table; it is not cancellation.
 ---@class ShipLuaEventHookOotItemGive
 ---@field item_id integer
@@ -211,7 +223,7 @@
 ---@class ShipLuaEventHookMmItemShouldGive
 ---@field item integer
 
----@alias ShipLuaEventName "game.ready"|"game.frame"|"game.shutdown"|"scene.enter"|"actor.init"|"actor.update"|"actor.destroy"|"save.loaded"|"text.open"|"audio.sequence_started"|"input.hotkey"|"input.action"|"hook.oot.player.speed.run"|"hook.oot.player.fall_damage"|"hook.oot.item.receive"|"hook.oot.player.health_change"|"hook.oot.player.bonk"|"hook.oot.enemy.defeat"|"hook.oot.item.give"|"hook.oot.hud.draw"|"hook.oot.player.first_person_control"|"hook.oot.player.arrow_type_select"|"hook.oot.player.body_anim_select"|"hook.mm.player.speed.walk"|"hook.mm.player.goron_roll.consume_magic"|"hook.mm.player.goron_roll.disable_spike_mode"|"hook.mm.player.goron_roll.increase_spike_level"|"hook.mm.item.give"|"hook.mm.enemy.defeat"|"hook.mm.item.should_give"
+---@alias ShipLuaEventName "game.ready"|"game.frame"|"game.shutdown"|"scene.enter"|"actor.init"|"actor.update"|"actor.destroy"|"save.loaded"|"text.open"|"audio.sequence_started"|"input.hotkey"|"input.action"|"hook.oot.player.speed.run"|"hook.oot.player.fall_damage"|"hook.oot.item.receive"|"hook.oot.player.health_change"|"hook.oot.player.bonk"|"hook.oot.enemy.defeat"|"hook.oot.actor.damage"|"hook.oot.item.give"|"hook.oot.hud.draw"|"hook.oot.player.first_person_control"|"hook.oot.player.arrow_type_select"|"hook.oot.player.body_anim_select"|"hook.mm.player.speed.walk"|"hook.mm.player.goron_roll.consume_magic"|"hook.mm.player.goron_roll.disable_spike_mode"|"hook.mm.player.goron_roll.increase_spike_level"|"hook.mm.item.give"|"hook.mm.enemy.defeat"|"hook.mm.item.should_give"
 
 ship = ship or {}
 ship.actor = ship.actor or {}

@@ -32,6 +32,31 @@ class SchemaValidationTests(unittest.TestCase):
     def test_canonical_documents_are_valid(self):
         self.assertEqual([], self.validate())
 
+    def test_actor_damage_event_contract(self):
+        matches = [event for event in self.events["events"]
+                   if event["name"] == "hook.oot.actor.damage"]
+        self.assertEqual(1, len(matches), "evento de dano ausente ou duplicado")
+        event = matches[0]
+        self.assertEqual("transform", event["kind"])
+        self.assertEqual("hook_bridge", event["phase"])
+        self.assertEqual(["oot"], event["support"])
+        self.assertEqual("hooks.bridge", event["capability"])
+        self.assertIs(False, event["cancellable"])
+        self.assertTrue(event["description"].strip())
+        self.assertTrue(event["description_en"].strip())
+        self.assertEqual([
+            {"name": "target_id", "type": "integer", "required": True},
+            {"name": "target_category", "type": "integer", "required": True},
+            {"name": "attacker_id", "type": "integer", "required": True},
+            {"name": "attacker_category", "type": "integer", "required": True},
+            {"name": "attacker_is_player", "type": "boolean", "required": True},
+            {"name": "dmg_flags", "type": "integer", "required": True},
+            {"name": "damage_effect", "type": "integer", "required": True},
+            {"name": "base_damage", "type": "number", "required": True},
+            {"name": "damage", "type": "number", "required": True},
+        ], event["payload"])
+        self.assertEqual([], self.validate())
+
     def test_survival_primitives_keep_safe_public_shapes(self):
         functions = {item["name"]: item for item in self.api["functions"]}
         events = {item["name"]: item for item in self.events["events"]}
