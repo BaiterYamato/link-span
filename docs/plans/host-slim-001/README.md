@@ -15,5 +15,6 @@ jogo. As linhas citadas valem para esses commits; confira de novo antes de imple
 | [inventario-unbound.md](inventario-unbound.md) | O que o exe sabe do Unbound, política que sai, auditoria da chave "sem mods = vanilla" (V1–V8), impacto de renomes no layout id | F4 |
 | [impacto.md](impacto.md) | Consumidores de tudo o que sai: NEI, exemplos, schema e capabilities, bateria do RC, docs e wiki; ordem de migração | F1, F3–F6 |
 | [plano-f1-core.md](plano-f1-core.md) | Plano de implementação da F1 no core: ABI 1.4 com símbolos públicos presos ao layout, manifesto, `shipmod`, release, retirada das 7 funções e 3 capabilities, docs | F1 |
+| [plano-f2-host.md](plano-f2-host.md) | Plano de implementação da F2: PR F2-0 no core, catálogo público no host, 8 hooks do Link e do Play, `oot.mods.archives` do level mod, 6 serviços com contratos C finais e validação | F2 |
 
-Os contratos C destes arquivos são propostas. O contrato que vale é o que a fase F2 fixar na RFC 0029.
+Os contratos C dos inventários são propostas; os finais da F2 estão em [plano-f2-host.md](plano-f2-host.md) §5.
