@@ -74,6 +74,21 @@ void NativeHookRegistry::Log(const std::string& message) const {
     try { mLogger(message); } catch (...) { /* Logger não pode derrubar o despacho. */ }
 }
 
+void NativeHookRegistry::Notify(uint64_t point) {
+    const auto named = mPoints.find(point);
+    if (named != mPoints.end()) named->second.changed = false;
+    try {
+        const auto found = mListeners.find(point);
+        if (found == mListeners.end()) return;
+        found->second(point); // sem copiar std::function: o ouvinte é só leitura
+    } catch (...) {
+        try {
+            Log("ouvinte do ponto '" + (named != mPoints.end() ? named->second.name : std::to_string(point)) +
+                "' falhou");
+        } catch (...) { /* Construção e emissão do diagnóstico não impedem a retirada. */ }
+    }
+}
+
 ShipNativeStatus NativeHookRegistry::DeclarePoint(std::string_view owner, const ShipNativeHookPointSpec& spec,
                                                   uint64_t* point) {
     if (!OnThread()) return SHIP_NATIVE_FAILURE;
@@ -175,12 +190,14 @@ ShipNativeStatus NativeHookRegistry::Register(std::string_view owner, const Ship
         hook.user = spec.user;
         const auto id = hook.handle;
         mHookPoints.emplace(id, pointId);
-        if (mDepth > 0) {
-            mPending.emplace_back(pointId, std::move(hook));
-        } else {
+        const bool live = mDepth == 0;
+        if (live) {
             Insert(point, std::move(hook));
+        } else {
+            mPending.emplace_back(pointId, std::move(hook));
         }
         *handle = id;
+        if (live) Notify(pointId);
         return SHIP_NATIVE_OK;
     } catch (...) {
         return SHIP_NATIVE_FAILURE;
@@ -191,7 +208,8 @@ ShipNativeStatus NativeHookRegistry::Unregister(std::string_view owner, uint64_t
     if (!OnThread()) return SHIP_NATIVE_FAILURE;
     const auto mapped = mHookPoints.find(handle);
     if (mapped == mHookPoints.end()) return SHIP_NATIVE_INVALID_ARGUMENT;
-    auto& point = mPoints.at(mapped->second);
+    const auto pointId = mapped->second;
+    auto& point = mPoints.at(pointId);
     for (auto pending = mPending.begin(); pending != mPending.end(); ++pending) {
         if (pending->second.handle != handle) continue;
         if (pending->second.owner != owner) return SHIP_NATIVE_INVALID_ARGUMENT;
@@ -202,7 +220,8 @@ ShipNativeStatus NativeHookRegistry::Unregister(std::string_view owner, uint64_t
     for (auto hook = point.hooks.begin(); hook != point.hooks.end(); ++hook) {
         if (hook->handle != handle || hook->removed) continue;
         if (hook->owner != owner) return SHIP_NATIVE_INVALID_ARGUMENT;
-        if (hook->enabled) --point.live;
+        const bool wasLive = hook->enabled;
+        if (wasLive) --point.live;
         mHookPoints.erase(mapped);
         if (mDepth > 0) {
             hook->enabled = false;
@@ -211,6 +230,7 @@ ShipNativeStatus NativeHookRegistry::Unregister(std::string_view owner, uint64_t
         } else {
             point.hooks.erase(hook);
         }
+        if (wasLive) Notify(pointId);
         return SHIP_NATIVE_OK;
     }
     return SHIP_NATIVE_INVALID_ARGUMENT;
@@ -220,18 +240,27 @@ void NativeHookRegistry::RemoveOwner(std::string_view owner) {
     if (!OnThread()) return;
     for (auto& [id, point] : mPoints) {
         const bool dropPoint = !point.removed && !owner.empty() && point.owner == owner;
+        if (dropPoint) point.changed = true;
         for (auto& hook : point.hooks) {
             if (hook.removed || (!dropPoint && hook.owner != owner)) continue;
             if (dropPoint && hook.owner != owner) {
-                Log("hook de '" + hook.owner + "' removido: ponto '" + point.name + "' saiu com '" +
-                    std::string(owner) + "'");
+                try {
+                    Log("hook de '" + hook.owner + "' removido: ponto '" + point.name + "' saiu com '" +
+                        std::string(owner) + "'");
+                } catch (...) { /* O diagnóstico não interrompe o unload. */ }
             }
-            if (hook.enabled) --point.live;
+            if (hook.enabled) {
+                --point.live;
+                point.changed = true;
+            }
             hook.enabled = false;
             hook.removed = true;
             mHookPoints.erase(hook.handle);
         }
-        if (dropPoint) point.removed = true;
+        if (dropPoint) {
+            point.removed = true;
+            point.dropListener = true;
+        }
     }
     mPending.erase(std::remove_if(mPending.begin(), mPending.end(), [&](const auto& pending) {
         const auto& point = mPoints.at(pending.first);
@@ -239,6 +268,13 @@ void NativeHookRegistry::RemoveOwner(std::string_view owner) {
         if (drop) mHookPoints.erase(pending.second.handle);
         return drop;
     }), mPending.end());
+    for (auto& [id, point] : mPoints) {
+        if (point.changed) Notify(id);
+        if (point.dropListener) {
+            mListeners.erase(id);
+            point.dropListener = false;
+        }
+    }
     mDirty = true;
     if (mDepth == 0) Compact();
 }
@@ -265,10 +301,16 @@ void NativeHookRegistry::Compact() {
         }
         try {
             Insert(point->second, std::move(item.second));
+            point->second.changed = true;
         } catch (...) {
             mHookPoints.erase(item.second.handle);
-            Log("hook pendente descartado por falta de memoria em '" + point->second.name + "'");
+            try {
+                Log("hook pendente descartado por falta de memoria em '" + point->second.name + "'");
+            } catch (...) { /* Não interromper os avisos dos outros pontos. */ }
         }
+    }
+    for (auto& [id, point] : mPoints) {
+        if (point.changed) Notify(id);
     }
 }
 
@@ -276,8 +318,12 @@ void NativeHookRegistry::DisableHook(Point& point, Hook& hook) {
     if (!hook.enabled) return;
     hook.enabled = false;
     --point.live;
-    Log(std::string("hook ") + ModeName(hook.mode) + " de '" + hook.owner + "' em '" + point.name +
-        "' desativado apos " + std::to_string(kMaxFailures) + " falhas seguidas");
+    point.changed = true;
+    mDirty = true;
+    try {
+        Log(std::string("hook ") + ModeName(hook.mode) + " de '" + hook.owner + "' em '" + point.name +
+            "' desativado apos " + std::to_string(kMaxFailures) + " falhas seguidas");
+    } catch (...) { /* O aviso no fim do despacho independe do log. */ }
 }
 
 // Retorna true quando o hook não concluiu (payload restaurado / original roda).
@@ -401,6 +447,59 @@ std::vector<NativeHookInfo> NativeHookRegistry::Describe() const {
     }
     for (const auto& pending : mPending) add(mPoints.at(pending.first).name, pending.second);
     return result;
+}
+
+ShipNativeStatus NativeHookRegistry::SetPointListener(std::string_view owner, uint64_t point,
+                                                      PointListener listener) {
+    if (!OnThread()) return SHIP_NATIVE_FAILURE;
+    const auto found = mPoints.find(point);
+    if (found == mPoints.end() || found->second.removed || found->second.owner != owner) {
+        return SHIP_NATIVE_INVALID_ARGUMENT;
+    }
+    try {
+        if (listener) {
+            mListeners[point] = std::move(listener);
+        } else {
+            mListeners.erase(point);
+        }
+    } catch (...) {
+        return SHIP_NATIVE_FAILURE;
+    }
+    return SHIP_NATIVE_OK;
+}
+
+std::vector<NativeHookEntry> NativeHookRegistry::Snapshot(uint64_t point) const {
+    std::vector<NativeHookEntry> result;
+    if (!OnThread()) return result;
+    const auto found = mPoints.find(point);
+    if (found == mPoints.end() || found->second.removed) return result;
+    for (const auto& hook : found->second.hooks) {
+        if (!hook.enabled || hook.removed) continue;
+        result.push_back({hook.handle, hook.owner, hook.mode, hook.phase, hook.priority, hook.callback, hook.user});
+    }
+    return result;
+}
+
+ShipNativeStatus NativeHookRegistry::Disable(std::string_view pointOwner, uint64_t handle, std::string_view reason) {
+    if (!OnThread()) return SHIP_NATIVE_FAILURE;
+    const auto mapped = mHookPoints.find(handle);
+    if (mapped == mHookPoints.end()) return SHIP_NATIVE_INVALID_ARGUMENT;
+    const auto pointId = mapped->second;
+    auto& point = mPoints.at(pointId);
+    if (point.owner != pointOwner) return SHIP_NATIVE_INVALID_ARGUMENT;
+    for (auto& hook : point.hooks) {
+        if (hook.handle != handle || hook.removed) continue;
+        if (!hook.enabled) return SHIP_NATIVE_OK;
+        hook.enabled = false;
+        --point.live;
+        try {
+            Log(std::string("hook ") + ModeName(hook.mode) + " de '" + hook.owner + "' em '" + point.name +
+                "' desativado: " + std::string(reason));
+        } catch (...) { /* Notify roda mesmo se o diagnóstico falhar. */ }
+        Notify(pointId);
+        return SHIP_NATIVE_OK;
+    }
+    return SHIP_NATIVE_INVALID_ARGUMENT; // pendente: ainda não está na lista
 }
 
 } // namespace ShipLua

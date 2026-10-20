@@ -1,9 +1,9 @@
 # HOST-SLIM-001
 
-- Status: review
+- Status: claimed
 - Agent: Claude (Opus 5.5), com subagentes Codex (gpt-6.1-sol) nas análises
 - Platform: Windows
-- Branch: agent/HOST-SLIM-001-f1-core
+- Branch: agent/HOST-SLIM-001-f2-core
 - Started: 2026-10-19T12:00:00Z
 - Depends on: OOT-RELEASE-002 (RC10, host `e9da99b515`, layout `ee6449e8`)
 - Files (fase F0):
@@ -38,6 +38,17 @@
   - rfcs/0023-native-escape-hatch.md
   - rfcs/0029-host-limpo-conteudo-mm-em-mods.md
   - docs/agents/Plans.md
+  - coordination/handoffs/HOST-SLIM-001.md
+- F1: PR #60 mergeado na `main` (`acd96ff`) em 20/10/2026.
+- Files (fase F2-0, branch `agent/HOST-SLIM-001-f2-core`):
+  - include/shiplua/native/NativeHooks.h
+  - src/native/NativeHooks.cpp
+  - tests/native/NativeHookTests.cpp
+  - include/shiplua/host/ModHost.h
+  - src/host/ModHost.cpp
+  - tests/unit/ModRootLoaderTests.cpp
+  - include/shiplua/native/ship_native_abi.h
+  - docs/native-providers.md, docs/native-providers.pt-BR.md
   - coordination/handoffs/HOST-SLIM-001.md
 - Goal:
   - Tirar do `soh.exe` o conteúdo do MM (áudio, forma Goron, coreografia da máscara, bonecos, política de montagem

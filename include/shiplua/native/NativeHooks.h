@@ -24,9 +24,20 @@ struct NativeHookInfo {
     bool enabled = true;
 };
 
-// Registro de hooks compartilhado por todos os providers de um host. Não é
-// thread-safe: declaração, registro e despacho ocorrem na thread que o criou.
-// Registrar ou remover durante um despacho é permitido e só vale no próximo.
+// Cópia de um hook habilitado, para quem despacha um ponto fora de Dispatch (ex.: outra thread).
+struct NativeHookEntry {
+    uint64_t handle = 0;
+    std::string owner;
+    uint32_t mode = 0;
+    uint32_t phase = 0;
+    int32_t priority = 0;
+    ShipNativeHookFn callback = nullptr;
+    void* user = nullptr;
+};
+
+// Registro de hooks compartilhado por todos os providers de um host. Não é thread-safe.
+// Só o registro durante Dispatch é adiado. Remoções e Disable têm efeito e aviso síncronos.
+// O ouvinte só consulta o registro; não registra, remove nem troca ouvintes.
 class NativeHookRegistry {
   public:
     using Logger = std::function<void(const std::string&)>;
@@ -57,6 +68,17 @@ class NativeHookRegistry {
     std::size_t HookCount() const noexcept;
     std::vector<NativeHookInfo> Describe() const;
 
+    // Ponto com despacho próprio. O dono do ponto recebe um aviso na thread do registro a cada mudança efetiva na
+    // lista de hooks habilitados. Só o registro pendente é adiado até o fim do Dispatch externo. Unregister,
+    // RemoveOwner e Disable notificam na hora, mesmo dentro de Dispatch. A terceira falha notifica ao voltar à
+    // profundidade zero. O ouvinte só lê (Snapshot); não chama mutações do registro. Vazio apaga o ouvinte.
+    using PointListener = std::function<void(uint64_t point)>;
+    ShipNativeStatus SetPointListener(std::string_view owner, uint64_t point, PointListener listener);
+    // Hooks habilitados do ponto, na ordem de despacho. Vazio fora da thread do registro.
+    std::vector<NativeHookEntry> Snapshot(uint64_t point) const;
+    // Desativa um hook pelo dono do ponto, com o motivo no log (falha vista fora do Dispatch).
+    ShipNativeStatus Disable(std::string_view pointOwner, uint64_t handle, std::string_view reason);
+
   private:
     struct Hook {
         uint64_t handle = 0;
@@ -79,6 +101,8 @@ class NativeHookRegistry {
         std::vector<Hook> hooks; // ordenados por prioridade desc e registro
         std::size_t live = 0;
         bool removed = false;
+        bool changed = false;
+        bool dropListener = false;
     };
 
     bool OnThread() const noexcept { return mThread == std::this_thread::get_id(); }
@@ -87,12 +111,14 @@ class NativeHookRegistry {
     void Compact();
     bool RecordFailure(Point& point, Hook& hook, ShipNativeStatus status);
     void DisableHook(Point& point, Hook& hook);
+    void Notify(uint64_t point);
 
     Logger mLogger;
     std::thread::id mThread = std::this_thread::get_id();
     std::map<uint64_t, Point> mPoints;
     std::unordered_map<uint64_t, uint64_t> mHookPoints; // handle -> ponto
     std::vector<std::pair<uint64_t, Hook>> mPending;    // registrados durante despacho
+    std::map<uint64_t, PointListener> mListeners;
     uint64_t mNextPoint = 1;
     uint64_t mNextHook = 1;
     int mDepth = 0;
