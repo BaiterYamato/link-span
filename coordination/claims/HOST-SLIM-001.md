@@ -3,7 +3,7 @@
 - Status: review
 - Agent: Claude (Opus 5.5), com subagentes Codex (gpt-6.1-sol) nas análises
 - Platform: Windows
-- Branch: agent/HOST-SLIM-001-f1-core
+- Branch: agent/HOST-SLIM-001-f2-core
 - Started: 2026-10-19T12:00:00Z
 - Depends on: OOT-RELEASE-002 (RC10, host `e9da99b515`, layout `ee6449e8`)
 - Files (fase F0):
@@ -39,6 +39,17 @@
   - rfcs/0029-host-limpo-conteudo-mm-em-mods.md
   - docs/agents/Plans.md
   - coordination/handoffs/HOST-SLIM-001.md
+- F1: PR #60 mergeado na `main` (`acd96ff`) em 20/10/2026.
+- Files (fase F2-0, branch `agent/HOST-SLIM-001-f2-core`):
+  - include/shiplua/native/NativeHooks.h
+  - src/native/NativeHooks.cpp
+  - tests/native/NativeHookTests.cpp
+  - include/shiplua/host/ModHost.h
+  - src/host/ModHost.cpp
+  - tests/unit/ModRootLoaderTests.cpp
+  - include/shiplua/native/ship_native_abi.h
+  - docs/native-providers.md, docs/native-providers.pt-BR.md
+  - coordination/handoffs/HOST-SLIM-001.md
 - Goal:
   - Tirar do `soh.exe` o conteúdo do MM (áudio, forma Goron, coreografia da máscara, bonecos, política de montagem
     do `mm.o2r`) e a política do Unbound no bootstrap, deixando no exe só loader, API, hooks e serviços genéricos
@@ -50,7 +61,7 @@
     layout (ABI 1.4); fases F0–F6; corrigir V2–V5 e V7 da chave vanilla e aceitar V1, V6 e V8.
 - Status (fase F2i-0): review
 - Branch (fase F2i-0): agent/HOST-SLIM-001-f2i-core
-- Agent (fase F2i-0): Claude (Sonnet 5.5), a pedido do mantenedor; base `origin/main` @ `acd96ff` (F1 mergeada)
+- Agent (fase F2i-0): Claude (Sonnet 5.5), a pedido do mantenedor; base `origin/main` @ `acd96ff` (F1 mergeada), integrada com `7b191a6` (F2-0, PR #61) por merge
 - Started (fase F2i-0): 2026-10-20
 - Files (fase F2i-0, tarefa 30 do plano da F2):
   - rfcs/0029-host-limpo-conteudo-mm-em-mods.md (só a nota da F2i)

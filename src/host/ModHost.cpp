@@ -596,6 +596,7 @@ Result<ModLoadReport> ModHost::LoadModsFromRoot(const std::filesystem::path& roo
             candidate->ownedDirectory.clear();
         }
         report.loadedIds.push_back(id);
+        report.loadedDirectories.emplace(id, std::filesystem::absolute(candidate->directory).lexically_normal());
     }
 
     cleanupOwnedDirectories();

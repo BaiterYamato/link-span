@@ -104,6 +104,9 @@ runtime->register_hook(runtime->context, &spec, &handle);
 - Higher priority runs first; ties follow load order.
 - `UNSUPPORTED` refuses without counting a failure; three consecutive failures disable the hook.
 - The mod's hooks are removed automatically on unload, before `shutdown`.
+- A host may dispatch a point outside the game thread with its own dispatcher (for example an audio mix point on
+  the audio thread). Its header says so; callbacks there must not block or call host services, and unregistering
+  waits for the callback to return.
 
 A core extension publishes its own points with `declare_hook_point` and triggers them with `dispatch_hook`. See [RFC 0021](../rfcs/0021-native-hooks.md).
 

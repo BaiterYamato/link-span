@@ -37,7 +37,9 @@ typedef ShipNativeStatus (SHIP_NATIVE_CALL *ShipNativeFunction)(
 /* ABI 1.2: hooks nativos. Um ponto de hook é declarado pelo host ou por uma
    core extension com nome, versão e tamanho do payload. Na chamada, o dono do
    ponto executa: observe BEFORE, transform em cadeia, replace (ou a operação
-   original) e observe AFTER. Tudo roda na thread do jogo, sem sandbox. */
+   original) e observe AFTER. Tudo roda na thread do jogo, sem sandbox, salvo
+   ponto cujo contrato no host diga outra coisa (despacho próprio em outra
+   thread, como o mix de áudio). */
 #define SHIP_NATIVE_HOOK_OBSERVE 1u
 #define SHIP_NATIVE_HOOK_TRANSFORM 2u
 #define SHIP_NATIVE_HOOK_REPLACE 4u

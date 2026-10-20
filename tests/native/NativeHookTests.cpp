@@ -248,6 +248,165 @@ int main() {
               "host point survives mod removal");
     }
 
+    { // Ponto com despacho próprio: ouvinte, cópia da lista e desativação pelo dono do ponto.
+        NativeHookRegistry registry(logger);
+        uint64_t point = 0;
+        registry.DeclarePoint("", PointSpec("test.own", SHIP_NATIVE_HOOK_OBSERVE | SHIP_NATIVE_HOOK_TRANSFORM), &point);
+        std::vector<uint64_t> notified;
+        auto listener = [&notified](uint64_t id) { notified.push_back(id); };
+        Check(registry.SetPointListener("mod", point, listener) == SHIP_NATIVE_INVALID_ARGUMENT,
+              "listener only for the point owner");
+        Check(registry.SetPointListener("", 999, listener) == SHIP_NATIVE_INVALID_ARGUMENT, "listener on unknown point");
+        Check(registry.SetPointListener("", point, listener) == SHIP_NATIVE_OK, "listener set");
+
+        Probe low{nullptr, "low"}, high{nullptr, "high"};
+        uint64_t lowHandle = 0, highHandle = 0;
+        registry.Register("mod", HookSpec(low, SHIP_NATIVE_HOOK_TRANSFORM, 0, 1, "test.own"), &lowHandle);
+        registry.Register("mod", HookSpec(high, SHIP_NATIVE_HOOK_OBSERVE, SHIP_NATIVE_HOOK_AFTER, 5, "test.own"),
+                          &highHandle);
+        Check(notified == std::vector<uint64_t>{point, point}, "register notifies once per hook");
+        const auto entries = registry.Snapshot(point);
+        Check(entries.size() == 2 && entries[0].handle == highHandle && entries[1].handle == lowHandle,
+              "snapshot keeps dispatch order");
+        Check(entries.size() == 2 && entries[0].owner == "mod" && entries[0].mode == SHIP_NATIVE_HOOK_OBSERVE &&
+                  entries[0].phase == SHIP_NATIVE_HOOK_AFTER && entries[0].priority == 5 &&
+                  entries[0].callback == Callback && entries[0].user == &high,
+              "snapshot copies the hook fields");
+
+        notified.clear();
+        logs.clear();
+        Check(registry.Disable("mod", lowHandle, "teste") == SHIP_NATIVE_INVALID_ARGUMENT,
+              "only the point owner disables");
+        Check(registry.Disable("", 12345, "teste") == SHIP_NATIVE_INVALID_ARGUMENT, "unknown handle");
+        Check(registry.Disable("", lowHandle, "falhou fora do Dispatch") == SHIP_NATIVE_OK, "owner disables");
+        Check(notified == std::vector<uint64_t>{point} && registry.Snapshot(point).size() == 1,
+              "disable notifies and leaves the snapshot");
+        Check(!logs.empty() && logs.back().find("falhou fora do Dispatch") != std::string::npos,
+              "disable reason logged");
+        Check(registry.Disable("", lowHandle, "de novo") == SHIP_NATIVE_OK && notified.size() == 1,
+              "disabling twice is a no-op");
+        Check(registry.Unregister("mod", lowHandle) == SHIP_NATIVE_OK && notified.size() == 1,
+              "unregister of a disabled hook does not notify again");
+
+        uint64_t host = 0;
+        registry.DeclarePoint("", PointSpec("test.host"), &host);
+        Probe late{nullptr, "late"}, trigger{nullptr, "trigger"};
+        uint64_t lateHandle = 0, triggerHandle = 0;
+        trigger.during = [&](Probe&) {
+            registry.Register("mod", HookSpec(late, SHIP_NATIVE_HOOK_TRANSFORM, 0, 0, "test.own"), &lateHandle);
+            Check(notified.size() == 1, "pending register does not notify during dispatch");
+        };
+        registry.Register("mod", HookSpec(trigger, SHIP_NATIVE_HOOK_OBSERVE, 0, 0, "test.host"), &triggerHandle);
+        Payload payload{0};
+        registry.Dispatch(host, &payload, sizeof(payload), nullptr, nullptr);
+        Check(notified.size() == 2 && notified.back() == point && registry.Snapshot(point).size() == 2,
+              "pending register notifies after the dispatch");
+
+        notified.clear();
+        registry.RemoveOwner("mod");
+        Check(notified == std::vector<uint64_t>{point} && registry.Snapshot(point).empty(),
+              "owner removal notifies the changed point once");
+
+        Check(registry.SetPointListener("", point, [](uint64_t) { throw 1; }) == SHIP_NATIVE_OK, "listener replaced");
+        Probe again{nullptr, "again"};
+        uint64_t againHandle = 0;
+        logs.clear();
+        Check(registry.Register("mod", HookSpec(again, SHIP_NATIVE_HOOK_TRANSFORM, 0, 0, "test.own"), &againHandle) ==
+                      SHIP_NATIVE_OK &&
+                  !logs.empty(),
+              "a throwing listener is contained and logged");
+
+        std::vector<NativeHookEntry> fromThread{NativeHookEntry{}};
+        std::thread([&] { fromThread = registry.Snapshot(point); }).join();
+        Check(fromThread.empty(), "snapshot off the registry thread is empty");
+        Check(registry.SetPointListener("", point, {}) == SHIP_NATIVE_OK, "empty listener clears");
+    }
+
+    { // Retiradas síncronas, mesmo durante Dispatch de outro ponto.
+        NativeHookRegistry registry(logger);
+        uint64_t point = 0, host = 0;
+        registry.DeclarePoint("", PointSpec("test.sync"), &point);
+        registry.DeclarePoint("", PointSpec("test.trigger"), &host);
+        unsigned notices = 0;
+        Probe victim{nullptr, "victim"}, trigger{nullptr, "trigger"};
+        uint64_t victimHandle = 0, triggerHandle = 0;
+        registry.Register("victim", HookSpec(victim, SHIP_NATIVE_HOOK_TRANSFORM, 0, 0, "test.sync"), &victimHandle);
+        registry.SetPointListener("", point, [&](uint64_t id) {
+            ++notices;
+            Check(registry.Snapshot(id).empty(), "synchronous snapshot is empty");
+        });
+        registry.Register("driver", HookSpec(trigger, SHIP_NATIVE_HOOK_OBSERVE, 0, 0, "test.trigger"), &triggerHandle);
+        Payload payload{};
+        for (int operation = 0; operation < 3; ++operation) {
+            if (operation != 0) {
+                registry.SetPointListener("", point, {});
+                registry.Register("victim", HookSpec(victim, SHIP_NATIVE_HOOK_TRANSFORM, 0, 0, "test.sync"),
+                                  &victimHandle);
+                registry.SetPointListener("", point, [&](uint64_t id) {
+                    ++notices;
+                    Check(registry.Snapshot(id).empty(), "retired hook is absent");
+                });
+            }
+            notices = 0;
+            trigger.during = [&](Probe&) {
+                if (operation == 0) {
+                    Check(registry.Unregister("victim", victimHandle) == SHIP_NATIVE_OK, "unregister during dispatch");
+                } else if (operation == 1) {
+                    Check(registry.Disable("", victimHandle, "teste síncrono") == SHIP_NATIVE_OK,
+                          "disable during dispatch");
+                } else {
+                    registry.RemoveOwner("victim");
+                }
+                Check(notices == 1, "retirement notifies before returning inside Dispatch");
+            };
+            registry.Dispatch(host, &payload, sizeof(payload), nullptr, nullptr);
+            Check(notices == 1, "no duplicate notification at the end");
+        }
+    }
+
+    { // A terceira falha avisa só ao sair do Dispatch externo, sem pendentes nem remoções.
+        NativeHookRegistry registry(logger);
+        uint64_t point = 0, outer = 0;
+        registry.DeclarePoint("", PointSpec("test.failure"), &point);
+        registry.DeclarePoint("", PointSpec("test.outer"), &outer);
+        Probe bad{nullptr, "bad"}, trigger{nullptr, "outer"};
+        bad.status = SHIP_NATIVE_FAILURE;
+        uint64_t badHandle = 0, triggerHandle = 0;
+        registry.Register("bad", HookSpec(bad, SHIP_NATIVE_HOOK_TRANSFORM, 0, 0, "test.failure"), &badHandle);
+        unsigned notices = 0;
+        registry.SetPointListener("", point, [&](uint64_t id) {
+            ++notices;
+            Check(registry.Snapshot(id).empty(), "automatically disabled hook is absent");
+        });
+        Payload payload{};
+        registry.Dispatch(point, &payload, sizeof(payload), nullptr, nullptr);
+        registry.Dispatch(point, &payload, sizeof(payload), nullptr, nullptr);
+        trigger.during = [&](Probe&) {
+            registry.Dispatch(point, &payload, sizeof(payload), nullptr, nullptr);
+            Check(notices == 0, "nested dispatch keeps the notification pending");
+        };
+        registry.Register("driver", HookSpec(trigger, SHIP_NATIVE_HOOK_OBSERVE, 0, 0, "test.outer"), &triggerHandle);
+        registry.Dispatch(outer, &payload, sizeof(payload), nullptr, nullptr);
+        Check(notices == 1 && bad.calls == 3, "outer dispatch flushes the automatic disable");
+    }
+
+    { // O ponto sai com o dono. Seu ouvinte ainda recebe a retirada antes da compactação.
+        NativeHookRegistry registry(logger);
+        uint64_t point = 0;
+        registry.DeclarePoint("point.owner", PointSpec("test.drop"), &point);
+        Probe visitor{nullptr, "visitor"};
+        uint64_t handle = 0;
+        registry.Register("visitor", HookSpec(visitor, SHIP_NATIVE_HOOK_TRANSFORM, 0, 0, "test.drop"), &handle);
+        unsigned notices = 0;
+        registry.SetPointListener("point.owner", point, [&](uint64_t id) {
+            ++notices;
+            Check(registry.Snapshot(id).empty(), "removed point has an empty snapshot");
+        });
+        registry.RemoveOwner("point.owner");
+        registry.RemoveOwner("point.owner");
+        Check(notices == 1 && !registry.FindPoint("test.drop", 1), "point retirement notifies once");
+    }
+
     if (failures) { std::cerr << failures << " failures\n"; return 1; }
     std::cout << "Native hooks: order, modes, failures, deferred mutation and ownership passed.\n";
     return 0;
