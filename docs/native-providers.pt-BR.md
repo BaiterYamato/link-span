@@ -107,6 +107,9 @@ runtime->register_hook(runtime->context, &spec, &handle);
 - Maior prioridade roda antes; empate segue a ordem de carga.
 - `UNSUPPORTED` recusa sem contar falha; três falhas seguidas desativam o hook.
 - Hooks do mod saem sozinhos no unload, antes do `shutdown`.
+- O host pode despachar um ponto fora da thread do jogo, com despacho próprio (por exemplo, um ponto de mix de
+  áudio na thread de áudio). O header do ponto diz isso; ali o callback não bloqueia nem chama serviços do host, e
+  remover o hook espera o callback terminar.
 
 Uma core extension publica pontos próprios com `declare_hook_point` e os
 dispara com `dispatch_hook`. Detalhes na [RFC 0021](../rfcs/0021-native-hooks.md).
