@@ -20,6 +20,7 @@ namespace ShipLua {
 
 struct ModLoadReport {
     std::vector<std::string> loadedIds;
+    std::map<std::string, std::filesystem::path> loadedDirectories; // id → pasta de onde o mod carregou
     std::map<std::string, std::string> rejected;
 };
 

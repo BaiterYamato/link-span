@@ -165,6 +165,41 @@ void TestVLink4DualGameRequirement(const std::filesystem::path &root) {
         "runtime with both games available should load dual-world mods");
 }
 
+void TestLoadedDirectories(const std::filesystem::path& root) {
+  const auto mods = root / "reported-directories";
+  const auto cache = root / "cache-reported-directories";
+  WriteDirectoryMod(mods, "a-rejected", Manifest("example.shared", "games = [\"mm\"]\n"));
+  WriteDirectoryMod(mods, "b-loaded", Manifest("example.shared", "games = [\"oot\"]\n"));
+  WriteDirectoryMod(mods, "broken", Manifest("example.broken"), "error('boom')\n");
+  Check(WritePackage(mods / "packed.shipmod", Manifest("example.packed"), "loaded = true\n"),
+        "fixture .shipmod criada");
+  Check(WritePackage(mods / "zipped.zip", Manifest("example.zipped"), "loaded = true\n"),
+        "fixture ZIP criada");
+  auto host = MakeHost();
+  auto result = host.LoadModsFromRoot(mods, cache);
+  Check(result.isOk(), "relatório da raiz disponível");
+  if (!result.isOk()) return;
+  const auto& directories = result.value->loadedDirectories;
+  Check(directories.size() == 3 && result.value->loadedIds.size() == 3,
+        "só mods carregados recebem origem");
+  const auto shared = directories.find("example.shared");
+  Check(shared != directories.end() &&
+            shared->second == std::filesystem::absolute(mods / "b-loaded").lexically_normal() &&
+            shared->second != std::filesystem::absolute(mods / "a-rejected").lexically_normal(),
+        "mesmo id não aceita a origem rejeitada");
+  Check(directories.find("example.broken") == directories.end(), "falha de script não recebe origem");
+  for (const auto* id : {"example.packed", "example.zipped"}) {
+    const auto found = directories.find(id);
+    Check(found != directories.end(), "pacote carregado tem origem");
+    if (found == directories.end()) continue;
+    Check(found->second.is_absolute() &&
+              found->second.parent_path() == std::filesystem::absolute(cache).lexically_normal() &&
+              std::filesystem::is_regular_file(found->second / "manifest.toml"),
+          "origem do pacote é a pasta extraída, não o arquivo fonte");
+  }
+  host.UnloadAll();
+}
+
 void TestInvalidRoot(const std::filesystem::path &root) {
   auto host = MakeHost();
   auto result = host.LoadModsFromRoot(root / "missing", root / "cache-missing");
@@ -185,6 +220,7 @@ int main() {
   TestCompatibilityAndFailureIsolation(root);
   TestPackageOwnership(root);
   TestVLink4DualGameRequirement(root);
+  TestLoadedDirectories(root);
   TestInvalidRoot(root);
 
   std::filesystem::remove_all(root, ignored);
