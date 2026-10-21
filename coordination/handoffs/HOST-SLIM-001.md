@@ -262,6 +262,19 @@ plano da F2.
 `3418199b0c` submódulo e capabilities; `fdcd466e71` layout no SDK; `4c173d2a3b` gerador; `8628840079` política;
 `8f77c6cad9` probe 1.4; `8c4fc0d119` checagem do PE.
 
+Depois de aberto o PR:
+
+- `44da6bfc0e`: correções da revisão do Codex no gerador. Ele passa a ler definições em `.inc` (`gDbgCamEnabled`, do
+  `z_camera_data.inc`) e ignora variável local com nome de global. O catálogo fica com 2088 funções e 182 variáveis. O
+  `check-public-symbols.py` sai com 77 (pula) quando o `soh.symbols` é de outro exe.
+- `12c6efc8cb`: formatação do clang-format 14 que o CI pedia. O gerador cerca a tabela do catálogo com
+  `clang-format off/on`, porque o formatador quebrava as entradas longas e o `--check` acusaria a diferença. Só espaço
+  no `OotNativePublicSymbols.h`, mas o header entra no hash: o layout da F2a sozinha deixa de ser o `e6fa180f…` (não
+  medido; o que vale é o da F2b, abaixo).
+- Três achados P2 da revisão não foram corrigidos, porque nenhum header atual tem esses casos: declaração com
+  continuação de macro, declaradores separados por vírgula e função que devolve ponteiro de função. O `--check` e a
+  checagem do PE pegariam um símbolo errado.
+
 ### Validação
 
 Windows 11, MSVC v143, x64, Release.
@@ -301,3 +314,79 @@ Windows 11, MSVC v143, x64, Release.
 
 Mergear o Shipwright#8 com o CI verde e seguir para a F2b (tarefas 10–13), com as âncoras corrigidas acima. A F2c e a
 F2h podem ir em paralelo depois da F2a.
+
+## Atualização — 20/10/2026 — F2 sob maestro Codex
+
+### Estado
+
+F2 em andamento. Codex desktop Windows (três subagentes gpt-6.1-sol high) assume a coordenação a partir de `logs/host-slim-maestro/MAESTRO.md`. A tarefa global permanece em review; este apêndice preserva os estados e as evidências anteriores.
+
+### Resultado
+
+- Ownership: o maestro aplica alterações no core/host e integra resultados; os subagentes produzem artefatos exclusivamente nas pastas individuais de logs. Este rascunho e a auditoria de coordenação foram preparados pelo subagente `codex-f2-maestro-coord`, sem editar os repositórios.
+- Core auditado: `agent/HOST-SLIM-001-f2b-handoff` em `9b69411`, limpo, com um commit local além de `origin/main`. Host auditado: `agent/HOST-SLIM-001-f2h-archives` em `3b037da12b`, limpo.
+- O maestro confirmou o merge do Shipwright#8 em `bf3ab5f931a4d5131a5fe929cddee7e2e25a907a`, com 11/11 checks e todos os workflows verdes. O #9 foi retargetado para a integração e recebeu rerun de job Windows após arquivo bloqueado; o resultado desse rerun continua pendente.
+
+### F2b — tarefas 10–13
+
+- PR [Shipwright#9](https://github.com/BaiterYamato/Shipwright/pull/9), branch `agent/HOST-SLIM-001-f2b-hooks`, topo auditado `4f3471baae`.
+- Sete pontos V1 do Link/Play, despachos testáveis, pontes em `z_player.c`/`z_play.c` e hook-probe. Commits: `3cc1b2b8fb`, `de32228d29`, `53205aac19`, `8395d21a4a`, `4f3471baae`.
+- CTest Windows x64 Release/MSVC v143: 10/10 em `HOST-SLIM-001-logs/f2b-style-ctest.txt`.
+- Prova real do harness: `logs/host-slim-f2b/ev-hooks-3/gate-result.json`, `ok=true`, `gateComplete=true`, falhas vazias, saída 0, input válido; exe SHA256 `18AE12A0A47B3E636CBC78639D71208EA6396069B83BD4935414EFD828B88FFD`.
+- Última linha: `hook-probe voice=5 roll=2 ledge=0 action=1750 update_end=1750 mask=395 destroy=2`. `ledge=0` é limitação declarada: o roteiro não garante uma borda que agarra; não constitui prova física desse caminho.
+- A/B t2 sem mods: tela 1,2456% / Link 6,3533% sem máscara; tela 1,2007% / Link 6,1394% com máscara. Controle RC10×RC10 sem máscara: tela 1,2456% / Link 6,1928%. Essa comparação é contextual e não demonstra igualdade bit a bit no mesmo tick. O controle com máscara deu 73,1218% / 64,3206%, portanto não deve ser usado para afirmar ruído equivalente nesse estado. A rodada t3 segue pendente.
+- Riscos mantidos: NEI substitui voz/borda até F5; rolagem Z-target e aterrissagem ficam fora do ponto; veto entre TRANSFORMs é contrato (escrever somente 0), sem redução imposta no core; relatório periódico do probe pode perder destroy, embora a sessão registrada mostre 2.
+
+### F2c — tarefas 14–16
+
+- PR [Shipwright#10](https://github.com/BaiterYamato/Shipwright/pull/10), branch `agent/HOST-SLIM-001-f2c-audio`, topo `1bd6732745`.
+- Ponto `oot.audio.mix`, lista imutável, contador in-flight, quiescência de unregister/unload, Pump na thread do jogo, ponte no AudioPlayer_Play e audio-probe. Commits `386bc59e45`, `d48cade5c2`, `7b76ee0726`, `1bd6732745`.
+- CTest 10/10 em `HOST-SLIM-001-logs/f2c-fix-ctest.txt`; revisão anterior registrou 20 repetições do teste de espera e mutação negativa. O subagente de coordenação verificou o resumo CTest; não repetiu build nem testes.
+- Prova funcional pendente: `ev-audio-2/gate-result.json` falhou no preflight com `Get-FileHash` indisponível, sem runtime/sessão. O maestro informou causa em PSModulePath herdado do Core via Git Bash e repetição isolada em Windows PowerShell 5.1 (`ev-audio-codex-3`); o resultado ainda não foi recebido.
+- O gate precisa provar pico zero na janela de mute, retorno a pico positivo, taxa 32000 ±5%, fechamento sem travar e explicitar se houve gravação de áudio ou observação do operador. Telemetria de PCM sozinha não é prova de escuta pelo dispositivo. Prova sem mod e caminho direto também continuam conforme o plano.
+
+### F2h — tarefas 17–18
+
+- Branch `agent/HOST-SLIM-001-f2h-archives`, topo `3b037da12b`, sem PR confirmado neste registro.
+- OBSERVE `oot.mods.archives`, payload com stride, origem efetiva por loadedDirectories e candidatos aceitos; montagem Unbound preservada. Commits `28156dcc54`, `3b58edeaf8`, `5c2319ea3c`, `3b037da12b` (probe).
+- CTest 10/10 sobre `5c2319ea3c`, em `HOST-SLIM-001-logs/ctest-f2h-5c2319ea3c.log`. Esse resultado antecede o commit do probe e não deve ser atribuído como rerun no topo `3b037da12b`.
+- Prova funcional pendente: `ev-archives-1/gate-result.json` falhou no mesmo preflight, sem runtime/sessão. Nova execução informada pelo maestro: `ev-archives-codex-2`, resultado pendente.
+- Esperado: válido `linkspan.test.archives_valid@mod/valid_x/`, solto `-@mod/loose_probe/`, origem OoT `linkspan.test.archives_twin@mod/twin_oot/`; inválido, origem MM e caches extraídos ficam fora; rejeição deve registrar `fora de oot.mods.archives`.
+- F4 ainda precisa retirar reconhecimento/ID/fila Unbound; montar bruto com prefixo único por fonte; desmontar por identidade (RemoveArchive hoje remove o primeiro caminho igual); mover o unbound-core para o hook com handles, rollback e ordem inversa. As e-fixtures e gate E ficam para a tarefa 33, após recompilar para o layout final.
+
+### Arquivos alterados
+
+Nesta atualização de coordenação: claim, este handoff e `docs/agents/Plans.md`. Os caminhos de cada fatia no host constam no apêndice correspondente do claim. Nenhuma mudança funcional decorre deste registro.
+
+### F2d — abertura de ownership antes do código
+
+Estado claimed, tarefas 19–21 (movement V3 e camera V2). O maestro é o único escritor no host; branch prevista `agent/HOST-SLIM-001-f2d-movement` a partir da pilha F2h vigente, nome/SHA a confirmar na abertura real. Ownership: os 16 arquivos declarados pelas constantes iniciais do `codex/codex-f2d-script/f2d_apply.py`, relacionados individualmente no claim, e `soh/native-sdk/tests/movement-probe/**`; core limitado a claim, handoff e ledger. Não há fonte aplicada nem build, teste ou prova em jogo desta fase neste registro. O dry-run no checkout real, clang-format 14, build/CTest, revisão e prova da tarefa 21 são os próximos gates; não editar fontes durante build nem disputar input entre sessões.
+
+### Validação executada e resultado
+
+Auditoria somente leitura de plano, claim, handoff, ledger, Git local, três resumos CTest e resultados JSON citados. Fontes canônicas de coordenação e plano estão integralmente em CRLF (zero LF solto); preservar seus bytes anteriores na aplicação. Gate lifecycle e diff da aplicação devem ser anexados pelo maestro antes do commit. Nenhum CI remoto foi consultado por este subagente; estados do merge #8/retarget #9 acima foram comunicados pelo maestro.
+
+### Pendências
+
+- Receber resultados das novas sessões e A/B t3; atualizar estes estados por novo apêndice com caminhos, hashes e resultados exatos, preservando as tentativas falhas.
+- CI do head/base vigentes de #9/#10 e futuro PR F2h, revisão e integração em ordem. Nenhum merge com check ou workflow pendente/vermelho.
+- Claim e ledger da F2d antes de código; F2d → F2e → F2f → F2g, F2i host e tarefa 33 ainda não concluídas. Scripts em cópia não são implementação validada no host.
+- Preservar ressalvas anteriores, incluindo pulo físico do DMR. A F2 inteira, publicação e F3–F6 não estão concluídas.
+
+### Riscos
+
+Os headers mudam layout a cada fatia; não reutilizar probes/frameworks presos ao layout anterior nem promover o CTest de uma versão para outra. A igualdade de pixels exigida pela tarefa 12 não foi demonstrada por t2; o ruído observado e o controle são evidência parcial. Não tocar `RELEASE-UNIFICADA`, publicar release/tag/RC ou incluir conteúdo protegido. A pilha compartilhada recebe merges, sem rebase, mesmo que o texto antigo do plano sugira rebase.
+
+### Próxima ação recomendada
+
+Consolidar gates novos sem afrouxar asserts; completar prova de áudio, archives e A/B; atualizar PRs com autoria e evidência; integrar somente com CI todo verde. Na F2d, registrar antes branch real, ownership e arquivos no claim/ledger, executar dry-run no checkout real e respeitar build/input exclusivos.
+
+## Atualização — 21/10/2026 — integração F2b/F2c/F2h e andamento F2d
+
+Maestro Codex informou os merges Shipwright#9 `cd28a8665542329f76f8c775d3665b446fda56ad`, #10 `207da81792bf01760b6cb538ce3ce58cc08cfb60` e #11 `2d7f58fb911c9861b58eca070d0c05b03b59936c`; antes de cada merge verificou 11/11 checks e 5/5 workflows do head, incluindo push, todos verdes. Esta é a fonte dos dados remotos; o subagente de coordenação não os consultou novamente.
+
+- **Gates lidos:** áudio `logs/host-slim-f2c/ev-audio-codex-3/gate-result.json`, ok/gateComplete true, falhas vazias, 31564,454 quadros PCM/s e pico zero seguido de positivo; archives `logs/host-slim-f2h/ev-archives-codex-5/gate-result.json`, ok/gateComplete true, falhas vazias, n=3/stride32, solto + twin_oot + valid_x. Preservar tentativas anteriores; esses gates atualizam suas pendências, sem apagar a história.
+- **A/B t3:** JSON `logs/host-slim-f2b/ab-t3.json`, diferenças tela/Link sem máscara 2,2960%/3,8239%, com máscara 1,9828%/4,3956%. Maestro relatou inspeção visual sem regressão evidente. Igualdade pixel a pixel permanece não demonstrada; não registrar vanilla bit a bit como aprovado.
+- **F2d:** maestro confirmou build completo, CTest10/10 e compilação C do movement-probe; commit `3cad7d65b7`. Prova em jogo pendente, gate de transição corrigido e validado em 18 casos sintéticos após o achado apontado em `logs/host-slim-maestro/codex/codex-f2-maestro-battery/REVISAO-PROBE-F2D.md`. Não atribuir esses resultados à futura integração final da tarefa33.
+- **Ownership/autoria:** implementação/aplicação e validação integrada pelo maestro; este rascunho pelo subagente de coordenação, sem editar core/host. Mantêm-se os arquivos declarados da F2d. Append-only em claim/handoff/Plans; ledger compartilhado com CLAIMS-CLEANUP-001 e OOT-COREMODS-PLAN-001, com escrita serializada e preservação de seus registros/claims.
+- **Próximo passo e reservas:** reconstruir para o commit registrado e executar os gates em jogo; seguir o plano das fases restantes. Permanecem ressalvas físicas do DMR/controle/áudio, A/B, NEI até F5, limites de veto/rolagem e migração dos archives na F4; F2 global continua em review. Sem release, tag, RC público ou alteração de RELEASE-UNIFICADA.

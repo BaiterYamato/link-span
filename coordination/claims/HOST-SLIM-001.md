@@ -97,3 +97,57 @@
   - tools/gen-host-keep.py, tools/tests/test_gen_host_keep.py, tools/public-symbols-exclude.txt,
     tools/public-symbols-report.txt, tools/check-public-symbols.py
   - coordination/claims/HOST-SLIM-001.md e coordination/handoffs/HOST-SLIM-001.md (no core, só os blocos da F2a)
+
+## Atualização de coordenação — 20/10/2026 — takeover do maestro Codex
+
+- Status (coordenação F2): claimed; a tarefa global continua em `review`, e nenhuma fase pendente é encerrada por este registro.
+- Agent (coordenação F2): Codex desktop Windows, com três subagentes gpt-6.1-sol high; assume a condução após a passagem do Claude documentada em `logs/host-slim-maestro/MAESTRO.md`.
+- Branch (coordenação F2 no core): `agent/HOST-SLIM-001-f2b-handoff`.
+- Ownership (coordenação): o maestro é o único escritor no core e no host durante a aplicação; subagentes escrevem somente nas pastas individuais de `logs/host-slim-maestro/codex/`, sem checkout, commit, build ou input de jogo concorrente. O subagente `codex-f2-maestro-coord` preparou os rascunhos e auditou os registros; a aplicação e a validação integrada são do maestro.
+- Files:
+  - coordination/claims/HOST-SLIM-001.md
+  - coordination/handoffs/HOST-SLIM-001.md
+  - docs/agents/Plans.md
+  - soh/native-sdk/tests/EngineTests.cpp
+  - soh/soh/native/oot_engine.h
+  - soh/soh/native/OotNativeEngine.cpp
+  - soh/soh/native/OotNativeHooks.cpp
+  - soh/soh/native/OotNativePlayerAction.h
+  - soh/soh/native/OotNativePlayerAction.cpp
+  - soh/native-sdk/ExportSdk.cmake
+  - soh/soh/native/oot_camera.h
+  - soh/soh/native/OotNativeView.h
+  - soh/soh/native/OotNativeView.cpp
+  - soh/soh/native/OotNativeViewGame.cpp
+  - soh/soh/native/OotNativeHooksGame.cpp
+  - soh/src/overlays/actors/ovl_player_actor/z_player.c
+  - soh/src/code/z_play.c
+  - soh/src/code/z_camera.c
+  - soh/soh/OTRGlobals.cpp
+  - soh/native-sdk/tests/movement-probe/**
+- Goal (coordenação): registrar ownership, estado observável e evidências da F2b/F2c/F2h; iniciar a próxima fatia somente com claim e ledger prévios; preservar seções anteriores, suas versões e ressalvas.
+- Autorização vigente: push das branches `agent/HOST-SLIM-001-*`, abertura de PR e merge somente com todos os checks e workflows de CI verdes; sem release, tag, RC público ou acesso de escrita a `RELEASE-UNIFICADA`.
+- F2a: Shipwright#8 mergeado pelo maestro em `bf3ab5f931a4d5131a5fe929cddee7e2e25a907a`, após 11/11 checks e todos os workflows com success, conforme evidência coletada pelo maestro. Este registro atualiza o estado histórico `review` da F2a.
+- Status (fase F2b): review. Branch host `agent/HOST-SLIM-001-f2b-hooks`, topo auditado `4f3471baae`; PR Shipwright#9, retargetado pelo maestro para `agent/OOT-UPSTREAM-001-78dc6d970-integration`. CTest local 10/10; prova de hooks verde. A/B t3 e CI após retarget/rerun ainda pendentes neste registro.
+- Files (fase F2b, host, tarefas 10–13): `soh/soh/native/oot_hooks.h`, `soh/soh/native/OotNativeHooks.{h,cpp}`, `soh/soh/native/OotNativeHooksGame.cpp`, `soh/native-sdk/tests/EngineTests.cpp`, `soh/src/overlays/actors/ovl_player_actor/z_player.c`, `soh/src/code/z_play.c`, `soh/native-sdk/tests/hook-probe/**`.
+- Status (fase F2c): review. Branch host `agent/HOST-SLIM-001-f2c-audio`, topo auditado `1bd6732745`; PR Shipwright#10 empilhado na F2b. CTest local 10/10; prova funcional de áudio e CI do head/base vigentes ainda pendentes.
+- Files (fase F2c, host, tarefas 14–16): `soh/soh/native/oot_audio.h`, `soh/soh/native/OotNativeAudioMix.{h,cpp}`, `soh/soh/native/OotNativeHooks.{h,cpp}`, `soh/soh/OTRGlobals.cpp`, `soh/soh/ShipLuaBootstrap.cpp`, `soh/native-sdk/ExportSdk.cmake`, `soh/native-sdk/tests/EngineTests.cpp`, `soh/native-sdk/tests/audio-probe/**`.
+- Status (fase F2h): review. Branch host `agent/HOST-SLIM-001-f2h-archives`, topo auditado `3b037da12b`; sem PR confirmado neste registro. CTest local 10/10 sobre `5c2319ea3c`; prova funcional de archives e CI do futuro PR ainda pendentes.
+- Files (fase F2h, host, tarefas 17–18): `soh/soh/native/oot_hooks.h`, `soh/soh/native/OotNativeHooks.{h,cpp}`, `soh/soh/ShipLuaBootstrap.cpp`, `soh/native-sdk/tests/EngineTests.cpp`, `soh/native-sdk/tests/archives-probe/**`.
+- Sessões em execução/preparação pelo maestro: `ev-audio-codex-3`, `ev-archives-codex-2` e `ev-vanilla-{rc10,f2b}-codex-t3`; resultado ainda não recebido. As tentativas anteriores `ev-audio-2` e `ev-archives-1` falharam no preflight por `Get-FileHash` indisponível, sem runtime nem sessão: não são prova funcional.
+- Pendências globais preservadas: ressalvas da F2a (incluindo pulo físico do DMR), F2d–F2g, F2i host, tarefa 33 e F3–F6. Não há encerramento da F2 nem declaração de vanilla bit a bit nesta atualização.
+- Integração da pilha: propagar correções por merge, sem rebase, pois as branches superiores dependem dos commits inferiores. A menção antiga a rebase no plano não rege esta pilha já compartilhada.
+- Status (fase F2d): claimed, início autorizado pelo maestro após este registro e o update do ledger, antes de editar fontes; sem alegação de implementação ou validação concluída.
+- Agent (fase F2d): Codex maestro, escritor exclusivo do host; revisão delegada pode produzir artefatos somente em logs, sem editar o checkout.
+- Branch (fase F2d): `agent/HOST-SLIM-001-f2d-movement`, a criar da pilha F2h vigente; confirmar nome e SHA reais antes do primeiro source edit. O plano antigo usava sufixo `f2d-movimento`; a branch de execução adotada no MAESTRO usa `f2d-movement`.
+- Files (fase F2d, host, tarefas 19–21): os 16 caminhos do host listados em `Files` acima (constantes iniciais do `f2d_apply.py`) e `soh/native-sdk/tests/movement-probe/**`; no core, somente os três documentos de coordenação listados acima.
+- Goal (fase F2d): movement V3 e camera V2, vida/ownership por cena e Player, pontes e prova da tarefa 21; dry-run obrigatório no checkout real, clang-format 14, build/CTest e prova em jogo ainda pendentes. A prova do novo serviço não encerra as provas pendentes da F2b/F2c/F2h.
+
+## Atualização — 21/10/2026 — F2b/F2c/F2h integradas; F2d em validação
+
+- Fonte dos merges/CI: evidência enviada pelo maestro Codex, que confirmou antes de cada merge 11/11 checks e 5/5 workflows do head, incluindo push, todos verdes: Shipwright#9 `cd28a8665542329f76f8c775d3665b446fda56ad`; #10 `207da81792bf01760b6cb538ce3ce58cc08cfb60`; #11 `2d7f58fb911c9861b58eca070d0c05b03b59936c`.
+- F2b/F2c/F2h: código integrado; o status global continua `review`, com as reservas das fases anteriores preservadas. Áudio `ev-audio-codex-3`: gate completo, 31564,454 quadros PCM/s, pico zero seguido de pico positivo. Archives `ev-archives-codex-5`: gate completo, n=3, stride=32. Ambos os JSONs foram lidos pelo subagente de coordenação, sem falhas.
+- A/B t3: `logs/host-slim-f2b/ab-t3.json`, tela/Link sem máscara 2,2960%/3,8239%; com máscara 1,9828%/4,3956%. Inspeção visual sem regressão evidente, informada pelo maestro; igualdade de pixels não demonstrada.
+- F2d: build completo, CTest10/10 e compilação C do movement-probe aprovados, conforme maestro; commit `3cad7d65b7`, jogo pendente. Ownership e arquivos da F2d seguem os já declarados; não há encerramento da fase por este apêndice.
+- Autoria/concorrência: maestro Codex aplica e valida; subagente de coordenação prepara este rascunho somente em logs. `docs/agents/Plans.md` permanece ledger compartilhado com `CLAIMS-CLEANUP-001` e `OOT-COREMODS-PLAN-001`: apêndices serializados pelo maestro, reler a versão viva antes da escrita e preservar atualizações alheias; nenhuma claim alheia é fechada ou tem ownership transferido.
+- Reservas: F2d em jogo; A/B bit a bit; DMR/controle físico e escuta pelo dispositivo; NEI voz/borda até F5, veto TRANSFORM/Z-target/aterrissagem; tarefas F4 dos archives; F2e/F2f/F2g/F2i host, tarefa33 e F3–F6 ainda abertas conforme seus registros. Sem release/tag/RC público ou escrita em `RELEASE-UNIFICADA`.
