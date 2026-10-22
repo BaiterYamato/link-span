@@ -134,6 +134,20 @@
   - soh/soh/native/OotNativePlayerBody.cpp
   - soh/soh/ShipLuaBootstrap.cpp
   - soh/native-sdk/tests/body-probe/**
+  - soh/soh/native/oot_colliders.h
+  - soh/soh/native/OotNativePlayerQuads.h
+  - soh/soh/native/OotNativePlayerQuads.cpp
+  - soh/soh/native/OotNativeWorld.h
+  - soh/soh/native/OotNativeWorld.cpp
+  - soh/soh/native/OotNativeWorldGame.cpp
+  - soh/src/code/z_player_lib.c
+  - soh/soh/native/OotNativeQuadLists.h
+  - soh/native-sdk/tests/quad-probe/**
+  - libultraship/include/ship/resource/archive/ArchiveManager.h
+  - libultraship/src/ship/resource/archive/ArchiveManager.cpp
+  - libultraship/tests/archive_manager_lifetime_tests.cpp
+  - libultraship/tests/CMakeLists.txt
+  - libultraship
 - Goal (coordenação): registrar ownership, estado observável e evidências da F2b/F2c/F2h; iniciar a próxima fatia somente com claim e ledger prévios; preservar seções anteriores, suas versões e ressalvas.
 - Autorização vigente: push das branches `agent/HOST-SLIM-001-*`, abertura de PR e merge somente com todos os checks e workflows de CI verdes; sem release, tag, RC público ou acesso de escrita a `RELEASE-UNIFICADA`.
 - F2a: Shipwright#8 mergeado pelo maestro em `bf3ab5f931a4d5131a5fe929cddee7e2e25a907a`, após 11/11 checks e todos os workflows com success, conforme evidência coletada pelo maestro. Este registro atualiza o estado histórico `review` da F2a.
@@ -188,3 +202,19 @@
 - Maestro confirmou antes do merge Shipwright#12: head `3cad7d65b7c37ce9d43091c296afa2b34274deb6`, 11/11 checks e 5/5 workflows atuais (push incluído) com success. Merge realizado em `61e4bc0df94f38cbd1e18c38420502f3a8ba9f60`, sem squash/rebase ou remoção de branch. Entraram movement V3, camera V2, leases por dono/cena e proteção dos callbacks de movimento. Provas e reservas dos apêndices anteriores permanecem vinculadas ao commit F2d.
 - F2e fonte em `d0b7b9ceb52521baecf389ccf353cb600d739647`, branch `agent/HOST-SLIM-001-f2e-body`: skeletons V2 e player-body V1, 18 arquivos incluindo body-probe. Patch de segurança direta SkeletonsV2 aplicado após revisão independente sem bloqueantes. Regressão testes-only reproduziu RED (CTest exit8); guardas passaram GREEN engine1/1. Build anterior10/10 não substitui o rebuild final em curso; identidade, CTest final e prova adulta/transição/A-B ainda pendentes.
 - F2 global permanece review. Preservar controle físico, igualdade de pixels, unload físico de DLL e tarefa33/F3-F6; ledger e claims alheias intactos. MAESTRO seção1 vigente, sem release/tag/RC público ou escrita em RELEASE-UNIFICADA.
+
+
+## F2f - abertura e decisão técnica em 22/10/2026
+
+- Status (fase F2f): claimed; fonte ainda não editada. Maestro conserva escrita exclusiva do checkout. Branch prevista `agent/HOST-SLIM-001-f2f-quads`, a partir da F2e `d0b7b9ceb52521baecf389ccf353cb600d739647` após a prova em curso. Arquivos do aplicador, helper interno OotNativeQuadLists.h e quad-probe declarados no Files atual; core limitado a claim/handoff/ledger.
+- Goal: colliders V2 e quads reais do Player, tarefas25-26. Aplicador adaptado somente para EOL, dry-run obrigatório no checkout real. Correção isolada dos P2 em patch85dd9f34 revisada sem bloqueantes, ainda não aplicada/compilada no host.
+- Decisão do maestro: capacidade insuficiente retorna LIMIT; acquire/submit em SAC retorna UNSUPPORTED antes de mutação; rejeição inesperada SetAT/AC retorna FAILURE com rollback. Resubmit falho preserva inscrição/pending anterior, cleanup SAC conserva índices/count e remove só referências do quad. São falhas da operação já existente; nenhuma API pública adicional. Layout/SDK/probe devem ser regenerados por alteração de headers internos.
+- Provas de listas reais, SAC, guard da espada, arbusto/Baba, unload durante golpe, vanilla e CI seguem pendentes. Checker fortalecido pelo maestro: 25 cenários sintéticos, hash CRLF898db743, conteúdo LF12670620; isso não é jogo.
+
+
+## Atualização - 22/10/2026 - F2e review e F2f em build
+
+- F2e review: fonte d0b7b9ceb5, PR Shipwright#13 draft, 11/11 checks e5/5 workflows do head success na conferência desta retomada. Build final/symbols/CTest10/10 e probe C aprovados; identidade e duas sessões V2 em logs/host-slim-f2e. Normal2 e transition2 com gate completo/failures vazias, modelo restaurado no detach e corpo ativo após cena. Sem promover instrumento visível/raiz vertical, controle físico ou unload físico de DLL a concluídos. Avaliação independente classifica equipamento ausente como lacuna do probe genérico, sem violação concreta do contrato do host; critério literal do plano permanece aberto.
+- F2f claimed: fonte2056056277d93434062f12d55114bb8e99626f45, branch agent/HOST-SLIM-001-f2f-quads sobre E. Aplicação real34edições/13arquivos, probe e correções P2; patch adaptado somente EOL/contexto77a01410 mantém linhas adicionadas/removidas da proposta85dd9f34. EngineTests Release1/1 passou; build/symbols/CTest finais em curso. Jogo, listas/guard reais, alvos, SAC e CI ainda pendentes.
+- Pré-requisito F2g/LUS claimed antes de qualquer edição de checkout: maestro é escritor exclusivo dos dois arquivos ArchiveManager, novo teste e CMake declarados no Files atual; subagentes apenas produzem/revisam cópias de logs. Branch futura agent/HOST-SLIM-001-f2g-lus-vfs, em worktree isolada do fork BaiterYamato/libultraship, base agent/OOT-UPSTREAM-001-linkspan-extensions @d8d5d9a4576b81eae75e161f0ccd09c46fe17eb4. NÃO usar port-maintenance ancestral, nem alterar checkout LUS vivo durante build/jogo.
+- Justificativa do pré-requisito: Retire do wrapper não cobre corrida nos mapas/fechamento de backends em ArchiveManager assíncrono. Proposta v4 isolada3f0616f8 tem unit TU real RED/GREEN, mas ainda exige revisão independente, testes no LUS real/CI e gates de backend. Nenhuma API C nova. Mudança comportamental SetArchives/reindex e retenção de nomes devem ficar explícitas no PR. Bump do gitlink host somente na fase F2g após PR LUS com todo CI verde. Autorização MAESTRO seção1 e reservas globais preservadas.
