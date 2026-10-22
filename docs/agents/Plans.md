@@ -1672,3 +1672,24 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
 - **F2d:** build completo + CTest10/10 + compilação C do movement-probe aprovados conforme maestro; commit `3cad7d65b7`; jogo pendente; gate de transição corrigido e validado em 18 casos sintéticos. Não encerra F2 nem tarefa33.
 - **Autoria/ownership:** maestro aplica/valida; subagente de coordenação prepara rascunhos em logs. Ledger append-only compartilhado com CLAIMS-CLEANUP-001 e OOT-COREMODS-PLAN-001; serializar apêndices, reler antes de salvar, preservar registros e não fechar claims alheias.
 - **Reservas/próximos marcos:** F2d em jogo; fases seguintes e tarefa33; A/B bit a bit, prova física DMR/controle/áudio, NEI até F5, limites dos hooks e migração dos archives na F4 permanecem. Sem release/tag/RC público nem escrita em RELEASE-UNIFICADA. Refs: claim/handoff HOST-SLIM-001 e `logs/host-slim-maestro/codex/codex-f2-maestro-battery/REVISAO-PROBE-F2D.md`.
+
+### UPDATE 2026-10-21 (Codex maestro) — HOST-SLIM-001 F2e aberta
+
+- F2d3cad7d65b7: build/CTest10/10, identidadePE2/2 e harnessnormal/transição verdes, com capturas revistas; A/B semmods em execução, PR pendente. Não é prova de controle físico nem da tarefa33.
+- Antes de editar: F2e claimed, branchhost `agent/HOST-SLIM-001-f2e-body` derivada da F2d;14arquivos do aplicador e body-probe incluídos no claim. Escopo skeletonsV2/player-bodyV1 e guards de callback/lifetime, sem API nova fora RFC0029. Maestro aplica/valida; subagentes preparam/revisam em logs isolados.
+- Dry-run real47/14 passou. Próximo: aplicação,3patches revisados,clang14,build/CTest,prova adulta+transição e PR. Ledger compartilhado permanece append-only, sem alterar claims alheias.
+
+### UPDATE 2026-10-21 (Codex maestro) — HOST-SLIM-001 F2d em review; F2e claimed
+
+- **Status/fonte:** in_progress global; F2d review em `3cad7d65b7`. [Shipwright#12](https://github.com/BaiterYamato/Shipwright/pull/12) aberto nesse head, CI pendente conforme maestro. Nenhum merge/encerramento promovido por este update.
+- **Artefato/harness:** identidade em `logs/host-slim-f2d/identity-3cad7d65b7.json`, layout4682a966, exe73b76feb…; build completo/CTest10/10 informados pelo maestro. Gates `ev-normal-1`, `ev-transition-1`, `ev-vanilla-1` lidos pelo subagente: ok/gateComplete, sem falhas, input/sessão válidos, saída0. SUPPRESS60→PASS→release120 no normal; SUPPRESS139, epoch2→3 e leases antigos inválidos na transição.
+- **Visual/limites:** maestro revisou normal/transição e melhor par sem máscara sem regressão evidente. A/B `ab-rc10-f2d-1.json`, diferenças jogo/Link sem máscara1,1805%/1,4839%, com máscara1,4623%/4,0011%; igualdadepixel não provada. Preservar controle físico, prova de quiescência/unload DLL e ressalva de que leases vivos foram amostrados antes do pedido de viagem, não imediatamente antes de destroy.
+- **F2e:** claimed, fonte aplicada com três patches/body-probe, clang14 estável, build completo/CTest10/10 verdes conforme maestro. P2 da rota direta SkeletonsV2 em `logs/host-slim-maestro/codex/codex-f2-maestro-compose/REVISAO-F2E.md`: correção + regressão/reteste e jogo pendentes. Não reutilizar a identidade F2d como prova do artefato F2e.
+- **Autoria/ownership:** maestro implementa, aplica e integra; coordenação prepara rascunhos só em logs. Ledger compartilhado com CLAIMS-CLEANUP-001 e OOT-COREMODS-PLAN-001: reler, preservar prefixos/CRLF e apêndices alheios, sem encerrar suas claims. Ressalvas anteriores/tarefa33/F3–F6 e MAESTRO§1 mantidos; sem release/tag/RC público ou RELEASE-UNIFICADA.
+
+
+### UPDATE 2026-10-22 (Codex maestro) - HOST-SLIM-001 F2d integrada
+
+- Maestro confirmou antes do merge Shipwright#12: head `3cad7d65b7c37ce9d43091c296afa2b34274deb6`, 11/11 checks e 5/5 workflows atuais (push incluído) com success. Merge realizado em `61e4bc0df94f38cbd1e18c38420502f3a8ba9f60`, sem squash/rebase ou remoção de branch. Entraram movement V3, camera V2, leases por dono/cena e proteção dos callbacks de movimento. Provas e reservas dos apêndices anteriores permanecem vinculadas ao commit F2d.
+- F2e fonte em `d0b7b9ceb52521baecf389ccf353cb600d739647`, branch `agent/HOST-SLIM-001-f2e-body`: skeletons V2 e player-body V1, 18 arquivos incluindo body-probe. Patch de segurança direta SkeletonsV2 aplicado após revisão independente sem bloqueantes. Regressão testes-only reproduziu RED (CTest exit8); guardas passaram GREEN engine1/1. Build anterior10/10 não substitui o rebuild final em curso; identidade, CTest final e prova adulta/transição/A-B ainda pendentes.
+- F2 global permanece review. Preservar controle físico, igualdade de pixels, unload físico de DLL e tarefa33/F3-F6; ledger e claims alheias intactos. MAESTRO seção1 vigente, sem release/tag/RC público ou escrita em RELEASE-UNIFICADA.

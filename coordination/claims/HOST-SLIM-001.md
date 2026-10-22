@@ -125,6 +125,15 @@
   - soh/src/code/z_camera.c
   - soh/soh/OTRGlobals.cpp
   - soh/native-sdk/tests/movement-probe/**
+  - soh/soh/native/oot_skeletons.h
+  - soh/soh/native/OotNativeSkeletons.h
+  - soh/soh/native/OotNativeSkeletons.cpp
+  - soh/soh/native/OotNativeSkeletonsGame.cpp
+  - soh/soh/native/oot_player_body.h
+  - soh/soh/native/OotNativePlayerBody.h
+  - soh/soh/native/OotNativePlayerBody.cpp
+  - soh/soh/ShipLuaBootstrap.cpp
+  - soh/native-sdk/tests/body-probe/**
 - Goal (coordenação): registrar ownership, estado observável e evidências da F2b/F2c/F2h; iniciar a próxima fatia somente com claim e ledger prévios; preservar seções anteriores, suas versões e ressalvas.
 - Autorização vigente: push das branches `agent/HOST-SLIM-001-*`, abertura de PR e merge somente com todos os checks e workflows de CI verdes; sem release, tag, RC público ou acesso de escrita a `RELEASE-UNIFICADA`.
 - F2a: Shipwright#8 mergeado pelo maestro em `bf3ab5f931a4d5131a5fe929cddee7e2e25a907a`, após 11/11 checks e todos os workflows com success, conforme evidência coletada pelo maestro. Este registro atualiza o estado histórico `review` da F2a.
@@ -151,3 +160,31 @@
 - F2d: build completo, CTest10/10 e compilação C do movement-probe aprovados, conforme maestro; commit `3cad7d65b7`, jogo pendente. Ownership e arquivos da F2d seguem os já declarados; não há encerramento da fase por este apêndice.
 - Autoria/concorrência: maestro Codex aplica e valida; subagente de coordenação prepara este rascunho somente em logs. `docs/agents/Plans.md` permanece ledger compartilhado com `CLAIMS-CLEANUP-001` e `OOT-COREMODS-PLAN-001`: apêndices serializados pelo maestro, reler a versão viva antes da escrita e preservar atualizações alheias; nenhuma claim alheia é fechada ou tem ownership transferido.
 - Reservas: F2d em jogo; A/B bit a bit; DMR/controle físico e escuta pelo dispositivo; NEI voz/borda até F5, veto TRANSFORM/Z-target/aterrissagem; tarefas F4 dos archives; F2e/F2f/F2g/F2i host, tarefa33 e F3–F6 ainda abertas conforme seus registros. Sem release/tag/RC público ou escrita em `RELEASE-UNIFICADA`.
+
+## F2e — abertura em 21/10/2026
+
+- Status (fase F2e): claimed.
+- Agent (fase F2e): Codex maestro, escritor exclusivo do checkout; subagentes somente em pastas individuais de logs.
+- Branch (fase F2e, host): `agent/HOST-SLIM-001-f2e-body`, a partir de `3cad7d65b7` (F2d).
+- Branch (coordenação core): `agent/HOST-SLIM-001-f2d-handoff`.
+- Files (fase F2e): os 14 caminhos do aplicador e body-probe declarados no Files atual acima.
+- Goal (fase F2e): skeletons V2 e player-body V1, tarefas22–24; acrescentar proteção de exceções e vida do ator auxiliar dentro desses contratos, conforme revisão independente. Dry-run real passou47edições/14arquivos; aplicação/build/CTest/jogo ainda pendentes nesta abertura.
+- F2d: commit3cad7d65b7, layout4682a966; build completo/CTest10/10, identidadePE2/2 e duas sessões de harness verdes. Normal60SUPPRESS, PASS, release120 e roll4096 com revisão visual; transição139SUPPRESS, epoch2→3, leases invalidados e revisão visual. A/B semmods em execução, PR ainda pendente; não encerrar F2global por este registro.
+- Reservas: controle físico, igualdadepixel e tarefa33; autorizações/exclusões MAESTRO§1 preservadas.
+
+## Atualização — 21/10/2026 — F2d em review; F2e claimed
+
+- Autoria: maestro Codex aplica/valida; subagente de coordenação prepara este apêndice em logs. Status (fase F2d): review; ownership e arquivos já declarados mantidos. Status global: review.
+- Fonte F2d: `3cad7d65b7c37ce9d43091c296afa2b34274deb6`. [Shipwright#12](https://github.com/BaiterYamato/Shipwright/pull/12) aberto no head `3cad7d65b7`, CI pendente conforme maestro; nenhum merge registrado.
+- Artefato F2d: `logs/host-slim-f2d/identity-3cad7d65b7.json`, layout `4682a966`, core registrado/materializado iguais e dirty=false naquele snapshot. Build completo/CTest10/10 já informados pelo maestro. Não atribuir essa identidade ao host atual em F2e.
+- Harness F2d: `ev-normal-1`, `ev-transition-1` e `ev-vanilla-1` sob `logs/host-slim-f2d/`, gate-result ok/gateComplete=true, falhas vazias, sessões válidas/inputOk e saída0. Normal: SUPPRESS60, PASS1, execução60 e release no tick120; transição: SUPPRESS139, epoch2→3, leases antigos inválidos, releases OK.
+- Visual: maestro revisou normal/transição e melhor par A/B sem máscara sem regressão evidente. `ab-rc10-f2d-1.json`: diferenças jogo/Link sem máscara 1,1805%/1,4839%; com máscara 1,4623%/4,0011%. Não prova igualdade pixel a pixel, controle físico ou quiescência/unload da DLL. A amostra dos dois leases vivos antecede o pedido de viagem; não prova ambos vivos imediatamente antes de destroy.
+- F2e permanece claimed: fonte aplicada com três patches do corpo e body-probe, clang14 estável, build completo/CTest10/10 verdes conforme maestro. P2 da chamada direta SkeletonsV2 (`compose/REVISAO-F2E.md`) aguarda correção/regressão; reteste pertinente e jogo F2e pendentes. Não declarar a fase concluída.
+- Ledger compartilhado: reler a versão viva e anexar preservando prefixos/CRLF e updates de CLAIMS-CLEANUP-001/ OOT-COREMODS-PLAN-001, sem fechar claims alheias. Mantidas reservas anteriores, tarefa33/F3–F6 e MAESTRO§1; sem release/tag/RC público ou RELEASE-UNIFICADA.
+
+
+## Atualização - 22/10/2026 - F2d integrada; F2e em validação
+
+- Maestro confirmou antes do merge Shipwright#12: head `3cad7d65b7c37ce9d43091c296afa2b34274deb6`, 11/11 checks e 5/5 workflows atuais (push incluído) com success. Merge realizado em `61e4bc0df94f38cbd1e18c38420502f3a8ba9f60`, sem squash/rebase ou remoção de branch. Entraram movement V3, camera V2, leases por dono/cena e proteção dos callbacks de movimento. Provas e reservas dos apêndices anteriores permanecem vinculadas ao commit F2d.
+- F2e fonte em `d0b7b9ceb52521baecf389ccf353cb600d739647`, branch `agent/HOST-SLIM-001-f2e-body`: skeletons V2 e player-body V1, 18 arquivos incluindo body-probe. Patch de segurança direta SkeletonsV2 aplicado após revisão independente sem bloqueantes. Regressão testes-only reproduziu RED (CTest exit8); guardas passaram GREEN engine1/1. Build anterior10/10 não substitui o rebuild final em curso; identidade, CTest final e prova adulta/transição/A-B ainda pendentes.
+- F2 global permanece review. Preservar controle físico, igualdade de pixels, unload físico de DLL e tarefa33/F3-F6; ledger e claims alheias intactos. MAESTRO seção1 vigente, sem release/tag/RC público ou escrita em RELEASE-UNIFICADA.
