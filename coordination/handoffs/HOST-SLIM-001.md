@@ -454,3 +454,48 @@ Autoria: maestro Codex na execução e inspeção visual; subagente de coordena�
 - F2g: [Shipwright#15](https://github.com/BaiterYamato/Shipwright/pull/15) (head `6093d90da8`), com a base trocada para a integração. CI 11/11 verde. Falta a prova em jogo da tarefa 29 e o A/B vanilla; o Claude executa em seguida.
 - F2i (tarefas 31 e 32) e tarefa 33: um subagente Codex prepara o aplicador da F2i, outro o roteiro da tarefa 33 e um terceiro o ledger de fechamento da F2, todos em `logs/host-slim-maestro/codex/claude-*`. Ainda sem código no host.
 - Continuam valendo as exclusões: sem release, tag ou RC público, sem tocar em RELEASE-UNIFICADA, sem ação destrutiva. A F2 global segue em review.
+
+## Atualização - 23/10/2026 - F2g, F2i e helper dos transforms integrados
+
+- F2g: [Shipwright#15](https://github.com/BaiterYamato/Shipwright/pull/15) mergeado em `098da57821246b21ee8215621b41ec7c39f82bd8` (head `bbda3be1cc`). CI 11/11 checks e 5/5 workflows verdes, push incluído.
+  - A prova em jogo da tarefa 29 achou duas falhas, as duas corrigidas no próprio PR:
+    - `448ef1bc05`: export do probe sem `extern "C"`;
+    - `bbda3be1cc`: o mod menu do SoH montava na raiz os `.o2r` de pasta com manifesto. Agora a pasta com `manifest.toml` é do modloader, como já era em `.shipmod`.
+  - Sessão `logs/host-slim-f2g/ev-resources-claude-3`. Resultados:
+    - res-probe 8/8;
+    - 3 arquivos montados, com 1 alias aceito e 1 recusado;
+    - gameplay e caminhada com a animação vanilla;
+    - desmontagem antes do unload, exit 0.
+  - A/B sem mods contra o RC10: 1,18–1,29% da tela, no patamar do controle RC10 × RC10 (1,25%).
+  - Exe `216a041b…`, layout `214e468c…`.
+  - Impacto do `bbda3be1cc`, analisado por subagente Codex em `logs/host-slim-maestro/codex/claude-modmenu-impacto/IMPACTO.md`: uma pasta com manifesto deixa de ganhar override global pelo SoH.
+  - Limites:
+    - stderr do probe vazio (`res-probe shutdown` sem prova);
+    - unload físico da DLL, sobreposição concorrente e controle físico não provados.
+- F2i (tarefas 31 e 32): [Shipwright#16](https://github.com/BaiterYamato/Shipwright/pull/16) mergeado em `d56d2f5081ca28acb46eaac8cd5dc249d77cbded` (head `62f67de3ad`). CI 11/11 e 5/5 verdes.
+  - Commits:
+    - `d651011d3b`: ponto `oot.actor.damage`, ponte no `CollisionCheck_ApplyDamage` e evento Lua, gerados por subagente Codex;
+    - `424e77a370`: ABI do bundle do SDK lida dos defines;
+    - `62f67de3ad`: P2 da revisão do Codex. Callback Lua que falha não troca mais o dano.
+  - Layout `e8f10de8…`, exe `D489B192…`.
+  - Prova em jogo pela Big Deku Baba (HP 4). Usei estilingue com Z, porque a espada não alcança a cabeça fora da mordida. As sessões ficam em `logs/host-slim-maestro/codex/claude-f2i-combate/ev-*`:
+    - vanilla: morte no 4º tiro;
+    - green (probe nativo): mordidas `8 → 0` com os corações intactos, golpes do Player `1 → 2`, morte no 2º tiro;
+    - lua: inteiro nos tiros e decimal nas mordidas (`8 → 4`);
+    - chain: nativo antes do Lua (`base 1`, Lua vê 2 e devolve 3);
+    - P2 (damage-fail): dano intacto, com a falha no log;
+    - queda pela borda do 2F da Deku Tree: −8 sem evento do hook. A green-3 aprova o gate inteiro.
+  - A/B vanilla F2g × F2i: 1,3–1,6% antes do combate e 0,16–0,27% com a cena parada. Igualdade por tick não é demonstrável.
+  - A receita da queda e da Baba está em `seq-*.json` e no lançador `logs/host-slim-f2i/run-f2i.ps1`.
+- Helper dos transforms: [Shipwright#17](https://github.com/BaiterYamato/Shipwright/pull/17) mergeado em `304a0c560480c37fd703236df3b3980a4a49c417` (head `a14e871257`). CI 11/11 e 5/5 verdes.
+  - `DispatchHookTransform` registra cada falha de callback e descarta o resultado nos seis hooks de transform restantes. A auditoria e o patch foram feitos por subagente Codex, e a revisão do Codex não teve achados.
+  - Exe `03B83A2D…`, layout sem mudança.
+  - Prova RED/GREEN com o mod `fall-fail` em `hook.oot.player.fall_damage`:
+    - **RED (exe F2i):** o `false` parcial cancelou o dano de queda, sem log;
+    - **GREEN:** o dano vale (−8) e o erro aparece no log.
+  - `damage-fail` no exe novo: falhas registradas pelo helper e dano intacto.
+- Driver da tarefa 33 com as rotas de dano e A/B vanilla, pelas receitas qualificadas: `logs/host-slim-maestro/codex/claude-t33-dano/` (Codex; ParseFile e DryRun ok).
+- Próximo: tarefa 33 na integração `304a0c5604`.
+  - D9 e D16 (controle e escuta físicos) e D12 (critério A/B) dependem do mantenedor.
+  - A D18 se resolve dentro da 33. Ver `logs/host-slim-maestro/codex/claude-f2-fechamento/FECHAMENTO-F2.md`.
+- Continuam valendo as exclusões: sem release, tag ou RC público, sem tocar em RELEASE-UNIFICADA, sem ação destrutiva. A F2 global segue em review.
