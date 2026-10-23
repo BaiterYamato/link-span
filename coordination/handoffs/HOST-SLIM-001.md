@@ -438,3 +438,19 @@ Autoria: maestro Codex na execução e inspeção visual; subagente de coordena�
 - F2e segue parcial: par XZ/OFF anterior recusado por condições iniciais diferentes (8.999u e yaw), mesmo com Y0 em3golpes por modo. Novo protocolo normaliza apenas a fixture antes da baseline, preservando tolerâncias. Ocarina: metadados/XML privados reais carregados; primeiro erro root_disable veio de chamada foraTick na fixture, corretamente recusada pelo host. Correção isolada V3 em preparação, sem mudar fonte E. Não promover os gates antigos falsos.
 - Autorizado iniciar implementação F2g empilhada sobre F2f enquanto essas provas E usam exe/SDK autocontidos congelados. Branch host agent/HOST-SLIM-001-f2g-resources, maestro escritor exclusivo. Dry-run atual validou28edições/8arquivos, aplicadorc2a9cf6a/plano098c9741, revisão independente sem P1/P2. Prova TU real de dreno local105checks/CTest1/1 e RED por mutação explícita semwaitRetire; não comprova cache global ou unloadDLL. Exigir build/SDKfinal, CTest, probe real, cleanup/owners e prova DLL antes de fechar G. Merge só depois das dependências e todo CI verde.
 - Não há encerramento da F2 nem autorização de release/tag/RC público. Exclusões do MAESTRO preservadas, incluindo a pasta do usuário, segredos, ROM/saves/dumps e ações destrutivas.
+
+## Atualização - 23/10/2026 - F2e e F2f integradas; condução volta ao Claude
+
+- Condução: o maestro Codex parou por volta de 06:16 de 23/10 (cota). As notas finais dele estão em `logs/host-slim-maestro/nota-20261023-0516.md`, `logs/host-slim-maestro/nota-20261023-0532.md` e `logs/host-slim-maestro/nota-20261023-0535.md`. Por pedido do usuário, o Claude retomou a condução às 12:20, com subagentes Codex e próprios.
+- F2e: [Shipwright#13](https://github.com/BaiterYamato/Shipwright/pull/13) mergeado em `c51d5cae0b2e436b167be4d2e741ba9e9ed106ba` (head `d0b7b9ceb5`). Antes do merge: 11/11 checks e 5/5 workflows verdes, push incluído.
+  - O Claude conferiu os 6 critérios do passo 4 da tarefa 24 do plano contra a evidência do maestro:
+    - `ev-normal-2`: corpo, caminhada, ocarina com 60 ticks e 60 avanços, `lua_rejected=1`, unload no log;
+    - `ev-transition-2`: epoch 2→3, geração 1→2, readquisição;
+    - A/B `ab-rc10-f2e-1.json`.
+  - Golpe medido por `logs/host-slim-f2e/analise-golpes-claude.py` em `ev-motion-xz-route2-1` e `ev-motion-off-route2-1`. No modo XZ: 6,11 u no plano por golpe, Y constante (variação 0,000), sempre no chão, volta ao Idle. No modo OFF: 0 u.
+  - O par XZ×OFF do checker do maestro falhava por pontos de partida diferentes (8,999 u e yaw), o que não é critério do plano.
+  - Ficam para a F3: instrumento da ocarina visível na mão do corpo substituto (o desenho é do Player), controle físico e unload físico da DLL.
+- F2f: [Shipwright#14](https://github.com/BaiterYamato/Shipwright/pull/14) mergeado em `6558ca9419b06bad4919018a1e86cfd5fcdf8b2d` (head `2056056277`), depois de trocar a base para a integração. CI 11/11 e 5/5 verdes no head. As provas da F2f são as registradas pelo maestro na atualização anterior.
+- F2g: [Shipwright#15](https://github.com/BaiterYamato/Shipwright/pull/15) (head `6093d90da8`), com a base trocada para a integração. CI 11/11 verde. Falta a prova em jogo da tarefa 29 e o A/B vanilla; o Claude executa em seguida.
+- F2i (tarefas 31 e 32) e tarefa 33: um subagente Codex prepara o aplicador da F2i, outro o roteiro da tarefa 33 e um terceiro o ledger de fechamento da F2, todos em `logs/host-slim-maestro/codex/claude-*`. Ainda sem código no host.
+- Continuam valendo as exclusões: sem release, tag ou RC público, sem tocar em RELEASE-UNIFICADA, sem ação destrutiva. A F2 global segue em review.
