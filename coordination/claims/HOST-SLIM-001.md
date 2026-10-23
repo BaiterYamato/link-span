@@ -243,3 +243,27 @@
 - F2f PR14 em2056056: todos11checks e5workflows verdes após reruns Apple. Continua draft pelas provas restantes. Bridge real ev-bridge-1 executou21casos/196snapshots íntegros, encerramento normal; gate original falso por classificar startup/ack como status. Revalidação separada checkerV2 d8af93a1 passou com controles exatos e nove testes incluindo94regressões originais. Original gate e log preservados. Não prova falha AC após AT aceito nem snapshot pendente após falha. Capturas antes/depois revistas sem corrupção evidente; combate é comprovado separadamente pelo arbusto/Baba.
 - TransitionV2 fonte08c261a5 compilou contra SDK F exato; empacotamento inicial recusou por buscar host_layout_id na raiz, embora schema e manifesto corretos usem provider.host_layout_id. Correção isolada do packager em preparação, sem mudar fonte/DLL/schema. Nova transição e reentrada ainda pendentes. Controle vanilla espada/escudo após release requer prova própria.
 - F2e qualificação1 terminou normal, mas foi recusada por roll/porta/bloqueio: capturas mostram caminhada em direção à ponte. Evidência mantida falsa. Nova qualificação2 candidata no sentido oposto em execução, ainda sem aprovação de terreno/raiz. PR13 segue draft por instrumento literal e raiz vertical. Sem release/tag/RC público, sem acesso à pasta excluída, sem alteração dos critérios de aprovação.
+
+## Atualização - 23/10/2026 - F2f validada e início do host F2g
+
+- F2f2056056277d93434062f12d55114bb8e99626f45 concluiu provas próprias. Transição/reentrada V2: dois ciclos10submits/10reads, lease antigo stale antes de destroy, epochs2→3 e3→4, nova aquisição, release e errors0; capturas de destino revistas. Espada B real após release no mesmo PID10204 cortou EnKusa serial1/epoch3/tick944 (Player/owner0/vanilla executed1), removido947; gate e capturas aprovados. PR14 ready, CI11/11checks+5/5workflows verdes, ainda sem merge porque depende de E/PR13.
+- LUS PR1 integrado em314cf9669cebf09761eba8925cfff5a368042563 após17/17checks e5/5workflows verdes no head78e909c2. Árvores funcional/testes e formatação revisadas; host até esta declaração permanece limpoF2056/libultrashipd8d. F2g usará pin explícito314cf966, nunca update--remote/port-maintenance.
+- F2e segue parcial: par XZ/OFF anterior recusado por condições iniciais diferentes (8.999u e yaw), mesmo com Y0 em3golpes por modo. Novo protocolo normaliza apenas a fixture antes da baseline, preservando tolerâncias. Ocarina: metadados/XML privados reais carregados; primeiro erro root_disable veio de chamada foraTick na fixture, corretamente recusada pelo host. Correção isolada V3 em preparação, sem mudar fonte E. Não promover os gates antigos falsos.
+- Autorizado iniciar implementação F2g empilhada sobre F2f enquanto essas provas E usam exe/SDK autocontidos congelados. Branch host agent/HOST-SLIM-001-f2g-resources, maestro escritor exclusivo. Dry-run atual validou28edições/8arquivos, aplicadorc2a9cf6a/plano098c9741, revisão independente sem P1/P2. Prova TU real de dreno local105checks/CTest1/1 e RED por mutação explícita semwaitRetire; não comprova cache global ou unloadDLL. Exigir build/SDKfinal, CTest, probe real, cleanup/owners e prova DLL antes de fechar G. Merge só depois das dependências e todo CI verde.
+- Não há encerramento da F2 nem autorização de release/tag/RC público. Exclusões do MAESTRO preservadas, incluindo a pasta do usuário, segredos, ROM/saves/dumps e ações destrutivas.
+
+- Status (fase F2g host): claimed.
+- Branch (fase F2g host): agent/HOST-SLIM-001-f2g-resources, sobre F2f2056056; core docs em agent/HOST-SLIM-001-f2g-host-handoff.
+- Files (fase F2g host, antes de editar):
+  - soh/soh/native/oot_resources.h
+  - soh/soh/native/OotNativeEngine.h
+  - soh/soh/native/OotNativeEngine.cpp
+  - soh/soh/native/OotPrefixedArchive.h
+  - soh/soh/native/OotPrefixedArchive.cpp
+  - soh/soh/ShipLuaBootstrap.cpp
+  - soh/native-sdk/tests/EngineTests.cpp
+  - soh/native-sdk/tests/res-probe/**
+  - libultraship
+  - coordination/claims/HOST-SLIM-001.md
+  - coordination/handoffs/HOST-SLIM-001.md
+  - docs/agents/Plans.md
