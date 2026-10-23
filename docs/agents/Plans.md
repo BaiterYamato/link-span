@@ -1729,3 +1729,16 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
 - F2e segue parcial: par XZ/OFF anterior recusado por condições iniciais diferentes (8.999u e yaw), mesmo com Y0 em3golpes por modo. Novo protocolo normaliza apenas a fixture antes da baseline, preservando tolerâncias. Ocarina: metadados/XML privados reais carregados; primeiro erro root_disable veio de chamada foraTick na fixture, corretamente recusada pelo host. Correção isolada V3 em preparação, sem mudar fonte E. Não promover os gates antigos falsos.
 - Autorizado iniciar implementação F2g empilhada sobre F2f enquanto essas provas E usam exe/SDK autocontidos congelados. Branch host agent/HOST-SLIM-001-f2g-resources, maestro escritor exclusivo. Dry-run atual validou28edições/8arquivos, aplicadorc2a9cf6a/plano098c9741, revisão independente sem P1/P2. Prova TU real de dreno local105checks/CTest1/1 e RED por mutação explícita semwaitRetire; não comprova cache global ou unloadDLL. Exigir build/SDKfinal, CTest, probe real, cleanup/owners e prova DLL antes de fechar G. Merge só depois das dependências e todo CI verde.
 - Não há encerramento da F2 nem autorização de release/tag/RC público. Exclusões do MAESTRO preservadas, incluindo a pasta do usuário, segredos, ROM/saves/dumps e ações destrutivas.
+
+### UPDATE 2026-10-23 (Claude) — HOST-SLIM-001 F2g, F2i e helper dos transforms integrados
+
+- **F2g:** Shipwright#15 mergeado em `098da57821` (head `bbda3be1cc`, CI 11/11 + 5/5). A tarefa 29 foi provada em jogo. A prova achou e corrigiu o export do probe e a montagem na raiz pelo mod menu.
+- **F2i:** Shipwright#16 mergeado em `d56d2f5081` (head `62f67de3ad`, CI 11/11 + 5/5). Tarefas 31 e 32. Prova em jogo pela Big Deku Baba (estilingue):
+  - vanilla A/B;
+  - green, com dano recebido 0 e golpe do Player ×2;
+  - lua, com resultado inteiro e decimal;
+  - chain, com o nativo antes do Lua;
+  - queda com dano sem evento do hook;
+  - P2: callback com falha não troca o dano.
+- **Helper dos transforms:** Shipwright#17 mergeado em `304a0c5604` (head `a14e871257`, CI 11/11 + 5/5). Falha de callback descarta o resultado nos seis hooks de transform restantes. Prova RED/GREEN em `hook.oot.player.fall_damage`.
+- **Pendente:** tarefa 33 na integração `304a0c5604`. D9/D16 (controle e escuta físicos) e D12 (critério A/B) com o mantenedor. Refs: `coordination/handoffs/HOST-SLIM-001.md`, `logs/host-slim-maestro/codex/claude-f2-fechamento/FECHAMENTO-F2.md`.
