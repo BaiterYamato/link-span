@@ -1742,3 +1742,18 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
   - P2: callback com falha não troca o dano.
 - **Helper dos transforms:** Shipwright#17 mergeado em `304a0c5604` (head `a14e871257`, CI 11/11 + 5/5). Falha de callback descarta o resultado nos seis hooks de transform restantes. Prova RED/GREEN em `hook.oot.player.fall_damage`.
 - **Pendente:** tarefa 33 na integração `304a0c5604`. D9/D16 (controle e escuta físicos) e D12 (critério A/B) com o mantenedor. Refs: `coordination/handoffs/HOST-SLIM-001.md`, `logs/host-slim-maestro/codex/claude-f2-fechamento/FECHAMENTO-F2.md`.
+
+### UPDATE 2026-10-23 noite (Claude) — HOST-SLIM-001 tarefa 33 na integração `304a0c5604`
+
+- Rodada `f2-t33-final`, com layout `e8f10de8` e exe `E24ABC6C…`.
+  - Build: host 72/72, core 61/61, mods e probes verdes.
+  - Package: a/b reprodutível, 8 pacotes.
+  - Bateria sem os 5 gates: fresh, sem mods, matriz 9/9 e fixtures 9/9.
+  - Gameplay: sdk-probe ok e damage-chain ok (5 sessões).
+  - resources: 8/8, mas o checker reprova pelo stderr do Shutdown, que o SoH upstream redireciona para `CONOUT$`.
+- **Pendente:**
+  - mic, four-probes, movement, body, quad e vanilla-ab, que dependem de operador ou revisão visual;
+  - os 5 gates, que exigem controle físico;
+  - D9, D16 e D12 com o mantenedor;
+  - novos: Shutdown do res-probe pelo log da API e fixture `damage-fail` no host.
+- Refs: `coordination/handoffs/HOST-SLIM-001.md`.

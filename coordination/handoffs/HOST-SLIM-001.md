@@ -499,3 +499,51 @@ Autoria: maestro Codex na execução e inspeção visual; subagente de coordena�
   - D9 e D16 (controle e escuta físicos) e D12 (critério A/B) dependem do mantenedor.
   - A D18 se resolve dentro da 33. Ver `logs/host-slim-maestro/codex/claude-f2-fechamento/FECHAMENTO-F2.md`.
 - Continuam valendo as exclusões: sem release, tag ou RC público, sem tocar em RELEASE-UNIFICADA, sem ação destrutiva. A F2 global segue em review.
+
+## Atualização - 23/10/2026 (noite) - tarefa 33 na integração `304a0c5604`
+
+Rodada `f2-t33-final`, com host `304a0c560480c37fd703236df3b3980a4a49c417`, core `a44965fa91` e exemplos `1a2aa9f86f`. Layout `e8f10de8…`, exe `E24ABC6C…`. A identidade está em `HOST-SLIM-001-host/build/oot-upstream-001/evidence/release-g/f2-t33-final/identity-t33.json`. Comando: `D:\lst33\f2-t33-final-run\t33-args.ps1`, roteiro `logs/host-slim-maestro/codex/claude-t33-roteiro/t33-run.ps1`.
+
+- **Build** (`t33-build-resume.log`):
+  - host: CTest 72/72, `gen-host-keep --check` e `check-public-symbols` ok;
+  - core: CTest 61/61 e os três geradores `--check` ok;
+  - mods: unbound-scene 7/7, NEI 6/6, unbound-native 7/7, DMR 3/3, Mic 3/3; o WW não declara testes;
+  - exemplos crash/shovel/unbound, M2 e os 9 probes compilados;
+  - SDK-Probe compilado só com o ZIP do SDK.
+- **Package** (`t33-package.log`): `rc-build-all` empacotou duas vezes, com 8 pacotes idênticos por hash nos lados a/b. Os 4 pacotes de gate também saíram. Identidade congelada.
+- **Bateria sem os 5 gates** (`-NoGate`; o gate-selector pede controle físico):
+  - fresh: PROVA OK, com 0 mods e 371 comandos de cena;
+  - sem mods: falhas=0, erros_no_log=0, save igual ao do RC10;
+  - matriz 9/9;
+  - fixtures 9/9. Boot e luzes passaram na repetição, depois das correções abaixo.
+  - Status: `D:\lst33\f2-t33-final\*.console.log.status`.
+- **Gameplay** (driver `claude-t33-dano`, `-Only`):
+  - sdk-probe: ok.
+  - resources: res-probe 8/8, 3 arquivos montados (1 alias aceito, 1 recusado), desmontagem antes do unload, exit 0. O checker reprova porque o stderr do Shutdown sai vazio. Causa: o `SDL_main` do SoH upstream (`soh/src/code/main.c:49-52`) faz `AllocConsole` e `freopen("CONOUT$")` e troca os pipes herdados. É a mesma limitação da F2g.
+  - damage-chain: ok nas 5 sessões. A 3ª rodada passou. Na 1ª, os 2 tiros do lua erraram (a receita não controla o tick). Na 2ª, o green caiu antes de o jogo gravar log, e a falha original ficou mascarada pelo `Read-GateLog` com caminho vazio.
+    - vanilla-b: ok;
+    - green: ok;
+    - lua: mordidas `8 → 4` (float) e tiros `1 → 2` (inteiro);
+    - chain: o nativo zera as mordidas e faz `1 → 2` nos tiros, e o Lua devolve 3;
+    - damage-fail: 3 falhas registradas pelo helper e dano intacto.
+  - Evidência: `logs/host-slim-maestro/codex/claude-t33-dano/ev-f2-t33-final-p1-sdk-res` e `ev-f2-t33-final-p2-dano`.
+- **Não rodado:** mic, four-probes, movement, body, quad e vanilla-ab, que dependem de operador ou revisão visual. Os 5 gates exigem controle físico. Ficam com o mantenedor, junto com D9, D16 e D12.
+- **Correções do roteiro e do driver** (só em `logs/`, sem mudança no host):
+  - `-Resume`;
+  - fontes do core em `_deps`;
+  - WW sem testes;
+  - `SDL2_DIR` do Mic;
+  - `-NoGate`;
+  - `ExitCode` do `Start-Process` no PS 5.1;
+  - BOM só em `.ps1`, porque a fixture M2 caiu com BOM no `main.lua`;
+  - fixtures UB018/UB019 copiadas para o host novo;
+  - SDK e SDK-Probe refeitos contra o exe final, porque o host religou na retomada;
+  - caminho real da skill (junction);
+  - raiz `D:\lst33` aceita nos harnesses F2g e F2i;
+  - perfil de input copiado para o workspace;
+  - `damage-fail` vindo de `logs/host-slim-f2i`.
+  - Revisão: Codex (patches do roteiro, driver, stderr). O gerador do relatório é `logs/host-slim-maestro/codex/claude-t33-relatorio/t33-relatorio.py`, feito pelo Codex.
+- **Pendências novas:**
+  - (a) o res-probe deve registrar o Shutdown pelo log da API em vez do stderr, e o checker deve ler esse log;
+  - (b) levar a fixture `damage-fail` para `soh/native-sdk/tests`.
+- Continuam valendo as exclusões: sem release, tag ou RC público, sem tocar em RELEASE-UNIFICADA, sem ação destrutiva.
