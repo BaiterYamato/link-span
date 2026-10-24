@@ -547,3 +547,24 @@ Rodada `f2-t33-final`, com host `304a0c560480c37fd703236df3b3980a4a49c417`, core
   - (a) o res-probe deve registrar o Shutdown pelo log da API em vez do stderr, e o checker deve ler esse log;
   - (b) levar a fixture `damage-fail` para `soh/native-sdk/tests`.
 - Continuam valendo as exclusões: sem release, tag ou RC público, sem tocar em RELEASE-UNIFICADA, sem ação destrutiva.
+
+## Atualização - 24/10/2026 - correções de teste da T33 (Shipwright#18)
+
+Fecha as pendências (a) e (b) da atualização de 23/10. PR [BaiterYamato/Shipwright#18](https://github.com/BaiterYamato/Shipwright/pull/18), branch `agent/HOST-SLIM-001-test-fixes` (`31c3552798`), mergeado na integração em `088a94855a`. Não muda o `soh.exe` nem o layout id (`e8f10de8…`).
+
+- **Host:**
+  - res-probe: o `Init` abre `res-probe.log` na raiz de dados e o `Shutdown` grava ali `res-probe shutdown left_handle=… transform_calls=…`, como o damage-probe já fazia. A ABI nativa não tem função de log, por isso o arquivo. O stderr não serve porque o `SDL_main` do SoH upstream faz `AllocConsole` e `freopen("CONOUT$")`.
+  - Fixture Lua `soh/native-sdk/tests/damage-fail`, ao lado do `damage-swap`. É a fonte P2 que estava em `logs/host-slim-f2i/damage-fail`: grava 0 e falha em todo acerto.
+  - Validação: clang-format 14 sem diferença, res-probe recompilado e `res_probe_offline` verde. O harness offline monta o `Probe` direto, então não exercita `Init` nem `Shutdown`.
+- **Harness** (em `logs/`, fora do git; backups em `logs/host-slim-maestro/codex/claude-t33-dano/bak-test-fixes/`):
+  - `codex-f2-maestro-ci/f2g-runtime/check_resources.py` passa a exigir `--probe-log`. O `res-probe.log` precisa abrir com `res-probe abi=1.4` e ter uma única linha de Shutdown com o handle da desmontagem. O stderr fica só na busca de erros.
+  - `f2g-runtime-jogo.ps1` copia o `res-probe.log` para a evidência e o passa ao checker.
+  - O driver `claude-t33-dano/t33-gameplay-driver.ps1` usa por padrão `HostRoot\soh\native-sdk\tests\damage-fail`; a exceção para `logs/` saiu. O `t33-run.ps1` só repassa `-DamageFailSource` quando ele é informado.
+  - O `codex-f2-maestro-ci/f2g-dll-observer/check_observer.py` ainda lê o Shutdown do stderr. Fica de fora porque a T33 roda sem observer.
+- **Prova em jogo:** driver chamado direto por `D:\lst33\f2-t33-final-run\t33-test-fixes.ps1`, commit `31c3552798`, exe `E24ABC6C…`. Evidência em `logs/host-slim-maestro/codex/claude-t33-dano/ev-f2-t33-test-fixes`.
+  - resources: gate G verde (8/8 e cleanup do owner). O `res-probe.log` traz `left_handle=2 transform_calls=1`.
+  - damage-chain: 5/5 de primeira. O damage-fail empacotado do host registrou 3 falhas, com o dano intacto.
+- **Continuam com o mantenedor:**
+  - mic, four-probes, movement, body, quad e vanilla-ab;
+  - os 5 gates com controle físico;
+  - D9, D16 e D12.
