@@ -1757,3 +1757,13 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
   - D9, D16 e D12 com o mantenedor;
   - novos: Shutdown do res-probe pelo log da API e fixture `damage-fail` no host.
 - Refs: `coordination/handoffs/HOST-SLIM-001.md`.
+
+### UPDATE 2026-10-24 (Claude) — HOST-SLIM-001 correções de teste da T33
+
+- Shipwright#18 mergeado na integração (`088a94855a`).
+  - O Shutdown do res-probe vai para `res-probe.log` na raiz de dados, e o checker do gate G lê esse arquivo.
+  - A fixture `damage-fail` entra em `soh/native-sdk/tests`.
+  - `soh.exe` e layout `e8f10de8` inalterados.
+- Prova em jogo: resources com gate G verde (8/8) e damage-chain 5/5.
+- Pendências (a) e (b) da T33 fechadas.
+- Refs: `coordination/handoffs/HOST-SLIM-001.md`.
