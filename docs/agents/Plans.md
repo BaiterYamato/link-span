@@ -1767,3 +1767,15 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
 - Prova em jogo: resources com gate G verde (8/8) e damage-chain 5/5.
 - Pendências (a) e (b) da T33 fechadas.
 - Refs: `coordination/handoffs/HOST-SLIM-001.md`.
+
+### UPDATE 2026-10-24 (Claude) — HOST-SLIM-001 fechamento da F2 (review)
+
+- O código da F2 está todo integrado no host em `088a94855a` (Shipwright #8–#18, libultraship#1, core #61/#62).
+- Identidade final:
+  - layout `e8f10de8`, `soh.exe` `E24ABC6C…`;
+  - catálogo com 2270 entradas (2088 funções e 182 variáveis) e 0 divergências.
+- Tarefas: 29 de 33 feitas. As parciais são 9 (DMR com X físico), 12 (pixels no mesmo tick), 16 (escuta física) e 33 (passos 5–8, que dependem do operador).
+  - A disposição de cada uma está no handoff.
+  - As tarefas 18 e 29 foram resolvidas pela T33 e pela Shipwright#18.
+- O claim fica em review. A HOST-SLIM-001 segue aberta para F3–F6.
+- Refs: `coordination/handoffs/HOST-SLIM-001.md`, seção "Fechamento da F2 - 24/10/2026".

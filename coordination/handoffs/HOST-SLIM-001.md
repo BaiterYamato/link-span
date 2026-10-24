@@ -2,6 +2,8 @@
 
 ## Estado
 
+Estado atual (24/10/2026): a F2 está em review, com o código integrado. Ver "Fechamento da F2 - 24/10/2026" no fim deste arquivo. O parágrafo abaixo é o estado de 20/10.
+
 F0 e F1 mergeadas na `main` (#59 `e8ee09a`, #60 `acd96ff`); F2-0 em review (seção "F2-0" no fim). As seções
 abaixo até "Próxima ação recomendada" descrevem a F1.
 
@@ -568,3 +570,222 @@ Fecha as pendências (a) e (b) da atualização de 23/10. PR [BaiterYamato/Shipw
   - mic, four-probes, movement, body, quad e vanilla-ab;
   - os 5 gates com controle físico;
   - D9, D16 e D12.
+
+## Fechamento da F2 - 24/10/2026
+
+### Estado
+
+**review.** O código da F2 inteira (F2-0, F2a–F2i e o helper dos transforms) está na integração do host `agent/OOT-UPSTREAM-001-78dc6d970-integration` @ `088a94855a85e1f40437ac79ddf2fdec6cf50d4c`. A tarefa 33 rodou em tudo que dá para automatizar. Das 33 tarefas, 29 estão feitas e 4 parciais (9, 12, 16 e 33). As parciais dependem de controle físico, escuta pelo dispositivo ou decisão do mantenedor, e cada uma tem disposição registrada abaixo. A HOST-SLIM-001 continua aberta para F3–F6. Sem release, tag ou RC público: o RC11 é a F6.
+
+Reconciliação feita a partir de `logs/host-slim-maestro/codex/claude-f2-pendencias/LEDGER-F2.md` (ledger de 23/10, Codex), do rascunho `logs/host-slim-maestro/codex/claude-f2-fechamento/FECHAMENTO-F2.md` (Codex) e das seções deste handoff de 20/10 a 24/10. As classificações e as disposições finais são do Claude. Esta seção atualiza as linhas do ledger que mudaram depois dele: 18, 29, 31, 32 e 33.
+
+### Resultado
+
+#### Identidade final
+
+| Item | Valor |
+|---|---|
+| Host (integração) | `088a94855a85e1f40437ac79ddf2fdec6cf50d4c` (Shipwright#18) |
+| Host da bateria T33 | `304a0c560480c37fd703236df3b3980a4a49c417` (Shipwright#17) |
+| Core registrado e materializado | `a44965fa912e5d9ed4d70c556eccd9ddaca1b12e` (link-span#62) |
+| libultraship registrado e materializado | `314cf9669cebf09761eba8925cfff5a368042563` (libultraship#1) |
+| Exemplos | `1a2aa9f86f805c62f262523cb173bccd8cfaa576` |
+| Layout id | `e8f10de804e2546c3c881f17d92495f8645160e689aa070a23b48b8bf9c8ca95` |
+| `soh.exe` | `E24ABC6CE46D00DF5096E29A9DA888BBB764EF333B73E88DE78022F7AECB14FE` |
+| `soh.pdb` | `0876C5047032D35EB6D202CB763EA8BC5D8ADFA54AEBCF51FF3A6218EC34F5AE` |
+| `soh.symbols` | `F7ED7392568E1355C0A29B88C65AADE847B2A237D496624CDAC181B14127A586` |
+| `OotNativeSdk.cmake` | `E737F16FE6D5602992ADD46A2B655CD7C2D7AA38CD9FD05A16BE12D5C23069C5` |
+| SDK `LinkSpan-OoT-SDK-f2-t33-final-layout-e8f10de8-Win64.zip` | `4667DD3F23FF5BBF7488AC90272F155C49CC4FC7D7661C0EEC12C6C3651738AE` |
+| `SDK-Probe.shipmod` | `47CAB207FD881B7AC9E90F8526027FD6C25EEB73E2A0EDC907B935E59B5F081E` |
+| Catálogo público | 2399 declarações em `functions.h`/`variables.h`; 2270 no catálogo (2088 funções e 182 variáveis); 131 fora, com motivo em `tools/public-symbols-report.txt`. Conferência PE: 2270 entradas, 0 divergências |
+
+O `soh.exe` foi compilado em `304a0c5604`. Entre `304a0c5604` e `088a94855a` só mudaram `soh/native-sdk/tests/res-probe/provider.cpp` e a fixture nova `soh/native-sdk/tests/damage-fail/`, então o fonte do exe é o mesmo. Um rebuild em `088a94855a` gravaria outro commit no carimbo do `build.c` e teria outro hash. A identidade congelada da bateria está em `HOST-SLIM-001-host/build/oot-upstream-001/evidence/release-g/f2-t33-final/identity-t33.json`.
+
+Pacotes da T33 (a/b reprodutíveis, SHA-256):
+
+| Pacote | SHA-256 |
+|---|---|
+| `LinkSpan-Shipwright-9.3.0-Upstream-ecd889c20-layout-e8f10de8-Win64-overlay.zip` | `5F93F875025CFA3D26ED65EB9FFF115BAA0691FF32BEE774F0AE0B8E81EECA5D` |
+| `LinkSpan-NEI-0.3.25-layout-e8f10de8.shipmod` | `B88603FD5C3292788F3EF4D79B3D863B7718C687A3A13147D054C7902BFDF57C` |
+| `Dynamic-Movement-Remake-0.2.24-layout-e8f10de8.zip` | `534EFE875B9255BD4AC13E22EA4481F3E781CDE31D60613B9C579B6560C94FB4` |
+| `LinkSpan-Mic-Ocarina-0.2.10-layout-e8f10de8.zip` | `C32E6E6ABA52B08625416FDAAC776473025C9F83F40381615C314F3493B62F4F` |
+| `LinkSpan-Unbound-Framework-0.6.15-layout-e8f10de8.shipmod` | `5A270425B707DF0BF4F2E7489EBC5B961430DAEFEE7957A89316003143562031` |
+| `LinkSpan-Unbound09-Actors-Demo.o2r` | `FF4D7E74B0D7A2B29FA82A0008B9729A2AEC9F051B0A7226AA2B64BE6D183FB1` |
+| `LinkSpan-Shovel-Demo-0.1.6-layout-e8f10de8-24560f58.zip` | `291668E6CC2EDCD7F924AB91BDA1F1EA388870DA4A295CB697E8588700C4BA6A` |
+| `LinkSpan-WindWakerStyle-0.1.6.shipmod` | `EB71AA0BEABE32368C2AB36D0F1832964F3D9F4E0F6CEC8ABA6459A301077469` |
+
+DLLs dos probes (`HOST-SLIM-001-host/build/f2-t33-final-probes/<probe>/mod/provider/`, SHA-256, 16 primeiros dígitos):
+- `public_probe.dll`: `4fb987a49759…`
+- `hook_probe.dll`: `9c90dd73ac4b…`
+- `audio_probe.dll`: `ff0fd54983a9…`
+- `archives_probe.dll`: `5a33a0af45b1…`
+- `movement_probe.dll`: `f651fcfc7631…`
+- `body_probe.dll`: `7608f2113aca…`
+- `quad_probe.dll`: `a812da04e020…`
+- `damage_probe.dll`: `3d3462380856…`
+- `res_probe.dll`: `94aba9094cfd…`. Foi recompilada na Shipwright#18; a da bateria de 23/10 era `9199fdb3cc40…`.
+
+#### Tabela das 33 tarefas
+
+| Nº | Fatia | Estado | Evidência | Reserva ou o que falta |
+|---|---|---|---|---|
+| 1 | F2-0 core | feita | link-span#61 `7b191a6`; CTest do core 61/61 na T33 | — |
+| 2 | F2-0 core | feita | link-span#61; 61/61 na T33 | — |
+| 3 | F2a | feita | Shipwright#8 `bf3ab5f931` | — |
+| 4 | F2a | feita | #8; SDK regerado no layout final na T33 | — |
+| 5 | F2a | feita | #8; `gen-host-keep.py --check` ok na T33 | — |
+| 6 | F2a | feita | #8 | — |
+| 7 | F2a | feita | #8; public-probe recompilado no layout final | O public-probe não rodou em jogo na T33 (passo 7) |
+| 8 | F2a | feita | #8; PE 2270 entradas, 0 divergências na T33 | — |
+| 9 | F2a | **parcial** | #8: carga e linha pública provadas por harness | Pulo do DMR 7.0 com X no controle físico não testado. Disposição D9 |
+| 10 | F2b | feita | Shipwright#9 `cd28a86655` | Limites de veto e do alcance do roll (Riscos) |
+| 11 | F2b | feita | #9 | Não cobre Z-target nem aterrissagem (Riscos) |
+| 12 | F2b | **parcial** | #9; `logs/host-slim-f2b/ab-t3.json` | Igualdade de pixels com e sem máscara no mesmo tick não demonstrada. Disposição D12 |
+| 13 | F2b | feita | #9; handoff de 21/10 | — |
+| 14 | F2c | feita | Shipwright#10 `207da81792` | — |
+| 15 | F2c | feita | #10 | — |
+| 16 | F2c | **parcial** | #10; `logs/host-slim-f2c/ev-audio-codex-3` (PCM 31564,454 quadros/s, mute e volta pelo pico) | Gravação de 30 s pelo mixer do Windows ou anotação do operador não feitas. Disposição D16 |
+| 17 | F2h | feita | Shipwright#11 `2d7f58fb91` | — |
+| 18 | F2h | feita | #11; `logs/host-slim-f2h/ev-archives-codex-5`; T33: framework e e-fixtures recompilados no layout final, fixtures 9/9 | Os gates addons/capability/recovery/selector/rollback ficam no passo 5 da 33 (parcial). Disposição D18 |
+| 19 | F2d | feita | Shipwright#12 `61e4bc0df9` | — |
+| 20 | F2d | feita | #12 | O caminho Lua legado da câmera migra na F3/F4 |
+| 21 | F2d | feita | #12; `logs/host-slim-f2d/ev-normal-1`, `ev-transition-1`, `ab-rc10-f2d-1.json` | Leases vivos até o destroy, igualdade de pixels e unload físico da DLL não provados |
+| 22 | F2e | feita | Shipwright#13 `c51d5cae0b` | — |
+| 23 | F2e | feita | #13 | Equipamento do modelo é do mod (F3) |
+| 24 | F2e | feita | #13; aceite de 23/10 (`logs/host-slim-f2e/analise-golpes-claude.py`) | Instrumento visível na mão vai para a F3; os checkers antigos do maestro continuam falsos |
+| 25 | F2f | feita | Shipwright#14 `6558ca9419` | — |
+| 26 | F2f | feita | #14; `logs/host-slim-f2f/ev-*` | Sem combate vanilla com lease simultâneo; sem indução de AC que falha após AT aceito |
+| 27 | F2g | feita | Shipwright#15 `098da57821` | — |
+| 28 | F2g | feita | #15; prova da TU real (105 checks e RED) | Publicação tardia no cache global fica fora do contrato |
+| 29 | F2g | feita | #15 (`448ef1bc05` export, `bbda3be1cc` mod menu); `logs/host-slim-f2g/ev-resources-claude-3`; Shipwright#18 com `claude-t33-dano/ev-f2-t33-test-fixes` | Disposição D29: observer de descarga da DLL não provado |
+| 30 | F2i-0 core | feita | link-span#62 `a44965f` | — |
+| 31 | F2i | feita | Shipwright#16 `d56d2f5081`; testes em `EngineTests.cpp` (sem hook bit a bit, REPLACE recusado, OBSERVE/TRANSFORM, clamp, ±inf, NaN) no CTest 72/72 da T33 | O RED anterior à implementação não ficou registrado no PR |
+| 32 | F2i | feita | #16 (`62f67de3ad` P2) e #17 `304a0c5604` (helper); `logs/host-slim-maestro/codex/claude-f2i-combate/ev-*`; T33 damage-chain 5/5 | Dano fora de `CollisionCheck_ApplyDamage`, HP > 255 e cooperativo acima de 255 seguem como lacunas do port leveled (F3) |
+| 33 | integração | **parcial** | Rodada `f2-t33-final` (23/10) e Shipwright#18 (24/10); ver os passos abaixo | Passos 5, 6, 7 e 8 incompletos. Disposição D33 |
+
+#### Tarefa 33 por passo
+
+| Passo | Resultado | Evidência |
+|---|---|---|
+| 1 host | ok: build Release e `soh_symbols`; CTest 72/72; `gen-host-keep.py --check` e `check-public-symbols` ok | `D:\lst33\f2-t33-final-run\t33-build-resume.log` |
+| 2 core | ok: 61/61 e os três geradores `--check` | idem |
+| 3 Unbound (provider) | ok: unbound-scene 7/7 e unbound-native 7/7 | idem |
+| 4 Unbound (pacotes) | ok: framework e e-fixtures no layout final; `rc-build-all` a/b com 8 pacotes iguais por hash | `t33-package.log` |
+| 5 gate E e release | parcial: fresh, semmods, matriz 9/9 e fixtures 9/9 (completa, boot, savestate, m18, a8200, r04, r0809, água, luzes) ok, sem mudar asserts. Os gates addons/capability/recovery/selector/rollback não rodaram, porque o gate-selector exige controle físico | `D:\lst33\f2-t33-final\*.console.log.status` |
+| 6 mods publicados | parcial: NEI 0.3.25, DMR 0.2.24 e Mic 0.2.10 recompilados para o layout e carregados na matriz 9/9. Uso do Mic com microfone e DMR com controle físico não testados. Com o NEI, voice e ledge seguem mudos até a F5 | idem |
+| 7 probes | parcial: sdk-probe ok; resources 8/8 com o Shutdown em `res-probe.log`; damage-probe com damage-swap 5/5. O conjunto public/hook/audio/archives e os probes movement, body e quad não rodaram na T33: dependem de operador e revisão visual. As provas por fatia (#8–#14) continuam valendo para os seus exes | `claude-t33-dano/ev-f2-t33-final-p1-sdk-res`, `ev-f2-t33-final-p2-dano`, `ev-f2-t33-test-fixes` |
+| 8 sem mods = vanilla | parcial: semmods com 0 falhas e save igual ao do RC10; dano sem ouvinte bit a bit no teste da tarefa 31. O A/B com o RC10 no mesmo tick (vanilla-ab) não rodou na T33. Os A/B por fatia: F2g contra o RC10, 1,18–1,29%, no patamar do controle RC10×RC10 (1,25%); F2i contra a F2g, 0,16–0,27% com a cena parada | handoff de 23/10 |
+| 9 registro | esta seção, o `Plans.md` e o claim em review | — |
+
+#### Disposição das parciais
+
+- **D9 (tarefa 9, pulo do DMR com X físico).** Não testado. Vai para o playtest físico do mantenedor antes do RC11, que o plano já exige para F2d–F2f (§8 "Tamanho"). Roteiro:
+  1. usar uma cópia com o DMR 0.2.24 e o exe acima;
+  2. apertar X no chão com o controle;
+  3. repetir sem o sidecar;
+  4. anexar o log e a observação do operador.
+
+  Não é dispensa: a linha só vira feita com essa sessão.
+- **D12 (tarefa 12, pixels no mesmo tick).** O critério literal não foi atingido. Nenhum A/B por relógio igualou os pixels: até RC10×RC10 dá cerca de 1% por causa das animações ociosas do Link. Proposta ao mantenedor: aceitar o critério substituto, que é A/B quantificado com controle RC10×RC10 em cada estado de máscara, mais inspeção visual identificada. Sem a decisão expressa, a linha continua parcial, e o caminho literal passa a ser uma captura presa ao tick do jogo, que ainda não existe no harness. Não vai automaticamente para a F3/F4.
+- **D16 (tarefa 16, escuta física).** Não feita. Vai para o mesmo playtest físico pré-RC11. Roteiro:
+  1. audio-probe por 30 s;
+  2. gravação pelo mixer do Windows ou anotação do operador, com nome, sessão e resultado "mudo só na janela".
+
+  O PCM de `ev-audio-codex-3` continua como prova do despacho, não da escuta.
+- **D18 (tarefa 18, cenário Unbound).** Resolvida na T33: framework e e-fixtures recompilados no layout final, e os 9 cenários das e-fixtures verdes sem mudar asserts. O que falta, os 5 gates de release, é do passo 5 da 33 e não reabre a 18. A política Unbound do bootstrap sai na F4, como já previsto.
+- **D29 (tarefa 29, res-probe).** Resolvida:
+  - o export (`448ef1bc05`) e a montagem do mod menu (`bbda3be1cc`) foram corrigidos no #15;
+  - a prova em jogo deu 8/8, com 3 arquivos, 1 alias aceito e 1 recusado, unmount/remount, caminhada com a animação vanilla e exit 0;
+  - o A/B sem mods contra o RC10 ficou no patamar do controle;
+  - o Shutdown agora é provado pelo `res-probe.log` (#18), com `left_handle` igual ao handle da desmontagem.
+
+  O observer de ausência da DLL no processo, gate extra pedido pelo maestro e não pelo plano, não foi feito. Fica registrado como limite, junto com a exclusão contratual do cache tardio.
+- **D33 (tarefa 33).** Os passos 1–4 e 9 estão feitos; os passos 5–8 estão parciais pelo que depende de operador. Disposição: o mantenedor roda o que falta antes do RC11, com estas entradas:
+  - roteiro `logs/host-slim-maestro/codex/claude-t33-roteiro/t33-run.ps1` pelo `D:\lst33\f2-t33-final-run\t33-args.ps1`;
+  - os 5 gates com `-GamepadConnected`;
+  - os ids `mic,four-probes,movement,body,quad,vanilla-ab` do driver `claude-t33-dano`, que pode ser chamado direto por `t33-test-fixes.ps1` com outro `-Only`.
+
+### Commits
+
+Merges da F2 (merge commits nas branches de destino):
+
+| Repo | PR | Fatia | Merge |
+|---|---|---|---|
+| link-span | #61 | F2-0 (tarefas 1–2) | `7b191a6d15` |
+| link-span | #62 | F2i-0 (tarefa 30) | `a44965fa91` |
+| Shipwright | #8 | F2a (3–9) | `bf3ab5f931` |
+| Shipwright | #9 | F2b (10–13) | `cd28a86655` |
+| Shipwright | #10 | F2c (14–16) | `207da81792` |
+| Shipwright | #11 | F2h (17–18) | `2d7f58fb91` |
+| Shipwright | #12 | F2d (19–21) | `61e4bc0df9` |
+| Shipwright | #13 | F2e (22–24) | `c51d5cae0b` |
+| Shipwright | #14 | F2f (25–26) | `6558ca9419` |
+| libultraship | #1 | VFS da F2g | `314cf96698` |
+| Shipwright | #15 | F2g (27–29) | `098da57821` |
+| Shipwright | #16 | F2i (31–32) | `d56d2f5081` |
+| Shipwright | #17 | helper dos transforms | `304a0c5604` |
+| Shipwright | #18 | correções de teste da T33 | `088a94855a` |
+
+Registros no core: #63 `9d41fd0e17`, #64 `48ab2c72bb`, #65 `22d3fc1e55`, #66 `61a798d674`, #67 `02e9a6ef92`, #68 `a9dbb64b12`, #69 `95f48e645f`, #70 `c78ea875c8`, #71 `f5394f7a51` e #72 `9010cf59a7`. Este fechamento entra pela branch `agent/HOST-SLIM-001-f2-fechamento`.
+
+### Arquivos alterados
+
+Neste fechamento, só no core:
+- `coordination/handoffs/HOST-SLIM-001.md` (esta seção e um ponteiro no "Estado" do topo);
+- `coordination/claims/HOST-SLIM-001.md` (bloco "Fechamento da F2");
+- `docs/agents/Plans.md` (UPDATE de 24/10).
+
+Os arquivos da F2 estão nos blocos `Files` do claim e nos PRs da tabela acima.
+
+### Validação executada
+
+Windows 11 x64, Visual Studio 2022 (MSVC v143), Release, Python 3.14.
+- **Bateria T33** (`t33-run.ps1`, estágios Build, Package, Battery `-NoGate` e Gameplay):
+  - CTest do host e do core;
+  - geradores `--check`;
+  - testes do Unbound e dos mods;
+  - `rc-build-all` a/b;
+  - `rc-battery` com fresh, semmods, matriz e fixtures;
+  - driver `claude-t33-dano` com sdk-probe, resources e damage-chain.
+- **Rerun de 24/10** com o driver direto (`D:\lst33\f2-t33-final-run\t33-test-fixes.ps1`, commit `31c3552798`), com resources e damage-chain.
+- **Este registro:** `pwsh -File scripts/test-task-lifecycle.ps1 -TaskId HOST-SLIM-001 -Phase review -WorktreePath <core> -Strict`, com o resultado na descrição do PR.
+
+### Resultado da validação
+
+- **CTest e geradores:** host 72/72; core 61/61; unbound-scene 7/7, NEI 6/6, unbound-native 7/7, DMR 3/3 e Mic 3/3. O WW não declara testes. `gen-host-keep --check`, `check-public-symbols` (0 divergências) e os três geradores do core ok.
+- **Pacotes:** 8 pacotes, reprodutíveis a/b, e os 4 pacotes de gate.
+- **Jogo por harness:**
+  - fresh com 0 mods e 371 comandos de cena;
+  - semmods com 0 falhas;
+  - matriz 9/9 e fixtures 9/9;
+  - sdk-probe ok;
+  - resources 8/8 com o Shutdown no `res-probe.log`;
+  - damage-chain 5/5.
+- **Não testado:** controle físico, microfone, escuta pelo dispositivo, revisão visual dos probes de corpo e colisão na T33, A/B no mesmo tick, observer da DLL e os 5 gates de release.
+
+### Pendências
+
+- **Com o mantenedor, antes do RC11:**
+  - D9 e D16 (físicas) e a decisão D12;
+  - os passos 5–8 da 33 (5 gates com controle, mic, four-probes, movement, body, quad, vanilla-ab);
+  - o playtest físico de F2d–F2f.
+- **F3:**
+  - port do MM pelos serviços novos (movement/camera, skeletons/player-body, colliders e resources V4 com resolver STRICT);
+  - instrumento e equipamento no mod;
+  - port do leveled com a matriz de exclusões do dano.
+- **F4:** tirar do exe o legado do MM e os bindings Lua retirados; mover a política Unbound para o provider; trocar a escrita direta de Idle por `release_action`.
+- **F5:** remesclar o overlay do NEI (`Player_PlayVoiceSfx`, `Player_PostLimbDrawGameplay`, `Player_Action_8084411C`) e o DMR em 1.4.
+- **F6:** RC11.
+- O `check_observer.py` da F2g (`logs/host-slim-maestro/codex/codex-f2-maestro-ci/f2g-dll-observer/`) ainda lê o Shutdown do stderr; trocar pelo `res-probe.log` quando o observer voltar a ser usado.
+
+### Riscos
+
+- **TRANSFORM sem redução compulsória:** um hook posterior pode desfazer o veto de outro. O `roll_allowed` não cobre Z-target nem aterrissagem.
+- **Dano e composição:** entre ouvintes Lua, o último `ship.hooks.result` vence. O dano fora do funil central não passa pelo hook.
+- **Unload e concorrência:** o unload normal não prova a ausência da DLL nem a quiescência universal. A carga iniciada antes do unmount pode republicar no cache do `ResourceManager`.
+- **Layout:** layout igual garante declarações iguais, não semântica igual.
+- **Disco:** D: com cerca de 5 GB livres em 24/10; a próxima bateria grande pede limpeza dos builds antigos (decisão do mantenedor).
+
+### Próxima ação recomendada
+
+O mantenedor faz o playtest físico pré-RC11 (D9, D16 e passos 5–8 da 33) e decide a D12. Em paralelo, abrir a F3 com claim e branch próprios, começando pelo MM Base (`soh/native-sdk/mm-base`) sobre resources V4.

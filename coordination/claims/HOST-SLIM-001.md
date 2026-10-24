@@ -3,7 +3,7 @@
 - Status: review
 - Agent: Claude (Opus 5.5), com subagentes Codex (gpt-6.1-sol) nas análises
 - Platform: Windows
-- Branch: agent/HOST-SLIM-001-f2-core
+- Branch: agent/HOST-SLIM-001-f2-fechamento
 - Started: 2026-10-19T12:00:00Z
 - Depends on: OOT-RELEASE-002 (RC10, host `e9da99b515`, layout `ee6449e8`)
 - Files (fase F0):
@@ -267,3 +267,18 @@
   - coordination/claims/HOST-SLIM-001.md
   - coordination/handoffs/HOST-SLIM-001.md
   - docs/agents/Plans.md
+
+## Fechamento da F2 - 24/10/2026
+
+- Status (fase F2): review. O código está integrado no host em `088a94855a`. Das 33 tarefas, 29 estão feitas; as parciais 9, 12, 16 e 33 têm disposição na seção "Fechamento da F2 - 24/10/2026" do handoff.
+- Agent (fechamento F2): Claude (Opus 5.5). O ledger, o rascunho de fechamento, o roteiro e o driver da T33 foram feitos por subagentes Codex (gpt-6.1-sol).
+- Branch (fechamento F2, core): `agent/HOST-SLIM-001-f2-fechamento`. A linha `Branch` do topo passa a apontar para ela; a F2-0 segue registrada no bloco "Files (fase F2-0, branch `agent/HOST-SLIM-001-f2-core`)".
+- Files (fechamento F2): `coordination/claims/HOST-SLIM-001.md`, `coordination/handoffs/HOST-SLIM-001.md`, `docs/agents/Plans.md`.
+- Status das fatias: done, todas mergeadas.
+  - Shipwright: F2a #8, F2b #9, F2c #10, F2h #11, F2d #12, F2e #13, F2f #14, F2g #15, F2i #16, helper dos transforms #17 e correções de teste #18.
+  - libultraship #1: VFS da F2g e o complemento F2g-LUS-CI.
+  - Core: F2-0 #61 e F2i-0 #62.
+  - Os estados `claimed` e `review` das fatias nos blocos acima ficam como histórico.
+- Status (coordenação F2 do maestro Codex): encerrada em 23/10/2026, quando a condução voltou ao Claude.
+- Sobreposição registrada: `docs/agents/Plans.md` é ledger compartilhado com CLAIMS-CLEANUP-001 e OOT-COREMODS-PLAN-001. Só recebe apêndices, e nenhuma claim alheia é fechada ou muda de dono.
+- Status global: review. As fases F3–F6 abrem com claims e branches próprios. Sem release, tag ou RC público.
