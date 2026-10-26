@@ -75,6 +75,31 @@ struct HudIconOptions {
     std::optional<std::int64_t> alpha;
 };
 
+struct AttributeBreakdownEntry {
+    std::string modifier;
+    std::optional<std::string> item;
+    std::string op;
+    double value;
+};
+
+struct AttributeModifierView {
+    std::string id;
+    std::string attribute;
+    std::string op;
+    double value;
+    std::string when;
+    std::optional<std::string> via;
+};
+
+struct AttributeModifier {
+    std::string id;
+    std::string attribute;
+    std::string op;
+    double value;
+    std::optional<std::string> target;
+    std::optional<std::string> when;
+};
+
 enum class ApiError {
     Unsupported,
     InvalidArgument,
@@ -151,6 +176,13 @@ enum class FunctionId {
     ShipHudDrawRing,
     ShipHudDrawIcon,
     ShipMenuRegister,
+    ShipAttributesValue,
+    ShipAttributesBreakdown,
+    ShipAttributesModifiersOf,
+    ShipAttributesHasTag,
+    ShipAttributesTagMembers,
+    ShipAttributesAddModifier,
+    ShipAttributesRemoveModifier,
     ShipNativeHas,
     ShipNativeCall,
 };
@@ -552,6 +584,56 @@ inline constexpr std::array<std::string_view, 4> kShipMenuRegisterErrors{{
     "resource_limit",
     "host_failure",
 }};
+inline constexpr std::array<FieldBinding, 1> kShipAttributesValueArguments{{
+    {"attribute", "string", true},
+}};
+inline constexpr std::array<std::string_view, 2> kShipAttributesValueErrors{{
+    "invalid_argument",
+    "unsupported",
+}};
+inline constexpr std::array<FieldBinding, 1> kShipAttributesBreakdownArguments{{
+    {"attribute", "string", true},
+}};
+inline constexpr std::array<std::string_view, 2> kShipAttributesBreakdownErrors{{
+    "invalid_argument",
+    "unsupported",
+}};
+inline constexpr std::array<FieldBinding, 1> kShipAttributesModifiersOfArguments{{
+    {"item", "string", true},
+}};
+inline constexpr std::array<std::string_view, 2> kShipAttributesModifiersOfErrors{{
+    "invalid_argument",
+    "unsupported",
+}};
+inline constexpr std::array<FieldBinding, 2> kShipAttributesHasTagArguments{{
+    {"item", "string", true},
+    {"tag", "string", true},
+}};
+inline constexpr std::array<std::string_view, 2> kShipAttributesHasTagErrors{{
+    "invalid_argument",
+    "unsupported",
+}};
+inline constexpr std::array<FieldBinding, 1> kShipAttributesTagMembersArguments{{
+    {"tag", "string", true},
+}};
+inline constexpr std::array<std::string_view, 2> kShipAttributesTagMembersErrors{{
+    "invalid_argument",
+    "unsupported",
+}};
+inline constexpr std::array<FieldBinding, 1> kShipAttributesAddModifierArguments{{
+    {"modifier", "attribute_modifier", true},
+}};
+inline constexpr std::array<std::string_view, 2> kShipAttributesAddModifierErrors{{
+    "invalid_argument",
+    "unsupported",
+}};
+inline constexpr std::array<FieldBinding, 1> kShipAttributesRemoveModifierArguments{{
+    {"id", "string", true},
+}};
+inline constexpr std::array<std::string_view, 2> kShipAttributesRemoveModifierErrors{{
+    "invalid_argument",
+    "unsupported",
+}};
 inline constexpr std::array<FieldBinding, 1> kShipNativeHasArguments{{
     {"name", "string", true},
 }};
@@ -571,7 +653,7 @@ inline constexpr std::array<std::string_view, 6> kShipNativeCallErrors{{
     "host_failure",
 }};
 
-inline constexpr std::array<FunctionBinding, 58> kFunctions{{
+inline constexpr std::array<FunctionBinding, 65> kFunctions{{
     {FunctionId::ShipGameId, "ship.game.id", "0.1.0", "stable", "game_id", "raise", {}, "common", {}, kShipGameIdArguments, kShipGameIdErrors},
     {FunctionId::ShipGameHostVersion, "ship.game.host_version", "0.1.0", "stable", "string", "raise", {}, "common", {}, kShipGameHostVersionArguments, kShipGameHostVersionErrors},
     {FunctionId::ShipGameState, "ship.game.state", "0.4.0", "experimental", "game_state", "raise", {}, "oot", "game.state", kShipGameStateArguments, kShipGameStateErrors},
@@ -628,6 +710,13 @@ inline constexpr std::array<FunctionBinding, 58> kFunctions{{
     {FunctionId::ShipHudDrawRing, "ship.hud.draw_ring", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "hud.draw", kShipHudDrawRingArguments, kShipHudDrawRingErrors},
     {FunctionId::ShipHudDrawIcon, "ship.hud.draw_icon", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "hud.icons", kShipHudDrawIconArguments, kShipHudDrawIconErrors},
     {FunctionId::ShipMenuRegister, "ship.menu.register", "0.5.0", "preview", "boolean", "raise", {}, "common", "core.menu", kShipMenuRegisterArguments, kShipMenuRegisterErrors},
+    {FunctionId::ShipAttributesValue, "ship.attributes.value", "0.5.0", "experimental", "number", "raise", {}, "common", "core.attributes", kShipAttributesValueArguments, kShipAttributesValueErrors},
+    {FunctionId::ShipAttributesBreakdown, "ship.attributes.breakdown", "0.5.0", "experimental", "array<attribute_breakdown_entry>", "raise", {}, "common", "core.attributes", kShipAttributesBreakdownArguments, kShipAttributesBreakdownErrors},
+    {FunctionId::ShipAttributesModifiersOf, "ship.attributes.modifiers_of", "0.5.0", "experimental", "array<attribute_modifier_view>", "raise", {}, "common", "core.attributes", kShipAttributesModifiersOfArguments, kShipAttributesModifiersOfErrors},
+    {FunctionId::ShipAttributesHasTag, "ship.attributes.has_tag", "0.5.0", "experimental", "boolean", "raise", {}, "common", "core.attributes", kShipAttributesHasTagArguments, kShipAttributesHasTagErrors},
+    {FunctionId::ShipAttributesTagMembers, "ship.attributes.tag_members", "0.5.0", "experimental", "array<string>", "raise", {}, "common", "core.attributes", kShipAttributesTagMembersArguments, kShipAttributesTagMembersErrors},
+    {FunctionId::ShipAttributesAddModifier, "ship.attributes.add_modifier", "0.5.0", "experimental", "boolean", "raise", {}, "common", "core.attributes", kShipAttributesAddModifierArguments, kShipAttributesAddModifierErrors},
+    {FunctionId::ShipAttributesRemoveModifier, "ship.attributes.remove_modifier", "0.5.0", "experimental", "boolean", "raise", {}, "common", "core.attributes", kShipAttributesRemoveModifierArguments, kShipAttributesRemoveModifierErrors},
     {FunctionId::ShipNativeHas, "ship.native.has", "0.5.0", "experimental", "boolean", "raise", {}, "common", {}, kShipNativeHasArguments, kShipNativeHasErrors},
     {FunctionId::ShipNativeCall, "ship.native.call", "0.5.0", "experimental", "string", "return", "operation_error", "common", {}, kShipNativeCallArguments, kShipNativeCallErrors},
 }};
@@ -813,12 +902,13 @@ struct CapabilityBinding {
     bool supportsMm;
 };
 
-inline constexpr std::array<CapabilityBinding, 43> kCapabilities{{
+inline constexpr std::array<CapabilityBinding, 44> kCapabilities{{
     {"core.events", "contract", true, true},
     {"hooks.bridge", "contract", true, true},
     {"core.timers", "contract", true, true},
     {"core.input", "contract", true, true},
     {"core.menu", "contract", true, false},
+    {"core.attributes", "contract", true, true},
     {"input.actions", "contract", true, false},
     {"game.state", "contract", true, false},
     {"core.storage", "contract", true, true},

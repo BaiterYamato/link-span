@@ -168,7 +168,6 @@ int main(int argc, char** argv) {
         registry->AddMod("test.decl", Declarations(), {});
         NativeProviderPolicy policy;
         policy.enabled = true;
-        policy.services = {MakeAttributeNativeService(registry)};
         LuaApiHostContext context;
         context.gameId = game;
         context.hostVersion = "1.0.0";
@@ -194,8 +193,7 @@ int main(int argc, char** argv) {
                     assert(not b:find('test.decl.gem', 1, true), b)
                 )lua");
             }
-            // A fonte C sai antes de descarregar a DLL, mesmo sem cooperação do shutdown.
-            registry->RemoveMod("test.attributes.native");
+            // O UnloadMod tira a fonte C do registro antes de liberar a DLL.
             Check(host.UnloadMod("test.attributes.native").isOk(), "descarga nativa");
             const auto value = registry->Value("test.decl.power");
             Check(value.isOk() && *value.value == 1.0, "descarga remove fonte e buff; base permanece 1");

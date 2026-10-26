@@ -1,4 +1,5 @@
 #include "shiplua/api/LuaApiBinding.h"
+#include "LuaAttributesBinding.h"
 
 #include <algorithm>
 #include <cmath>
@@ -508,6 +509,10 @@ Result<void> ValidateLuaApiHostContext(const LuaApiHostContext& context) {
             return Result<void>::err(ErrorCode::InvalidState,
                                      "host advertised core.menu without menu and storage adapters");
         }
+        if (requested == "core.attributes" && context.attributes == nullptr) {
+            return Result<void>::err(ErrorCode::InvalidState,
+                                     "host advertised core.attributes without an attribute registry");
+        }
     }
     if (context.capabilityRegistry != nullptr && context.actors == nullptr &&
         (context.capabilityRegistry->Has("actor.spawn", context.gameId) ||
@@ -528,6 +533,11 @@ Result<void> ValidateLuaApiHostContext(const LuaApiHostContext& context) {
         return Result<void>::err(
             ErrorCode::InvalidState,
             "host registered core.menu without menu and storage adapters");
+    }
+    if (context.capabilityRegistry != nullptr && context.attributes == nullptr &&
+        context.capabilityRegistry->Has("core.attributes", context.gameId)) {
+        return Result<void>::err(ErrorCode::InvalidState,
+                                 "host registered core.attributes without an attribute registry");
     }
     return Result<void>::ok();
 }
@@ -958,6 +968,9 @@ void LuaApiBinding::BuildModule(lua_State* state) {
     SetFunction(state, -1, "clear", &LuaApiBinding::SharedStorageClear, this);
     lua_setfield(state, -2, "shared");
     lua_setfield(state, ship, "storage");
+
+    PushAttributesModule(state, mHostContext.attributes.get(), mRuntime.ModId());
+    lua_setfield(state, ship, "attributes");
 
     lua_newtable(state);
     SetFunction(state, -1, "travel", &LuaApiBinding::WorldTravel, this);

@@ -127,6 +127,7 @@ void RunContractOnHost(const std::string& game, const std::string& source) {
         return ShipLua::Result<void>::ok();
     };
     if (game == "oot") context.menu = std::make_shared<FakeMenuRegistry>();
+    context.attributes = std::make_shared<ShipLua::AttributeRegistry>();
     ShipLua::ModHost host(context, ShipLua::Logger{});
     const std::string modId = "contract.api_" + game;
     const auto loaded = host.LoadModFromManifestAndSource(MakeManifest(modId), source);

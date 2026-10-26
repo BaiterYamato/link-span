@@ -111,6 +111,7 @@ class ModHost {
     Logger mLogger;
     LuaApiHostContext mHostContext;
     NativeProviderPolicy mNativePolicy;
+    NativeHostService mAttributeService; // Vive além dos providers e de lua_close.
     std::filesystem::path mBootGuardDirectory;
     std::unique_ptr<EventDispatcher> mEvents;
     std::size_t mNextModLoadOrder = 0;

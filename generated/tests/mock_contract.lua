@@ -149,6 +149,12 @@ probe("ship.storage.shared.set", { "probe", "probe" }, "boolean")
 probe("ship.storage.shared.delete", { "probe" }, "boolean")
 probe("ship.storage.shared.clear", {  }, "integer")
 probe("ship.menu.register", { "probe" }, "boolean")
+probe("ship.attributes.value", { "probe" }, "number")
+probe("ship.attributes.breakdown", { "probe" }, "table")
+probe("ship.attributes.modifiers_of", { "probe" }, "table")
+probe("ship.attributes.has_tag", { "probe", "probe" }, "boolean")
+probe("ship.attributes.tag_members", { "probe" }, "table")
+probe("ship.attributes.remove_modifier", { "probe" }, "boolean")
 probe("ship.native.has", { "probe" }, "boolean")
 probe("ship.native.call", { "probe", "probe" }, "string")
 check(resolve(ship_mod, "mm.player.jump") == nil, "ship.mm.player.jump não deveria existir no host oot")
@@ -432,6 +438,55 @@ do
   check(not ok, "ship.menu.register sem argumentos deveria falhar")
   check(type(err) == "string" and err:find("invalid_argument", 1, true) ~= nil,
     "erro de ship.menu.register deveria carregar invalid_argument")
+end
+do
+  local fn = resolve(ship_mod, "attributes.value")
+  local ok, err = pcall(fn)
+  check(not ok, "ship.attributes.value sem argumentos deveria falhar")
+  check(type(err) == "string" and err:find("invalid_argument", 1, true) ~= nil,
+    "erro de ship.attributes.value deveria carregar invalid_argument")
+end
+do
+  local fn = resolve(ship_mod, "attributes.breakdown")
+  local ok, err = pcall(fn)
+  check(not ok, "ship.attributes.breakdown sem argumentos deveria falhar")
+  check(type(err) == "string" and err:find("invalid_argument", 1, true) ~= nil,
+    "erro de ship.attributes.breakdown deveria carregar invalid_argument")
+end
+do
+  local fn = resolve(ship_mod, "attributes.modifiers_of")
+  local ok, err = pcall(fn)
+  check(not ok, "ship.attributes.modifiers_of sem argumentos deveria falhar")
+  check(type(err) == "string" and err:find("invalid_argument", 1, true) ~= nil,
+    "erro de ship.attributes.modifiers_of deveria carregar invalid_argument")
+end
+do
+  local fn = resolve(ship_mod, "attributes.has_tag")
+  local ok, err = pcall(fn)
+  check(not ok, "ship.attributes.has_tag sem argumentos deveria falhar")
+  check(type(err) == "string" and err:find("invalid_argument", 1, true) ~= nil,
+    "erro de ship.attributes.has_tag deveria carregar invalid_argument")
+end
+do
+  local fn = resolve(ship_mod, "attributes.tag_members")
+  local ok, err = pcall(fn)
+  check(not ok, "ship.attributes.tag_members sem argumentos deveria falhar")
+  check(type(err) == "string" and err:find("invalid_argument", 1, true) ~= nil,
+    "erro de ship.attributes.tag_members deveria carregar invalid_argument")
+end
+do
+  local fn = resolve(ship_mod, "attributes.add_modifier")
+  local ok, err = pcall(fn)
+  check(not ok, "ship.attributes.add_modifier sem argumentos deveria falhar")
+  check(type(err) == "string" and err:find("invalid_argument", 1, true) ~= nil,
+    "erro de ship.attributes.add_modifier deveria carregar invalid_argument")
+end
+do
+  local fn = resolve(ship_mod, "attributes.remove_modifier")
+  local ok, err = pcall(fn)
+  check(not ok, "ship.attributes.remove_modifier sem argumentos deveria falhar")
+  check(type(err) == "string" and err:find("invalid_argument", 1, true) ~= nil,
+    "erro de ship.attributes.remove_modifier deveria carregar invalid_argument")
 end
 do
   local fn = resolve(ship_mod, "native.has")
