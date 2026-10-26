@@ -51,7 +51,7 @@ mod usa o prefixo dele por convenção.
 `when` diz quando o modificador vale:
 
 - `equipped` (padrão): item no slot de equipamento (espada, escudo, túnica, botas), máscara vestida, ou item num
-  botão B ou C;
+  botão C ou do D-pad (o B fica de fora: a espada já vem do slot);
 - `owned`: item possuído (no inventário ou como upgrade, como os braceletes de força).
 
 A fonte emite `equipped` para o item em uso e `owned` para o resto; o core conta um item `equipped` também como
@@ -230,7 +230,7 @@ typedef struct LinkSpanAttributesV1 {
 
 | Capacidade | Hosts | Status ao fim do subprojeto |
 |---|---|---|
-| `core.attributes` | `oot`, `mm` | `contract` (API Lua e nativa; no MM só com fonte registrada) |
+| `core.attributes` | `oot`, `mm` | `contract` (API Lua e nativa; no MM, até existir uma fonte `mm`, contam os modificadores sem alvo e as fontes de mods) |
 
 O arquivo `attributes.toml` não exige capacidade. Ler e escrever pela API exige.
 
@@ -251,7 +251,7 @@ modificadores sem alvo e fontes de mods. A fonte `mm` é trabalho futuro e não 
 
 | Situação | Resultado |
 |---|---|
-| `attributes.toml` com erro de sintaxe ou de esquema | O arquivo inteiro é ignorado; o mod carrega; erro no log e no menu de mods |
+| `attributes.toml` com erro de sintaxe ou de esquema (chave do topo com tipo errado, campo obrigatório ausente ou de tipo errado, entrada que não é tabela) | O arquivo inteiro é ignorado; o mod carrega; erro no log |
 | Atributo ou modificador com prefixo de outro mod | Entrada rejeitada com erro; o resto do arquivo vale |
 | Atributo declarado duas vezes | A segunda declaração é rejeitada com erro |
 | Tag de `target` sem membros | Aviso na auditoria do fim da carga; o modificador fica guardado |
@@ -311,7 +311,7 @@ Em jogo, com a fixture `linkspan.test.attributes` (Lua, `attributes.toml` e log 
   na troca;
 - bracelete de força com `when = "owned"`;
 - item NEI num botão C;
-- sem a fixture e sem o coremod: comparação A/B vanilla.
+- sem a fixture e sem o mod `linkspan.oot.item_source`: comparação A/B vanilla.
 
 ## Plano de depreciação
 

@@ -11,6 +11,7 @@ Project records (`PLAN`, `AGENTS`, RFCs and `coordination/`) remain in Portugues
 ## Modder guides
 
 - [Writing mods](writing-mods.md)
+- [Item attributes](item-attributes.md)
 - [Manifest](manifest.md)
 - [Development CLI](shipmod-cli.md)
 - [Manifest validator](manifest-validator.md)
