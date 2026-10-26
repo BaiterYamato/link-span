@@ -1060,3 +1060,45 @@ degrau do espelho, limite de 1024 handles, custo do `actor.init` para todo ator 
 ### Próxima ação recomendada
 
 T0-T2 pelo Claude na branch `agent/HOST-SLIM-001-f3-atores-core`, depois o lote A com 3 Codex em paralelo.
+
+## F3 subprojeto 2 - 26/10/2026 - código do core (RFC 0031)
+
+### Estado
+
+**review.** T0-T4 e T6 do plano na branch `agent/HOST-SLIM-001-f3-atores-core`.
+
+### Resultado
+
+- T0 (Claude): RFC 0031 e design alinhados ao código (permissões, `save.available`, `gs_tokens`, dono dos handles,
+  golpe com espelho inalterado, capacidades opcionais do leveled, matriz).
+- T1 (Claude): contratos `ActorProvider::Get/SetMaxHealth`, `ModSaveStore`, `ResolveModFile`, contexto com
+  `saveData`/`playSfx`/`playFanfare`, política com `modDirectory`, mock com observação.
+- T2 (Claude): schema e gerados da RFC 0031.
+- A2 (Codex, revisado): `require("a.b")` com cache, ciclo, 8 níveis, 64 módulos e 1 MiB; fixture `require-demo`.
+  Ajuste meu: tirei dois aliases de teste duplicados do CMake.
+- A1 (Codex, revisado): bindings de ator, save e áudio, `ModSaveStore`, mock e `mock.actors/save/audio` no runner.
+  Ajustes meus na integração, pedidos pelo contrato gerado:
+  - as 8 funções novas viraram `availability` "common", como `ship.menu.register` (binding no core, capacidade só
+    no OoT);
+  - argumento malformado dá `invalid_argument` antes da checagem de capacidade;
+  - `ship.save.available()` devolve `false` sem `core.save`;
+  - `ship.audio.*` com id que não é inteiro dá erro Lua (float inteiro vale);
+  - fixture OoT do `api_contract_tests` com save e áudio, e testes de schema e de gerados com os 14 campos do
+    payload de dano.
+
+### Validação executada
+
+Windows, MSVC (VS 2022), Release, `build/attr`:
+- `cmake --build build/attr --config Release --parallel`: ok;
+- `ctest --test-dir build/attr -C Release`: 69/69;
+- `validate_api_schemas.py` e os três geradores com `--check`: ok;
+- `git diff --quiet origin/main -- include/shiplua/native`: sem mudança (layout id intacto);
+- `shiplua_mod_test_runner` sobre `link-span-examples/lua/leveled` (B3): 24/24.
+
+### Pendências
+
+- Host (T7-T10), leveled (T11, T13), guias (T12), prova em jogo (T14) e fechamento (T15).
+
+### Próxima ação recomendada
+
+Mergear este PR com CI verde e apontar o `extern/ship-lua` do host para o merge.
