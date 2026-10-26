@@ -1102,3 +1102,98 @@ Windows, MSVC (VS 2022), Release, `build/attr`:
 ### Próxima ação recomendada
 
 Mergear este PR com CI verde e apontar o `extern/ship-lua` do host para o merge.
+
+## F3 subprojeto 2 - 26/10/2026 - host, leveled e prova em jogo
+
+### Estado
+
+**review.** Core mergeado (link-span#78 e #79), Shipwright#20 mergeado em `eae8d93876`, Shipwright#21 aberto, link-span-examples#5 mergeado em `24d975f`. A matriz em jogo fechou com o NEI
+re-extraído. Ficaram de fora a luta com a Gohma (só a vida vanilla), o áudio da fanfarra e os 5 gates com controle
+físico.
+
+### Resultado
+
+- Core: link-span#78 (`be8df33`, T0-T4 e T6) e o guia `docs/actors-for-mods.md` + pt-BR com a fixture
+  `actors-guide` (link-span#79, `59f7592`; lote C2 do Codex, revisado). Nesta branch, os textos da RFC 0031 e do
+  guia com o desenho final das correções (`1d1d134`, escritos pelo Codex).
+- Host (Shipwright#20 mergeado em `eae8d93876`):
+  - A3 (Codex): `OotActorHealth.{h,cpp}`, a conta da vida estendida (espelho u8, débito, reescala), com teste;
+  - B1 (Codex): handles de observação, `Get` e `SetMaxHealth` no `OotActorProvider`, com teste;
+  - B2 (Codex, integrado por mim): `OotActorHealthGame.cpp`, `Actor_ApplyDamage` e reset de dano no `z_actor.c`,
+    funil de dano até 65535, campos e snapshots, `actor.init/destroy`, `hook.oot.actor.damaged`, `save.saving`,
+    `ship.save`, `ship.audio`, `age` e `gs_tokens`;
+  - meus: `gPlayState` declarado no arquivo novo, CMake reconfigurado, clang-format 14 e o
+    `OotModSaveBackend::Store` sem structured binding capturado em lambda (o clang do Xcode 15 recusa).
+- Correções do host (Shipwright#21 aberto), de duas revisões do Codex e da prova em jogo:
+  - golpe subgranular deixava o inimigo imune (Big Baba V=4, 46 de vida, golpes de 9): folga de 1 no espelho,
+    com exceção para Iron Knuckle, Dead Hand e Lizalfos/Dinolfos (limiares de fase);
+  - coop do Ivan por contribuição; apply sem zerar `colChkInfo.damage`; caminho sem mods sem tabelas;
+  - um handle do `actor.init` ao `actor.destroy`: spawn, `ship.actor.destroy`, unload, attach que falha e teardown
+    de cena; o fecho da cena saiu do `Play_Destroy` para o fim de `func_80031C3C`;
+  - o NEI desviava `Actor_UpdateAll` com uma cópia anterior ao settle: com ele, a vida estendida não caía. O
+    configure do NEI agora depende dos fontes do host que ele mescla, e o `CollisionCheck_ApplyDamage` ganhou
+    resolução manual do overlay;
+  - código das duas rodadas do Codex; meus: integração, destroy fora do teardown, resolução do overlay, build e
+    prova.
+- Leveled (link-span-examples#5 mergeado em `24d975f`):
+  - B3 (Codex): curva, stats, ids e inimigos;
+  - C1 (Codex): `main.lua`, HUD, menu, opções, testes e READMEs;
+  - paridade com o original (Codex, `8c4258d`): +1 de Power do inimigo, corações do aviso pela capacidade
+    aplicada, precisão `f32`, menu com passo 0,01;
+  - meus: dano recebido N/4 sem zerar golpe, `tools/package-leveled.ps1` e o fix do save `e593fcb`.
+- Prova em jogo (`logs/host-slim-f3-leveled/RELATORIO.md`):
+  - abate dá XP, e o XP volta depois de `reset` e recarga; "LEVEL UP!  Lv 2" na tela;
+  - nível 50: 9 corações em jogo, e o save guarda os 3 vanilla; sem o mod, o arquivo abre com 3 e o bloco fica;
+  - Big Baba nível 3 com vida 46, que cai golpe a golpe com o NEI re-extraído (46→34→22→10→0) e também com golpes
+    de 9 (46→37→…→0);
+  - mordida de 9-10 no nível 1 e de 2 no nível 50; Keese comum nível 1 e de gelo nível 3; Deku Nut com dano 0;
+  - +20 de Power por `attributes.toml` de outro mod: `power=62`, e um tiro mata;
+  - cópia e apagamento de arquivo, XP de token e número de dano na tela (igual ao `amount`);
+  - handles: spawn = init, destroy pela API e 4 trocas de cena com o handle conhecido, com e sem NEI.
+
+### Commits
+
+- Host (#20): `87cbd5da80` (A3), `3af08b137c` (B1), `7d0f5d5263` (`extern/ship-lua` → `be8df33`),
+  `596554a733` (clang-format), `e7cd44cb32` (B2 e `z_actor.c`), `bfed9b8962` (build do macOS).
+- Host (#21): `4a1c2ec405` (correções da RFC 0031 e do NEI).
+- Leveled: `8eb3e65` (B3), `4017021` (C1), `3f11dee` (pacote), `e593fcb` (fix do save), `8c4258d` (paridade).
+- Core (esta branch): `1d1d134` (RFC 0031, guia e design §7).
+
+### Validação executada
+
+Windows 11, MSVC 2022, Release:
+- host: `soh`, `soh_symbols` e alvos de teste compilados; `ctest -R "oot_actor_|oot_native|linkspan_"` 12/12;
+  clang-format 14 ok; layout `e8f10de8` intacto; `soh.exe` `3BEB1A0CFA86936C…` na ponta do #21;
+- CI do #20 verde (o macOS esperou runner e depois caiu no structured binding, corrigido em `bfed9b8962`);
+- leveled: `shiplua_mod_test_runner` 48/48 depois da paridade;
+- NEI re-extraído do host do #21 (`B1501EDA1DA47021…`): settle na cópia de `Actor_UpdateAll`, 313 funções
+  sobrepostas;
+- em jogo: `run-leveled.ps1`, sondas `run-babaprobe.ps1` e `run-handleprobe.ps1` e harness T14b, skill
+  `soh-runtime-playtest` e `gate-common` do RC; rodadas 1-3 no relatório.
+
+### Pendências
+
+- Leveled: o XP de encontro em grupo (D2) e as opções de HUD que faltam (D7) pedem decisão do mantenedor
+  (análise em `logs/host-slim-f3-leveled/codex/fix-leveled/NOTAS.md`).
+- NEI: seis funções do player em conflito no overlay desde a F2 (`Player_DrawGameplay`, `Player_UpdateCommon`,
+  `func_80837918` sem resolução; `Player_PostLimbDrawGameplay`, `Player_Action_8084411C`, `Player_PlayVoiceSfx`
+  com resolução velha). O NEI deixa de desviá-las sem erro; no RC10 eram zero conflitos.
+- Não coberto em jogo: luta com a Gohma, áudio da fanfarra, 5 gates com controle físico.
+- Id com prefixo `linkspan.` não grava no `ship.save` (`IsHostName`; `set` dá `host_failure`): documentar ou dar
+  um erro claro.
+- Alvo de CTest para a suíte com adaptador da vida (`OOT_ACTOR_HEALTH_GAME_TESTS`): trecho de CMake nas notas
+  do Codex (`codex/fix-review2/NOTAS.md`).
+- Subprojeto 3: análise do Codex em `logs/host-slim-f3-leveled/codex/sub3-analise/ANALISE.md`, com 7 fatias e
+  6 perguntas ao mantenedor.
+
+### Riscos
+
+- A folga deixa o ator ver espelho+1 antes do consumo. As três espécies com limiar de fase ficaram de fora;
+  chefes com dano manual não foram convertidos.
+- Todo pacote do NEI precisa ser extraído do mesmo host (o configure agora refaz a extração quando os fontes
+  mudam). Reempacotar uma DLL antiga desliga código novo do host sem erro.
+- `health = 0` no `.sav` depois de `reset` + recarga vem do SoH, e acontece também sem mods.
+
+### Próxima ação recomendada
+
+Resolver os conflitos do overlay do NEI e responder as perguntas do subprojeto 3 e do leveled (D2/D7).

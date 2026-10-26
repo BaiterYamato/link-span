@@ -1819,3 +1819,15 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
   (T11-T13), prova em jogo (T14) e fechamento (T15). O Codex escreve o código em três lotes.
 - Branch `agent/HOST-SLIM-001-f3-leveled-plano` (core).
 - Refs: `coordination/handoffs/HOST-SLIM-001.md`, seção "F3 subprojeto 2 - 26/10/2026 - plano de implementação".
+
+### UPDATE 2026-10-26 (Claude) — HOST-SLIM-001 F3 subprojeto 2: host, leveled e prova em jogo
+
+- Core: link-span#78 (`be8df33`) e guia link-span#79 (`59f7592`); textos finais da RFC 0031 nesta branch.
+- Host: Shipwright#20 mergeado em `eae8d93876`; correções da RFC 0031 e do NEI: Shipwright#21 aberto (soh.exe `3BEB1A0C…`, layout `e8f10de8`).
+- Leveled v1 em Lua puro: link-span-examples#5 mergeado em `24d975f`.
+- Em jogo (`logs/host-slim-f3-leveled/RELATORIO.md`): matriz fechada com o NEI re-extraído; fora a luta com a
+  Gohma, a fanfarra e os 5 gates com controle físico. A prova achou o golpe subgranular imune, os handles trocados e
+  o NEI com cópia velha do `Actor_UpdateAll`, todos corrigidos no #21.
+- Pendente: conflitos do overlay do NEI desde a F2, decisões do leveled (D2/D7) e do subprojeto 3.
+- Refs: `coordination/handoffs/HOST-SLIM-001.md`, seção "F3 subprojeto 2 - 26/10/2026 - host, leveled e prova em
+  jogo".

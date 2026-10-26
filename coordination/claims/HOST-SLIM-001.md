@@ -3,7 +3,7 @@
 - Status: review
 - Agent: Claude (Opus 5.5), com subagentes Codex (gpt-6.1-sol) nas análises
 - Platform: Windows
-- Branch: agent/HOST-SLIM-001-f3-atores-core
+- Branch: agent/HOST-SLIM-001-f3-leveled-fechamento
 - Started: 2026-10-19T12:00:00Z
 - Depends on: OOT-RELEASE-002 (RC10, host `e9da99b515`, layout `ee6449e8`)
 - Files (fase F0):
@@ -330,8 +330,25 @@
 - Status (fase F3-2, design): review. RFC 0031 e design do leveled v1 aprovados pelo mantenedor em 26/10 e
   mergeados (link-span#76, `e9cdae0`).
 - Status (fase F3-2, plano): done. Plano T0-T15 em `docs/plans/host-slim-001/plano-f3-leveled.md` (link-span#77).
-- Status (fase F3-2, código core): review. T0-T4 e T6 na branch `agent/HOST-SLIM-001-f3-atores-core`, a partir da
-  `main` em `fcb2b79`.
+- Status (fase F3-2, código core): done. link-span#78 (`be8df33`) e guia link-span#79 (`59f7592`).
+- Status (fase F3-2, host): Shipwright#20 mergeado em `eae8d93876` (branch `agent/HOST-SLIM-001-f3-atores-host` @ `bfed9b8962`).
+- Status (fase F3-2, correções do host): Shipwright#21 aberto (branch `agent/HOST-SLIM-001-f3-atores-fix` @ `4a1c2ec405`).
+- Status (fase F3-2, leveled): link-span-examples#5 mergeado em `24d975f` (branch `agent/HOST-SLIM-001-f3-leveled` @ `8c4258d`).
+- Status (fase F3-2, prova em jogo, textos da RFC e fechamento): review. Relatório em
+  `logs/host-slim-f3-leveled/RELATORIO.md` (fora do repo); branch `agent/HOST-SLIM-001-f3-leveled-fechamento`
+  (core).
+- Files (fase F3-2, host, BaiterYamato/Shipwright):
+  - soh/soh/OotActorHealth.h, soh/soh/OotActorHealth.cpp, soh/soh/OotActorHealthGame.cpp
+  - soh/soh/OotActorProvider.h, soh/soh/OotActorProvider.cpp, soh/soh/ShipLuaBootstrap.cpp
+  - soh/soh/native/OotNativeHooks.cpp, soh/soh/native/OotNativeHooksGame.cpp, soh/soh/native/OotNativeSaveGame.cpp
+  - soh/src/code/z_actor.c, soh/src/code/z_collision_check.c, soh/CMakeLists.txt,
+    soh/tests/OotActorHealthTests.cpp, soh/tests/OotActorProviderTests.cpp, extern/ship-lua
+  - soh/native-sdk/nei-core/CMakeLists.txt, soh/native-sdk/nei-core/fork/sync.py,
+    soh/native-sdk/nei-core/fork/overlay-merges/z_collision_check.CollisionCheck_ApplyDamage.c
+- Files (fase F3-2, leveled, BaiterYamato/link-span-examples): lua/leveled/**, tools/package-leveled.ps1
+- Files (fase F3-2, guia e textos): docs/actors-for-mods.md, docs/actors-for-mods.pt-BR.md,
+  tests/fixtures/mods/actors-guide/**, docs/native-providers*.md (nota), README*.md (links),
+  rfcs/0031-atores-para-mods.md, rfcs/0031-atores-para-mods.en.md, docs/plans/host-slim-001/design-leveled-v1.md
 - Files (fase F3-2, código core):
   - rfcs/0031-atores-para-mods.md, rfcs/0031-atores-para-mods.en.md, docs/plans/host-slim-001/design-leveled-v1.md
   - include/shiplua/actor/ActorProvider.h, include/shiplua/api/LuaApiBinding.h, include/shiplua/host/ModPath.h,
