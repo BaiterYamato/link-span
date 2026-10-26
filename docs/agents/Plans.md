@@ -1779,3 +1779,13 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
   - As tarefas 18 e 29 foram resolvidas pela T33 e pela Shipwright#18.
 - O claim fica em review. A HOST-SLIM-001 segue aberta para F3–F6.
 - Refs: `coordination/handoffs/HOST-SLIM-001.md`, seção "Fechamento da F2 - 24/10/2026".
+
+### UPDATE 2026-10-25 (Claude) — HOST-SLIM-001 F3 subprojeto 1, atributos de item no core (review)
+
+- RFC 0030 aceita, com plano T0-T15 em `docs/plans/host-slim-001/plano-f3-atributos.md`.
+- Core em `agent/HOST-SLIM-001-f3-atributos-core`: `attributes.toml`, registro, `ship.attributes` (7 funções, api
+  0.5.0), `linkspan.attributes` v1 por mod e capacidade `core.attributes`.
+  - CTest 66/66; schema e gerados conferidos.
+  - Lotes A1, B1, B2 e B3 escritos pelo Codex e integrados pelo Claude.
+- Próximo: PR do core; depois o host (fontes `oot`/`nei`, fixture e prova em jogo).
+- Refs: `coordination/handoffs/HOST-SLIM-001.md`, seção "F3 subprojeto 1 - 25/10/2026".
