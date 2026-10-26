@@ -959,3 +959,59 @@ Os do bloco "Files (fase F3-1, host)" do claim.
 
 Abrir o subprojeto 2 (leveled v1 sobre `ship.attributes`) com RFC ou
 plano próprios.
+
+## F3 subprojeto 2 - 26/10/2026 - design (RFC 0031 e leveled v1)
+
+### Estado
+
+**review.** Design aprovado em conversa, em quatro partes; os documentos aguardam a leitura do mantenedor antes do
+plano.
+
+### Resultado
+
+- Decisões do mantenedor:
+  - recorte "núcleo + números";
+  - primitivas genéricas no core e no host, com o mod em Lua puro, para o Link-Span "parecer mais um NeoForge" e dar
+    mais liberdade aos modders;
+  - contratos, fluxo do mod e testes aprovados como propostos.
+- `rfcs/0031-atores-para-mods.md` (+ `.en.md`): handles de observação, `actor.init`/`actor.destroy` emitidos no OoT,
+  `params` no snapshot, instância nos eventos de dano e derrota, `ship.actor.get`, `ship.actor.set_max_health` (vida
+  estendida com espelho na escala vanilla), `hook.oot.actor.damaged`, `ship.save`, `require` de módulos do pacote,
+  `ship.player.get("age")`, `ship.audio` e `save.saving`. Layout id inalterado por desenho.
+- `docs/plans/host-slim-001/design-leveled-v1.md`: pacote `baiteryamato.leveled` em `link-span-examples/lua/leveled`,
+  regras portadas dos `leveled_*.c` do PR #11, fluxo, estado, HUD, menu, testes e matriz de exclusões.
+- O subprojeto 3 encolhe: a vida acima de 255 dos inimigos comuns entra na 2a.
+
+### Arquivos alterados
+
+Os do bloco "Files (fase F3-2, design)" do claim.
+
+### Validação executada
+
+Revisão própria dos dois documentos:
+- sem marcadores pendentes;
+- contratos conferidos contra o código:
+  - funil `LinkSpan_ActorDamage`/`FinalizeOotActorDamage`;
+  - `ShipOotSaveV1`;
+  - `HandleRegistry`;
+  - `require` só com `"ship"`;
+  - campos de `ship.player.get`;
+  - capacidades anunciadas no bootstrap;
+  - ids de fanfarra do `sequence.h`;
+  - `shiplua_mod_test_runner`.
+
+### Pendências
+
+- Leitura do mantenedor; depois, o plano de implementação da 2a e da 2b.
+- Do subprojeto 1: item do NEI num botão C em jogo e A/B vanilla dos 5 gates.
+
+### Riscos
+
+- A vida estendida é a peça de maior risco. Atores que ignoram golpe com débito 0 no espelho, que definem a vida depois
+  do init ou que mexem na vida por conta própria só aparecem na matriz em jogo.
+- O host OoT não emitia `actor.init`/`actor.destroy` nem anunciava `actor.events`: a 2a liga isso pela primeira vez.
+
+### Próxima ação recomendada
+
+Depois da leitura, escrever o plano de implementação (skill writing-plans) da 2a (core, depois host) e da 2b, com o
+Codex escrevendo o código.

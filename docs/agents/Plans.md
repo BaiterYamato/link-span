@@ -1801,3 +1801,13 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
   `nei`.
 - Pendente: item do NEI num botão C em jogo, A/B vanilla dos gates e subprojetos 2 e 3.
 - Refs: `coordination/handoffs/HOST-SLIM-001.md`, seção "F3 subprojeto 1 - 26/10/2026 - host e prova em jogo".
+
+### UPDATE 2026-10-26 (Claude) — HOST-SLIM-001 F3 subprojeto 2: design da RFC 0031 e do leveled v1
+
+- O subprojeto 2 virou dois:
+  - 2a: RFC 0031, primitivas genéricas de ator, vida estendida, dano efetivo, `ship.save`, módulos, idade e áudio;
+  - 2b: leveled v1 em Lua puro no `link-span-examples`.
+- Recorte "núcleo + números", escolhido pelo mantenedor. Design aprovado em conversa; os documentos aguardam leitura.
+- Branch `agent/HOST-SLIM-001-f3-leveled-rfc` (core).
+- Refs: `rfcs/0031-atores-para-mods.md`, `docs/plans/host-slim-001/design-leveled-v1.md`,
+  `coordination/handoffs/HOST-SLIM-001.md` seção "F3 subprojeto 2 - 26/10/2026 - design".
