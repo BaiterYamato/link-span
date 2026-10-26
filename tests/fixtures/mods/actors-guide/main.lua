@@ -1,0 +1,5 @@
+require("examples.read_actor")
+require("examples.double_health")
+require("examples.damage_numbers")
+require("examples.progress")
+require("examples.modules")

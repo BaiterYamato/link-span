@@ -110,6 +110,12 @@ runtime->register_hook(runtime->context, &spec, &handle);
 
 A core extension publishes its own points with `declare_hook_point` and triggers them with `dispatch_hook`. See [RFC 0021](../rfcs/0021-native-hooks.md).
 
+### Extended health in `oot.actor.damage`
+
+With [RFC 0031](../rfcs/0031-atores-para-mods.en.md), the native `oot.actor.damage` hook sees and returns `damage` in the target's extended-health units when extended health is enabled. Do not truncate it to `uint8_t` or assume a 255 ceiling: the host clamps it to 0..65535 and the remaining HP, then converts the pending debit to the vanilla mirror. The initial damage is still what the game calculated; the cooperative multiplier applies afterward. An unextended target keeps the F2i 0..255 path.
+
+The actor's vanilla `u8` health is a mirror, not its real extended HP. A proposed debit is not proof of effective damage; it must be confirmed when applied. This change adds no native extended-health service table or new ABI struct. See [Actors for modders](actors-for-mods.md) for the mirror, confirmation rules and exclusions.
+
 ## Escape hatch (ABI 1.3)
 
 For changes no service or hook covers, a core extension with `load_phase = "pre_game"` and `abi_version = "1.3"` (or `"1.4"`) can resolve executable functions by name and detour them:

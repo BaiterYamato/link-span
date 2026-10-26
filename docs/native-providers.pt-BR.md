@@ -114,6 +114,12 @@ runtime->register_hook(runtime->context, &spec, &handle);
 Uma core extension publica pontos próprios com `declare_hook_point` e os
 dispara com `dispatch_hook`. Detalhes na [RFC 0021](../rfcs/0021-native-hooks.md).
 
+### Vida estendida em `oot.actor.damage`
+
+Com a [RFC 0031](../rfcs/0031-atores-para-mods.md), o hook nativo `oot.actor.damage` vê e devolve `damage` nas unidades de vida estendida do alvo quando a extensão está ligada. Não o trunque para `uint8_t` nem presuma teto de 255: o host limita a 0..65535 e ao HP restante e converte o débito pendente para o espelho vanilla. O dano inicial continua sendo o calculado pelo jogo; o multiplicador cooperativo vem depois. Um alvo sem extensão mantém o caminho 0..255 da F2i.
+
+A vida vanilla `u8` do ator é um espelho, não seu HP estendido real. Um débito proposto não prova dano efetivo; precisa ser confirmado na aplicação. Essa mudança não acrescenta tabela nativa de serviço de vida estendida nem struct nova na ABI. Veja [Atores para modders](actors-for-mods.pt-BR.md) para o espelho, as regras de confirmação e as exclusões.
+
 ## Escape hatch (ABI 1.3)
 
 Para mudanças que nenhum serviço ou hook cobre, uma core extension com `load_phase = "pre_game"` e
