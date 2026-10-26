@@ -65,6 +65,13 @@ Derivada dos schemas canônicos em `schema/` (IDL); regenere com
 | `ship.hud.draw_ring` | `0.4.0` | `experimental` | sim | — | `hud.draw` | `invalid_argument`, `invalid_state` |
 | `ship.hud.draw_icon` | `0.4.0` | `experimental` | sim | — | `hud.icons` | `invalid_argument`, `invalid_state`, `unsupported` |
 | `ship.menu.register` | `0.5.0` | `preview` | sim | sim | `core.menu` | `unsupported`, `invalid_argument`, `resource_limit`, `host_failure` |
+| `ship.attributes.value` | `0.5.0` | `experimental` | sim | sim | `core.attributes` | `invalid_argument`, `unsupported` |
+| `ship.attributes.breakdown` | `0.5.0` | `experimental` | sim | sim | `core.attributes` | `invalid_argument`, `unsupported` |
+| `ship.attributes.modifiers_of` | `0.5.0` | `experimental` | sim | sim | `core.attributes` | `invalid_argument`, `unsupported` |
+| `ship.attributes.has_tag` | `0.5.0` | `experimental` | sim | sim | `core.attributes` | `invalid_argument`, `unsupported` |
+| `ship.attributes.tag_members` | `0.5.0` | `experimental` | sim | sim | `core.attributes` | `invalid_argument`, `unsupported` |
+| `ship.attributes.add_modifier` | `0.5.0` | `experimental` | sim | sim | `core.attributes` | `invalid_argument`, `unsupported` |
+| `ship.attributes.remove_modifier` | `0.5.0` | `experimental` | sim | sim | `core.attributes` | `invalid_argument`, `unsupported` |
 | `ship.native.has` | `0.5.0` | `experimental` | sim | sim | — | `invalid_argument` |
 | `ship.native.call` | `0.5.0` | `experimental` | sim | sim | — | `unsupported`, `invalid_argument`, `invalid_handle`, `invalid_state`, `resource_limit`, `host_failure` |
 
@@ -117,6 +124,7 @@ nunca registra `ship.oot.*` ou `ship.mm.*` (RFC 0001).
 | `core.timers` | `contract` | sim | sim |
 | `core.input` | `contract` | sim | sim |
 | `core.menu` | `contract` | sim | — |
+| `core.attributes` | `contract` | sim | sim |
 | `input.actions` | `contract` | sim | — |
 | `game.state` | `contract` | sim | — |
 | `core.storage` | `contract` | sim | sim |
@@ -162,5 +170,5 @@ nunca registra `ship.oot.*` ou `ship.mm.*` (RFC 0001).
 |---|---:|
 | `stable` | 12 |
 | `preview` | 2 |
-| `experimental` | 44 |
+| `experimental` | 51 |
 

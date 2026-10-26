@@ -7,9 +7,12 @@
 #include <chrono>
 #include <map>
 #include <sstream>
+#include <set>
 #include <utility>
 #include <vector>
 
+#include "shiplua/attributes/AttributeFile.h"
+#include "shiplua/attributes/AttributeNativeService.h"
 #include "shiplua/generated/ApiBindings.h"
 #include "shiplua/manifest/DependencyResolver.h"
 #include "shiplua/manifest/ManifestParser.h"
@@ -160,6 +163,65 @@ Result<void> ValidateCompatibility(const Manifest& manifest, const LuaApiHostCon
     return Result<void>::ok();
 }
 
+void LogAttributeDiagnostics(const Logger& logger, const std::string& owner,
+                             const std::vector<AttributeDiagnostic>& diagnostics) {
+    for (const auto& diagnostic : diagnostics) {
+        switch (diagnostic.level) {
+            case AttributeDiagnosticLevel::Error: logger.error(owner, diagnostic.message); break;
+            case AttributeDiagnosticLevel::Warning: logger.warn(owner, diagnostic.message); break;
+            case AttributeDiagnosticLevel::Info: logger.info(owner, diagnostic.message); break;
+        }
+    }
+}
+
+AttributeDeclarations ReadAttributeDeclarations(const std::filesystem::path& directory,
+                                                 const std::string& owner, const Logger& logger) {
+    if (directory.empty()) return {};
+    const auto path = directory / "attributes.toml";
+    std::error_code error;
+    const bool exists = std::filesystem::exists(path, error);
+    if (error) {
+        logger.error(owner, "attributes.toml: cannot inspect file: " + error.message());
+        return {};
+    }
+    if (!exists) return {};
+    const auto status = std::filesystem::symlink_status(path, error);
+    if (error || !std::filesystem::is_regular_file(status)) {
+        logger.error(owner, "attributes.toml: expected a regular file without symbolic links");
+        return {};
+    }
+    std::ifstream input(path, std::ios::binary);
+    if (!input.is_open()) {
+        logger.error(owner, "attributes.toml: cannot open file");
+        return {};
+    }
+    // Um byte extra deixa o parser detectar o limite sem ler um arquivo inteiro sem limite.
+    std::string contents(AttributeLimits::kMaxFileBytes + 1, '\0');
+    input.read(contents.data(), static_cast<std::streamsize>(contents.size()));
+    if (input.bad()) {
+        logger.error(owner, "attributes.toml: failed to read file");
+        return {};
+    }
+    contents.resize(static_cast<std::size_t>(input.gcount()));
+    auto parsed = ParseAttributeFile(contents, owner);
+    LogAttributeDiagnostics(logger, owner, parsed.diagnostics);
+    return parsed.accepted ? std::move(parsed.declarations) : AttributeDeclarations{};
+}
+
+struct AttributeLoadGuard {
+    AttributeRegistry* registry;
+    const std::string& owner;
+    const Logger& logger;
+    bool committed = false;
+
+    ~AttributeLoadGuard() noexcept {
+        if (registry == nullptr || committed) return;
+        try {
+            LogAttributeDiagnostics(logger, owner, registry->RemoveMod(owner));
+        } catch (...) { /* Rollback não lança durante a destruição de runtime/provider. */ }
+    }
+};
+
 EventKind ToEventKind(Generated::EventKind kind) {
     switch (kind) {
         case Generated::EventKind::Observe: return EventKind::Observe;
@@ -179,6 +241,10 @@ ModHost::ModHost(LuaApiHostContext hostContext, Logger logger, NativeProviderPol
       mHostContext(std::move(hostContext)),
       mNativePolicy(std::move(nativePolicy)),
       mEvents(std::make_unique<EventDispatcher>()) {
+    if (mHostContext.attributes) {
+        mHostContext.attributes->SetLogger(mLogger);
+        mAttributeService = MakeAttributeNativeService(mHostContext.attributes);
+    }
     for (const Generated::EventBinding& event : Generated::kEvents) {
         const auto defined = mEvents->DefineEvent(std::string(event.name), ToEventKind(event.kind));
         if (!defined.isOk()) {
@@ -197,6 +263,7 @@ ModHost::ModHost(ModHost&& other) noexcept
     : mLogger(std::move(other.mLogger)),
       mHostContext(std::move(other.mHostContext)),
       mNativePolicy(std::move(other.mNativePolicy)),
+      mAttributeService(std::move(other.mAttributeService)),
       mEvents(std::move(other.mEvents)),
       mNextModLoadOrder(other.mNextModLoadOrder),
       mMods(std::move(other.mMods)),
@@ -210,6 +277,7 @@ ModHost& ModHost::operator=(ModHost&& other) noexcept {
         mLogger = std::move(other.mLogger);
         mHostContext = std::move(other.mHostContext);
         mNativePolicy = std::move(other.mNativePolicy);
+        mAttributeService = std::move(other.mAttributeService);
         mEvents = std::move(other.mEvents);
         mNextModLoadOrder = other.mNextModLoadOrder;
         mMods = std::move(other.mMods);
@@ -299,8 +367,30 @@ Result<void> ModHost::LoadMod(const Manifest& manifest, const std::string& luaSo
 
     // Declaração antes de runtime/binding garante a ordem também no rollback.
     std::unique_ptr<NativeProvider> provider;
+    // O guarda sai antes de provider: nenhuma fonte aponta para uma DLL já liberada.
+    AttributeLoadGuard attributeGuard{mHostContext.attributes.get(), manifest.id, mLogger};
+    if (mHostContext.attributes) {
+        auto declarations = ReadAttributeDeclarations(directory, manifest.id, mLogger);
+        std::set<std::string> dependencies;
+        std::vector<std::string> pending;
+        for (const auto& [id, range] : manifest.dependencies) {
+            (void)range;
+            pending.push_back(id);
+        }
+        for (std::size_t index = 0; index < pending.size(); ++index) {
+            const auto found = mMods.find(pending[index]);
+            if (found == mMods.end() || !dependencies.insert(found->first).second) continue;
+            for (const auto& [id, range] : found->second.manifest.dependencies) {
+                (void)range;
+                pending.push_back(id);
+            }
+        }
+        LogAttributeDiagnostics(mLogger, manifest.id, mHostContext.attributes->AddMod(
+            manifest.id, std::move(declarations), std::move(dependencies)));
+    }
     if (manifest.provider) {
         auto nativePolicy = mNativePolicy;
+        if (mHostContext.attributes) nativePolicy.services.push_back(mAttributeService.ForMod(manifest.id));
         nativePolicy.services.insert(nativePolicy.services.end(),
                                      mExtensionServices.begin(), mExtensionServices.end());
         auto native = NativeProvider::Load(manifest, directory, nativePolicy);
@@ -354,6 +444,7 @@ Result<void> ModHost::LoadMod(const Manifest& manifest, const std::string& luaSo
                               (provider ? " [native]" : ""));
     mMods.emplace(manifest.id,
                   LoadedMod{manifest, std::move(provider), std::move(runtime), std::move(binding), {}});
+    attributeGuard.committed = true;
     auto stored = mMods.find(manifest.id);
     if (manifest.kind == ModKind::CoreExtension && stored != mMods.end() && stored->second.provider) {
         const auto& published = stored->second.provider->PublishedServices();
@@ -600,6 +691,11 @@ Result<ModLoadReport> ModHost::LoadModsFromRoot(const std::filesystem::path& roo
     }
 
     cleanupOwnedDirectories();
+    if (mHostContext.attributes) {
+        for (const auto& diagnostic : mHostContext.attributes->Audit()) {
+            mLogger.warn("attributes", diagnostic.message);
+        }
+    }
     return Result<ModLoadReport>::ok(std::move(report));
 }
 
@@ -673,6 +769,9 @@ Result<void> ModHost::UnloadMod(const std::string& id) {
     std::erase_if(mExtensionServices, [&modId](const NativeHostService& service) {
         return service.owner == modId;
     });
+    if (mHostContext.attributes) {
+        LogAttributeDiagnostics(mLogger, modId, mHostContext.attributes->RemoveMod(modId));
+    }
     std::erase(mLoadOrder, modId);
     {
         // Hooks e desvios já saíram; os finalizadores Lua ainda chamam a DLL, que só desliga no destrutor.

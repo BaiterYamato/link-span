@@ -63,6 +63,13 @@ local FUNCTIONS = {
   { name = "ship.hud.draw_ring", availability = "oot", required_arguments = 3, error_mode = "raise" },
   { name = "ship.hud.draw_icon", availability = "oot", required_arguments = 5, error_mode = "raise" },
   { name = "ship.menu.register", availability = "common", required_arguments = 1, error_mode = "raise" },
+  { name = "ship.attributes.value", availability = "common", required_arguments = 1, error_mode = "raise" },
+  { name = "ship.attributes.breakdown", availability = "common", required_arguments = 1, error_mode = "raise" },
+  { name = "ship.attributes.modifiers_of", availability = "common", required_arguments = 1, error_mode = "raise" },
+  { name = "ship.attributes.has_tag", availability = "common", required_arguments = 2, error_mode = "raise" },
+  { name = "ship.attributes.tag_members", availability = "common", required_arguments = 1, error_mode = "raise" },
+  { name = "ship.attributes.add_modifier", availability = "common", required_arguments = 1, error_mode = "raise" },
+  { name = "ship.attributes.remove_modifier", availability = "common", required_arguments = 1, error_mode = "raise" },
   { name = "ship.native.has", availability = "common", required_arguments = 1, error_mode = "raise" },
   { name = "ship.native.call", availability = "common", required_arguments = 2, error_mode = "return" },
 }
@@ -74,8 +81,8 @@ local ENUM_VALUES = {
 }
 
 local CONTRACT_CAPABILITIES = {
-  oot = { "core.events", "hooks.bridge", "core.timers", "core.input", "core.menu", "input.actions", "game.state", "core.storage", "core.storage.shared", "oot.cutscene", "oot.env", "hud.draw", "hud.icons", "scene.events", "actor.events", "actor.spawn", "actor.destroy", "actor.exists", "save.events", "text.events", "audio.sequence.events", "world.travel", "oot.player.jump", "oot.player.mask", "player.speed", "player.fields", "oot.player.attach_model", "mod.assets", "oot.player.immunity", "oot.player.weight", "oot.player.roll", "oot.player.custom_body", "oot.player.held_item_model" },
-  mm = { "core.events", "hooks.bridge", "core.timers", "core.input", "core.storage", "core.storage.shared", "scene.events", "actor.events", "actor.spawn", "actor.destroy", "actor.exists", "save.events", "text.events", "audio.sequence.events", "world.travel", "mm.player.jump", "mm.spawn_dog", "mm.player.sword_skin", "player.speed" },
+  oot = { "core.events", "hooks.bridge", "core.timers", "core.input", "core.menu", "core.attributes", "input.actions", "game.state", "core.storage", "core.storage.shared", "oot.cutscene", "oot.env", "hud.draw", "hud.icons", "scene.events", "actor.events", "actor.spawn", "actor.destroy", "actor.exists", "save.events", "text.events", "audio.sequence.events", "world.travel", "oot.player.jump", "oot.player.mask", "player.speed", "player.fields", "oot.player.attach_model", "mod.assets", "oot.player.immunity", "oot.player.weight", "oot.player.roll", "oot.player.custom_body", "oot.player.held_item_model" },
+  mm = { "core.events", "hooks.bridge", "core.timers", "core.input", "core.attributes", "core.storage", "core.storage.shared", "scene.events", "actor.events", "actor.spawn", "actor.destroy", "actor.exists", "save.events", "text.events", "audio.sequence.events", "world.travel", "mm.player.jump", "mm.spawn_dog", "mm.player.sword_skin", "player.speed" },
 }
 
 local failures = {}

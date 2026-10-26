@@ -789,3 +789,83 @@ Windows 11 x64, Visual Studio 2022 (MSVC v143), Release, Python 3.14.
 ### Próxima ação recomendada
 
 O mantenedor faz o playtest físico pré-RC11 (D9, D16 e passos 5–8 da 33) e decide a D12. Em paralelo, abrir a F3 com claim e branch próprios, começando pelo MM Base (`soh/native-sdk/mm-base`) sobre resources V4.
+
+## F3 subprojeto 1 - 25/10/2026 - atributos de item no core (RFC 0030)
+
+### Estado
+
+**review** no core. A branch `agent/HOST-SLIM-001-f3-atributos-core` está pronta para o PR na `main` do
+link-span. O host (fontes `oot` e `nei`, ligação no bootstrap, fixture e prova em jogo) só começa depois do merge.
+
+### Resultado
+
+- RFC 0030 aceita em 25/10, com tradução em inglês e guias `docs/item-attributes*.md`.
+- Plano em `docs/plans/host-slim-001/plano-f3-atributos.md` (T0-T15).
+- O `attributes.toml` declara atributos, modificadores, `[[remove]]` e tags. Ele é lido antes do entrypoint, e um
+  erro de sintaxe ou de esquema ignora o arquivo inteiro sem impedir a carga do mod.
+- O registro faz a conta (soma, `multiply_base`, `multiply_total`, limites), guarda donos, dependências
+  transitivas e fontes de itens ativos, e audita ao fim da carga pela raiz.
+- `ship.attributes` traz 7 funções na api 0.5.0 (experimental), com a capacidade `core.attributes` (oot e mm).
+- `linkspan.attributes` v1 é uma tabela C por mod. O `ModHost` a monta na carga do provider
+  (`AttributeNativeService::ForMod`), sem mexer em `include/shiplua/native`.
+- O `ModHost` liga tudo: registro na carga, rollback, remoção no unload antes de liberar a DLL e o serviço
+  nativo na política de cada provider.
+- Um host que anuncia `core.attributes` sem registro é rejeitado, como no `core.menu`.
+- O layout id não muda: `include/shiplua/native` fica igual à `main`, e o header C novo fica fora do glob do
+  fingerprint. A primeira versão punha `resolve` em `NativeHostService` (dentro do glob); isso foi corrigido
+  antes do merge.
+
+### Commits
+
+Sobre `origin/main` @ `fe2cf23`:
+
+- `a13cdae`, `c474e6a`, `b743b59`: RFC, plano e RFC aceita (branch `agent/HOST-SLIM-001-f3-rfc-atributos`).
+- `6506405`: contratos (T1).
+- `d5960b8`: parser e registro (T2-T4, lote A1 do Codex).
+- `3708b88`: RFC em inglês e guias (T8, lote B3 do Codex).
+- `b059d8d`: serviço nativo (T5, lote B1 do Codex).
+- `3021eb5`: ModHost, binding Lua, schema e gerados (T6/T7, lote B2 do Codex; o schema, os gerados e a validação
+  do contexto são do Claude).
+
+### Arquivos alterados
+
+Os do bloco "Files (fase F3-1, core)" do claim.
+
+### Validação executada
+
+- MSVC 2022 x64 Release em `build/attr`: `cmake --build` e `ctest -C Release`.
+- `python tools/validate_api_schemas.py`.
+- `generate_cpp_api.py`, `generate_api_docs.py` e `generate_api_contracts.py`, cada um também com `--check`.
+
+### Resultado da validação
+
+- CTest 66/66 verde. São 5 testes novos: `attribute_file_tests`, `attribute_registry_tests`,
+  `attribute_native_tests`, `attribute_host_tests` e `attribute_lua_tests`.
+- Schema válido, e os três geradores passam no `--check` com saída 0.
+- Na primeira rodada, o `lua_api_binding_tests.exe` recém-linkado ficou travado no disco (provável antivírus). Ele
+  foi recompilado e passou na hora.
+
+### Pendências
+
+- PR do core e merge com CI verde.
+- Host:
+  - T11: bump do submódulo e bloco do `core.attributes` no bootstrap.
+  - T12: mod `linkspan.oot.item_source` (lote A2 do Codex) e fonte `nei` no nei-core (lote A3), com bump de patch
+    do NEI.
+  - T13: fixture `linkspan.test.attributes`.
+  - T14: pacotes e prova em jogo.
+  - T15: PR do host.
+- Subprojetos 2 (leveled v1) e 3 (conteúdo do NEI, HP>255).
+
+### Riscos
+
+- No breakdown nativo, um modificador sem alvo sai com `when = equipped`, porque o registro não guarda o `when`
+  original na projeção (lote B1). Isso não afeta a conta.
+- Custo por consulta: cada `value` pergunta a todas as fontes. A medição fica para a prova em jogo.
+- `provider.c` do `oot_item_source` inclui `z64.h` em C. Um id runtime do NEI pode cair na faixa vanilla, e os
+  equipamentos novos do fork NEI ainda não estão cobertos. Os três riscos são do host e aparecem na T12.
+
+### Próxima ação recomendada
+
+Abrir o PR do core (RFC + plano + código), mergear com CI verde e abrir a branch do host
+`agent/HOST-SLIM-001-f3-atributos-host` a partir da integração `088a94855a`, seguindo T11-T15 do plano.

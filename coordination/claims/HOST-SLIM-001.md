@@ -3,7 +3,7 @@
 - Status: review
 - Agent: Claude (Opus 5.5), com subagentes Codex (gpt-6.1-sol) nas análises
 - Platform: Windows
-- Branch: agent/HOST-SLIM-001-f2-fechamento
+- Branch: agent/HOST-SLIM-001-f3-atributos-core
 - Started: 2026-10-19T12:00:00Z
 - Depends on: OOT-RELEASE-002 (RC10, host `e9da99b515`, layout `ee6449e8`)
 - Files (fase F0):
@@ -282,3 +282,35 @@
 - Status (coordenação F2 do maestro Codex): encerrada em 23/10/2026, quando a condução voltou ao Claude.
 - Sobreposição registrada: `docs/agents/Plans.md` é ledger compartilhado com CLAIMS-CLEANUP-001 e OOT-COREMODS-PLAN-001. Só recebe apêndices, e nenhuma claim alheia é fechada ou muda de dono.
 - Status global: review. As fases F3–F6 abrem com claims e branches próprios. Sem release, tag ou RC público.
+
+## F3 subprojeto 1 (atributos de item) - 25/10/2026
+
+- Status (fase F3-1, core): review. Código pronto para o PR na `main`; o host vem depois do merge.
+- Branch (fase F3-1, core): `agent/HOST-SLIM-001-f3-atributos-core`, empilhada sobre
+  `agent/HOST-SLIM-001-f3-rfc-atributos` (RFC e plano). A linha `Branch` do topo passa a apontar para ela; o
+  fechamento da F2 segue em `agent/HOST-SLIM-001-f2-fechamento`.
+- Agent (fase F3-1): Claude (Opus 5.5) nos contratos, na integração, no build MSVC e no schema. O código dos lotes
+  A1, B1 e B2 e a tradução B3 foram feitos por subagentes Codex (gpt-6.1-sol), a pedido do mantenedor.
+- Started (fase F3-1): 2026-10-25
+- Files (fase F3-1, core):
+  - rfcs/0030-atributos-de-item.md, rfcs/0030-atributos-de-item.en.md
+  - docs/plans/host-slim-001/plano-f3-atributos.md
+  - docs/item-attributes.md, docs/item-attributes.pt-BR.md, docs/README.md, docs/README.pt-BR.md
+  - include/linkspan/attributes/linkspan_attributes.h
+  - include/shiplua/attributes/**, src/attributes/**
+  - src/api/LuaAttributesBinding.h, src/api/LuaAttributesBinding.cpp, src/api/LuaApiBinding.cpp
+  - include/shiplua/api/LuaApiBinding.h
+  - include/shiplua/host/ModHost.h, src/host/ModHost.cpp
+  - schema/api.yml, schema/capabilities.yml, generated/**
+  - tests/CMakeLists.txt, tests/unit/Attribute*Tests.cpp, tests/native/AttributesFixture.c,
+    tests/native/AttributeNativeTests.cpp, tests/contract/ApiContractTests.cpp
+  - coordination/claims/HOST-SLIM-001.md (só este bloco), coordination/handoffs/HOST-SLIM-001.md (só a seção F3),
+    docs/agents/Plans.md (só o apêndice)
+- Files (fase F3-1, host, a declarar na abertura da branch do host): `extern/ship-lua`,
+  `soh/soh/ShipLuaBootstrap.cpp` (só o bloco do `core.attributes`), `soh/native-sdk/oot-item-source/**`,
+  `soh/native-sdk/nei-core/**` (fonte `nei`), `soh/native-sdk/tests/attributes-probe/**`.
+- Goal (fase F3-1): registro de atributos, modificadores e tags de item entre mods (RFC 0030), com o
+  `attributes.toml`, a API `ship.attributes` e o serviço nativo `linkspan.attributes` v1; fontes `oot` e `nei` no
+  host. É o subprojeto 1 dos 3 do port do leveled.
+- Sobreposição registrada: o gate acusa `docs/agents/Plans.md` com CLAIMS-CLEANUP-001 e OOT-COREMODS-PLAN-001. É o ledger compartilhado; a F3 só acrescenta um apêndice, e nenhuma claim alheia é fechada ou muda de dono.
+- Sem release, tag ou RC público.

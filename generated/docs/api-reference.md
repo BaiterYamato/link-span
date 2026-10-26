@@ -22,6 +22,9 @@ API version: `0.5.0`. Schema version: `1`.
 | `hotkey_options` | `object` | `default: string?`, `label: string?` | Hotkey registration options (default key and label). |
 | `game_state` | `object` | `mode: string`, `save_slot: integer?` | Stable gameplay state without exposing native structs. |
 | `hud_icon_options` | `object` | `alpha: integer?` | Bounded presentation options for a HUD icon. |
+| `attribute_breakdown_entry` | `object` | `modifier: string`, `item: string?`, `op: string`, `value: number` | Active modifier in an attribute's total; item is absent when the modifier has no target. |
+| `attribute_modifier_view` | `object` | `id: string`, `attribute: string`, `op: string`, `value: number`, `when: string`, `via: string?` | Modifier an item provides; via is the tag through which the item matched. |
+| `attribute_modifier` | `object` | `id: string`, `attribute: string`, `op: string`, `value: number`, `target: string?`, `when: string?` | Runtime modifier: id with the mod prefix, op add, multiply_base or multiply_total, an item or #tag target and when equipped or owned. |
 
 ## Functions
 
@@ -83,6 +86,13 @@ API version: `0.5.0`. Schema version: `1`.
 | `ship.hud.draw_ring` | `cx: number`, `cy: number`, `radius: number`, `thickness: number?`, `fraction: number?`, `r: integer?`, `g: integer?`, `b: integer?`, `a: integer?` | `boolean` | `oot` | `experimental` | `0.4.0` | `hud.draw` | `invalid_argument`, `invalid_state` | Draws an approximate arc clockwise from the top, with its fraction clamped to 0 to 1. Only works in hook.oot.hud.draw; returns false outside it or without budget, and true also when there is no arc to draw. |
 | `ship.hud.draw_icon` | `path: string`, `x: integer`, `y: integer`, `w: integer`, `h: integer`, `options: hud_icon_options?` | `boolean` | `oot` | `experimental` | `0.4.0` | `hud.icons` | `invalid_argument`, `invalid_state`, `unsupported` | Draws a 32x32 RGBA32 texture on the HUD and returns true, scaled to 1 to 64 pixels per dimension. Returns false outside hook.oot.hud.draw, for an invalid resource or size, or without drawing budget. |
 | `ship.menu.register` | `page: any` | `boolean` | `common` | `preview` | `0.5.0` | `core.menu` | `unsupported`, `invalid_argument`, `resource_limit`, `host_failure` | Registers a declarative menu page for the mod (checkbox, sliders, choice, action, text and separator widgets) and returns true. Values persist only in ship.storage and input arrives outside the draw pass; requires core.menu. |
+| `ship.attributes.value` | `attribute: string` | `number` | `common` | `experimental` | `0.5.0` | `core.attributes` | `invalid_argument`, `unsupported` | Returns the player's final value for the attribute now. An undeclared attribute returns nil and "unknown attribute"; requires core.attributes. |
+| `ship.attributes.breakdown` | `attribute: string` | `array<attribute_breakdown_entry>` | `common` | `experimental` | `0.5.0` | `core.attributes` | `invalid_argument`, `unsupported` | Lists the attribute's active modifiers and the item for each, in mod load order and then by id. An undeclared attribute returns nil and "unknown attribute". |
+| `ship.attributes.modifiers_of` | `item: string` | `array<attribute_modifier_view>` | `common` | `experimental` | `0.5.0` | `core.attributes` | `invalid_argument`, `unsupported` | Lists what the item provides, active or not, with the tag it matched through in via. |
+| `ship.attributes.has_tag` | `item: string`, `tag: string` | `boolean` | `common` | `experimental` | `0.5.0` | `core.attributes` | `invalid_argument`, `unsupported` | Returns whether the item belongs to the tag (without #), with nested tags already resolved. |
+| `ship.attributes.tag_members` | `tag: string` | `array<string>` | `common` | `experimental` | `0.5.0` | `core.attributes` | `invalid_argument`, `unsupported` | Returns the resolved members of the tag (without #), in order; an unknown tag returns an empty list. |
+| `ship.attributes.add_modifier` | `modifier: attribute_modifier` | `boolean` | `common` | `experimental` | `0.5.0` | `core.attributes` | `invalid_argument`, `unsupported` | Adds a runtime modifier for the mod and returns true, or nil and the error. The id needs the mod prefix and must not repeat; without target it applies directly to the player. It is not saved. |
+| `ship.attributes.remove_modifier` | `id: string` | `boolean` | `common` | `experimental` | `0.5.0` | `core.attributes` | `invalid_argument`, `unsupported` | Removes one of the mod's runtime modifiers and returns whether it was removed; another mod's id returns false. |
 | `ship.native.has` | `name: string` | `boolean` | `common` | `experimental` | `0.5.0` | — | `invalid_argument` | Returns whether the mod's native provider exposes the named function. Without a provider, returns false; an empty name or one longer than 128 bytes raises a Lua error. |
 | `ship.native.call` | `name: string`, `request: string` | `string, operation_error?` | `common` | `experimental` | `0.5.0` | — | `unsupported`, `invalid_argument`, `invalid_handle`, `invalid_state`, `resource_limit`, `host_failure` | Sends a byte string to the mod's native function and returns its response. Returns nil and an operation_error if the function is unavailable, the state is invalid or the request or response exceeds 65536 bytes. |
 
@@ -131,6 +141,7 @@ API version: `0.5.0`. Schema version: `1`.
 | `core.timers` | `contract` | `oot`, `mm` | Per-frame timers owned by each mod. |
 | `core.input` | `contract` | `oot`, `mm` | Hotkey registration and input events. |
 | `core.menu` | `contract` | `oot` | Declarative per-mod menu pages, with values persisted only in ship.storage and input delivered outside the draw pass. |
+| `core.attributes` | `contract` | `oot`, `mm` | Item attributes, modifiers and tags shared across mods (RFC 0030); values are computed from the active items reported by registered sources. |
 | `input.actions` | `contract` | `oot` | Emits consumable directional controller actions; vanilla input is blocked only when a callback accepts the action. |
 | `game.state` | `contract` | `oot` | Exposes a stable gameplay mode: pause, dialog, cutscene, transition, death, loading or unavailable. |
 | `core.storage` | `contract` | `oot`, `mm` | Key-value storage namespaced per mod, persisted to disk across sessions. |

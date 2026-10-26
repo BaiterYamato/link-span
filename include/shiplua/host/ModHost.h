@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "shiplua/api/LuaApiBinding.h"
+#include "shiplua/attributes/AttributeNativeService.h"
 #include "shiplua/events/EventDispatcher.h"
 #include "shiplua/manifest/Manifest.h"
 #include "shiplua/manifest/PackageExtractor.h"
@@ -111,6 +112,7 @@ class ModHost {
     Logger mLogger;
     LuaApiHostContext mHostContext;
     NativeProviderPolicy mNativePolicy;
+    AttributeNativeService mAttributeService; // Vive além dos providers e de lua_close.
     std::filesystem::path mBootGuardDirectory;
     std::unique_ptr<EventDispatcher> mEvents;
     std::size_t mNextModLoadOrder = 0;

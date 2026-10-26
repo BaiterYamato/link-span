@@ -64,6 +64,31 @@
 ---@class ShipLuaHudIconOptions
 ---@field alpha? integer
 
+--- Active modifier in an attribute's total; item is absent when the modifier has no target.
+---@class ShipLuaAttributeBreakdownEntry
+---@field modifier string
+---@field item? string
+---@field op string
+---@field value number
+
+--- Modifier an item provides; via is the tag through which the item matched.
+---@class ShipLuaAttributeModifierView
+---@field id string
+---@field attribute string
+---@field op string
+---@field value number
+---@field when string
+---@field via? string
+
+--- Runtime modifier: id with the mod prefix, op add, multiply_base or multiply_total, an item or #tag target and when equipped or owned.
+---@class ShipLuaAttributeModifier
+---@field id string
+---@field attribute string
+---@field op string
+---@field value number
+---@field target? string
+---@field when? string
+
 --- `game.ready`: Emitted after loading mods and preparing the host API; the payload identifies the game and versions. Does not guarantee a loaded save or playable scene and accepts no decision via ship.hooks.result.
 ---@class ShipLuaEventGameReady
 ---@field game_id ShipLuaGameId
@@ -228,6 +253,7 @@
 ship = ship or {}
 ship.actor = ship.actor or {}
 ship.api = ship.api or {}
+ship.attributes = ship.attributes or {}
 ship.capabilities = ship.capabilities or {}
 ship.events = ship.events or {}
 ship.game = ship.game or {}
@@ -621,6 +647,49 @@ function ship.hud.draw_icon(path, x, y, w, h, options) end
 ---@param page any
 ---@return boolean
 function ship.menu.register(page) end
+
+--- Returns the player's final value for the attribute now. An undeclared attribute returns nil and "unknown attribute"; requires core.attributes.
+--- API common; stability: experimental; since: 0.5.0; capability: core.attributes; errors: invalid_argument, unsupported.
+---@param attribute string
+---@return number
+function ship.attributes.value(attribute) end
+
+--- Lists the attribute's active modifiers and the item for each, in mod load order and then by id. An undeclared attribute returns nil and "unknown attribute".
+--- API common; stability: experimental; since: 0.5.0; capability: core.attributes; errors: invalid_argument, unsupported.
+---@param attribute string
+---@return ShipLuaAttributeBreakdownEntry[]
+function ship.attributes.breakdown(attribute) end
+
+--- Lists what the item provides, active or not, with the tag it matched through in via.
+--- API common; stability: experimental; since: 0.5.0; capability: core.attributes; errors: invalid_argument, unsupported.
+---@param item string
+---@return ShipLuaAttributeModifierView[]
+function ship.attributes.modifiers_of(item) end
+
+--- Returns whether the item belongs to the tag (without #), with nested tags already resolved.
+--- API common; stability: experimental; since: 0.5.0; capability: core.attributes; errors: invalid_argument, unsupported.
+---@param item string
+---@param tag string
+---@return boolean
+function ship.attributes.has_tag(item, tag) end
+
+--- Returns the resolved members of the tag (without #), in order; an unknown tag returns an empty list.
+--- API common; stability: experimental; since: 0.5.0; capability: core.attributes; errors: invalid_argument, unsupported.
+---@param tag string
+---@return string[]
+function ship.attributes.tag_members(tag) end
+
+--- Adds a runtime modifier for the mod and returns true, or nil and the error. The id needs the mod prefix and must not repeat; without target it applies directly to the player. It is not saved.
+--- API common; stability: experimental; since: 0.5.0; capability: core.attributes; errors: invalid_argument, unsupported.
+---@param modifier ShipLuaAttributeModifier
+---@return boolean
+function ship.attributes.add_modifier(modifier) end
+
+--- Removes one of the mod's runtime modifiers and returns whether it was removed; another mod's id returns false.
+--- API common; stability: experimental; since: 0.5.0; capability: core.attributes; errors: invalid_argument, unsupported.
+---@param id string
+---@return boolean
+function ship.attributes.remove_modifier(id) end
 
 --- Returns whether the mod's native provider exposes the named function. Without a provider, returns false; an empty name or one longer than 128 bytes raises a Lua error.
 --- API common; stability: experimental; since: 0.5.0; capability: common; errors: invalid_argument.
