@@ -17,5 +17,7 @@ jogo. As linhas citadas valem para esses commits; confira de novo antes de imple
 | [plano-f1-core.md](plano-f1-core.md) | Plano de implementação da F1 no core: ABI 1.4 com símbolos públicos presos ao layout, manifesto, `shipmod`, release, retirada das 7 funções e 3 capabilities, docs | F1 |
 | [plano-f2-host.md](plano-f2-host.md) | Plano de implementação da F2: PRs F2-0 e F2i-0 no core, catálogo público no host, 8 hooks do Link e do Play, `oot.mods.archives` do Unbound, hook genérico de dano `oot.actor.damage` (F2i) para o port do leveled, 6 serviços com contratos C finais e validação | F2 |
 | [analise-leveled.md](analise-leveled.md) | Port do mod leveled (RPG; Arrenton/Shipwright, PR #11), análise de 20/10: o que o hook de dano da F2i cobre, o que pede outra primitiva e as obrigações da F3 | F2, F3 |
+| [design-leveled-v1.md](design-leveled-v1.md) | Design do leveled v1 em Lua puro sobre a RFC 0031: módulos, fluxo, estado, HUD, menu, testes e matriz de exclusões | F3 |
+| [plano-f3-leveled.md](plano-f3-leveled.md) | Plano de implementação da F3-2: RFC 0031 no core e no host (T0-T10) e leveled v1 no `link-span-examples` (T11-T15), com lotes do Codex e prova em jogo | F3 |
 
 Os contratos C dos inventários são propostas; os finais da F2 estão em [plano-f2-host.md](plano-f2-host.md) §5.
