@@ -3,7 +3,7 @@
 - Status: review
 - Agent: Claude (Opus 5.5), com subagentes Codex (gpt-6.1-sol) nas análises
 - Platform: Windows
-- Branch: agent/HOST-SLIM-001-f3-fechamento
+- Branch: agent/HOST-SLIM-001-f3-leveled-rfc
 - Started: 2026-10-19T12:00:00Z
 - Depends on: OOT-RELEASE-002 (RC10, host `e9da99b515`, layout `ee6449e8`)
 - Files (fase F0):
@@ -323,4 +323,25 @@
   `attributes.toml`, a API `ship.attributes` e o serviço nativo `linkspan.attributes` v1; fontes `oot` e `nei` no
   host. É o subprojeto 1 dos 3 do port do leveled.
 - Sobreposição registrada: o gate acusa `docs/agents/Plans.md` com CLAIMS-CLEANUP-001 e OOT-COREMODS-PLAN-001. É o ledger compartilhado; a F3 só acrescenta um apêndice, e nenhuma claim alheia é fechada ou muda de dono.
+- Sem release, tag ou RC público.
+
+## F3 subprojeto 2 (atores para mods e leveled v1) - 26/10/2026
+
+- Status (fase F3-2, design): review. RFC 0031 e design do leveled v1 escritos e aprovados em conversa, parte a parte;
+  aguardam a leitura do mantenedor antes do plano de implementação.
+- Branch (fase F3-2, design): `agent/HOST-SLIM-001-f3-leveled-rfc` (core), a partir da `main` em `4e252df`. A linha
+  `Branch` do topo passa a apontar para ela.
+- Agent (fase F3-2): Claude (Opus 5.5).
+- Started (fase F3-2): 2026-10-26
+- Files (fase F3-2, design):
+  - rfcs/0031-atores-para-mods.md, rfcs/0031-atores-para-mods.en.md
+  - docs/plans/host-slim-001/design-leveled-v1.md
+  - coordination/claims/HOST-SLIM-001.md (só este bloco e a linha `Branch` do topo),
+    coordination/handoffs/HOST-SLIM-001.md (só a seção F3-2), docs/agents/Plans.md (só o apêndice)
+- Goal (fase F3-2): o subprojeto 2 virou 2a (RFC 0031: handles de observação, eventos com instância, leitura de
+  ator, vida estendida acima de 255, dano efetivo, `ship.save`, `require` de módulos, idade, áudio e `save.saving`) e
+  2b (leveled v1 em Lua puro, recorte "núcleo + números", no `link-span-examples`). Os arquivos de código de cada um
+  entram no claim quando o plano abrir a branch.
+- Sobreposição registrada: `docs/agents/Plans.md` com CLAIMS-CLEANUP-001 e OOT-COREMODS-PLAN-001, como na F3-1. Só
+  apêndice.
 - Sem release, tag ou RC público.
