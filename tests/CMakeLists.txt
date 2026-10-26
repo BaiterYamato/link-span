@@ -118,6 +118,14 @@ target_link_libraries(portable_item_catalog_tests PRIVATE shiplua)
 
 add_test(NAME portable_item_catalog_tests COMMAND portable_item_catalog_tests)
 
+add_executable(attribute_file_tests unit/AttributeFileTests.cpp)
+target_link_libraries(attribute_file_tests PRIVATE shiplua)
+add_test(NAME attribute_file_tests COMMAND attribute_file_tests)
+
+add_executable(attribute_registry_tests unit/AttributeRegistryTests.cpp)
+target_link_libraries(attribute_registry_tests PRIVATE shiplua)
+add_test(NAME attribute_registry_tests COMMAND attribute_registry_tests)
+
 add_executable(atomic_file_tests unit/AtomicFileTests.cpp)
 target_link_libraries(atomic_file_tests PRIVATE shiplua)
 
