@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "shiplua/actor/ActorProvider.h"
+#include "shiplua/attributes/AttributeRegistry.h"
 #include "shiplua/capability/CapabilityRegistry.h"
 #include "shiplua/events/EventDispatcher.h"
 #include "shiplua/input/HotkeyRegistry.h"
@@ -51,6 +52,8 @@ struct LuaApiHostContext {
     // Implementação do host para a API comum ship.player.set_speed_multiplier.
     // Nullable quando player.speed não é anunciado.
     std::function<Result<bool>(double)> setSpeedMultiplier;
+    // Registro de atributos (RFC 0030). Nullable; null = host sem ship.attributes nem linkspan.attributes.
+    std::shared_ptr<AttributeRegistry> attributes;
 };
 
 // Per-mod authorization and resource policy derived from manifest.toml.

@@ -23,6 +23,8 @@ struct NativeHostService {
     const void* table = nullptr;
     // Vazio para serviço do host; id do mod para serviço de core extension.
     std::string owner;
+    // Não vazio: tabela por mod. GetService chama resolve(id do mod que pediu) e ignora `table`.
+    std::function<const void*(std::string_view owner)> resolve;
 };
 
 // ABI 1.3: implementação do escape hatch fornecida pelo host. As funções rodam na
