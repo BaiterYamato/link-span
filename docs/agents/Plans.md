@@ -1790,10 +1790,10 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
 - Próximo: PR do core; depois o host (fontes `oot`/`nei`, fixture e prova em jogo).
 - Refs: `coordination/handoffs/HOST-SLIM-001.md`, seção "F3 subprojeto 1 - 25/10/2026".
 
-### UPDATE 2026-10-26 (Claude) — HOST-SLIM-001 F3 subprojeto 1: core mergeado, host em review, prova em jogo ok
+### UPDATE 2026-10-26 (Claude) — HOST-SLIM-001 F3 subprojeto 1: core e host mergeados, prova em jogo ok
 
 - Core: link-span#74 mergeado em `24e280f`.
-- Host: Shipwright#19 (Shipwright#19 aberto, merge com CI verde em andamento).
+- Host: Shipwright#19 mergeado na integração em `d45b510ba3` (26/10/2026, 5 workflows verdes).
   - Traz o bootstrap com `core.attributes`, o mod `linkspan.oot.item_source` 0.1.0, a fonte `nei` (NEI 0.3.26) e a
     fixture `linkspan.test.attributes`.
   - Layout `e8f10de8`, inalterado.

@@ -875,7 +875,7 @@ Abrir o PR do core (RFC + plano + código), mergear com CI verde e abrir a branc
 ### Estado
 
 **review.** O core está na `main` (link-span#74, `24e280f`). O host está no Shipwright#19
-(`agent/HOST-SLIM-001-f3-atributos-host` @ `a8a5d6052c`): Shipwright#19 aberto, merge com CI verde em andamento. A prova em jogo dos cenários A, B e C passou.
+(`agent/HOST-SLIM-001-f3-atributos-host` @ `a8a5d6052c`): Shipwright#19 mergeado na integração em `d45b510ba3` (26/10/2026, 5 workflows verdes). A prova em jogo dos cenários A, B e C passou.
 
 ### Resultado
 
@@ -940,7 +940,6 @@ Os do bloco "Files (fase F3-1, host)" do claim.
 
 ### Pendências
 
-- Merge do Shipwright#19 com CI verde.
 - Item do NEI num botão C (`equipped`) em jogo. Hoje só há teste unitário (`TestActiveItems`).
 - A/B vanilla dos 5 gates com o host novo. A prova não os rodou.
 - Subprojetos 2 (leveled v1) e 3 (conteúdo do NEI, HP>255).
@@ -958,5 +957,5 @@ Os do bloco "Files (fase F3-1, host)" do claim.
 
 ### Próxima ação recomendada
 
-Mergear o Shipwright#19 com CI verde. Depois, abrir o subprojeto 2 (leveled v1 sobre `ship.attributes`) com RFC ou
+Abrir o subprojeto 2 (leveled v1 sobre `ship.attributes`) com RFC ou
 plano próprios.
