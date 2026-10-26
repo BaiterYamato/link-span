@@ -1,6 +1,7 @@
 # RFC 0030 — Atributos, modificadores e tags de item entre mods
 
-Status: rascunho em 25/10/2026 (HOST-SLIM-001, F3). Subprojeto 1 de 3 do port do leveled.
+Status: aceita em 25/10/2026 (HOST-SLIM-001, F3). Subprojeto 1 de 3 do port do leveled.
+Plano: [docs/plans/host-slim-001/plano-f3-atributos.md](../docs/plans/host-slim-001/plano-f3-atributos.md).
 
 ## Motivação
 
@@ -83,7 +84,8 @@ descarga de mod, então desligar o mod de balanceamento restaura os valores orig
 ### Arquivo de declaração
 
 `attributes.toml` na raiz do pacote, detectado pelo nome. Não exige campo no manifesto nem capacidade: um mod só de
-dados, sem código, pode dar atributos a itens de outros mods.
+dados pode dar atributos a itens de outros mods. Ele ainda tem `main.lua`, que pode ficar vazio, porque o AGENTS §10
+exige entrypoint.
 
 ```toml
 [[attribute]]                       # pacote baiteryamato.leveled
@@ -115,22 +117,27 @@ modifier = "autor.mod_de_itens.espada_power"
 "linkspan.swords" = ["autor.mod_de_itens.espada"]
 ```
 
-Um modificador para um atributo que ninguém declarou fica guardado, inerte, com um aviso no log. Assim um mod de
-itens funciona com ou sem o leveled instalado.
+Um modificador para um atributo que ninguém declarou fica guardado e inerte. Assim um mod de itens funciona com ou
+sem o leveled instalado. O aviso sai na auditoria do fim da carga dos mods, e não na carga de cada mod: o NEI carrega
+antes do leveled e acusaria um atributo que vai chegar.
+
+O core não confere se um item existe, porque não tem um catálogo de todos os itens (os do jogo base vêm da fonte
+`oot`, os do NEI vêm do NEI). Um id de item errado só não casa com nada.
 
 ### Fontes de itens ativos
 
 O core não inclui headers de OoT nem de MM (AGENTS §7) e não lê a memória do jogo. A cada consulta, ele pede às
 **fontes de itens** a lista de itens ativos, em pares `(id do item, equipped|owned)`.
 
-- **Fonte `oot`.** Coremod nativo `linkspan.oot.item_source`, no `soh/native-sdk` do host. Lê o `gSaveContext` pelo
-  catálogo público da F2 e emite só ids:
-  - `equipped`: slots de espada, escudo, túnica e botas; botões B e C; máscara vestida;
+- **Fonte `oot`.** Mod nativo `linkspan.oot.item_source`, no `soh/native-sdk` do host. Lê o save pelo serviço
+  `linkspan.oot.engine` (`get_save_context` e `get_player`, com conferência do `layout_id`) e emite só ids:
+  - `equipped`: slots de espada, escudo, túnica e botas; botões C e do D-pad; máscara vestida (o botão B não emite:
+    a espada já vem do slot);
   - `owned`: inventário e upgrades (força, escama, carteira, aljava, bolsas).
 
   Usa o id do `PortableItemCatalog` quando o item está nele (`oot.sword.master`, `shared.bow`). Senão usa
   `oot.<grupo>.<nome>`, com a tabela no anexo A. O pacote leva também um `attributes.toml` com as tags comuns dos
-  itens do jogo base (`linkspan.swords` com as três espadas, e assim por diante). Não muda o `soh.exe` nem o layout id.
+  itens do jogo base (`linkspan.swords` com as três espadas, e assim por diante).
 - **Fonte `nei`.** O NEI registra a própria fonte na DLL dele: item NEI possuído conta como `owned`, item NEI num botão
   C conta como `equipped`.
 
@@ -145,12 +152,15 @@ Módulo `ship.attributes`, com a capacidade `core.attributes`. Tags são passada
 | Função | Retorno | Comportamento |
 |---|---|---|
 | `value(attribute)` | `number` ou `nil, erro` | Valor final do jogador agora. Atributo não declarado devolve `nil, "unknown attribute"`. |
-| `breakdown(attribute)` | lista de `{modifier, item, op, value}` | Modificadores ativos e o item de cada um (`item = nil` para modificador sem alvo). Ordem: carga do mod, depois id. |
+| `breakdown(attribute)` | lista de `{modifier, item, op, value}` ou `nil, erro` | Modificadores ativos e o item de cada um (`item = nil` para modificador sem alvo). Ordem: carga do mod, depois id. Atributo não declarado devolve `nil, "unknown attribute"`. |
 | `modifiers_of(item)` | lista de `{id, attribute, op, value, when, via}` | O que o item dá, ativo ou não; `via` é a tag pela qual casou, ou `nil`. |
 | `has_tag(item, tag)` | `boolean` | Pertinência já resolvida, com tags aninhadas. |
 | `tag_members(tag)` | lista de ids, em ordem | Membros resolvidos. Tag desconhecida devolve lista vazia. |
 | `add_modifier{id, attribute, op, value, target?, when?}` | `true` ou `nil, erro` | Modificador de runtime. O `id` precisa do prefixo do mod chamador e não pode repetir um id existente. Sem `target`, vale direto no jogador. Não vai para o save. |
 | `remove_modifier(id)` | `boolean` | Remove um modificador de runtime do próprio mod. Id de outro mod devolve `false`. |
+
+Argumento de tipo errado causa erro Lua, como no `ship.storage`. Um host sem o registro também causa erro Lua
+(`unsupported`); quem declara a capacidade `core.attributes` no manifesto não carrega num host assim.
 
 ```lua
 local ship = require("ship")
@@ -163,9 +173,10 @@ end
 
 ## Contrato nativo
 
-Serviço `linkspan.attributes` versão 1, implementado pelo core e obtido por `get_service`. A tabela carrega
-`context`, que identifica o mod que pediu o serviço. É assim que o core confere o prefixo e o dono, como no
-`json_factory` do Unbound.
+Serviço `linkspan.attributes` versão 1, implementado pelo core e obtido por `get_service`. Cada mod recebe a própria
+tabela: `NativeHostService` ganha `resolve(owner)`, e o `get_service` do provider o chama com o id do mod. O
+`context` da tabela identifica esse mod, e é assim que o core confere o prefixo e o dono. O header é
+`include/linkspan/attributes/linkspan_attributes.h`, fora de `include/shiplua/native`, então não entra no layout id.
 
 ```c
 #define LINKSPAN_ATTR_WHEN_EQUIPPED 0u
@@ -225,7 +236,7 @@ O arquivo `attributes.toml` não exige capacidade. Ler e escrever pela API exige
 
 ## Comportamento em OoT
 
-A fonte `oot` está ativa quando o coremod `linkspan.oot.item_source` está instalado. Sem ele, só contam fontes de
+A fonte `oot` está ativa quando o mod `linkspan.oot.item_source` está instalado. Sem ele, só contam fontes de
 outros mods (NEI) e os modificadores sem alvo. A troca de espada no menu de pausa muda o resultado na próxima
 consulta, sem evento.
 
@@ -243,8 +254,8 @@ modificadores sem alvo e fontes de mods. A fonte `mm` é trabalho futuro e não 
 | `attributes.toml` com erro de sintaxe ou de esquema | O arquivo inteiro é ignorado; o mod carrega; erro no log e no menu de mods |
 | Atributo ou modificador com prefixo de outro mod | Entrada rejeitada com erro; o resto do arquivo vale |
 | Atributo declarado duas vezes | A segunda declaração é rejeitada com erro |
-| Item ou tag de `target` que não existe | Aviso; o modificador fica guardado (o item pode vir de um mod ausente) |
-| Modificador para atributo não declarado | Aviso; o modificador fica inerte |
+| Tag de `target` sem membros | Aviso na auditoria do fim da carga; o modificador fica guardado |
+| Modificador para atributo não declarado | Aviso na auditoria do fim da carga; o modificador fica inerte |
 | Tag que contém a si mesma, direta ou indiretamente | O elo que fecha o ciclo é descartado com erro |
 | `op` ou `when` desconhecido, `value` não finito, `min > max` | Entrada rejeitada com erro |
 | Limite excedido (anexo B) | Entradas além do limite rejeitadas com erro; nativo devolve `LIMIT` |
@@ -255,15 +266,20 @@ modificadores sem alvo e fontes de mods. A fonte `mm` é trabalho futuro e não 
 ## Compatibilidade
 
 - API nova e aditiva: `ship.attributes` e `linkspan.attributes` v1. Nenhuma API existente muda.
+- As funções entram na API 0.5.0, como o `ship.menu` (MENU-001), sem trocar `api_version`: um mod com
+  `api = ">=0.5 <0.6"` segue carregando. Quem usa `ship.attributes` declara a capacidade `core.attributes`.
 - `PortableItemCatalog` e NEI não mudam de contrato. O NEI ganha só a chamada a `register_item_source`.
-- O `soh.exe` e o layout id não mudam: a fonte `oot` é um coremod que usa o catálogo público da F2.
+- O `soh.exe` muda só como qualquer atualização do core: o submódulo novo e cerca de 10 linhas no
+  `ShipLuaBootstrap.cpp` (registro e capacidade), como o `ship.storage`. Nenhum código de atributo ou de item entra
+  no host. O layout id não muda, porque o header novo fica fora de `include/shiplua/native` (o glob do fingerprint em
+  `soh/native-sdk/ExportSdk.cmake`).
 - Um pacote antigo, sem `attributes.toml`, segue igual.
 
 ## Impacto de segurança
 
 - O Lua não recebe ponteiro, endereço nem estado bruto do jogo. Recebe ids de item e números.
-- `gSaveContext` é lido só pelo coremod nativo, como qualquer provider da F2, e sai dele apenas como ids
-  (AGENTS §15: nada de exposição irrestrita).
+- O save é lido só pelo mod nativo, pelo serviço `linkspan.oot.engine` como qualquer provider, e sai dele apenas
+  como ids (AGENTS §15: nada de exposição irrestrita do `gSaveContext`).
 - O parser do arquivo tem limites de tamanho e de contagem (anexo B), e o id do mod dono vem do carregador, não do
   arquivo.
 - Um mod só remove os próprios modificadores de runtime. `[[remove]]` fica no log, para que um balanceamento
@@ -322,12 +338,16 @@ um campo desconhecido gera aviso, não erro, para que pacotes novos carreguem nu
 | Botas | `oot.boots.kokiri`, `oot.boots.iron`, `oot.boots.hover` |
 | Força | `oot.strength.goron_bracelet`, `oot.strength.silver_gauntlets`, `oot.strength.golden_gauntlets` |
 | Escama | `oot.scale.silver`, `oot.scale.golden` |
-| Carteira | `oot.wallet.adult`, `oot.wallet.giant` |
+| Carteira | `oot.wallet.adult`, `oot.wallet.giant`, `oot.wallet.tycoon` |
+| Aljava | `oot.quiver.30`, `oot.quiver.40`, `oot.quiver.50` |
+| Bolsa de bombas | `oot.bomb_bag.20`, `oot.bomb_bag.30`, `oot.bomb_bag.40` |
+| Bolsa de sementes | `oot.bullet_bag.30`, `oot.bullet_bag.40`, `oot.bullet_bag.50` |
 | Máscaras | `oot.mask.<nome>` (`keaton`, `skull`, `spooky`, `bunny`, `goron`, `zora`, `gerudo`, `truth`) |
-| Itens de botão | id do catálogo quando existe (`shared.bow`, `shared.bombs`, `shared.hookshot`, `shared.ocarina`); senão `oot.item.<nome>`, com o nome do enum `ITEM_*` em minúsculas sem o prefixo |
+| Itens de inventário e de botão | id do catálogo quando existe (`shared.bow`, `shared.bombs`, `shared.bombchu`, `shared.hookshot`, `shared.ocarina` para a Ocarina do Tempo); senão `oot.item.<nome>`, com o nome do enum `ITEM_*` em minúsculas sem o prefixo |
 
-A tabela completa do grupo "Itens de botão" sai gerada do enum no plano de implementação, e os testes da fonte
-travam o resultado.
+A tabela dos itens é explícita no mod, de `ITEM_STICK` (0x00) a `ITEM_CLAIM_CHECK` (0x37). `ITEM_SOLD_OUT` (0x2C)
+fica de fora, e `ITEM_BOW_ARROW_*` (0x38–0x3A, arco com flecha mágica num botão) conta como `shared.bow`. Os testes
+da fonte travam a tabela.
 
 ## Anexo B — limites
 
