@@ -869,3 +869,94 @@ Os do bloco "Files (fase F3-1, core)" do claim.
 
 Abrir o PR do core (RFC + plano + código), mergear com CI verde e abrir a branch do host
 `agent/HOST-SLIM-001-f3-atributos-host` a partir da integração `088a94855a`, seguindo T11-T15 do plano.
+
+## F3 subprojeto 1 - 26/10/2026 - host e prova em jogo
+
+### Estado
+
+**review.** O core está na `main` (link-span#74, `24e280f`). O host está no Shipwright#19
+(`agent/HOST-SLIM-001-f3-atributos-host` @ `a8a5d6052c`): Shipwright#19 aberto, merge com CI verde em andamento. A prova em jogo dos cenários A, B e C passou.
+
+### Resultado
+
+- O bootstrap cria o `AttributeRegistry` e anuncia `core.attributes`. O submódulo está no merge do core.
+- Mod `linkspan.oot.item_source` 0.1.0 (provider C, ABI 1.4, lote A2 do Codex):
+  - registra a fonte `oot`: equipamento, upgrades, inventário, botões C/D-pad e máscara vestida;
+  - declara as tags `linkspan.swords`, `shields`, `tunics`, `boots` e `masks`.
+- NEI 0.3.26 (lote A3 do Codex): o nei-core registra a fonte `nei` (possuído = `owned`, num botão C = `equipped`). Os
+  dois READMEs ganharam a seção "Atributos de item".
+- Fixture `linkspan.test.attributes` (`soh/native-sdk/tests/attributes-probe`): atributo `power` com modificadores na
+  tag de espadas, na Espada Mestra, no Bracelete Goron (`owned`) e em `skijer.nei.deku_leaf` (`owned`).
+- O layout id ficou `e8f10de8`, e os mods nativos do RC10 seguem valendo.
+
+### Commits
+
+Shipwright, sobre `088a94855a`:
+
+- `c2506c3679`: bootstrap e submódulo (T11).
+- `d1da2be77a`: mod `oot-item-source` (T12).
+- `56c848eae5`: fixture (T13).
+- `575d43a87c`: fonte `nei` e NEI 0.3.26 (T12).
+- `a8a5d6052c`: README do NEI.
+
+### Arquivos alterados
+
+Os do bloco "Files (fase F3-1, host)" do claim.
+
+### Validação executada
+
+- `cmake --build build/x64 --config Release` dos alvos `soh`, `oot_native_*` e `linkspan_asset_discovery_tests`.
+- `ctest -R "oot_native|linkspan_"` e o alvo `soh_symbols`.
+- Build do `oot-item-source` e do nei-core contra o `OotNativeSdk.cmake` do host, com o `ctest` de cada um.
+- clang-format 14 `--dry-run --Werror` nos arquivos novos e alterados.
+- `shiplua_manifest_validator` nos dois manifestos.
+- Prova em jogo pela skill `soh-runtime-playtest`:
+  - cópia `D:\lst33\f3-atributos`, clonada da `smoke` da T33, com os mods da T33 em `mods-off`;
+  - saves de cenário editados, com o original em `Save-orig`;
+  - input por harness (console `shiplua_open_file N` e `reset`);
+  - `finish-runtime-session -Strict`.
+
+### Resultado da validação
+
+- Host:
+  - CTest 10/10 (`linkspan_public_symbols_pe` pulado);
+  - `oot_item_table_tests` 1/1 e testes do NEI 6/6;
+  - formatação e manifestos ok;
+  - layout `e8f10de804e2546c…`, `soh.exe` `B9EF7973605B45BC…`, `soh.symbols` `01F9D212096244BD…`.
+- Pacotes:
+  - `LinkSpan-NEI-0.3.26-layout-e8f10de8.shipmod`: `3D0A568569F41A4B…` (DLL `CCA341BF…`);
+  - `LinkSpan-OoT-Item-Source-0.1.0-layout-e8f10de8.shipmod`: `51433040101C5A32…`;
+  - `LinkSpan-Test-Attributes-Probe-0.1.0.shipmod`: `66EF9B43B22BD810…`.
+- Em jogo (`logs/host-slim-f3-atributos/RELATORIO.md`, log `Ship of Harkinian.f3-atributos-1.post.log`, capturas
+  em `run-1/`):
+  - **A** (criança, Espada Kokiri, manoplas de ouro): `power=1`, com `swords@oot.sword.kokiri`;
+  - **B** (adulto, Espada Mestra, manoplas de ouro): `power=3`, com `master@oot.sword.master` e
+    `swords@oot.sword.master`;
+  - **C** (B + Bracelete Goron + `skijer.nei.deku_leaf` possuído): `power=113`, com o modificador do NEI vindo pela
+    fonte `nei` (`possuidos=1`);
+  - as manoplas de ouro não acionam o modificador do bracelete;
+  - fechamento limpo, sem erro de atributos no log;
+  - sessão `valid: true`.
+
+### Pendências
+
+- Merge do Shipwright#19 com CI verde.
+- Item do NEI num botão C (`equipped`) em jogo. Hoje só há teste unitário (`TestActiveItems`).
+- A/B vanilla dos 5 gates com o host novo. A prova não os rodou.
+- Subprojetos 2 (leveled v1) e 3 (conteúdo do NEI, HP>255).
+- O pacote do NEI 0.3.26 testado saiu antes da seção nova do README. Num reempacote, só o README muda; a DLL é a
+  mesma.
+
+### Riscos
+
+- Um id runtime de item do NEI na faixa vanilla (0x00–0x3A) seria lido como item do jogo base pela fonte `oot`.
+- Os equipamentos novos do fork NEI ainda não entram na fonte `nei`.
+- Cada `value` consulta as duas fontes. O probe consultou a cada 20 frames sem efeito visível, mas sem medição.
+- O Kaspersky acusa `VHO:Trojan.Win32.SelfDel.gen` no `lua_api_binding_tests.exe` do build de testes do core
+  (falso positivo heurístico): o exe some ou fica travado logo depois do link. Exclusão no antivírus é decisão do
+  mantenedor.
+
+### Próxima ação recomendada
+
+Mergear o Shipwright#19 com CI verde. Depois, abrir o subprojeto 2 (leveled v1 sobre `ship.attributes`) com RFC ou
+plano próprios.
