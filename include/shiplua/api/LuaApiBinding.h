@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <functional>
 #include <map>
 #include <memory>
@@ -17,6 +18,7 @@
 #include "shiplua/runtime/Logger.h"
 #include "shiplua/runtime/LuaRuntime.h"
 #include "shiplua/runtime/Result.h"
+#include "shiplua/save/ModSaveStore.h"
 #include "shiplua/storage/KeyValueStorage.h"
 #include "shiplua/timer/FrameTimerScheduler.h"
 #include "shiplua/world/WorldSession.h"
@@ -54,6 +56,12 @@ struct LuaApiHostContext {
     std::function<Result<bool>(double)> setSpeedMultiplier;
     // Registro de atributos (RFC 0030). Nullable; null = host sem ship.attributes nem linkspan.attributes.
     std::shared_ptr<AttributeRegistry> attributes;
+    // ship.save (RFC 0031). Nullable; null = host sem core.save.
+    std::shared_ptr<ModSaveStore> saveData;
+    // ship.audio (RFC 0031). Vazios = host sem audio.play. Devolvem false quando o host recusa (fora de gameplay,
+    // fanfarra fora da lista, limite por frame).
+    std::function<Result<bool>(std::int64_t)> playSfx;
+    std::function<Result<bool>(std::int64_t)> playFanfare;
 };
 
 // Per-mod authorization and resource policy derived from manifest.toml.
@@ -61,6 +69,8 @@ struct LuaApiModPolicy {
     std::vector<std::string> permissions;
     std::size_t maxActors = 16;
     NativeProvider* native = nullptr; // owned by ModHost; outlives binding and LuaRuntime
+    // Pasta do mod, para require("a.b") (RFC 0031). Vazia = só require("ship").
+    std::filesystem::path modDirectory;
 };
 
 // Validates a host context before any binding is installed: game id must be
