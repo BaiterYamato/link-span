@@ -1107,7 +1107,7 @@ Mergear este PR com CI verde e apontar o `extern/ship-lua` do host para o merge.
 
 ### Estado
 
-**review.** Core mergeado (link-span#78 e #79), Shipwright#20 mergeado em `eae8d93876`, Shipwright#21 aberto, link-span-examples#5 mergeado em `24d975f`. A matriz em jogo fechou com o NEI
+**review.** Core mergeado (link-span#78 e #79), Shipwright#20 mergeado em `eae8d93876`, Shipwright#21 mergeado em `8fc63f84e1`, link-span-examples#5 mergeado em `24d975f`. A matriz em jogo fechou com o NEI
 re-extraído. Ficaram de fora a luta com a Gohma (só a vida vanilla), o áudio da fanfarra e os 5 gates com controle
 físico.
 
@@ -1124,7 +1124,7 @@ físico.
     `ship.save`, `ship.audio`, `age` e `gs_tokens`;
   - meus: `gPlayState` declarado no arquivo novo, CMake reconfigurado, clang-format 14 e o
     `OotModSaveBackend::Store` sem structured binding capturado em lambda (o clang do Xcode 15 recusa).
-- Correções do host (Shipwright#21 aberto), de duas revisões do Codex e da prova em jogo:
+- Correções do host (Shipwright#21 mergeado em `8fc63f84e1`), de duas revisões do Codex e da prova em jogo:
   - golpe subgranular deixava o inimigo imune (Big Baba V=4, 46 de vida, golpes de 9): folga de 1 no espelho,
     com exceção para Iron Knuckle, Dead Hand e Lizalfos/Dinolfos (limiares de fase);
   - coop do Ivan por contribuição; apply sem zerar `colChkInfo.damage`; caminho sem mods sem tabelas;

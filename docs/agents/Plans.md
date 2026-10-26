@@ -1823,7 +1823,7 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
 ### UPDATE 2026-10-26 (Claude) — HOST-SLIM-001 F3 subprojeto 2: host, leveled e prova em jogo
 
 - Core: link-span#78 (`be8df33`) e guia link-span#79 (`59f7592`); textos finais da RFC 0031 nesta branch.
-- Host: Shipwright#20 mergeado em `eae8d93876`; correções da RFC 0031 e do NEI: Shipwright#21 aberto (soh.exe `3BEB1A0C…`, layout `e8f10de8`).
+- Host: Shipwright#20 mergeado em `eae8d93876`; correções da RFC 0031 e do NEI: Shipwright#21 mergeado em `8fc63f84e1` (soh.exe `3BEB1A0C…`, layout `e8f10de8`).
 - Leveled v1 em Lua puro: link-span-examples#5 mergeado em `24d975f`.
 - Em jogo (`logs/host-slim-f3-leveled/RELATORIO.md`): matriz fechada com o NEI re-extraído; fora a luta com a
   Gohma, a fanfarra e os 5 gates com controle físico. A prova achou o golpe subgranular imune, os handles trocados e

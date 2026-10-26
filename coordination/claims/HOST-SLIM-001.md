@@ -332,7 +332,7 @@
 - Status (fase F3-2, plano): done. Plano T0-T15 em `docs/plans/host-slim-001/plano-f3-leveled.md` (link-span#77).
 - Status (fase F3-2, código core): done. link-span#78 (`be8df33`) e guia link-span#79 (`59f7592`).
 - Status (fase F3-2, host): Shipwright#20 mergeado em `eae8d93876` (branch `agent/HOST-SLIM-001-f3-atores-host` @ `bfed9b8962`).
-- Status (fase F3-2, correções do host): Shipwright#21 aberto (branch `agent/HOST-SLIM-001-f3-atores-fix` @ `4a1c2ec405`).
+- Status (fase F3-2, correções do host): Shipwright#21 mergeado em `8fc63f84e1` (branch `agent/HOST-SLIM-001-f3-atores-fix` @ `4a1c2ec405`).
 - Status (fase F3-2, leveled): link-span-examples#5 mergeado em `24d975f` (branch `agent/HOST-SLIM-001-f3-leveled` @ `8c4258d`).
 - Status (fase F3-2, prova em jogo, textos da RFC e fechamento): review. Relatório em
   `logs/host-slim-f3-leveled/RELATORIO.md` (fora do repo); branch `agent/HOST-SLIM-001-f3-leveled-fechamento`
