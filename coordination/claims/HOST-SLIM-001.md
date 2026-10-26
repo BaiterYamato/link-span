@@ -3,7 +3,7 @@
 - Status: review
 - Agent: Claude (Opus 5.5), com subagentes Codex (gpt-6.1-sol) nas análises
 - Platform: Windows
-- Branch: agent/HOST-SLIM-001-f3-leveled-rfc
+- Branch: agent/HOST-SLIM-001-f3-leveled-plano
 - Started: 2026-10-19T12:00:00Z
 - Depends on: OOT-RELEASE-002 (RC10, host `e9da99b515`, layout `ee6449e8`)
 - Files (fase F0):
@@ -327,8 +327,10 @@
 
 ## F3 subprojeto 2 (atores para mods e leveled v1) - 26/10/2026
 
-- Status (fase F3-2, design): review. RFC 0031 e design do leveled v1 escritos e aprovados em conversa, parte a parte;
-  aguardam a leitura do mantenedor antes do plano de implementação.
+- Status (fase F3-2, design): review. RFC 0031 e design do leveled v1 aprovados pelo mantenedor em 26/10 e
+  mergeados (link-span#76, `e9cdae0`).
+- Status (fase F3-2, plano): review. Plano T0-T15 em `docs/plans/host-slim-001/plano-f3-leveled.md`.
+- Branch (fase F3-2, plano): `agent/HOST-SLIM-001-f3-leveled-plano` (core), a partir da `main` em `e9cdae0`.
 - Branch (fase F3-2, design): `agent/HOST-SLIM-001-f3-leveled-rfc` (core), a partir da `main` em `4e252df`. A linha
   `Branch` do topo passa a apontar para ela.
 - Agent (fase F3-2): Claude (Opus 5.5).
@@ -336,6 +338,8 @@
 - Files (fase F3-2, design):
   - rfcs/0031-atores-para-mods.md, rfcs/0031-atores-para-mods.en.md
   - docs/plans/host-slim-001/design-leveled-v1.md
+- Files (fase F3-2, plano): docs/plans/host-slim-001/plano-f3-leveled.md, docs/plans/host-slim-001/README.md (só a
+  linha do índice)
   - coordination/claims/HOST-SLIM-001.md (só este bloco e a linha `Branch` do topo),
     coordination/handoffs/HOST-SLIM-001.md (só a seção F3-2), docs/agents/Plans.md (só o apêndice)
 - Goal (fase F3-2): o subprojeto 2 virou 2a (RFC 0031: handles de observação, eventos com instância, leitura de

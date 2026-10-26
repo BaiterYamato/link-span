@@ -1811,3 +1811,11 @@ o progresso é registrado em novas seções `UPDATE` com o mesmo identificador.
 - Branch `agent/HOST-SLIM-001-f3-leveled-rfc` (core).
 - Refs: `rfcs/0031-atores-para-mods.md`, `docs/plans/host-slim-001/design-leveled-v1.md`,
   `coordination/handoffs/HOST-SLIM-001.md` seção "F3 subprojeto 2 - 26/10/2026 - design".
+
+### UPDATE 2026-10-26 (Claude) — HOST-SLIM-001 F3 subprojeto 2: plano de implementação
+
+- RFC 0031 e design do leveled v1 aprovados pelo mantenedor; link-span#76 mergeado (`e9cdae0`).
+- Plano T0-T15 em `docs/plans/host-slim-001/plano-f3-leveled.md`: core (T0-T6), host (T7-T10), leveled e guias
+  (T11-T13), prova em jogo (T14) e fechamento (T15). O Codex escreve o código em três lotes.
+- Branch `agent/HOST-SLIM-001-f3-leveled-plano` (core).
+- Refs: `coordination/handoffs/HOST-SLIM-001.md`, seção "F3 subprojeto 2 - 26/10/2026 - plano de implementação".

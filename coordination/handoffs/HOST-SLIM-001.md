@@ -1015,3 +1015,48 @@ Revisão própria dos dois documentos:
 
 Depois da leitura, escrever o plano de implementação (skill writing-plans) da 2a (core, depois host) e da 2b, com o
 Codex escrevendo o código.
+
+## F3 subprojeto 2 - 26/10/2026 - plano de implementação
+
+### Estado
+
+**review.** O mantenedor leu e aprovou a RFC 0031 e o design do leveled v1; link-span#76 mergeado com CI verde
+(`e9cdae0`). Plano escrito.
+
+### Resultado
+
+- `docs/plans/host-slim-001/plano-f3-leveled.md`, T0-T15:
+  - Claude: T0 (ajustes da RFC e do design), T1 (contratos do core), T2 (schema), T6, T10, T13, T14 e T15;
+  - lote A do Codex: bindings, `ship.save`, `ship.audio` e mock (A1), `require` (A2), conta da vida estendida (A3);
+  - lote B: observação no `OotActorProvider` (B1), ligação no host (B2), ids, curva, stats e inimigos do leveled (B3);
+  - lote C: `main.lua`, HUD, menu e READMEs do leveled (C1), guias para modders (C2).
+- Ajustes que o levantamento do código pediu, registrados no T0: permissões de `get`/`set_max_health`,
+  `ship.save.available()`, `ship.player.get("gs_tokens")`, dono e limites dos handles de observação, golpe com
+  espelho inalterado, capacidades opcionais do leveled, força e cast u16 na matriz, `Player.DamageMultiplier` no
+  funil e o `break` que falta no `ACTOR_EN_POH`.
+- Vetores de teste conferidos contra os `leveled_*.c` do PR #11 (curva, stats, recompensa, tokens, nível por cena e
+  por espécie) e contra a conta da vida estendida.
+
+### Arquivos alterados
+
+Os do bloco "Files (fase F3-2, plano)" do claim, mais a linha `Branch` do topo.
+
+### Validação executada
+
+Revisão própria do plano: cobertura da RFC e do design, sem marcadores pendentes, nomes e assinaturas consistentes
+entre as tarefas, nomes de capacidade, eventos, payloads e funções de HUD conferidos contra o schema.
+
+### Pendências
+
+- Executar o plano: T0-T2, lote A, T6 (PR do core), lote B, T10 (PR do host), lote C, T13, T14 e T15.
+- Do subprojeto 1: item do NEI num botão C em jogo e A/B vanilla dos 5 gates.
+
+### Riscos
+
+Os da seção "Riscos conhecidos" do plano: vida estendida em atores que mexem na própria vida, golpe menor que um
+degrau do espelho, limite de 1024 handles, custo do `actor.init` para todo ator e XP de token pelo
+`Return_Item_Entry`.
+
+### Próxima ação recomendada
+
+T0-T2 pelo Claude na branch `agent/HOST-SLIM-001-f3-atores-core`, depois o lote A com 3 Codex em paralelo.
