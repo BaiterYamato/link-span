@@ -59,6 +59,7 @@ struct ActorSnapshot {
     ActorHandle handle;
     std::int64_t actor_id;
     std::int64_t category;
+    std::optional<std::int64_t> params;
 };
 
 struct HotkeyOptions {
@@ -134,6 +135,8 @@ enum class FunctionId {
     ShipActorSpawn,
     ShipActorDestroy,
     ShipActorExists,
+    ShipActorGet,
+    ShipActorSetMaxHealth,
     ShipWorldTravel,
     ShipMmPlayerJump,
     ShipMmSpawnDog,
@@ -171,6 +174,12 @@ enum class FunctionId {
     ShipStorageSharedSet,
     ShipStorageSharedDelete,
     ShipStorageSharedClear,
+    ShipSaveAvailable,
+    ShipSaveGet,
+    ShipSaveSet,
+    ShipSaveDelete,
+    ShipAudioPlaySfx,
+    ShipAudioPlayFanfare,
     ShipHudDrawRect,
     ShipHudDrawText,
     ShipHudDrawRing,
@@ -291,6 +300,27 @@ inline constexpr std::array<std::string_view, 4> kShipActorExistsErrors{{
     "invalid_argument",
     "unsupported",
     "permission_denied",
+    "host_failure",
+}};
+inline constexpr std::array<FieldBinding, 2> kShipActorGetArguments{{
+    {"handle", "actor_handle", true},
+    {"field", "string", true},
+}};
+inline constexpr std::array<std::string_view, 4> kShipActorGetErrors{{
+    "invalid_argument",
+    "unsupported",
+    "permission_denied",
+    "host_failure",
+}};
+inline constexpr std::array<FieldBinding, 2> kShipActorSetMaxHealthArguments{{
+    {"handle", "actor_handle", true},
+    {"max_health", "integer", true},
+}};
+inline constexpr std::array<std::string_view, 5> kShipActorSetMaxHealthErrors{{
+    "invalid_argument",
+    "unsupported",
+    "permission_denied",
+    "invalid_state",
     "host_failure",
 }};
 inline constexpr std::array<FieldBinding, 2> kShipWorldTravelArguments{{
@@ -519,6 +549,50 @@ inline constexpr std::array<FieldBinding, 0> kShipStorageSharedClearArguments{{
 inline constexpr std::array<std::string_view, 1> kShipStorageSharedClearErrors{{
     "unsupported",
 }};
+inline constexpr std::array<FieldBinding, 0> kShipSaveAvailableArguments{{
+}};
+inline constexpr std::array<std::string_view, 1> kShipSaveAvailableErrors{{
+    "unsupported",
+}};
+inline constexpr std::array<FieldBinding, 2> kShipSaveGetArguments{{
+    {"key", "string", true},
+    {"default", "any", false},
+}};
+inline constexpr std::array<std::string_view, 3> kShipSaveGetErrors{{
+    "invalid_argument",
+    "invalid_state",
+    "unsupported",
+}};
+inline constexpr std::array<FieldBinding, 2> kShipSaveSetArguments{{
+    {"key", "string", true},
+    {"value", "any", true},
+}};
+inline constexpr std::array<std::string_view, 4> kShipSaveSetErrors{{
+    "invalid_argument",
+    "invalid_state",
+    "resource_limit",
+    "unsupported",
+}};
+inline constexpr std::array<FieldBinding, 1> kShipSaveDeleteArguments{{
+    {"key", "string", true},
+}};
+inline constexpr std::array<std::string_view, 3> kShipSaveDeleteErrors{{
+    "invalid_argument",
+    "invalid_state",
+    "unsupported",
+}};
+inline constexpr std::array<FieldBinding, 1> kShipAudioPlaySfxArguments{{
+    {"id", "integer", true},
+}};
+inline constexpr std::array<std::string_view, 1> kShipAudioPlaySfxErrors{{
+    "unsupported",
+}};
+inline constexpr std::array<FieldBinding, 1> kShipAudioPlayFanfareArguments{{
+    {"id", "integer", true},
+}};
+inline constexpr std::array<std::string_view, 1> kShipAudioPlayFanfareErrors{{
+    "unsupported",
+}};
 inline constexpr std::array<FieldBinding, 8> kShipHudDrawRectArguments{{
     {"x", "integer", true},
     {"y", "integer", true},
@@ -653,7 +727,7 @@ inline constexpr std::array<std::string_view, 6> kShipNativeCallErrors{{
     "host_failure",
 }};
 
-inline constexpr std::array<FunctionBinding, 65> kFunctions{{
+inline constexpr std::array<FunctionBinding, 73> kFunctions{{
     {FunctionId::ShipGameId, "ship.game.id", "0.1.0", "stable", "game_id", "raise", {}, "common", {}, kShipGameIdArguments, kShipGameIdErrors},
     {FunctionId::ShipGameHostVersion, "ship.game.host_version", "0.1.0", "stable", "string", "raise", {}, "common", {}, kShipGameHostVersionArguments, kShipGameHostVersionErrors},
     {FunctionId::ShipGameState, "ship.game.state", "0.4.0", "experimental", "game_state", "raise", {}, "oot", "game.state", kShipGameStateArguments, kShipGameStateErrors},
@@ -668,6 +742,8 @@ inline constexpr std::array<FunctionBinding, 65> kFunctions{{
     {FunctionId::ShipActorSpawn, "ship.actor.spawn", "0.4.0", "experimental", "actor_handle", "return", "operation_error", "common", "actor.spawn", kShipActorSpawnArguments, kShipActorSpawnErrors},
     {FunctionId::ShipActorDestroy, "ship.actor.destroy", "0.4.0", "experimental", "boolean", "return", "operation_error", "common", "actor.destroy", kShipActorDestroyArguments, kShipActorDestroyErrors},
     {FunctionId::ShipActorExists, "ship.actor.exists", "0.4.0", "experimental", "boolean", "return", "operation_error", "common", "actor.exists", kShipActorExistsArguments, kShipActorExistsErrors},
+    {FunctionId::ShipActorGet, "ship.actor.get", "0.5.0", "experimental", "any", "return", "operation_error", "oot", "actor.observe", kShipActorGetArguments, kShipActorGetErrors},
+    {FunctionId::ShipActorSetMaxHealth, "ship.actor.set_max_health", "0.5.0", "experimental", "boolean", "return", "operation_error", "oot", "actor.health", kShipActorSetMaxHealthArguments, kShipActorSetMaxHealthErrors},
     {FunctionId::ShipWorldTravel, "ship.world.travel", "0.3.0", "experimental", "boolean", "raise", {}, "common", "world.travel", kShipWorldTravelArguments, kShipWorldTravelErrors},
     {FunctionId::ShipMmPlayerJump, "ship.mm.player.jump", "0.2.0", "experimental", "boolean", "raise", {}, "mm", "mm.player.jump", kShipMmPlayerJumpArguments, kShipMmPlayerJumpErrors},
     {FunctionId::ShipMmSpawnDog, "ship.mm.spawn_dog", "0.3.0", "experimental", "boolean", "raise", {}, "mm", "mm.spawn_dog", kShipMmSpawnDogArguments, kShipMmSpawnDogErrors},
@@ -705,6 +781,12 @@ inline constexpr std::array<FunctionBinding, 65> kFunctions{{
     {FunctionId::ShipStorageSharedSet, "ship.storage.shared.set", "0.4.0", "experimental", "boolean", "raise", {}, "common", "core.storage.shared", kShipStorageSharedSetArguments, kShipStorageSharedSetErrors},
     {FunctionId::ShipStorageSharedDelete, "ship.storage.shared.delete", "0.4.0", "experimental", "boolean", "raise", {}, "common", "core.storage.shared", kShipStorageSharedDeleteArguments, kShipStorageSharedDeleteErrors},
     {FunctionId::ShipStorageSharedClear, "ship.storage.shared.clear", "0.4.0", "experimental", "integer", "raise", {}, "common", "core.storage.shared", kShipStorageSharedClearArguments, kShipStorageSharedClearErrors},
+    {FunctionId::ShipSaveAvailable, "ship.save.available", "0.5.0", "experimental", "boolean", "raise", {}, "oot", "core.save", kShipSaveAvailableArguments, kShipSaveAvailableErrors},
+    {FunctionId::ShipSaveGet, "ship.save.get", "0.5.0", "experimental", "any", "return", "operation_error", "oot", "core.save", kShipSaveGetArguments, kShipSaveGetErrors},
+    {FunctionId::ShipSaveSet, "ship.save.set", "0.5.0", "experimental", "boolean", "return", "operation_error", "oot", "core.save", kShipSaveSetArguments, kShipSaveSetErrors},
+    {FunctionId::ShipSaveDelete, "ship.save.delete", "0.5.0", "experimental", "boolean", "return", "operation_error", "oot", "core.save", kShipSaveDeleteArguments, kShipSaveDeleteErrors},
+    {FunctionId::ShipAudioPlaySfx, "ship.audio.play_sfx", "0.5.0", "experimental", "boolean", "raise", {}, "oot", "audio.play", kShipAudioPlaySfxArguments, kShipAudioPlaySfxErrors},
+    {FunctionId::ShipAudioPlayFanfare, "ship.audio.play_fanfare", "0.5.0", "experimental", "boolean", "raise", {}, "oot", "audio.play", kShipAudioPlayFanfareArguments, kShipAudioPlayFanfareErrors},
     {FunctionId::ShipHudDrawRect, "ship.hud.draw_rect", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "hud.draw", kShipHudDrawRectArguments, kShipHudDrawRectErrors},
     {FunctionId::ShipHudDrawText, "ship.hud.draw_text", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "hud.draw", kShipHudDrawTextArguments, kShipHudDrawTextErrors},
     {FunctionId::ShipHudDrawRing, "ship.hud.draw_ring", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "hud.draw", kShipHudDrawRingArguments, kShipHudDrawRingErrors},
@@ -758,6 +840,9 @@ inline constexpr std::array<FieldBinding, 1> kActorDestroyPayload{{
 inline constexpr std::array<FieldBinding, 1> kSaveLoadedPayload{{
     {"slot", "integer", true},
 }};
+inline constexpr std::array<FieldBinding, 1> kSaveSavingPayload{{
+    {"slot", "integer", true},
+}};
 inline constexpr std::array<FieldBinding, 1> kTextOpenPayload{{
     {"text_id", "integer", true},
 }};
@@ -788,14 +873,15 @@ inline constexpr std::array<FieldBinding, 1> kHookOotPlayerHealthChangePayload{{
 }};
 inline constexpr std::array<FieldBinding, 0> kHookOotPlayerBonkPayload{{
 }};
-inline constexpr std::array<FieldBinding, 5> kHookOotEnemyDefeatPayload{{
+inline constexpr std::array<FieldBinding, 6> kHookOotEnemyDefeatPayload{{
+    {"actor", "actor_snapshot", true},
     {"actor_id", "integer", true},
     {"category", "integer", true},
     {"pos_x", "number", true},
     {"pos_y", "number", true},
     {"pos_z", "number", true},
 }};
-inline constexpr std::array<FieldBinding, 9> kHookOotActorDamagePayload{{
+inline constexpr std::array<FieldBinding, 14> kHookOotActorDamagePayload{{
     {"target_id", "integer", true},
     {"target_category", "integer", true},
     {"attacker_id", "integer", true},
@@ -805,6 +891,18 @@ inline constexpr std::array<FieldBinding, 9> kHookOotActorDamagePayload{{
     {"damage_effect", "integer", true},
     {"base_damage", "number", true},
     {"damage", "number", true},
+    {"target", "actor_snapshot", true},
+    {"attacker", "actor_snapshot", false},
+    {"target_health", "integer", true},
+    {"target_max_health", "integer", true},
+    {"target_extended", "boolean", true},
+}};
+inline constexpr std::array<FieldBinding, 5> kHookOotActorDamagedPayload{{
+    {"target", "actor_snapshot", true},
+    {"amount", "integer", true},
+    {"health", "integer", true},
+    {"max_health", "integer", true},
+    {"extended", "boolean", true},
 }};
 inline constexpr std::array<FieldBinding, 2> kHookOotItemGivePayload{{
     {"item_id", "integer", true},
@@ -861,7 +959,7 @@ inline constexpr std::array<FieldBinding, 1> kHookMmItemShouldGivePayload{{
     {"item", "integer", true},
 }};
 
-inline constexpr std::array<EventBinding, 31> kEvents{{
+inline constexpr std::array<EventBinding, 33> kEvents{{
     {"game.ready", EventKind::Observe, "mvp", false, true, true, {}, kGameReadyPayload},
     {"game.frame", EventKind::Observe, "mvp", false, true, true, {}, kGameFramePayload},
     {"game.shutdown", EventKind::Observe, "mvp", false, true, true, {}, kGameShutdownPayload},
@@ -870,6 +968,7 @@ inline constexpr std::array<EventBinding, 31> kEvents{{
     {"actor.update", EventKind::Observe, "host_bridge", false, true, true, "actor.events", kActorUpdatePayload},
     {"actor.destroy", EventKind::Observe, "host_bridge", false, true, true, "actor.events", kActorDestroyPayload},
     {"save.loaded", EventKind::Observe, "host_bridge", false, true, true, "save.events", kSaveLoadedPayload},
+    {"save.saving", EventKind::Observe, "host_bridge", false, true, false, "save.events", kSaveSavingPayload},
     {"text.open", EventKind::Observe, "host_bridge", false, true, true, "text.events", kTextOpenPayload},
     {"audio.sequence_started", EventKind::Observe, "host_bridge", false, true, true, "audio.sequence.events", kAudioSequenceStartedPayload},
     {"input.hotkey", EventKind::Observe, "host_bridge", false, true, true, {}, kInputHotkeyPayload},
@@ -881,6 +980,7 @@ inline constexpr std::array<EventBinding, 31> kEvents{{
     {"hook.oot.player.bonk", EventKind::Observe, "hook_bridge", false, true, false, "hooks.bridge", kHookOotPlayerBonkPayload},
     {"hook.oot.enemy.defeat", EventKind::Observe, "hook_bridge", false, true, false, "hooks.bridge", kHookOotEnemyDefeatPayload},
     {"hook.oot.actor.damage", EventKind::Transform, "hook_bridge", false, true, false, "hooks.bridge", kHookOotActorDamagePayload},
+    {"hook.oot.actor.damaged", EventKind::Observe, "hook_bridge", false, true, false, "hooks.bridge", kHookOotActorDamagedPayload},
     {"hook.oot.item.give", EventKind::Transform, "hook_bridge", false, true, false, "hooks.bridge", kHookOotItemGivePayload},
     {"hook.oot.hud.draw", EventKind::Observe, "hook_bridge", false, true, false, "hud.draw", kHookOotHudDrawPayload},
     {"hook.oot.player.first_person_control", EventKind::Observe, "hook_bridge", false, true, false, "hooks.bridge", kHookOotPlayerFirstPersonControlPayload},
@@ -902,13 +1002,15 @@ struct CapabilityBinding {
     bool supportsMm;
 };
 
-inline constexpr std::array<CapabilityBinding, 44> kCapabilities{{
+inline constexpr std::array<CapabilityBinding, 49> kCapabilities{{
     {"core.events", "contract", true, true},
     {"hooks.bridge", "contract", true, true},
     {"core.timers", "contract", true, true},
     {"core.input", "contract", true, true},
     {"core.menu", "contract", true, false},
     {"core.attributes", "contract", true, true},
+    {"core.modules", "contract", true, true},
+    {"core.save", "contract", true, false},
     {"input.actions", "contract", true, false},
     {"game.state", "contract", true, false},
     {"core.storage", "contract", true, true},
@@ -922,6 +1024,9 @@ inline constexpr std::array<CapabilityBinding, 44> kCapabilities{{
     {"actor.spawn", "contract", true, true},
     {"actor.destroy", "contract", true, true},
     {"actor.exists", "contract", true, true},
+    {"actor.observe", "contract", true, false},
+    {"actor.health", "contract", true, false},
+    {"audio.play", "contract", true, false},
     {"save.events", "contract", true, true},
     {"text.events", "contract", true, true},
     {"audio.sequence.events", "contract", true, true},
