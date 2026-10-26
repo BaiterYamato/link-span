@@ -39,13 +39,17 @@ Hoje um handle de ator só existe para o ator que um mod criou com `ship.actor.s
 do jogo:
 
 - o host cria o handle na primeira vez que o ator aparece num evento entregue ao Lua, com o mesmo formato
-  `actor_handle` (kind, slot, geração, cena) e dono "host";
+  `actor_handle` (kind, slot, geração, cena) e dono `"linkspan.host"`;
+- o registro do provider OoT passa a 1024 handles no total, sem limite por dono. O limite de 16 atores criados por
+  mod fica no próprio provider;
 - um ator tem um só handle enquanto vive. O ator criado por um mod continua com o handle do mod, e os eventos
   entregam esse mesmo handle;
 - o handle expira no `OnActorDestroy` do ator e na troca de cena, como os de hoje. Um handle velho nunca resolve
   para outro ator (guarda de geração do `HandleRegistry`);
 - o handle de observação serve para leitura (`ship.actor.get`) e para `ship.actor.set_max_health`. As funções que
-  exigem posse (`ship.actor.destroy`, `ship.actor.exists`) continuam exigindo.
+  exigem posse (`ship.actor.destroy`, `ship.actor.exists`) continuam exigindo;
+- `ship.actor.get` exige a permissão de manifesto `world.entities.read`, como `ship.actor.exists`.
+  `ship.actor.set_max_health` exige `world.entities.write`.
 
 ### Eventos com instância
 
@@ -87,6 +91,8 @@ Para o Link, `health` e `max_health` são a vida e a capacidade do save. Handle 
 - O host guarda a vida real (`hp`) e a vanilla registrada no init (`V`). No campo `u8` do jogo fica o **espelho**:
   `0` se `hp == 0`, senão `max(1, ceil(V * hp / n))`. Fases, morte, barra de vida do SoH e o resto do código do ator
   continuam vendo números vanilla, e a morte acontece junto com `hp == 0`.
+- Ao ligar a vida estendida, o host grava o espelho no campo do jogo. Com `n` menor que `V`, a granularidade muda, e o
+  espelho pode diferir da vida vanilla de antes.
 - **No funil de dano**, para um alvo estendido, o `damage` que os hooks veem e devolvem está nas unidades do alvo.
   O valor inicial é o que o jogo calculou, então um ataque vanilla contra um inimigo com o dobro de vida precisa do
   dobro de golpes. O resultado é limitado a 0..65535 e à vida que resta, em vez de 0..255. O host converte o débito
@@ -97,7 +103,9 @@ Para o Link, `health` e `max_health` são a vida e a capacidade do save. Handle 
   host reescala `hp` a partir do espelho novo.
 - Com o modo cooperativo do Ivan, o multiplicador dele multiplica também o débito estendido.
 - Um golpe cujo débito é pequeno demais para mudar o espelho soma 0 ao `colChkInfo.damage`. O acerto ainda marca
-  `AC_HIT`, e a maioria dos atores reage por ele; os que não reagem entram na matriz de teste.
+  `AC_HIT`, e a maioria dos atores reage por ele; os que não reagem entram na matriz de teste. Num ator que consome o
+  dano à mão, sem chamar `Actor_ApplyDamage`, o host não tem como saber se esse golpe valeu: o pendente que não mudou
+  o espelho é descartado, e o caso entra na matriz de exclusões.
 - Alvo sem vida estendida segue exatamente como hoje (0..255, limite da F2i).
 
 ### Dano efetivo
@@ -109,12 +117,12 @@ fato, nas unidades do alvo), `health`, `max_health` e `extended`. Cobre todo ato
 
 ### Dados no save
 
-`ship.save.get(chave, padrão)`, `ship.save.set(chave, valor)` e `ship.save.delete(chave)`:
+`ship.save.available()`, `ship.save.get(chave, padrão)`, `ship.save.set(chave, valor)` e `ship.save.delete(chave)`:
 
-- guardam booleano, número finito e texto, num objeto JSON no namespace `<id do mod>` do `linkspan.oot.save`, versão
-  1. O id vem do carregador, não do mod;
-- só funcionam com um arquivo carregado, do `save.loaded` até sair para o título ou a seleção de arquivo. Fora disso,
-  devolvem `invalid_state`;
+- guardam os valores do `ship.storage` (booleano, inteiro, número finito e texto), num objeto JSON no namespace
+  `<id do mod>` do `linkspan.oot.save`, versão 1. O id vem do carregador, não do mod;
+- `available()` diz se há um arquivo carregado. As outras três só funcionam com ele, do `save.loaded` até sair para o
+  título ou a seleção de arquivo. Fora disso, devolvem nil e um `operation_error` com `invalid_state`, sem erro Lua;
 - uma escrita vale na memória e chega ao disco no próximo save do jogo. Copiar ou apagar o arquivo leva os dados
   junto, pelo serviço que já existe. Um arquivo novo começa vazio;
 - os limites estão no anexo.
@@ -130,6 +138,7 @@ fato, nas unidades do alvo), `health`, `max_health` e `extended`. Cobre todo ato
 ### Pequenos
 
 - `ship.player.get("age")`: 0 adulto, 1 criança (`gSaveContext.linkAge`), somente leitura.
+- `ship.player.get("gs_tokens")`: 0..100 (`gSaveContext.inventory.gsTokens`), somente leitura.
 - `ship.audio.play_sfx(id)`: toca um efeito sonoro centrado, sem posição. No máximo 8 por frame.
 - `ship.audio.play_fanfare(id)`: toca uma sequência de fanfarra de uma lista permitida (anexo), só em gameplay.
 
@@ -139,9 +148,11 @@ fato, nas unidades do alvo), `health`, `max_health` e `extended`. Cobre todo ato
 |---|---|---|---|
 | `ship.actor.get(handle, campo)` | função | `actor.observe` | valor do campo, ou nil com handle expirado |
 | `ship.actor.set_max_health(handle, n)` | função | `actor.health` | `boolean, operation_error?` |
+| `ship.save.available()` | função | `core.save` | `boolean` |
 | `ship.save.get/set/delete` | funções | `core.save` | como `ship.storage`, no arquivo carregado |
 | `require("a.b")` | global | `core.modules` | módulo do pacote |
 | `ship.player.get("age")` | campo | `player.fields` | 0 ou 1 |
+| `ship.player.get("gs_tokens")` | campo | `player.fields` | 0..100 |
 | `ship.audio.play_sfx(id)`, `ship.audio.play_fanfare(id)` | funções | `audio.play` | `boolean` |
 | `actor.init`, `actor.destroy` | eventos | `actor.events` | agora emitidos para todo ator no OoT |
 | `hook.oot.actor.damage` | evento | `hooks.bridge` | + `target`, `attacker`, `target_health`, `target_max_health`, `target_extended` |
@@ -228,7 +239,10 @@ Core, na CI:
 - schemas e geradores com `--check` e `validate_api_schemas`;
 - binding com host simulado: `ship.actor.get` (campos, handle expirado, capacidade ausente), `set_max_health`
   (faixa, Link, permissão), `ship.save` (sem arquivo, limites, tipos), `require` (`..`, absoluto, ausente, ciclo,
-  cache) e os campos novos dos payloads.
+  cache) e os campos novos dos payloads;
+- o `MockRuntime` anuncia `core.modules` e liga `core.save` (backend em memória), `audio.play` (registro das
+  chamadas) e `core.attributes` (registro novo) quando essas capacidades vêm em `extraCapabilities`. Assim o
+  `shiplua_mod_test_runner` testa mods que usam as peças desta RFC.
 
 Host:
 
@@ -266,6 +280,7 @@ marcá-los como legados quando os handles cobrirem todos os usos.
 | Item | Limite |
 |---|---|
 | `set_max_health` | 1..65535 |
+| Handles de ator no OoT | 1024 no total; 16 atores criados por mod |
 | `ship.save` por mod | 256 chaves, chave até 128 bytes, valor até 4 KiB, total 64 KiB |
 | `require` | 8 níveis, 64 módulos por mod |
 | `play_sfx` | 8 por frame |

@@ -29,9 +29,13 @@ O que fica fora está na matriz da §7.
   `leveling-demo` continua como exemplo mínimo.
 - Créditos no README e no manifesto: Arrenton, autor do Leveled; BaiterYamato, port para o Link-Span. Entrada na
   tabela "Credits and sources" do core.
-- API `>=0.5 <0.6`. Capacidades exigidas: `actor.observe`, `actor.health`, `actor.events`, `core.save`,
-  `core.modules`, `core.attributes`, `core.menu`, `core.storage`, `hooks.bridge`, `hud.draw`, `player.fields`,
-  `oot.env`, `save.events`, `audio.play`. Um host sem a 2a recusa o mod no carregamento, com a capacidade ausente no log.
+- API `>=0.5 <0.6`. Capacidades exigidas: `hooks.bridge`, `actor.events`, `actor.observe`, `actor.health`,
+  `core.save`, `core.modules`, `core.attributes`, `save.events`. Um host sem a 2a recusa o mod no carregamento, com a
+  capacidade ausente no log.
+- Opcionais, conferidas com `ship.capabilities.has` antes do uso: `core.menu`, `core.storage`, `hud.draw`,
+  `audio.play`, `player.fields`, `oot.env`. Sem uma delas, a parte dela some (sem HUD, sem menu, opções padrão) e o
+  resto funciona. Isso também deixa o mod carregar no mock do `shiplua_mod_test_runner`.
+- Permissões de manifesto: `world.entities.read` e `world.entities.write`.
 
 | Arquivo | Papel |
 |---|---|
@@ -59,8 +63,13 @@ Os números saem dos arquivos do PR #11, baixados pela API do GitHub para a past
 
 Regras do port:
 
-- O multiplicador de ataque e vida (padrão 9) vale contra quem não é o Link; o multiplicador de dano recebido vale
-  contra o Link. Os dois são aplicados uma vez, antes da fórmula, como no original.
+- O multiplicador de ataque e vida (padrão 9) vale contra quem não é o Link, aplicado uma vez antes da fórmula, como
+  no original.
+- O dano recebido é a opção `Player.DamageMultiplier` do original: N/4, padrão 4, faixa 1..32. O original aplica no
+  `Health_ChangeBy`; o port aplica depois da fórmula, no funil da F2i contra o Link, então só vale para o dano de
+  colisão.
+- No original falta um `break`: o `ACTOR_EN_POH` cai na regra do `Leveled_Poh_Field`. O port reproduz o efeito, e o
+  comentário diz por quê.
 - A dispersão aleatória da fórmula usa `math.random`. Os testes fixam a semente.
 - Não copiar `GetPlayerStat_NextLevelExpAtLevel`, que calcula `nextLv` sem devolvê-lo
   ([analise-leveled.md §4](analise-leveled.md), item 6).
@@ -156,6 +165,11 @@ Regras do port:
 | Números de atores que não passam por `Actor_ApplyDamage` | Sem número |
 | Inimigos que definem a vida depois do init | Vida vanilla; quais são sai da matriz em jogo |
 | Inimigos que ignoram golpe com débito 0 no espelho | Listados a partir da matriz em jogo |
+| Golpe que não muda o espelho num ator que consome o dano à mão | Descartado pelo host (RFC 0031) |
+| Faca de Biggoron quebrada | Conta como Biggoron (+2/−8), não −7/−12: a fonte `oot` não distingue |
+| Vida escalada em categoria que não é ENEMY | Fora; o original escala toda categoria que não é o Link |
+| Força da criança com manopla | Segue o item que a fonte `oot` emite (+1/+2/+3); o original usa `Player_GetStrength`, que dá 1 |
+| Valores acima de 65535 nas fórmulas | Seguem até o corte; o original dá a volta no cast para u16 |
 
 ## 8. Ordem
 
