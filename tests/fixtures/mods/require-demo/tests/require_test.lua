@@ -1,0 +1,7 @@
+describe("módulos locais", function()
+    it("carrega e reutiliza lib.math2 no runner", function()
+        local m = require("lib.math2")
+        assert(m.double(21) == 42)
+        assert(require("lib.math2") == m)
+    end)
+end)

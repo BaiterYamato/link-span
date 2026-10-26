@@ -42,13 +42,17 @@ Today an actor handle only exists for an actor a mod created with `ship.actor.sp
 every game actor:
 
 - the host mints the handle the first time the actor appears in an event delivered to Lua, with the same
-  `actor_handle` format (kind, slot, generation, scene) and owner "host";
+  `actor_handle` format (kind, slot, generation, scene) and owner `"linkspan.host"`;
+- the OoT provider registry grows to 1024 handles in total, with no per-owner limit. The limit of 16 actors
+  spawned per mod moves into the provider itself;
 - an actor has a single handle while it lives. An actor created by a mod keeps the mod's handle, and events deliver
   that same handle;
 - the handle expires on the actor's `OnActorDestroy` and on scene change, like today's handles. A stale handle never
   resolves to another actor (`HandleRegistry` generation guard);
 - the observation handle works for reading (`ship.actor.get`) and for `ship.actor.set_max_health`. Functions that
-  require ownership (`ship.actor.destroy`, `ship.actor.exists`) still require it.
+  require ownership (`ship.actor.destroy`, `ship.actor.exists`) still require it;
+- `ship.actor.get` requires the `world.entities.read` manifest permission, like `ship.actor.exists`.
+  `ship.actor.set_max_health` requires `world.entities.write`.
 
 ### Events with instances
 
@@ -90,6 +94,8 @@ For Link, `health` and `max_health` are the save health and capacity. A stale ha
 - The host keeps the real health (`hp`) and the vanilla value recorded at init (`V`). The game's `u8` field holds the
   **mirror**: `0` if `hp == 0`, otherwise `max(1, ceil(V * hp / n))`. Phases, death, the SoH health bar and the rest
   of the actor's code keep seeing vanilla numbers, and death happens together with `hp == 0`.
+- When extended health is enabled, the host writes the mirror into the game's field. With `n` below `V` the
+  granularity changes, and the mirror may differ from the previous vanilla health.
 - **In the damage funnel**, for an extended target, the `damage` hooks see and return is in the target's units. The
   initial value is what the game computed, so a vanilla attack against an enemy with twice the health takes twice
   the hits. The result is limited to 0..65535 and to the remaining health, instead of 0..255. The host converts the
@@ -101,7 +107,9 @@ For Link, `health` and `max_health` are the save health and capacity. A stale ha
   host rescales `hp` from the new mirror.
 - With Ivan's coop mode, its multiplier also multiplies the extended debit.
 - A hit whose debit is too small to change the mirror adds 0 to `colChkInfo.damage`. The hit still sets `AC_HIT`, and
-  most actors react to that; the ones that do not go into the test matrix.
+  most actors react to that; the ones that do not go into the test matrix. On an actor that consumes damage by
+  hand, without calling `Actor_ApplyDamage`, the host cannot tell whether that hit counted: a pending debit that did
+  not change the mirror is discarded, and the case goes into the exclusion matrix.
 - A target without extended health behaves exactly as today (0..255, the F2i limit).
 
 ### Effective damage
@@ -113,12 +121,13 @@ through `Actor_ApplyDamage` and confirmed extended debits. Link does not use thi
 
 ### Save data
 
-`ship.save.get(key, default)`, `ship.save.set(key, value)` and `ship.save.delete(key)`:
+`ship.save.available()`, `ship.save.get(key, default)`, `ship.save.set(key, value)` and `ship.save.delete(key)`:
 
-- store booleans, finite numbers and strings, in a JSON object in the `<mod id>` namespace of `linkspan.oot.save`,
-  version 1. The id comes from the loader, not from the mod;
-- only work with a loaded file, from `save.loaded` until returning to the title or file select. Otherwise they return
-  `invalid_state`;
+- store the `ship.storage` values (boolean, integer, finite number and string), in a JSON object in the `<mod id>`
+  namespace of `linkspan.oot.save`, version 1. The id comes from the loader, not from the mod;
+- `available()` tells whether a file is loaded. The other three only work with one, from `save.loaded` until
+  returning to the title or file select. Otherwise they return nil and an `operation_error` with `invalid_state`,
+  without a Lua error;
 - a write lives in memory and reaches disk on the game's next save. Copying or deleting the file carries the data, via
   the existing service. A new file starts empty;
 - limits are in the annex.
@@ -135,6 +144,7 @@ through `Actor_ApplyDamage` and confirmed extended debits. Link does not use thi
 ### Small ones
 
 - `ship.player.get("age")`: 0 adult, 1 child (`gSaveContext.linkAge`), read-only.
+- `ship.player.get("gs_tokens")`: 0..100 (`gSaveContext.inventory.gsTokens`), read-only.
 - `ship.audio.play_sfx(id)`: plays a centered sound effect, without position. At most 8 per frame.
 - `ship.audio.play_fanfare(id)`: plays a fanfare sequence from an allowlist (annex), only during gameplay.
 
@@ -144,9 +154,11 @@ through `Actor_ApplyDamage` and confirmed extended debits. Link does not use thi
 |---|---|---|---|
 | `ship.actor.get(handle, field)` | function | `actor.observe` | field value, or nil for a stale handle |
 | `ship.actor.set_max_health(handle, n)` | function | `actor.health` | `boolean, operation_error?` |
+| `ship.save.available()` | function | `core.save` | `boolean` |
 | `ship.save.get/set/delete` | functions | `core.save` | like `ship.storage`, in the loaded file |
 | `require("a.b")` | global | `core.modules` | package module |
 | `ship.player.get("age")` | field | `player.fields` | 0 or 1 |
+| `ship.player.get("gs_tokens")` | field | `player.fields` | 0..100 |
 | `ship.audio.play_sfx(id)`, `ship.audio.play_fanfare(id)` | functions | `audio.play` | `boolean` |
 | `actor.init`, `actor.destroy` | events | `actor.events` | now emitted for every actor in OoT |
 | `hook.oot.actor.damage` | event | `hooks.bridge` | + `target`, `attacker`, `target_health`, `target_max_health`, `target_extended` |
@@ -189,7 +201,10 @@ it, because a new header changes the layout id.
 ## Behavior in MM
 
 Only `core.modules` applies to MM, because it lives in the core. The other capabilities are not announced by the MM
-host, and the functions return `unsupported`.
+host, and the functions return `unsupported`, except `ship.save.available()`, which returns `false`. The bindings live
+in the core, like `ship.menu.register`: the function exists in both hosts (`availability` "common"), and the capability
+decides whether it works. A malformed argument gives `invalid_argument` before the capability check, as the generated
+contract requires.
 
 ## Errors
 
@@ -203,6 +218,7 @@ host, and the functions return `unsupported`.
 | `ship.save.set` beyond the limits | `resource_limit` |
 | `require` with an invalid name, `..`, a missing module or a cycle | Lua error naming the module |
 | Fanfare outside the list, or outside gameplay | `false` |
+| `play_sfx`/`play_fanfare` with a non-integer id | Lua error |
 | Capability missing in the host | `unsupported` |
 
 ## Compatibility
@@ -233,7 +249,10 @@ Core, in CI:
 - schemas and generators with `--check` and `validate_api_schemas`;
 - binding with a mock host: `ship.actor.get` (fields, stale handle, missing capability), `set_max_health` (range,
   Link, permission), `ship.save` (no file, limits, types), `require` (`..`, absolute, missing, cycle, cache) and the
-  new payload fields.
+  new payload fields;
+- the `MockRuntime` advertises `core.modules` and enables `core.save` (in-memory backend), `audio.play` (call
+  recorder) and `core.attributes` (new registry) when those capabilities come in `extraCapabilities`. This lets
+  `shiplua_mod_test_runner` test mods that use the pieces of this RFC.
 
 Host:
 
@@ -271,6 +290,7 @@ them as legacy once handles cover every use.
 | Item | Limit |
 |---|---|
 | `set_max_health` | 1..65535 |
+| Actor handles in OoT | 1024 in total; 16 spawned actors per mod |
 | `ship.save` per mod | 256 keys, key up to 128 bytes, value up to 4 KiB, 64 KiB total |
 | `require` | 8 levels, 64 modules per mod |
 | `play_sfx` | 8 per frame |

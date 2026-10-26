@@ -3,6 +3,9 @@
 #include <algorithm>
 #include <cstdint>
 #include <fstream>
+#include <limits>
+#include <string_view>
+#include <type_traits>
 #include <sstream>
 #include <system_error>
 #include <utility>
@@ -445,6 +448,155 @@ int MockReset(lua_State* state) noexcept {
     return 1;
 }
 
+// Helpers de A1: os erros Lua só são lançados depois do retorno dos helpers.
+bool MockReadHandle(lua_State* state, Handle& handle) {
+    if (!lua_istable(state, 1)) return false;
+    lua_pushliteral(state, "kind");
+    lua_rawget(state, 1);
+    std::size_t size = 0;
+    const char* kind = lua_tolstring(state, -1, &size);
+    const bool isActor = kind != nullptr && std::string_view(kind, size) == "actor";
+    lua_pop(state, 1);
+    if (!isActor) return false;
+    const auto read = [&](const char* name, std::uint32_t& target, bool allowZero) {
+        lua_pushstring(state, name);
+        lua_rawget(state, 1);
+        const bool integer = lua_isinteger(state, -1);
+        const lua_Integer value = lua_tointeger(state, -1);
+        lua_pop(state, 1);
+        if (!integer || value < (allowZero ? 0 : 1) ||
+            static_cast<std::uint64_t>(value) > std::numeric_limits<std::uint32_t>::max()) return false;
+        target = static_cast<std::uint32_t>(value);
+        return true;
+    };
+    handle.kind = HandleKind::Actor;
+    return read("slot", handle.slot, true) && read("generation", handle.generation, false) &&
+           read("scene_generation", handle.sceneGeneration, false);
+}
+
+void MockPushHandle(lua_State* state, const Handle& handle) {
+    lua_createtable(state, 0, 4);
+    lua_pushliteral(state, "actor"); lua_setfield(state, -2, "kind");
+    lua_pushinteger(state, handle.slot); lua_setfield(state, -2, "slot");
+    lua_pushinteger(state, handle.generation); lua_setfield(state, -2, "generation");
+    lua_pushinteger(state, handle.sceneGeneration); lua_setfield(state, -2, "scene_generation");
+}
+
+int MockActorsObserveImpl(lua_State* state, MockRuntime& mock, const char*& error) {
+    if (!lua_istable(state, 1)) { error = "mock.actors.observe exige uma tabela"; return 0; }
+    MockObservedActor actor;
+    const auto read = [&](const char* name, std::int64_t& value, bool optional) {
+        lua_pushstring(state, name);
+        lua_rawget(state, 1);
+        if (optional && lua_isnil(state, -1)) { lua_pop(state, 1); return true; }
+        if (!lua_isinteger(state, -1)) { lua_pop(state, 1); return false; }
+        value = static_cast<std::int64_t>(lua_tointeger(state, -1));
+        lua_pop(state, 1);
+        return true;
+    };
+    if (!read("actor_id", actor.actorId, false) || !read("category", actor.category, false) ||
+        !read("params", actor.params, false) || !read("health", actor.health, false)) {
+        error = "mock.actors.observe exige actor_id, category, params e health inteiros";
+        return 0;
+    }
+    actor.maxHealth = actor.health;
+    if (!read("max_health", actor.maxHealth, true)) {
+        error = "mock.actors.observe exige max_health inteiro"; return 0;
+    }
+    auto observed = mock.Actors().Observe(actor);
+    if (!observed.isOk()) { error = "não foi possível observar o ator no mock"; return 0; }
+    MockPushHandle(state, *observed.value);
+    return 1;
+}
+
+int MockActorsDestroyImpl(lua_State* state, MockRuntime& mock, const char*& error) {
+    Handle handle;
+    if (!MockReadHandle(state, handle)) { error = "handle de ator inválido"; return 0; }
+    lua_pushboolean(state, mock.Actors().DestroyObserved(handle));
+    return 1;
+}
+
+int MockActorsGetImpl(lua_State* state, MockRuntime& mock, const char*& error) {
+    Handle handle;
+    if (!MockReadHandle(state, handle)) { error = "handle de ator inválido"; return 0; }
+    const auto* actor = mock.Actors().Observed(handle);
+    if (actor == nullptr) { lua_pushnil(state); return 1; }
+    lua_createtable(state, 0, 10);
+    const auto integer = [&](const char* name, std::int64_t value) {
+        lua_pushinteger(state, static_cast<lua_Integer>(value)); lua_setfield(state, -2, name);
+    };
+    integer("actor_id", actor->actorId);
+    integer("category", actor->category);
+    integer("params", actor->params);
+    integer("health", actor->health);
+    integer("max_health", actor->maxHealth);
+    integer("extended_max", actor->extendedMax);
+    integer("extended_hp", actor->extendedHp);
+    lua_pushnumber(state, actor->x); lua_setfield(state, -2, "x");
+    lua_pushnumber(state, actor->y); lua_setfield(state, -2, "y");
+    lua_pushnumber(state, actor->z); lua_setfield(state, -2, "z");
+    return 1;
+}
+
+int MockSaveLoadImpl(lua_State* state, MockRuntime& mock, const char*& error) {
+    if (!lua_isinteger(state, 1) || lua_tointeger(state, 1) < 0 ||
+        lua_tointeger(state, 1) > std::numeric_limits<int>::max()) {
+        error = "mock.save.load exige um slot inteiro não negativo"; return 0;
+    }
+    mock.SaveBackend().LoadSlot(static_cast<int>(lua_tointeger(state, 1)));
+    lua_pushboolean(state, 1);
+    return 1;
+}
+
+int MockSaveUnloadImpl(lua_State* state, MockRuntime& mock, const char*&) {
+    mock.SaveBackend().Unload();
+    lua_pushboolean(state, 1);
+    return 1;
+}
+
+int MockSaveDumpImpl(lua_State* state, MockRuntime& mock, const char*& error) {
+    auto values = mock.SaveBackend().Load(mock.ModId());
+    if (!values.isOk()) { error = "mock.save.dump exige um arquivo carregado"; return 0; }
+    lua_createtable(state, 0, static_cast<int>(values.value->size()));
+    for (const auto& [key, value] : *values.value) {
+        lua_pushlstring(state, key.data(), key.size());
+        std::visit([state](const auto& item) {
+            using T = std::decay_t<decltype(item)>;
+            if constexpr (std::is_same_v<T, bool>) lua_pushboolean(state, item);
+            else if constexpr (std::is_same_v<T, std::int64_t>) lua_pushinteger(state, static_cast<lua_Integer>(item));
+            else if constexpr (std::is_same_v<T, double>) lua_pushnumber(state, item);
+            else lua_pushlstring(state, item.data(), item.size());
+        }, value);
+        lua_rawset(state, -3);
+    }
+    return 1;
+}
+
+int MockAudioCallsImpl(lua_State* state, MockRuntime& mock, const char*&) {
+    const auto& calls = mock.AudioCalls();
+    lua_createtable(state, static_cast<int>(calls.size()), 0);
+    lua_Integer index = 1;
+    for (const auto& [kind, id] : calls) {
+        lua_createtable(state, 0, 2);
+        lua_pushlstring(state, kind.data(), kind.size()); lua_setfield(state, -2, "kind");
+        lua_pushinteger(state, static_cast<lua_Integer>(id)); lua_setfield(state, -2, "id");
+        lua_seti(state, -2, index++);
+    }
+    return 1;
+}
+
+template <int (*Function)(lua_State*, MockRuntime&, const char*&)>
+int MockGuard(lua_State* state) noexcept {
+    const char* error = nullptr;
+    int result = 0;
+    try {
+        auto* mock = MockFrom(state);
+        if (mock == nullptr) error = "contexto do mock indisponível";
+        else result = Function(state, *mock, error);
+    } catch (...) { error = "falha do host na operação do mock"; }
+    return error != nullptr ? MockFail(state, error) : result;
+}
+
 void InstallMockModule(lua_State* state, MockRuntime* mock) {
     lua_newtable(state);
     const int mockIndex = lua_gettop(state);
@@ -467,6 +619,22 @@ void InstallMockModule(lua_State* state, MockRuntime* mock) {
     SetMockFunction(state, -1, "entries", MockLogEntries, mock);
     SetMockFunction(state, -1, "clear", MockLogClear, mock);
     lua_setfield(state, mockIndex, "log");
+
+    lua_newtable(state);
+    SetMockFunction(state, -1, "observe", MockGuard<MockActorsObserveImpl>, mock);
+    SetMockFunction(state, -1, "destroy", MockGuard<MockActorsDestroyImpl>, mock);
+    SetMockFunction(state, -1, "get", MockGuard<MockActorsGetImpl>, mock);
+    lua_setfield(state, mockIndex, "actors");
+
+    lua_newtable(state);
+    SetMockFunction(state, -1, "load", MockGuard<MockSaveLoadImpl>, mock);
+    SetMockFunction(state, -1, "unload", MockGuard<MockSaveUnloadImpl>, mock);
+    SetMockFunction(state, -1, "dump", MockGuard<MockSaveDumpImpl>, mock);
+    lua_setfield(state, mockIndex, "save");
+
+    lua_newtable(state);
+    SetMockFunction(state, -1, "calls", MockGuard<MockAudioCallsImpl>, mock);
+    lua_setfield(state, mockIndex, "audio");
 
     SetMockFunction(state, mockIndex, "reset", MockReset, mock);
 

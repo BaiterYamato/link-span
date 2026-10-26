@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <functional>
 #include <map>
 #include <memory>
@@ -17,6 +18,7 @@
 #include "shiplua/runtime/Logger.h"
 #include "shiplua/runtime/LuaRuntime.h"
 #include "shiplua/runtime/Result.h"
+#include "shiplua/save/ModSaveStore.h"
 #include "shiplua/storage/KeyValueStorage.h"
 #include "shiplua/timer/FrameTimerScheduler.h"
 #include "shiplua/world/WorldSession.h"
@@ -54,6 +56,12 @@ struct LuaApiHostContext {
     std::function<Result<bool>(double)> setSpeedMultiplier;
     // Registro de atributos (RFC 0030). Nullable; null = host sem ship.attributes nem linkspan.attributes.
     std::shared_ptr<AttributeRegistry> attributes;
+    // ship.save (RFC 0031). Nullable; null = host sem core.save.
+    std::shared_ptr<ModSaveStore> saveData;
+    // ship.audio (RFC 0031). Vazios = host sem audio.play. Devolvem false quando o host recusa (fora de gameplay,
+    // fanfarra fora da lista, limite por frame).
+    std::function<Result<bool>(std::int64_t)> playSfx;
+    std::function<Result<bool>(std::int64_t)> playFanfare;
 };
 
 // Per-mod authorization and resource policy derived from manifest.toml.
@@ -61,6 +69,8 @@ struct LuaApiModPolicy {
     std::vector<std::string> permissions;
     std::size_t maxActors = 16;
     NativeProvider* native = nullptr; // owned by ModHost; outlives binding and LuaRuntime
+    // Pasta do mod, para require("a.b") (RFC 0031). Vazia = só require("ship").
+    std::filesystem::path modDirectory;
 };
 
 // Validates a host context before any binding is installed: game id must be
@@ -108,6 +118,7 @@ class LuaApiBinding {
     static LuaApiBinding* FromUpvalue(lua_State* state);
     static int InstallProtected(lua_State* state) noexcept;
     static int Require(lua_State* state) noexcept;
+    bool LoadRequiredModule(lua_State* state, const char*& error) noexcept;
     static int GameId(lua_State* state) noexcept;
     static int HostVersion(lua_State* state) noexcept;
     static int RuntimeVersion(lua_State* state) noexcept;
@@ -137,6 +148,15 @@ class LuaApiBinding {
     static int ActorSpawn(lua_State* state) noexcept;
     static int ActorDestroy(lua_State* state) noexcept;
     static int ActorExists(lua_State* state) noexcept;
+    static int ActorGet(lua_State* state) noexcept;
+    static int ActorSetMaxHealth(lua_State* state) noexcept;
+    static int SaveAvailable(lua_State* state) noexcept;
+    static int SaveGet(lua_State* state) noexcept;
+    static int SaveSet(lua_State* state) noexcept;
+    static int SaveDelete(lua_State* state) noexcept;
+    static int AudioPlaySfx(lua_State* state) noexcept;
+    static int AudioPlayFanfare(lua_State* state) noexcept;
+    static int AudioPlay(lua_State* state, bool fanfare) noexcept;
     static int NativeHas(lua_State* state) noexcept;
     static int NativeCall(lua_State* state) noexcept;
     static int LogDebug(lua_State* state) noexcept;
@@ -175,6 +195,9 @@ class LuaApiBinding {
     int ActorSpawnFromLua(lua_State* state);
     int ActorDestroyFromLua(lua_State* state);
     int ActorExistsFromLua(lua_State* state);
+    int ActorGetFromLua(lua_State* state);
+    int ActorSetMaxHealthFromLua(lua_State* state);
+    int SaveFromLua(lua_State* state, int operation);
     bool HasPermission(const std::string& permission) const;
     std::size_t EffectiveActorLimit() const;
     void PruneDeadActors() noexcept;
@@ -212,6 +235,7 @@ class LuaApiBinding {
     EventPayload* mActiveTransformPayload = nullptr;
     std::vector<Handle> mActorHandles;
     int mShipReference = -2;
+    int mModuleCacheReference = -2;
     bool mInstalled = false;
 };
 

@@ -1,4 +1,5 @@
 #include "shiplua/host/ModHost.h"
+#include "shiplua/host/ModPath.h"
 
 #include <algorithm>
 #include <filesystem>
@@ -38,44 +39,6 @@ Result<std::string> ReadTextFile(const std::string& path) {
                                         "failed to read file '" + path + "'");
     }
     return Result<std::string>::ok(contents.str());
-}
-
-Result<std::filesystem::path> ResolveEntrypoint(const std::filesystem::path& modDir,
-                                                const std::string& entrypoint) {
-    const std::filesystem::path relative(entrypoint);
-    if (relative.empty() || relative.is_absolute() || relative.has_root_name() ||
-        relative.has_root_directory()) {
-        return Result<std::filesystem::path>::err(
-            ErrorCode::PermissionDenied, "entrypoint must be a relative path inside the mod directory");
-    }
-
-    const std::filesystem::path normalized = relative.lexically_normal();
-    for (const auto& component : normalized) {
-        if (component == "..") {
-            return Result<std::filesystem::path>::err(
-                ErrorCode::PermissionDenied, "entrypoint cannot contain parent traversal ('..')");
-        }
-    }
-
-    std::error_code error;
-    std::filesystem::path current = std::filesystem::weakly_canonical(modDir, error);
-    if (error) {
-        return Result<std::filesystem::path>::err(
-            ErrorCode::InvalidArgument, "cannot resolve mod directory: " + error.message());
-    }
-    for (const auto& component : normalized) {
-        current /= component;
-        const auto status = std::filesystem::symlink_status(current, error);
-        if (error) {
-            return Result<std::filesystem::path>::err(
-                ErrorCode::InvalidArgument, "cannot inspect entrypoint path: " + error.message());
-        }
-        if (std::filesystem::is_symlink(status)) {
-            return Result<std::filesystem::path>::err(
-                ErrorCode::PermissionDenied, "entrypoint path cannot contain symbolic links");
-        }
-    }
-    return Result<std::filesystem::path>::ok(std::move(current));
 }
 
 std::filesystem::path MakePackageDirectory(const std::filesystem::path& root) {
@@ -297,7 +260,7 @@ Result<void> ModHost::LoadModFromDirectory(const std::string& dir, std::size_t m
     }
     const Manifest& manifest = *parsed.value;
 
-    auto entrypointPath = ResolveEntrypoint(modDir, manifest.entrypoint);
+    auto entrypointPath = ResolveModFile(modDir, manifest.entrypoint);
     if (!entrypointPath.isOk()) {
         return Result<void>::err(entrypointPath.code,
                                  "mod '" + manifest.id + "': " + entrypointPath.message);
@@ -424,6 +387,7 @@ Result<void> ModHost::LoadMod(const Manifest& manifest, const std::string& luaSo
     policy.permissions = manifest.permissionGrants;
     policy.maxActors = manifest.limitActors;
     policy.native = provider.get();
+    policy.modDirectory = directory;
     auto binding = std::make_unique<LuaApiBinding>(
         *runtime, *mEvents, mLogger, mHostContext, mNextModLoadOrder,
         manifest.loadPriority, 3, std::move(policy));

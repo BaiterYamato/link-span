@@ -23,6 +23,8 @@ Derivada dos schemas canônicos em `schema/` (IDL); regenere com
 | `ship.actor.spawn` | `0.4.0` | `experimental` | sim | sim | `actor.spawn` | `invalid_argument`, `unsupported`, `permission_denied`, `invalid_state`, `resource_limit`, `host_failure` |
 | `ship.actor.destroy` | `0.4.0` | `experimental` | sim | sim | `actor.destroy` | `invalid_argument`, `unsupported`, `permission_denied`, `invalid_handle`, `host_failure` |
 | `ship.actor.exists` | `0.4.0` | `experimental` | sim | sim | `actor.exists` | `invalid_argument`, `unsupported`, `permission_denied`, `host_failure` |
+| `ship.actor.get` | `0.5.0` | `experimental` | sim | sim | `actor.observe` | `invalid_argument`, `unsupported`, `permission_denied`, `host_failure` |
+| `ship.actor.set_max_health` | `0.5.0` | `experimental` | sim | sim | `actor.health` | `invalid_argument`, `unsupported`, `permission_denied`, `invalid_state`, `host_failure` |
 | `ship.world.travel` | `0.3.0` | `experimental` | sim | sim | `world.travel` | `invalid_argument`, `unsupported`, `invalid_state`, `host_failure` |
 | `ship.mm.player.jump` | `0.2.0` | `experimental` | — | sim | `mm.player.jump` | — |
 | `ship.mm.spawn_dog` | `0.3.0` | `experimental` | — | sim | `mm.spawn_dog` | — |
@@ -60,6 +62,12 @@ Derivada dos schemas canônicos em `schema/` (IDL); regenere com
 | `ship.storage.shared.set` | `0.4.0` | `experimental` | sim | sim | `core.storage.shared` | `invalid_argument`, `resource_limit`, `unsupported` |
 | `ship.storage.shared.delete` | `0.4.0` | `experimental` | sim | sim | `core.storage.shared` | `invalid_argument`, `unsupported` |
 | `ship.storage.shared.clear` | `0.4.0` | `experimental` | sim | sim | `core.storage.shared` | `unsupported` |
+| `ship.save.available` | `0.5.0` | `experimental` | sim | sim | `core.save` | — |
+| `ship.save.get` | `0.5.0` | `experimental` | sim | sim | `core.save` | `invalid_argument`, `invalid_state`, `unsupported` |
+| `ship.save.set` | `0.5.0` | `experimental` | sim | sim | `core.save` | `invalid_argument`, `invalid_state`, `resource_limit`, `unsupported` |
+| `ship.save.delete` | `0.5.0` | `experimental` | sim | sim | `core.save` | `invalid_argument`, `invalid_state`, `unsupported` |
+| `ship.audio.play_sfx` | `0.5.0` | `experimental` | sim | sim | `audio.play` | `invalid_argument`, `unsupported` |
+| `ship.audio.play_fanfare` | `0.5.0` | `experimental` | sim | sim | `audio.play` | `invalid_argument`, `unsupported` |
 | `ship.hud.draw_rect` | `0.4.0` | `experimental` | sim | — | `hud.draw` | `invalid_argument`, `invalid_state` |
 | `ship.hud.draw_text` | `0.4.0` | `experimental` | sim | — | `hud.draw` | `invalid_argument`, `invalid_state` |
 | `ship.hud.draw_ring` | `0.4.0` | `experimental` | sim | — | `hud.draw` | `invalid_argument`, `invalid_state` |
@@ -91,6 +99,7 @@ nunca registra `ship.oot.*` ou `ship.mm.*` (RFC 0001).
 | `actor.update` | `host_bridge` | não | sim | sim | `actor.events` |
 | `actor.destroy` | `host_bridge` | não | sim | sim | `actor.events` |
 | `save.loaded` | `host_bridge` | não | sim | sim | `save.events` |
+| `save.saving` | `host_bridge` | não | sim | — | `save.events` |
 | `text.open` | `host_bridge` | não | sim | sim | `text.events` |
 | `audio.sequence_started` | `host_bridge` | não | sim | sim | `audio.sequence.events` |
 | `input.hotkey` | `host_bridge` | não | sim | sim | — |
@@ -102,6 +111,7 @@ nunca registra `ship.oot.*` ou `ship.mm.*` (RFC 0001).
 | `hook.oot.player.bonk` | `hook_bridge` | não | sim | — | `hooks.bridge` |
 | `hook.oot.enemy.defeat` | `hook_bridge` | não | sim | — | `hooks.bridge` |
 | `hook.oot.actor.damage` | `hook_bridge` | não | sim | — | `hooks.bridge` |
+| `hook.oot.actor.damaged` | `hook_bridge` | não | sim | — | `hooks.bridge` |
 | `hook.oot.item.give` | `hook_bridge` | não | sim | — | `hooks.bridge` |
 | `hook.oot.hud.draw` | `hook_bridge` | não | sim | — | `hud.draw` |
 | `hook.oot.player.first_person_control` | `hook_bridge` | não | sim | — | `hooks.bridge` |
@@ -125,6 +135,8 @@ nunca registra `ship.oot.*` ou `ship.mm.*` (RFC 0001).
 | `core.input` | `contract` | sim | sim |
 | `core.menu` | `contract` | sim | — |
 | `core.attributes` | `contract` | sim | sim |
+| `core.modules` | `contract` | sim | sim |
+| `core.save` | `contract` | sim | — |
 | `input.actions` | `contract` | sim | — |
 | `game.state` | `contract` | sim | — |
 | `core.storage` | `contract` | sim | sim |
@@ -138,6 +150,9 @@ nunca registra `ship.oot.*` ou `ship.mm.*` (RFC 0001).
 | `actor.spawn` | `contract` | sim | sim |
 | `actor.destroy` | `contract` | sim | sim |
 | `actor.exists` | `contract` | sim | sim |
+| `actor.observe` | `contract` | sim | — |
+| `actor.health` | `contract` | sim | — |
+| `audio.play` | `contract` | sim | — |
 | `save.events` | `contract` | sim | sim |
 | `text.events` | `contract` | sim | sim |
 | `audio.sequence.events` | `contract` | sim | sim |
@@ -170,5 +185,5 @@ nunca registra `ship.oot.*` ou `ship.mm.*` (RFC 0001).
 |---|---:|
 | `stable` | 12 |
 | `preview` | 2 |
-| `experimental` | 51 |
+| `experimental` | 59 |
 

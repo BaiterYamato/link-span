@@ -148,6 +148,11 @@ probe("ship.storage.clear", {  }, "integer")
 probe("ship.storage.shared.set", { "probe", "probe" }, "boolean")
 probe("ship.storage.shared.delete", { "probe" }, "boolean")
 probe("ship.storage.shared.clear", {  }, "integer")
+probe("ship.save.available", {  }, "boolean")
+probe("ship.save.set", { "probe", "probe" }, "boolean")
+probe("ship.save.delete", { "probe" }, "boolean")
+probe("ship.audio.play_sfx", { 1 }, "boolean")
+probe("ship.audio.play_fanfare", { 1 }, "boolean")
 probe("ship.menu.register", { "probe" }, "boolean")
 probe("ship.attributes.value", { "probe" }, "number")
 probe("ship.attributes.breakdown", { "probe" }, "table")
@@ -328,6 +333,20 @@ do
     "erro de ship.actor.exists deveria carregar invalid_argument")
 end
 do
+  local fn = resolve(ship_mod, "actor.get")
+  local value, err = fn()
+  check(value == nil, "ship.actor.get sem argumentos não deveria retornar valor")
+  check(type(err) == "table" and err.code == "invalid_argument",
+    "erro de ship.actor.get deveria carregar invalid_argument")
+end
+do
+  local fn = resolve(ship_mod, "actor.set_max_health")
+  local value, err = fn()
+  check(value == nil, "ship.actor.set_max_health sem argumentos não deveria retornar valor")
+  check(type(err) == "table" and err.code == "invalid_argument",
+    "erro de ship.actor.set_max_health deveria carregar invalid_argument")
+end
+do
   local fn = resolve(ship_mod, "world.travel")
   local ok, err = pcall(fn)
   check(not ok, "ship.world.travel sem argumentos deveria falhar")
@@ -431,6 +450,41 @@ do
   check(not ok, "ship.storage.shared.delete sem argumentos deveria falhar")
   check(type(err) == "string" and err:find("invalid_argument", 1, true) ~= nil,
     "erro de ship.storage.shared.delete deveria carregar invalid_argument")
+end
+do
+  local fn = resolve(ship_mod, "save.get")
+  local value, err = fn()
+  check(value == nil, "ship.save.get sem argumentos não deveria retornar valor")
+  check(type(err) == "table" and err.code == "invalid_argument",
+    "erro de ship.save.get deveria carregar invalid_argument")
+end
+do
+  local fn = resolve(ship_mod, "save.set")
+  local value, err = fn()
+  check(value == nil, "ship.save.set sem argumentos não deveria retornar valor")
+  check(type(err) == "table" and err.code == "invalid_argument",
+    "erro de ship.save.set deveria carregar invalid_argument")
+end
+do
+  local fn = resolve(ship_mod, "save.delete")
+  local value, err = fn()
+  check(value == nil, "ship.save.delete sem argumentos não deveria retornar valor")
+  check(type(err) == "table" and err.code == "invalid_argument",
+    "erro de ship.save.delete deveria carregar invalid_argument")
+end
+do
+  local fn = resolve(ship_mod, "audio.play_sfx")
+  local ok, err = pcall(fn)
+  check(not ok, "ship.audio.play_sfx sem argumentos deveria falhar")
+  check(type(err) == "string" and err:find("invalid_argument", 1, true) ~= nil,
+    "erro de ship.audio.play_sfx deveria carregar invalid_argument")
+end
+do
+  local fn = resolve(ship_mod, "audio.play_fanfare")
+  local ok, err = pcall(fn)
+  check(not ok, "ship.audio.play_fanfare sem argumentos deveria falhar")
+  check(type(err) == "string" and err:find("invalid_argument", 1, true) ~= nil,
+    "erro de ship.audio.play_fanfare deveria carregar invalid_argument")
 end
 do
   local fn = resolve(ship_mod, "menu.register")

@@ -77,7 +77,29 @@ O entrypoint executa uma vez **por carregamento**. Registre callbacks no nível 
 
 `game.ready` informa que o host está pronto; não significa que um save ou uma cena jogável foi carregado. Use `save.loaded`, `scene.enter` ou um recurso disponível de estado de gameplay quando a ação exigir um jogador em uma cena. O host emite `game.shutdown` no encerramento; não dependa dele para recuperação após crash. O unload libera subscriptions, hotkeys, timers e atores pertencentes ao mod. Recarregar executa o entrypoint novamente.
 
-O runtime fornece um `require("ship")` restrito. Ele não carrega arquivos Lua arbitrários nem módulos externos da pasta do mod. Mantenha um mod pequeno no entrypoint ou monte o código Lua antes de distribuí-lo.
+### Módulos
+
+`require("ship")` continua fornecendo a API interna. Para dividir o mod em arquivos Lua, use nomes como `require("lib.math2")`: o runtime carrega `lib/math2.lua` dentro da pasta do próprio mod.
+
+```lua
+-- lib/math2.lua
+return { double = function(x) return x * 2 end }
+```
+
+```lua
+-- main.lua ou tests/require_test.lua
+local m = require("lib.math2")
+assert(m.double(21) == 42)
+assert(require("lib.math2") == m)
+```
+
+O nome aceita de 1 a 8 segmentos separados por ponto, cada um com letras ASCII, dígitos ou `_`. Não inclua `.lua`, barras ou segmentos vazios. Caminhos absolutos, `..` e links simbólicos no caminho do arquivo são recusados. O carregador não procura módulos de outros mods, bibliotecas nativas ou pacotes do sistema.
+
+Cada módulo pode ter até 1 MiB e cada mod pode carregar até 64 módulos locais, contando os que estão em execução. `ship` não consome esse limite. O resultado fica no cache privado do mod até o unload; `nil` ou ausência de retorno vira `true`, e `false` também fica no cache. Uma nova carga do mod começa com cache vazio.
+
+Ciclos geram `require cycle at '<nome>'`; nomes inválidos geram `invalid module name '<nome>'`. Arquivos ausentes ou recusados pelo resolver geram `module '<nome>' not found`; arquivos maiores que 1 MiB geram `module '<nome>' is too large`; o 65º módulo gera `too many modules`. Falhas de sintaxe ou execução preservam o chunk `<mod id>/<caminho.lua>` e removem a entrada pendente do cache, permitindo tentar novamente. Mods criados apenas com `LoadModFromManifestAndSource`, sem pasta, só têm acesso a `require("ship")`.
+
+Inclua os arquivos dos módulos no pacote `.shipmod`. O `ModTestRunner` também permite `require` dos mesmos módulos em `tests/*.lua`.
 
 ## 3. Detecte recursos antes de usá-los
 
@@ -340,7 +362,7 @@ Um erro no entrypoint rejeita aquele carregamento. Erros de callback são regist
 | Ator retorna `resource_limit` | Libere atores antigos; respeite limites do manifesto e host |
 | Storage retorna `unsupported` | Use fallback em memória ou exija backend compatível |
 | Hotkey não dispara | Confira suporte a input, associação atual e mods conflitantes |
-| `require` rejeita módulo | Só o módulo interno `ship` está disponível no código normal do mod |
+| `require` rejeita módulo | Confira o nome, o arquivo dentro da pasta do mod, ciclos e os limites de módulos descritos acima |
 
 Códigos de erro estruturado incluem `unsupported`, `invalid_argument`, `invalid_handle`, `invalid_state`, `permission_denied`, `resource_limit`, `host_failure` e `script_failure`.
 

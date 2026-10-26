@@ -77,7 +77,29 @@ The entrypoint executes once **per load**. Register callbacks at its top level. 
 
 `game.ready` reports that the host is ready; it does not mean a save or playable scene has been loaded. Use `save.loaded`, `scene.enter` or an available gameplay-state feature when your action needs a player in a scene. The host dispatches `game.shutdown` on its shutdown path; do not depend on it for crash recovery. Unloading releases owned subscriptions, hotkeys, timers and actors. Reloading runs the entrypoint again.
 
-The runtime provides a restricted `require("ship")`. It does not load arbitrary Lua files or third-party modules from your mod folder. Keep a small mod in its entrypoint, or assemble your Lua source before distributing it.
+### Modules
+
+`require("ship")` still provides the built-in API. To split a mod into Lua files, use names such as `require("lib.math2")`: the runtime loads `lib/math2.lua` inside that mod's own directory.
+
+```lua
+-- lib/math2.lua
+return { double = function(x) return x * 2 end }
+```
+
+```lua
+-- main.lua or tests/require_test.lua
+local m = require("lib.math2")
+assert(m.double(21) == 42)
+assert(require("lib.math2") == m)
+```
+
+Names contain 1 to 8 dot-separated segments, each using ASCII letters, digits or `_`. Omit `.lua`, slashes and empty segments. Absolute paths, `..` and symbolic links along the file path are rejected. The loader does not search other mods, native libraries or system packages.
+
+Each module may contain up to 1 MiB, and each mod may load up to 64 local modules, including those currently executing. `ship` does not count toward this limit. Results stay in the mod's private cache until unload; `nil` or no return becomes `true`, and `false` is cached too. Reloading the mod starts with an empty cache.
+
+Cycles raise `require cycle at '<name>'`; invalid names raise `invalid module name '<name>'`. Missing files or paths rejected by the resolver raise `module '<name>' not found`; files over 1 MiB raise `module '<name>' is too large`; the 65th module raises `too many modules`. Syntax and execution errors retain the chunk name `<mod id>/<path.lua>` and remove the pending cache entry so loading can be retried. Mods created only through `LoadModFromManifestAndSource`, without a directory, can only use `require("ship")`.
+
+Include module files in the `.shipmod` package. `ModTestRunner` also supports requiring those same modules from `tests/*.lua`.
 
 ## 3. Discover features before using them
 
@@ -340,7 +362,7 @@ An entrypoint error rejects that load. Callback errors are logged and isolated; 
 | Actor `resource_limit` | Release old actors; respect the manifest and host limits |
 | Storage `unsupported` | Use a memory fallback or require a supporting backend |
 | Hotkey not firing | Check input support, current binding and conflicting mods |
-| `require` rejects a module | Only the built-in `ship` module is available in normal mod code |
+| `require` rejects a module | Check its name, file inside the mod directory, cycles and the module limits above |
 
 Structured error codes include `unsupported`, `invalid_argument`, `invalid_handle`, `invalid_state`, `permission_denied`, `resource_limit`, `host_failure` and `script_failure`.
 

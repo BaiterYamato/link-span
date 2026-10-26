@@ -130,10 +130,14 @@ int main() {
                 {"attacker_is_player", "boolean", true}, {"dmg_flags", "integer", true},
                 {"damage_effect", "integer", true}, {"base_damage", "number", true},
                 {"damage", "number", true},
+                // RFC 0031: instância do alvo e do atacante e a vida do alvo.
+                {"target", "actor_snapshot", true}, {"attacker", "actor_snapshot", false},
+                {"target_health", "integer", true}, {"target_max_health", "integer", true},
+                {"target_extended", "boolean", true},
             };
-            Check(damageEvent->payload.size() == 9, "payload de dano tem nove campos");
-            if (damageEvent->payload.size() == 9) {
-                for (std::size_t i = 0; i < 9; ++i) {
+            Check(damageEvent->payload.size() == 14, "payload de dano tem catorze campos");
+            if (damageEvent->payload.size() == 14) {
+                for (std::size_t i = 0; i < 14; ++i) {
                     const auto& actual = damageEvent->payload[i];
                     Check(actual.name == expected[i].name && actual.type == expected[i].type &&
                               actual.required == expected[i].required,

@@ -21,6 +21,8 @@ local FUNCTIONS = {
   { name = "ship.actor.spawn", availability = "common", required_arguments = 2, error_mode = "return" },
   { name = "ship.actor.destroy", availability = "common", required_arguments = 1, error_mode = "return" },
   { name = "ship.actor.exists", availability = "common", required_arguments = 1, error_mode = "return" },
+  { name = "ship.actor.get", availability = "common", required_arguments = 2, error_mode = "return" },
+  { name = "ship.actor.set_max_health", availability = "common", required_arguments = 2, error_mode = "return" },
   { name = "ship.world.travel", availability = "common", required_arguments = 2, error_mode = "raise" },
   { name = "ship.mm.player.jump", availability = "mm", required_arguments = 0, error_mode = "raise" },
   { name = "ship.mm.spawn_dog", availability = "mm", required_arguments = 0, error_mode = "raise" },
@@ -58,6 +60,12 @@ local FUNCTIONS = {
   { name = "ship.storage.shared.set", availability = "common", required_arguments = 2, error_mode = "raise" },
   { name = "ship.storage.shared.delete", availability = "common", required_arguments = 1, error_mode = "raise" },
   { name = "ship.storage.shared.clear", availability = "common", required_arguments = 0, error_mode = "raise" },
+  { name = "ship.save.available", availability = "common", required_arguments = 0, error_mode = "raise" },
+  { name = "ship.save.get", availability = "common", required_arguments = 1, error_mode = "return" },
+  { name = "ship.save.set", availability = "common", required_arguments = 2, error_mode = "return" },
+  { name = "ship.save.delete", availability = "common", required_arguments = 1, error_mode = "return" },
+  { name = "ship.audio.play_sfx", availability = "common", required_arguments = 1, error_mode = "raise" },
+  { name = "ship.audio.play_fanfare", availability = "common", required_arguments = 1, error_mode = "raise" },
   { name = "ship.hud.draw_rect", availability = "oot", required_arguments = 4, error_mode = "raise" },
   { name = "ship.hud.draw_text", availability = "oot", required_arguments = 3, error_mode = "raise" },
   { name = "ship.hud.draw_ring", availability = "oot", required_arguments = 3, error_mode = "raise" },
@@ -74,15 +82,15 @@ local FUNCTIONS = {
   { name = "ship.native.call", availability = "common", required_arguments = 2, error_mode = "return" },
 }
 
-local EVENTS = { "game.ready", "game.frame", "game.shutdown", "scene.enter", "actor.init", "actor.update", "actor.destroy", "save.loaded", "text.open", "audio.sequence_started", "input.hotkey", "input.action", "hook.oot.player.speed.run", "hook.oot.player.fall_damage", "hook.oot.item.receive", "hook.oot.player.health_change", "hook.oot.player.bonk", "hook.oot.enemy.defeat", "hook.oot.actor.damage", "hook.oot.item.give", "hook.oot.hud.draw", "hook.oot.player.first_person_control", "hook.oot.player.arrow_type_select", "hook.oot.player.body_anim_select", "hook.mm.player.speed.walk", "hook.mm.player.goron_roll.consume_magic", "hook.mm.player.goron_roll.disable_spike_mode", "hook.mm.player.goron_roll.increase_spike_level", "hook.mm.item.give", "hook.mm.enemy.defeat", "hook.mm.item.should_give" }
+local EVENTS = { "game.ready", "game.frame", "game.shutdown", "scene.enter", "actor.init", "actor.update", "actor.destroy", "save.loaded", "save.saving", "text.open", "audio.sequence_started", "input.hotkey", "input.action", "hook.oot.player.speed.run", "hook.oot.player.fall_damage", "hook.oot.item.receive", "hook.oot.player.health_change", "hook.oot.player.bonk", "hook.oot.enemy.defeat", "hook.oot.actor.damage", "hook.oot.actor.damaged", "hook.oot.item.give", "hook.oot.hud.draw", "hook.oot.player.first_person_control", "hook.oot.player.arrow_type_select", "hook.oot.player.body_anim_select", "hook.mm.player.speed.walk", "hook.mm.player.goron_roll.consume_magic", "hook.mm.player.goron_roll.disable_spike_mode", "hook.mm.player.goron_roll.increase_spike_level", "hook.mm.item.give", "hook.mm.enemy.defeat", "hook.mm.item.should_give" }
 
 local ENUM_VALUES = {
   game_id = { "oot", "mm" },
 }
 
 local CONTRACT_CAPABILITIES = {
-  oot = { "core.events", "hooks.bridge", "core.timers", "core.input", "core.menu", "core.attributes", "input.actions", "game.state", "core.storage", "core.storage.shared", "oot.cutscene", "oot.env", "hud.draw", "hud.icons", "scene.events", "actor.events", "actor.spawn", "actor.destroy", "actor.exists", "save.events", "text.events", "audio.sequence.events", "world.travel", "oot.player.jump", "oot.player.mask", "player.speed", "player.fields", "oot.player.attach_model", "mod.assets", "oot.player.immunity", "oot.player.weight", "oot.player.roll", "oot.player.custom_body", "oot.player.held_item_model" },
-  mm = { "core.events", "hooks.bridge", "core.timers", "core.input", "core.attributes", "core.storage", "core.storage.shared", "scene.events", "actor.events", "actor.spawn", "actor.destroy", "actor.exists", "save.events", "text.events", "audio.sequence.events", "world.travel", "mm.player.jump", "mm.spawn_dog", "mm.player.sword_skin", "player.speed" },
+  oot = { "core.events", "hooks.bridge", "core.timers", "core.input", "core.menu", "core.attributes", "core.modules", "core.save", "input.actions", "game.state", "core.storage", "core.storage.shared", "oot.cutscene", "oot.env", "hud.draw", "hud.icons", "scene.events", "actor.events", "actor.spawn", "actor.destroy", "actor.exists", "actor.observe", "actor.health", "audio.play", "save.events", "text.events", "audio.sequence.events", "world.travel", "oot.player.jump", "oot.player.mask", "player.speed", "player.fields", "oot.player.attach_model", "mod.assets", "oot.player.immunity", "oot.player.weight", "oot.player.roll", "oot.player.custom_body", "oot.player.held_item_model" },
+  mm = { "core.events", "hooks.bridge", "core.timers", "core.input", "core.attributes", "core.modules", "core.storage", "core.storage.shared", "scene.events", "actor.events", "actor.spawn", "actor.destroy", "actor.exists", "save.events", "text.events", "audio.sequence.events", "world.travel", "mm.player.jump", "mm.spawn_dog", "mm.player.sword_skin", "player.speed" },
 }
 
 local failures = {}
@@ -177,6 +185,9 @@ if ok_value then check_return_type("ship.storage.clear", "integer", value) end
 local ok_value, value = pcall(ship.storage.shared.clear)
 check(ok_value, "ship.storage.shared.clear deveria executar sem argumentos")
 if ok_value then check_return_type("ship.storage.shared.clear", "integer", value) end
+local ok_value, value = pcall(ship.save.available)
+check(ok_value, "ship.save.available deveria executar sem argumentos")
+if ok_value then check_return_type("ship.save.available", "boolean", value) end
 
 -- Capabilities: feature detection reflete o contexto anunciado pelo host.
 local granted = CONTRACT_CAPABILITIES[host] or {}

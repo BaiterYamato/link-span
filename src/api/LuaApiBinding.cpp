@@ -5,6 +5,8 @@
 #include <cmath>
 #include <cstdint>
 #include <exception>
+#include <fstream>
+#include <iterator>
 #include <limits>
 #include <optional>
 #include <set>
@@ -14,6 +16,7 @@
 #include <utility>
 
 #include "shiplua/generated/ApiBindings.h"
+#include "shiplua/host/ModPath.h"
 #include "shiplua/native/NativeProvider.h"
 
 #if __has_include(<lua.hpp>)
@@ -495,7 +498,8 @@ Result<void> ValidateLuaApiHostContext(const LuaApiHostContext& context) {
                                      "host advertised world.travel without a travel handler");
         }
         if ((requested == "actor.spawn" || requested == "actor.destroy" ||
-             requested == "actor.exists") && context.actors == nullptr) {
+             requested == "actor.exists" || requested == "actor.observe" ||
+             requested == "actor.health") && context.actors == nullptr) {
             return Result<void>::err(
                 ErrorCode::InvalidState,
                 "host advertised actor capability without an actor provider");
@@ -509,6 +513,14 @@ Result<void> ValidateLuaApiHostContext(const LuaApiHostContext& context) {
             return Result<void>::err(ErrorCode::InvalidState,
                                      "host advertised core.menu without menu and storage adapters");
         }
+        if (requested == "core.save" && context.saveData == nullptr) {
+            return Result<void>::err(ErrorCode::InvalidState,
+                                     "host advertised core.save without a save store");
+        }
+        if (requested == "audio.play" && (!context.playSfx || !context.playFanfare)) {
+            return Result<void>::err(ErrorCode::InvalidState,
+                                     "host advertised audio.play without audio handlers");
+        }
         if (requested == "core.attributes" && context.attributes == nullptr) {
             return Result<void>::err(ErrorCode::InvalidState,
                                      "host advertised core.attributes without an attribute registry");
@@ -517,7 +529,9 @@ Result<void> ValidateLuaApiHostContext(const LuaApiHostContext& context) {
     if (context.capabilityRegistry != nullptr && context.actors == nullptr &&
         (context.capabilityRegistry->Has("actor.spawn", context.gameId) ||
          context.capabilityRegistry->Has("actor.destroy", context.gameId) ||
-         context.capabilityRegistry->Has("actor.exists", context.gameId))) {
+         context.capabilityRegistry->Has("actor.exists", context.gameId) ||
+         context.capabilityRegistry->Has("actor.observe", context.gameId) ||
+         context.capabilityRegistry->Has("actor.health", context.gameId))) {
         return Result<void>::err(
             ErrorCode::InvalidState,
             "host registered actor capabilities without an actor provider");
@@ -533,6 +547,16 @@ Result<void> ValidateLuaApiHostContext(const LuaApiHostContext& context) {
         return Result<void>::err(
             ErrorCode::InvalidState,
             "host registered core.menu without menu and storage adapters");
+    }
+    if (context.capabilityRegistry != nullptr && context.saveData == nullptr &&
+        context.capabilityRegistry->Has("core.save", context.gameId)) {
+        return Result<void>::err(ErrorCode::InvalidState,
+                                 "host registered core.save without a save store");
+    }
+    if (context.capabilityRegistry != nullptr && (!context.playSfx || !context.playFanfare) &&
+        context.capabilityRegistry->Has("audio.play", context.gameId)) {
+        return Result<void>::err(ErrorCode::InvalidState,
+                                 "host registered audio.play without audio handlers");
     }
     if (context.capabilityRegistry != nullptr && context.attributes == nullptr &&
         context.capabilityRegistry->Has("core.attributes", context.gameId)) {
@@ -641,8 +665,10 @@ std::shared_ptr<CapabilityRegistry> SynthesizeLegacyRegistry(const LuaApiHostCon
             offer.limits.perMod = 256;
         } else if (name == "actor.destroy") {
             offer.permissions = {"world.entities.destroy"};
-        } else if (name == "actor.exists") {
+        } else if (name == "actor.exists" || name == "actor.observe") {
             offer.permissions = {"world.entities.read"};
+        } else if (name == "actor.health") {
+            offer.permissions = {"world.entities.write"};
         }
         (void)registry->Register(name, std::move(offer));
     }
@@ -709,6 +735,10 @@ Result<void> LuaApiBinding::Install() {
     if (status != LUA_OK) {
         const std::string message = TopToString(state);
         lua_pop(state, 1);
+        if (mModuleCacheReference != kNoReference) {
+            luaL_unref(state, LUA_REGISTRYINDEX, mModuleCacheReference);
+            mModuleCacheReference = kNoReference;
+        }
         if (mShipReference != kNoReference) {
             luaL_unref(state, LUA_REGISTRYINDEX, mShipReference);
             mShipReference = kNoReference;
@@ -729,6 +759,8 @@ int LuaApiBinding::InstallProtected(lua_State* state) noexcept {
     }
     bool failed = false;
     try {
+        lua_newtable(state);
+        binding->mModuleCacheReference = luaL_ref(state, LUA_REGISTRYINDEX);
         binding->BuildModule(state);
     } catch (...) {
         failed = true;
@@ -969,6 +1001,18 @@ void LuaApiBinding::BuildModule(lua_State* state) {
     lua_setfield(state, -2, "shared");
     lua_setfield(state, ship, "storage");
 
+    lua_newtable(state);
+    SetFunction(state, -1, "available", &LuaApiBinding::SaveAvailable, this);
+    SetFunction(state, -1, "get", &LuaApiBinding::SaveGet, this);
+    SetFunction(state, -1, "set", &LuaApiBinding::SaveSet, this);
+    SetFunction(state, -1, "delete", &LuaApiBinding::SaveDelete, this);
+    lua_setfield(state, ship, "save");
+
+    lua_newtable(state);
+    SetFunction(state, -1, "play_sfx", &LuaApiBinding::AudioPlaySfx, this);
+    SetFunction(state, -1, "play_fanfare", &LuaApiBinding::AudioPlayFanfare, this);
+    lua_setfield(state, ship, "audio");
+
     PushAttributesModule(state, mHostContext.attributes.get(), mRuntime.ModId());
     lua_setfield(state, ship, "attributes");
 
@@ -980,6 +1024,8 @@ void LuaApiBinding::BuildModule(lua_State* state) {
     SetFunction(state, -1, "spawn", &LuaApiBinding::ActorSpawn, this);
     SetFunction(state, -1, "destroy", &LuaApiBinding::ActorDestroy, this);
     SetFunction(state, -1, "exists", &LuaApiBinding::ActorExists, this);
+    SetFunction(state, -1, "get", &LuaApiBinding::ActorGet, this);
+    SetFunction(state, -1, "set_max_health", &LuaApiBinding::ActorSetMaxHealth, this);
     lua_setfield(state, ship, "actor");
 
     lua_pushvalue(state, ship);
@@ -1074,6 +1120,10 @@ void LuaApiBinding::Uninstall() noexcept {
                 callback->registryReference = kNoReference;
             }
         }
+        if (mModuleCacheReference != kNoReference) {
+            luaL_unref(state, LUA_REGISTRYINDEX, mModuleCacheReference);
+            mModuleCacheReference = kNoReference;
+        }
         if (mShipReference != kNoReference) {
             luaL_unref(state, LUA_REGISTRYINDEX, mShipReference);
             mShipReference = kNoReference;
@@ -1089,17 +1139,141 @@ std::size_t LuaApiBinding::SubscriptionCount() const {
     return mCallbacks.size();
 }
 
+bool LuaApiBinding::LoadRequiredModule(lua_State* state, const char*& error) noexcept {
+    try {
+        std::size_t length = 0;
+        const char* name = lua_tolstring(state, 1, &length);
+        std::string relative(name, length);
+        std::replace(relative.begin(), relative.end(), '.', '/');
+        relative += ".lua";
+        const auto path = ResolveModFile(mModPolicy.modDirectory, relative);
+        if (!path.isOk()) {
+            error = "module '%s' not found";
+            return false;
+        }
+        std::ifstream file(*path.value, std::ios::binary);
+        if (!file.is_open()) {
+            error = "module '%s' not found";
+            return false;
+        }
+        // Lê no máximo o limite mais um byte, mesmo se o arquivo crescer.
+        constexpr std::size_t maxBytes = 1024 * 1024;
+        std::vector<char> source(maxBytes + 1);
+        file.read(source.data(), static_cast<std::streamsize>(source.size()));
+        const auto bytes = static_cast<std::size_t>(file.gcount());
+        if (bytes > maxBytes) {
+            error = "module '%s' is too large";
+            return false;
+        }
+        if (file.bad() || (file.fail() && !file.eof())) {
+            error = "module '%s' not found";
+            return false;
+        }
+        const std::string chunkName = mRuntime.ModId() + "/" + relative;
+        struct Chunk {
+            const char* source;
+            std::size_t size;
+            const char* name;
+        } chunk{source.data(), bytes, chunkName.c_str()};
+        // Até a alocação do nome do chunk pode falhar. O pcall preserva o RAII
+        // dos buffers acima; lua_error só roda com locais triviais no callback.
+        lua_pushcfunction(state, +[](lua_State* target) noexcept -> int {
+            const auto* input = static_cast<const Chunk*>(lua_touserdata(target, 1));
+            if (luaL_loadbufferx(target, input->source, input->size, input->name, "t") != LUA_OK) {
+                return lua_error(target);
+            }
+            return 1;
+        });
+        lua_pushlightuserdata(state, &chunk);
+        return lua_pcall(state, 1, 1, 0) == LUA_OK;
+    } catch (...) {
+        error = "C++ exception while loading module '%s'";
+        return false;
+    }
+}
+
 int LuaApiBinding::Require(lua_State* state) noexcept {
     LuaApiBinding* binding = FromUpvalue(state);
+    if (binding == nullptr) {
+        return Fail(state, "ship API context unavailable");
+    }
     if (lua_type(state, 1) != LUA_TSTRING) {
-        return Fail(state, "only the built-in 'ship' module can be required");
+        return Fail(state, "module name must be a string");
     }
-    size_t length = 0;
+    std::size_t length = 0;
     const char* name = lua_tolstring(state, 1, &length);
-    if (binding == nullptr || name == nullptr || std::string_view(name, length) != "ship") {
-        return Fail(state, "only the built-in 'ship' module can be required");
+    if (std::string_view(name, length) == "ship") {
+        lua_rawgeti(state, LUA_REGISTRYINDEX, binding->mShipReference);
+        return 1;
     }
-    lua_rawgeti(state, LUA_REGISTRYINDEX, binding->mShipReference);
+    std::size_t segments = 1;
+    bool hasCharacter = false;
+    bool valid = length != 0;
+    for (std::size_t index = 0; valid && index < length; ++index) {
+        const char c = name[index];
+        if (c == '.') {
+            valid = hasCharacter && ++segments <= 8;
+            hasCharacter = false;
+        } else {
+            valid = (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
+                    (c >= '0' && c <= '9') || c == '_';
+            hasCharacter = true;
+        }
+    }
+    if (!valid || !hasCharacter) {
+        lua_pushfstring(state, "invalid module name '%s'", name);
+        return lua_error(state);
+    }
+    if (binding->mModPolicy.modDirectory.empty()) {
+        lua_pushfstring(state, "module '%s' not found", name);
+        return lua_error(state);
+    }
+    lua_rawgeti(state, LUA_REGISTRYINDEX, binding->mModuleCacheReference);
+    const int cache = lua_gettop(state);
+    lua_pushvalue(state, 1);
+    lua_rawget(state, cache);
+    if (lua_islightuserdata(state, -1) && lua_touserdata(state, -1) == binding) {
+        lua_pushfstring(state, "require cycle at '%s'", name);
+        return lua_error(state);
+    }
+    if (!lua_isnil(state, -1)) {
+        return 1;
+    }
+    lua_pop(state, 1);
+    std::size_t count = 0;
+    lua_pushnil(state);
+    while (lua_next(state, cache) != 0) {
+        ++count;
+        lua_pop(state, 1);
+    }
+    if (count >= 64) {
+        return Fail(state, "too many modules");
+    }
+    lua_pushcfunction(state, &TracebackHandler);
+    const int handler = lua_gettop(state);
+    const char* error = nullptr;
+    if (!binding->LoadRequiredModule(state, error)) {
+        if (error != nullptr) lua_pushfstring(state, error, name);
+        return lua_error(state);
+    }
+    lua_pushvalue(state, 1);
+    lua_pushlightuserdata(state, binding);
+    lua_rawset(state, cache);
+    const int status = lua_pcall(state, 0, 1, handler);
+    if (status != LUA_OK) {
+        // Uma falha não envenena o cache nem consome uma vaga.
+        lua_pushvalue(state, 1);
+        lua_pushnil(state);
+        lua_rawset(state, cache);
+        return lua_error(state);
+    }
+    if (lua_isnil(state, -1)) {
+        lua_pop(state, 1);
+        lua_pushboolean(state, 1);
+    }
+    lua_pushvalue(state, 1);
+    lua_pushvalue(state, -2);
+    lua_rawset(state, cache);
     return 1;
 }
 
@@ -2219,6 +2393,211 @@ int LuaApiBinding::CancelTimer(lua_State* state, const char*& error) {
 // ---------------------------------------------------------------------------
 // ship.storage — namespace automático por mod (plan-sdk.md §8.18)
 // ---------------------------------------------------------------------------
+
+// RFC 0031: observar atores e ajustar a escala de vida.
+int LuaApiBinding::ActorGet(lua_State* state) noexcept {
+    try {
+        auto* binding = FromUpvalue(state);
+        if (binding != nullptr) return binding->ActorGetFromLua(state);
+    } catch (...) {
+        return PushApiError(state, ErrorCode::HostFailure, "actor provider raised an unexpected exception");
+    }
+    return PushApiError(state, ErrorCode::HostFailure, "ship API context is unavailable");
+}
+
+int LuaApiBinding::ActorGetFromLua(lua_State* state) {
+    // Argumentos primeiro: o contrato gerado espera invalid_argument mesmo sem a capacidade.
+    auto handle = ReadActorHandle(state, 1);
+    if (!handle.isOk()) return PushApiError(state, handle.code, handle.message);
+    if (lua_type(state, 2) != LUA_TSTRING) {
+        return PushApiError(state, ErrorCode::InvalidArgument, "actor field must be a string");
+    }
+    std::size_t length = 0;
+    const char* raw = lua_tolstring(state, 2, &length);
+    const std::string field(raw, length);
+    if (std::none_of(std::begin(kActorFields), std::end(kActorFields),
+                     [&](const char* name) { return field == name; })) {
+        return PushApiError(state, ErrorCode::InvalidArgument, "unknown actor field");
+    }
+    if (mCapabilities == nullptr || !mCapabilities->Has("actor.observe", mHostContext.gameId) ||
+        mActors == nullptr) {
+        return PushApiError(state, ErrorCode::Unsupported, "actor.observe is not available in this host");
+    }
+    if (!HasPermission("world.entities.read")) {
+        return PushApiError(state, ErrorCode::PermissionDenied, "world.entities.read is required");
+    }
+    auto result = mActors->Get(*handle.value, field);
+    if (!result.isOk()) return PushApiError(state, result.code, result.message);
+    std::visit([state](const auto& value) {
+        using T = std::decay_t<decltype(value)>;
+        if constexpr (std::is_same_v<T, std::monostate>) lua_pushnil(state);
+        else if constexpr (std::is_same_v<T, bool>) lua_pushboolean(state, value);
+        else if constexpr (std::is_same_v<T, std::int64_t>) lua_pushinteger(state, static_cast<lua_Integer>(value));
+        else lua_pushnumber(state, static_cast<lua_Number>(value));
+    }, *result.value);
+    lua_pushnil(state);
+    return 2;
+}
+
+int LuaApiBinding::ActorSetMaxHealth(lua_State* state) noexcept {
+    try {
+        auto* binding = FromUpvalue(state);
+        if (binding != nullptr) return binding->ActorSetMaxHealthFromLua(state);
+    } catch (...) {
+        return PushApiError(state, ErrorCode::HostFailure, "actor provider raised an unexpected exception");
+    }
+    return PushApiError(state, ErrorCode::HostFailure, "ship API context is unavailable");
+}
+
+int LuaApiBinding::ActorSetMaxHealthFromLua(lua_State* state) {
+    auto handle = ReadActorHandle(state, 1);
+    if (!handle.isOk()) return PushApiError(state, handle.code, handle.message);
+    if (!lua_isinteger(state, 2) || lua_tointeger(state, 2) < 1 || lua_tointeger(state, 2) > 65535) {
+        return PushApiError(state, ErrorCode::InvalidArgument, "max health must be an integer in 1..65535");
+    }
+    if (mCapabilities == nullptr || !mCapabilities->Has("actor.health", mHostContext.gameId) ||
+        mActors == nullptr) {
+        return PushApiError(state, ErrorCode::Unsupported, "actor.health is not available in this host");
+    }
+    if (!HasPermission("world.entities.write")) {
+        return PushApiError(state, ErrorCode::PermissionDenied, "world.entities.write is required");
+    }
+    auto result = mActors->SetMaxHealth(mRuntime.ModId(), *handle.value,
+                                       static_cast<std::uint32_t>(lua_tointeger(state, 2)));
+    if (!result.isOk()) return PushApiError(state, result.code, result.message);
+    lua_pushboolean(state, *result.value);
+    lua_pushnil(state);
+    return 2;
+}
+
+int LuaApiBinding::SaveAvailable(lua_State* state) noexcept {
+    const char* error = nullptr;
+    try {
+        auto* binding = FromUpvalue(state);
+        if (binding == nullptr) error = ErrorMessage(ErrorCode::HostFailure);
+        else {
+            // Sem core.save não há arquivo visível para o mod: false, sem erro.
+            const bool supported = binding->mCapabilities != nullptr &&
+                                   binding->mCapabilities->Has("core.save", binding->mHostContext.gameId);
+            lua_pushboolean(state, supported && binding->mHostContext.saveData &&
+                                       binding->mHostContext.saveData->Available());
+            return 1;
+        }
+    } catch (...) { error = ErrorMessage(ErrorCode::HostFailure); }
+    return Fail(state, error);
+}
+
+int LuaApiBinding::SaveGet(lua_State* state) noexcept {
+    try {
+        auto* binding = FromUpvalue(state);
+        if (binding != nullptr) return binding->SaveFromLua(state, 0);
+    } catch (...) {
+        return PushApiError(state, ErrorCode::HostFailure, "save backend raised an unexpected exception");
+    }
+    return PushApiError(state, ErrorCode::HostFailure, "ship API context is unavailable");
+}
+
+int LuaApiBinding::SaveSet(lua_State* state) noexcept {
+    try {
+        auto* binding = FromUpvalue(state);
+        if (binding != nullptr) return binding->SaveFromLua(state, 1);
+    } catch (...) {
+        return PushApiError(state, ErrorCode::HostFailure, "save backend raised an unexpected exception");
+    }
+    return PushApiError(state, ErrorCode::HostFailure, "ship API context is unavailable");
+}
+
+int LuaApiBinding::SaveDelete(lua_State* state) noexcept {
+    try {
+        auto* binding = FromUpvalue(state);
+        if (binding != nullptr) return binding->SaveFromLua(state, 2);
+    } catch (...) {
+        return PushApiError(state, ErrorCode::HostFailure, "save backend raised an unexpected exception");
+    }
+    return PushApiError(state, ErrorCode::HostFailure, "ship API context is unavailable");
+}
+
+int LuaApiBinding::SaveFromLua(lua_State* state, int operation) {
+    if (lua_type(state, 1) != LUA_TSTRING) {
+        return PushApiError(state, ErrorCode::InvalidArgument, "save key must be a string");
+    }
+    if (mCapabilities == nullptr || !mCapabilities->Has("core.save", mHostContext.gameId) ||
+        mHostContext.saveData == nullptr) {
+        return PushApiError(state, ErrorCode::Unsupported, "core.save is not available in this host");
+    }
+    std::size_t length = 0;
+    const char* raw = lua_tolstring(state, 1, &length);
+    const std::string key(raw, length);
+    auto& store = *mHostContext.saveData;
+    if (operation == 0) {
+        auto result = store.Get(mRuntime.ModId(), key);
+        if (!result.isOk()) return PushApiError(state, result.code, result.message);
+        if (result.value->has_value()) PushStorageValue(state, **result.value);
+        else if (lua_gettop(state) >= 2) lua_pushvalue(state, 2);
+        else lua_pushnil(state);
+    } else if (operation == 1) {
+        KeyValueStorage::Value value;
+        switch (lua_type(state, 2)) {
+            case LUA_TBOOLEAN: value = lua_toboolean(state, 2) != 0; break;
+            case LUA_TNUMBER:
+                if (lua_isinteger(state, 2)) value = static_cast<std::int64_t>(lua_tointeger(state, 2));
+                else value = static_cast<double>(lua_tonumber(state, 2));
+                break;
+            case LUA_TSTRING: {
+                std::size_t size = 0;
+                const char* text = lua_tolstring(state, 2, &size);
+                value = std::string(text, size);
+                break;
+            }
+            default:
+                return PushApiError(state, ErrorCode::InvalidArgument, "save values must be boolean, number or string");
+        }
+        auto result = store.Set(mRuntime.ModId(), key, std::move(value));
+        if (!result.isOk()) return PushApiError(state, result.code, result.message);
+        lua_pushboolean(state, 1);
+    } else {
+        auto result = store.Delete(mRuntime.ModId(), key);
+        if (!result.isOk()) return PushApiError(state, result.code, result.message);
+        lua_pushboolean(state, *result.value);
+    }
+    lua_pushnil(state);
+    return 2;
+}
+
+int LuaApiBinding::AudioPlaySfx(lua_State* state) noexcept { return AudioPlay(state, false); }
+int LuaApiBinding::AudioPlayFanfare(lua_State* state) noexcept { return AudioPlay(state, true); }
+
+int LuaApiBinding::AudioPlay(lua_State* state, bool fanfare) noexcept {
+    const char* error = nullptr;
+    try {
+        auto* binding = FromUpvalue(state);
+        if (binding == nullptr) error = ErrorMessage(ErrorCode::HostFailure);
+        else {
+            const auto& play = fanfare ? binding->mHostContext.playFanfare : binding->mHostContext.playSfx;
+            if (!play || binding->mCapabilities == nullptr ||
+                !binding->mCapabilities->Has("audio.play", binding->mHostContext.gameId)) {
+                error = ErrorMessage(ErrorCode::Unsupported);
+            } else {
+                // Número inteiro, mesmo em float (12.0); fração ou outro tipo é erro de uso.
+                int isInteger = 0;
+                const lua_Integer id = lua_type(state, 1) == LUA_TNUMBER ? lua_tointegerx(state, 1, &isInteger) : 0;
+                if (!isInteger) {
+                    error = fanfare ? "ship.audio.play_fanfare requires an integer id"
+                                    : "ship.audio.play_sfx requires an integer id";
+                } else {
+                    const auto result = play(static_cast<std::int64_t>(id));
+                    lua_pushboolean(state, result.isOk() && *result.value);
+                    return 1;
+                }
+            }
+        }
+    } catch (...) {
+        lua_pushboolean(state, 0);
+        return 1;
+    }
+    // Só chamar lua_error depois de destruir os temporários C++.
+    return Fail(state, error);
+}
 
 int LuaApiBinding::StorageGet(lua_State* state) noexcept {
     LuaApiBinding* binding = FromUpvalue(state);

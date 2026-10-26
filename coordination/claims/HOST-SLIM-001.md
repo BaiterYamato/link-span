@@ -3,7 +3,7 @@
 - Status: review
 - Agent: Claude (Opus 5.5), com subagentes Codex (gpt-6.1-sol) nas análises
 - Platform: Windows
-- Branch: agent/HOST-SLIM-001-f3-leveled-plano
+- Branch: agent/HOST-SLIM-001-f3-atores-core
 - Started: 2026-10-19T12:00:00Z
 - Depends on: OOT-RELEASE-002 (RC10, host `e9da99b515`, layout `ee6449e8`)
 - Files (fase F0):
@@ -329,7 +329,20 @@
 
 - Status (fase F3-2, design): review. RFC 0031 e design do leveled v1 aprovados pelo mantenedor em 26/10 e
   mergeados (link-span#76, `e9cdae0`).
-- Status (fase F3-2, plano): review. Plano T0-T15 em `docs/plans/host-slim-001/plano-f3-leveled.md`.
+- Status (fase F3-2, plano): done. Plano T0-T15 em `docs/plans/host-slim-001/plano-f3-leveled.md` (link-span#77).
+- Status (fase F3-2, código core): review. T0-T4 e T6 na branch `agent/HOST-SLIM-001-f3-atores-core`, a partir da
+  `main` em `fcb2b79`.
+- Files (fase F3-2, código core):
+  - rfcs/0031-atores-para-mods.md, rfcs/0031-atores-para-mods.en.md, docs/plans/host-slim-001/design-leveled-v1.md
+  - include/shiplua/actor/ActorProvider.h, include/shiplua/api/LuaApiBinding.h, include/shiplua/host/ModPath.h,
+    include/shiplua/mock/MockActorProvider.h, include/shiplua/mock/MockRuntime.h, include/shiplua/save/**
+  - src/api/LuaApiBinding.cpp, src/host/ModHost.cpp, src/host/ModPath.cpp, src/mock/MockActorProvider.cpp,
+    src/mock/MockRuntime.cpp, src/save/**, src/testing/ModTestRunner.cpp, CMakeLists.txt, tests/CMakeLists.txt
+  - schema/api.yml, schema/events.yml, schema/capabilities.yml, generated/**
+  - tests/unit/LuaActorObserveTests.cpp, tests/unit/ModSaveStoreTests.cpp, tests/unit/LuaRequireTests.cpp,
+    tests/unit/GeneratedApiBindingsTests.cpp, tests/contract/ApiContractTests.cpp,
+    tests/schema/test_validate_api_schemas.py, tests/fixtures/mods/require-demo/**
+  - docs/writing-mods.md, docs/writing-mods.pt-BR.md (seção de módulos)
 - Branch (fase F3-2, plano): `agent/HOST-SLIM-001-f3-leveled-plano` (core), a partir da `main` em `e9cdae0`.
 - Branch (fase F3-2, design): `agent/HOST-SLIM-001-f3-leveled-rfc` (core), a partir da `main` em `4e252df`. A linha
   `Branch` do topo passa a apontar para ela.

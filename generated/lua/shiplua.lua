@@ -44,11 +44,12 @@
 ---@field code string
 ---@field message string
 
---- Minimal, stable snapshot of an actor.
+--- Minimal, stable snapshot of an actor; params is Actor.params in OoT.
 ---@class ShipLuaActorSnapshot
 ---@field handle ShipLuaActorHandle
 ---@field actor_id integer
 ---@field category integer
+---@field params? integer
 
 --- Hotkey registration options (default key and label).
 ---@class ShipLuaHotkeyOptions
@@ -107,11 +108,11 @@
 ---@class ShipLuaEventSceneEnter
 ---@field scene_id integer
 
---- `actor.init`: Notifies actor initialization; actor contains its handle, identifier and category. It is not cancellable and accepts no decision via ship.hooks.result.
+--- `actor.init`: Notifies actor initialization; actor contains its handle, identifier and category. The OoT host emits the event for every actor, after init. It is not cancellable and accepts no decision via ship.hooks.result.
 ---@class ShipLuaEventActorInit
 ---@field actor ShipLuaActorSnapshot
 
---- `actor.update`: Notifies an actor update; actor contains its handle, identifier and category. It is not cancellable and accepts no decision via ship.hooks.result.
+--- `actor.update`: Notifies an actor update; actor contains its handle, identifier and category. The OoT host does not emit this event, for cost reasons. It is not cancellable and accepts no decision via ship.hooks.result.
 ---@class ShipLuaEventActorUpdate
 ---@field actor ShipLuaActorSnapshot
 
@@ -121,6 +122,10 @@
 
 --- `save.loaded`: In OoT, emitted after loading a save, on the first frame when the player exists; slot identifies the save. It is a notification, with no decision via ship.hooks.result.
 ---@class ShipLuaEventSaveLoaded
+---@field slot integer
+
+--- `save.saving`: In OoT, emitted before the game writes the file, with the SaveContext not yet copied; slot identifies the file. It is a notification, with no decision via ship.hooks.result.
+---@class ShipLuaEventSaveSaving
 ---@field slot integer
 
 --- `text.open`: Notifies a text opening; text_id identifies the message. It is not cancellable and accepts no decision via ship.hooks.result.
@@ -162,15 +167,16 @@
 --- `hook.oot.player.bonk`: Notifies a player bonk collision, with no payload. It is not cancellable and accepts no decision via ship.hooks.result.
 ---@class ShipLuaEventHookOotPlayerBonk
 
---- `hook.oot.enemy.defeat`: Notifies an enemy defeat reported by the game; the payload carries the actor's id, category and position. It does not represent every actor destruction and accepts no decision via ship.hooks.result.
+--- `hook.oot.enemy.defeat`: Notifies an enemy defeat reported by the game; the payload carries the actor's snapshot, id, category and position. It does not represent every actor destruction and accepts no decision via ship.hooks.result.
 ---@class ShipLuaEventHookOotEnemyDefeat
+---@field actor ShipLuaActorSnapshot
 ---@field actor_id integer
 ---@field category integer
 ---@field pos_x number
 ---@field pos_y number
 ---@field pos_z number
 
---- `hook.oot.actor.damage`: Emitted before adding collision damage to an actor without AC_HARD, before the cooperative multiplier, once per hit element. target_id and target_category identify the target; attacker_id and attacker_category identify the owner of the AT collider that hit the element and are -1 without an attacker. attacker_is_player indicates AT_TYPE_PLAYER; dmg_flags carries toucher.dmgFlags and damage_effect carries the computed effect. base_damage is the damage calculated by the game and damage is the value after native hooks. ship.hooks.result with a finite number replaces damage, clamped by the host to 0..255; if any native or Lua hook changed the value, the host also clamps it to what is left up to 255 in the target's accumulated u8 damage, before the cooperative multiplier. No result or a nonnumeric result preserves damage. Damage outside this path is not covered: boss health deductions that do not use central damage, grabs using play->damagePlayer, knockback damage, falls, fire and traps on those paths.
+--- `hook.oot.actor.damage`: Emitted before adding collision damage to an actor without AC_HARD, before the cooperative multiplier, once per hit element. target_id and target_category identify the target; attacker_id and attacker_category identify the owner of the AT collider that hit the element and are -1 without an attacker. attacker_is_player indicates AT_TYPE_PLAYER; dmg_flags carries toucher.dmgFlags and damage_effect carries the computed effect. base_damage is the damage calculated by the game and damage is the value after native hooks. ship.hooks.result with a finite number replaces damage, clamped by the host to 0..255; if any native or Lua hook changed the value, the host also clamps it to what is left up to 255 in the target's accumulated u8 damage, before the cooperative multiplier. No result or a nonnumeric result preserves damage. Damage outside this path is not covered: boss health deductions that do not use central damage, grabs using play->damagePlayer, knockback damage, falls, fire and traps on those paths. With target_extended, damage is in the target's extended health units and the limit is 0..65535 and the remaining health, instead of 0..255.
 ---@class ShipLuaEventHookOotActorDamage
 ---@field target_id integer
 ---@field target_category integer
@@ -181,6 +187,19 @@
 ---@field damage_effect integer
 ---@field base_damage number
 ---@field damage number
+---@field target ShipLuaActorSnapshot
+---@field attacker? ShipLuaActorSnapshot
+---@field target_health integer
+---@field target_max_health integer
+---@field target_extended boolean
+
+--- `hook.oot.actor.damaged`: Notifies the damage an actor actually lost, when it applies damage (Actor_ApplyDamage) or when the host confirms an extended debit. amount is in the target's units; health and max_health are the health after the damage. Does not cover Link nor bosses with their own math.
+---@class ShipLuaEventHookOotActorDamaged
+---@field target ShipLuaActorSnapshot
+---@field amount integer
+---@field health integer
+---@field max_health integer
+---@field extended boolean
 
 --- `hook.oot.item.give`: Emitted before giving an item; item_id and get_item_id describe the current entry. ship.hooks.result with a valid integer get_item_id replaces the entry using the vanilla table; it is not cancellation.
 ---@class ShipLuaEventHookOotItemGive
@@ -248,12 +267,13 @@
 ---@class ShipLuaEventHookMmItemShouldGive
 ---@field item integer
 
----@alias ShipLuaEventName "game.ready"|"game.frame"|"game.shutdown"|"scene.enter"|"actor.init"|"actor.update"|"actor.destroy"|"save.loaded"|"text.open"|"audio.sequence_started"|"input.hotkey"|"input.action"|"hook.oot.player.speed.run"|"hook.oot.player.fall_damage"|"hook.oot.item.receive"|"hook.oot.player.health_change"|"hook.oot.player.bonk"|"hook.oot.enemy.defeat"|"hook.oot.actor.damage"|"hook.oot.item.give"|"hook.oot.hud.draw"|"hook.oot.player.first_person_control"|"hook.oot.player.arrow_type_select"|"hook.oot.player.body_anim_select"|"hook.mm.player.speed.walk"|"hook.mm.player.goron_roll.consume_magic"|"hook.mm.player.goron_roll.disable_spike_mode"|"hook.mm.player.goron_roll.increase_spike_level"|"hook.mm.item.give"|"hook.mm.enemy.defeat"|"hook.mm.item.should_give"
+---@alias ShipLuaEventName "game.ready"|"game.frame"|"game.shutdown"|"scene.enter"|"actor.init"|"actor.update"|"actor.destroy"|"save.loaded"|"save.saving"|"text.open"|"audio.sequence_started"|"input.hotkey"|"input.action"|"hook.oot.player.speed.run"|"hook.oot.player.fall_damage"|"hook.oot.item.receive"|"hook.oot.player.health_change"|"hook.oot.player.bonk"|"hook.oot.enemy.defeat"|"hook.oot.actor.damage"|"hook.oot.actor.damaged"|"hook.oot.item.give"|"hook.oot.hud.draw"|"hook.oot.player.first_person_control"|"hook.oot.player.arrow_type_select"|"hook.oot.player.body_anim_select"|"hook.mm.player.speed.walk"|"hook.mm.player.goron_roll.consume_magic"|"hook.mm.player.goron_roll.disable_spike_mode"|"hook.mm.player.goron_roll.increase_spike_level"|"hook.mm.item.give"|"hook.mm.enemy.defeat"|"hook.mm.item.should_give"
 
 ship = ship or {}
 ship.actor = ship.actor or {}
 ship.api = ship.api or {}
 ship.attributes = ship.attributes or {}
+ship.audio = ship.audio or {}
 ship.capabilities = ship.capabilities or {}
 ship.events = ship.events or {}
 ship.game = ship.game or {}
@@ -267,6 +287,7 @@ ship.native = ship.native or {}
 ship.oot = ship.oot or {}
 ship.player = ship.player or {}
 ship.runtime = ship.runtime or {}
+ship.save = ship.save or {}
 ship.storage = ship.storage or {}
 ship.timer = ship.timer or {}
 ship.world = ship.world or {}
@@ -362,6 +383,22 @@ function ship.actor.destroy(handle) end
 ---@return ShipLuaOperationError? error
 function ship.actor.exists(handle) end
 
+--- Reads a field of any live actor: actor_id, category, params, health, max_health, extended, pos_x, pos_y, pos_z, screen_x or screen_y. A stale handle returns nil; screen_x and screen_y are nil when the actor is behind the camera. Requires the world.entities.read permission.
+--- API common; stability: experimental; since: 0.5.0; capability: actor.observe; errors: invalid_argument, unsupported, permission_denied, host_failure.
+---@param handle ShipLuaActorHandle
+---@param field string
+---@return any? value
+---@return ShipLuaOperationError? error
+function ship.actor.get(handle, field) end
+
+--- Enables or rescales the actor's extended health, from 1 to 65535, and returns true; a stale handle returns false. The game keeps seeing health on the vanilla scale. Rejects Link and actors with no health at init. Requires the world.entities.write permission.
+--- API common; stability: experimental; since: 0.5.0; capability: actor.health; errors: invalid_argument, unsupported, permission_denied, invalid_state, host_failure.
+---@param handle ShipLuaActorHandle
+---@param max_health integer
+---@return boolean? value
+---@return ShipLuaOperationError? error
+function ship.actor.set_max_health(handle, max_health) end
+
 --- Requests travel to a logical destination in the selected world and returns true if the request is accepted. Missing support, an invalid destination or host rejection raises a Lua error.
 --- API common; stability: experimental; since: 0.3.0; capability: world.travel; errors: invalid_argument, unsupported, invalid_state, host_failure.
 ---@param world ShipLuaGameId
@@ -402,7 +439,7 @@ function ship.oot.player.set_mask(mask) end
 ---@return boolean
 function ship.player.set_speed_multiplier(factor) end
 
---- Reads a known player field or a scratch numeric value stored by name. Returns nil for a native field without a player or an unset scratch name.
+--- Reads a known player field or a scratch numeric value stored by name; age (0 adult, 1 child) and gs_tokens are read-only. Returns nil for a native field without a player or an unset scratch name.
 --- API oot; stability: experimental; since: 0.4.0; capability: player.fields; errors: none.
 ---@param field string
 ---@return any
@@ -590,6 +627,46 @@ function ship.storage.shared.delete(key) end
 --- API common; stability: experimental; since: 0.4.0; capability: core.storage.shared; errors: unsupported.
 ---@return integer
 function ship.storage.shared.clear() end
+
+--- Returns whether a save file is loaded in gameplay, the condition for ship.save.get, set and delete; without the core.save capability, returns false.
+--- API common; stability: experimental; since: 0.5.0; capability: core.save; errors: none.
+---@return boolean
+function ship.save.available() end
+
+--- Reads a mod key in the loaded save file. Returns the value, the supplied default or nil; without a file, returns nil and an invalid_state operation_error.
+--- API common; stability: experimental; since: 0.5.0; capability: core.save; errors: invalid_argument, invalid_state, unsupported.
+---@param key string
+---@param default? any
+---@return any? value
+---@return ShipLuaOperationError? error
+function ship.save.get(key, default) end
+
+--- Stores a boolean, integer, number or string in the loaded save file and returns true. It lives in memory and reaches disk on the game's next save; copying or deleting the file carries the data.
+--- API common; stability: experimental; since: 0.5.0; capability: core.save; errors: invalid_argument, invalid_state, resource_limit, unsupported.
+---@param key string
+---@param value any
+---@return boolean? value
+---@return ShipLuaOperationError? error
+function ship.save.set(key, value) end
+
+--- Removes a mod key from the loaded save file and returns whether it existed.
+--- API common; stability: experimental; since: 0.5.0; capability: core.save; errors: invalid_argument, invalid_state, unsupported.
+---@param key string
+---@return boolean? value
+---@return ShipLuaOperationError? error
+function ship.save.delete(key) end
+
+--- Plays a centered sound effect by id and returns true; returns false outside gameplay, with an id outside 0 to 65535 or beyond 8 per frame.
+--- API common; stability: experimental; since: 0.5.0; capability: audio.play; errors: invalid_argument, unsupported.
+---@param id integer
+---@return boolean
+function ship.audio.play_sfx(id) end
+
+--- Plays a fanfare from the allowlist (0x22, 0x24, 0x2B, 0x39, 0x3B, 0x43) and returns true; returns false outside the list or gameplay.
+--- API common; stability: experimental; since: 0.5.0; capability: audio.play; errors: invalid_argument, unsupported.
+---@param id integer
+---@return boolean
+function ship.audio.play_fanfare(id) end
 
 --- Draws a colored rectangle in the overlay and returns true. Only works during hook.oot.hud.draw; returns false outside the callback, for invalid dimensions or when the drawing budget is exceeded.
 --- API oot; stability: experimental; since: 0.4.0; capability: hud.draw; errors: invalid_argument, invalid_state.

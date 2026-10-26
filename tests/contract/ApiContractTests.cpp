@@ -126,7 +126,14 @@ void RunContractOnHost(const std::string& game, const std::string& source) {
     context.worldTravel = [](const ShipLua::WorldDestination&) {
         return ShipLua::Result<void>::ok();
     };
-    if (game == "oot") context.menu = std::make_shared<FakeMenuRegistry>();
+    if (game == "oot") {
+        context.menu = std::make_shared<FakeMenuRegistry>();
+        // RFC 0031: o OoT anuncia core.save e audio.play; o contrato só precisa dos serviços.
+        context.saveData = std::make_shared<ShipLua::ModSaveStore>(
+            std::make_shared<ShipLua::MemoryModSaveBackend>());
+        context.playSfx = [](std::int64_t) { return ShipLua::Result<bool>::ok(true); };
+        context.playFanfare = [](std::int64_t) { return ShipLua::Result<bool>::ok(true); };
+    }
     context.attributes = std::make_shared<ShipLua::AttributeRegistry>();
     ShipLua::ModHost host(context, ShipLua::Logger{});
     const std::string modId = "contract.api_" + game;
