@@ -191,7 +191,7 @@ Result<std::unique_ptr<NativeProvider>> NativeProvider::Load(
         instance->mCanPublishServices = manifest.kind == ModKind::CoreExtension;
         std::set<std::pair<std::string, uint32_t>> serviceNames;
         for (const auto& service : policy.services) {
-            if (service.name.empty() || (!service.table && !service.resolve) || !service.size ||
+            if (service.name.empty() || !service.table || !service.size ||
                 !service.version || !serviceNames.emplace(service.name, service.version).second) {
                 return R::err(ErrorCode::InvalidArgument, "invalid/duplicate native host service");
             }
@@ -412,10 +412,6 @@ const void* SHIP_NATIVE_CALL NativeProvider::GetService(
     if (!self || !name || self->mThread != std::this_thread::get_id()) return nullptr;
     for (const auto& service : self->mServices) {
         if (service.name == name && service.version == version && service.size >= minimumSize) {
-            if (service.resolve) {
-                try { return service.resolve(self->mOwnerId); }
-                catch (...) { return nullptr; } // Nenhuma exceção atravessa a ABI C.
-            }
             return service.table;
         }
     }

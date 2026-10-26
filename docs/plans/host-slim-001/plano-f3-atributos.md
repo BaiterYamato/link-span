@@ -112,8 +112,10 @@ O levantamento do código achou oito pontos que a RFC aprovada descreve de forma
      - o botão B não emite item (a espada vem do slot).
   6. **Versão da API:** as funções entram na 0.5.0, como o `ship.menu` (MENU-001), sem trocar `api_version`. Quem
      usa `ship.attributes` declara a capacidade `core.attributes`.
-  7. **Tabela nativa por mod:** `NativeHostService` ganha `resolve(owner)`. O `get_service` de cada provider recebe a
-     tabela do próprio mod.
+  7. **Tabela nativa por mod:** o `ModHost` monta, na carga de cada provider, o descritor do serviço com a tabela do
+     próprio mod (`AttributeNativeService::ForMod`). Correção de 25/10: a primeira versão punha um campo `resolve`
+     em `NativeHostService`, mas `include/shiplua/native/*.h` entra no layout id do host, e o campo trocaria o layout
+     de todos os mods nativos.
   8. **Erros na API Lua:**
      - `breakdown` com atributo desconhecido devolve `nil, "unknown attribute"`, como `value`;
      - argumentos de tipo errado causam erro Lua, como no `ship.storage`.
@@ -131,7 +133,6 @@ O levantamento do código achou oito pontos que a RFC aprovada descreve de forma
   - `include/shiplua/attributes/AttributeNativeService.h`
   - `src/api/LuaAttributesBinding.h`
 - Modificar:
-  - `include/shiplua/native/NativeProvider.h` (campo `resolve`)
   - `include/shiplua/api/LuaApiBinding.h` (campo `attributes`)
 
 - [ ] **Passo 1:** criar a branch `agent/HOST-SLIM-001-f3-atributos-core` a partir da branch da RFC.
@@ -405,16 +406,25 @@ class AttributeRegistry {
 ```cpp
 #pragma once
 
+#include <functional>
 #include <memory>
+#include <string_view>
 
 #include "shiplua/attributes/AttributeRegistry.h"
 #include "shiplua/native/NativeProvider.h"
 
 namespace ShipLua {
 
-// linkspan.attributes v1. Cada provider recebe, por NativeHostService::resolve, uma tabela cujo `context`
-// identifica o mod; as tabelas vivem enquanto o serviço viver.
-NativeHostService MakeAttributeNativeService(std::shared_ptr<AttributeRegistry> registry);
+// linkspan.attributes v1. Cada mod recebe a própria tabela, cujo `context` identifica o dono; as tabelas vivem
+// enquanto o serviço viver. O ModHost monta o descritor do mod na carga do provider (ForMod), sem campo novo em
+// NativeHostService: include/shiplua/native entra no layout id do host.
+struct AttributeNativeService {
+    std::function<const void*(std::string_view owner)> resolve;
+
+    NativeHostService ForMod(std::string_view owner) const;
+};
+
+AttributeNativeService MakeAttributeNativeService(std::shared_ptr<AttributeRegistry> registry);
 
 } // namespace ShipLua
 ```
@@ -436,13 +446,6 @@ class AttributeRegistry;
 void PushAttributesModule(lua_State* state, AttributeRegistry* registry, const std::string& owner);
 
 } // namespace ShipLua
-```
-
-Em `include/shiplua/native/NativeProvider.h`, no fim de `NativeHostService`:
-
-```cpp
-    // Não vazio: tabela por mod. GetService chama resolve(id do mod que pediu) e ignora `table`.
-    std::function<const void*(std::string_view owner)> resolve;
 ```
 
 Em `include/shiplua/api/LuaApiBinding.h`, no fim de `LuaApiHostContext`, com o include de
@@ -637,20 +640,20 @@ teste, ele já vem pelo `shiplua`, que linka o toml++ como PRIVATE.
 
 **Arquivos (saída em `out\`):**
 - `src/attributes/AttributeNativeService.cpp`
-- `src/native/NativeProvider.cpp`, na função `GetService`
 - `tests/native/AttributesFixture.c`
 - `tests/native/AttributeNativeTests.cpp`
 - trecho de CMake na `RESPOSTA.md`
 
 ### Regras
 
-1. `GetService`: para o serviço com `name`, `version` e `size >= minimum` e com `resolve` não vazio, devolve
-   `resolve(mOwnerId)`. Sem `resolve`, devolve `table`, como hoje.
+1. O `NativeProvider` não muda. O `ModHost` põe na política do provider o descritor `ForMod(id do mod)`, com a
+   tabela já resolvida.
 2. `MakeAttributeNativeService`:
    - guarda um estado compartilhado (`std::shared_ptr`) com `std::map<std::string, std::unique_ptr<Context>>`, em que
      `Context` = `{AttributeRegistry*, std::string owner, LinkSpanAttributesV1 table}` e `table.context = Context*`;
-   - devolve `NativeHostService{"linkspan.attributes", 1, sizeof(LinkSpanAttributesV1), nullptr, "", resolve}`;
-   - o lambda de `resolve` captura o estado e o `shared_ptr` do registro.
+   - devolve `AttributeNativeService{resolve}`, cujo lambda captura o estado e o `shared_ptr` do registro;
+   - `ForMod(owner)` devolve `NativeHostService{"linkspan.attributes", 1, sizeof(LinkSpanAttributesV1),
+     resolve(owner), ""}`.
 3. Cada função da tabela:
    - **Base de todas:**
      - `try/catch(...)` → `FAILURE`;
@@ -741,7 +744,8 @@ include do core; o executável `attribute_native_tests` recebe o caminho da fixt
    - chamar `AddMod` (com declarações vazias quando não há arquivo) e registrar os diagnósticos;
    - criar um guarda RAII que chama `RemoveMod(manifest.id)` na saída, a menos que seja confirmado depois do
      `mMods.emplace`. O guarda fica depois de `provider`, então é destruído antes: as fontes saem antes da DLL.
-3. **Serviço nativo.** No `nativePolicy` montado em `LoadMod`, acrescentar `mAttributeService` quando houver registro.
+3. **Serviço nativo.** No `nativePolicy` montado em `LoadMod`, acrescentar `mAttributeService.ForMod(manifest.id)` quando
+   houver registro.
 4. **`UnloadMod`.** Depois do `std::erase_if(mExtensionServices, ...)` que segue o `PrepareUnload`, chamar
    `RemoveMod(modId)` e registrar os diagnósticos.
 5. **`LoadModsFromRoot`.** Antes do `return` final, registrar `Audit()` como `warn` no id `attributes`.

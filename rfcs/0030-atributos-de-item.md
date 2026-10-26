@@ -174,8 +174,9 @@ end
 ## Contrato nativo
 
 Serviço `linkspan.attributes` versão 1, implementado pelo core e obtido por `get_service`. Cada mod recebe a própria
-tabela: `NativeHostService` ganha `resolve(owner)`, e o `get_service` do provider o chama com o id do mod. O
-`context` da tabela identifica esse mod, e é assim que o core confere o prefixo e o dono. O header é
+tabela: o `ModHost` a monta com o id do mod quando carrega o provider, e o `get_service` dele a devolve. O
+`NativeHostService` não ganha campo, porque `include/shiplua/native` entra no layout id do host. O `context` da
+tabela identifica esse mod, e é assim que o core confere o prefixo e o dono. O header é
 `include/linkspan/attributes/linkspan_attributes.h`, fora de `include/shiplua/native`, então não entra no layout id.
 
 ```c

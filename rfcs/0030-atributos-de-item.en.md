@@ -176,7 +176,8 @@ end
 ## Native contract
 
 Service `linkspan.attributes` version 1, implemented by the core and obtained through `get_service`. Each mod receives
-its own table: `NativeHostService` gains `resolve(owner)`, and the provider's `get_service` calls it with the mod id.
+its own table: the `ModHost` builds it with the mod id when it loads the provider, and that provider's `get_service`
+returns it. `NativeHostService` gains no field, because `include/shiplua/native` is part of the host layout id.
 The table's `context` identifies that mod, which is how the core checks the prefix and ownership. The header is
 `include/linkspan/attributes/linkspan_attributes.h`, outside `include/shiplua/native`, so it is not part of the layout id.
 

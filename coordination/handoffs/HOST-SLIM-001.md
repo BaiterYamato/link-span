@@ -806,11 +806,14 @@ link-span. O host (fontes `oot` e `nei`, ligação no bootstrap, fixture e prova
 - O registro faz a conta (soma, `multiply_base`, `multiply_total`, limites), guarda donos, dependências
   transitivas e fontes de itens ativos, e audita ao fim da carga pela raiz.
 - `ship.attributes` traz 7 funções na api 0.5.0 (experimental), com a capacidade `core.attributes` (oot e mm).
-- `linkspan.attributes` v1 é uma tabela C por mod, entregue pelo `NativeHostService::resolve`.
+- `linkspan.attributes` v1 é uma tabela C por mod. O `ModHost` a monta na carga do provider
+  (`AttributeNativeService::ForMod`), sem mexer em `include/shiplua/native`.
 - O `ModHost` liga tudo: registro na carga, rollback, remoção no unload antes de liberar a DLL e o serviço
   nativo na política de cada provider.
 - Um host que anuncia `core.attributes` sem registro é rejeitado, como no `core.menu`.
-- O layout id não muda: o header C novo fica fora do glob do fingerprint.
+- O layout id não muda: `include/shiplua/native` fica igual à `main`, e o header C novo fica fora do glob do
+  fingerprint. A primeira versão punha `resolve` em `NativeHostService` (dentro do glob); isso foi corrigido
+  antes do merge.
 
 ### Commits
 
@@ -820,7 +823,7 @@ Sobre `origin/main` @ `fe2cf23`:
 - `6506405`: contratos (T1).
 - `d5960b8`: parser e registro (T2-T4, lote A1 do Codex).
 - `3708b88`: RFC em inglês e guias (T8, lote B3 do Codex).
-- `b059d8d`: serviço nativo (T5, lote B1 do Codex; o ajuste do `NativeProvider::Load` é do Claude).
+- `b059d8d`: serviço nativo (T5, lote B1 do Codex).
 - `3021eb5`: ModHost, binding Lua, schema e gerados (T6/T7, lote B2 do Codex; o schema, os gerados e a validação
   do contexto são do Claude).
 

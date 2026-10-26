@@ -390,7 +390,7 @@ Result<void> ModHost::LoadMod(const Manifest& manifest, const std::string& luaSo
     }
     if (manifest.provider) {
         auto nativePolicy = mNativePolicy;
-        if (mHostContext.attributes) nativePolicy.services.push_back(mAttributeService);
+        if (mHostContext.attributes) nativePolicy.services.push_back(mAttributeService.ForMod(manifest.id));
         nativePolicy.services.insert(nativePolicy.services.end(),
                                      mExtensionServices.begin(), mExtensionServices.end());
         auto native = NativeProvider::Load(manifest, directory, nativePolicy);

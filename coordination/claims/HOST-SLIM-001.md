@@ -300,7 +300,6 @@
   - include/shiplua/attributes/**, src/attributes/**
   - src/api/LuaAttributesBinding.h, src/api/LuaAttributesBinding.cpp, src/api/LuaApiBinding.cpp
   - include/shiplua/api/LuaApiBinding.h
-  - include/shiplua/native/NativeProvider.h, src/native/NativeProvider.cpp
   - include/shiplua/host/ModHost.h, src/host/ModHost.cpp
   - schema/api.yml, schema/capabilities.yml, generated/**
   - tests/CMakeLists.txt, tests/unit/Attribute*Tests.cpp, tests/native/AttributesFixture.c,

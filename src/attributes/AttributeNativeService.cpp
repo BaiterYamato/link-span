@@ -175,10 +175,14 @@ ShipNativeStatus SHIP_NATIVE_CALL UnregisterSource(void* context, uint64_t handl
 
 } // namespace
 
-NativeHostService MakeAttributeNativeService(std::shared_ptr<AttributeRegistry> registry) {
+NativeHostService AttributeNativeService::ForMod(std::string_view owner) const {
+    return {LINKSPAN_ATTRIBUTES_SERVICE, LINKSPAN_ATTRIBUTES_VERSION, sizeof(LinkSpanAttributesV1),
+        resolve ? resolve(owner) : nullptr, ""};
+}
+
+AttributeNativeService MakeAttributeNativeService(std::shared_ptr<AttributeRegistry> registry) {
     auto contexts = std::make_shared<std::map<std::string, std::unique_ptr<Context>>>();
-    return {LINKSPAN_ATTRIBUTES_SERVICE, LINKSPAN_ATTRIBUTES_VERSION, sizeof(LinkSpanAttributesV1), nullptr, "",
-        [contexts, registry = std::move(registry)](std::string_view owner) -> const void* {
+    return {[contexts, registry = std::move(registry)](std::string_view owner) -> const void* {
             if (!registry) return nullptr;
             const std::string id(owner);
             auto found = contexts->find(id);

@@ -88,9 +88,10 @@ void CheckTable() {
     auto registry = std::make_shared<AttributeRegistry>();
     registry->AddMod("test.decl", Declarations(), {});
     auto service = MakeAttributeNativeService(registry);
-    Check(service.name == LINKSPAN_ATTRIBUTES_SERVICE && service.version == 1 &&
-          service.size == sizeof(LinkSpanAttributesV1) && !service.table && service.owner.empty() && service.resolve,
-          "descritor do serviço v1 por mod");
+    const auto descriptor = service.ForMod("test.native");
+    Check(descriptor.name == LINKSPAN_ATTRIBUTES_SERVICE && descriptor.version == 1 &&
+          descriptor.size == sizeof(LinkSpanAttributesV1) && descriptor.table && descriptor.owner.empty() &&
+          descriptor.table == service.resolve("test.native"), "descritor do serviço v1 por mod");
     const auto* a = static_cast<const LinkSpanAttributesV1*>(service.resolve("test.native"));
     const auto* b = static_cast<const LinkSpanAttributesV1*>(service.resolve("other.mod"));
     Check(a && b && a != b && a->context != b->context && a->size == sizeof(*a) &&
