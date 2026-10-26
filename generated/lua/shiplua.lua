@@ -384,7 +384,7 @@ function ship.actor.destroy(handle) end
 function ship.actor.exists(handle) end
 
 --- Reads a field of any live actor: actor_id, category, params, health, max_health, extended, pos_x, pos_y, pos_z, screen_x or screen_y. A stale handle returns nil; screen_x and screen_y are nil when the actor is behind the camera. Requires the world.entities.read permission.
---- API oot; stability: experimental; since: 0.5.0; capability: actor.observe; errors: invalid_argument, unsupported, permission_denied, host_failure.
+--- API common; stability: experimental; since: 0.5.0; capability: actor.observe; errors: invalid_argument, unsupported, permission_denied, host_failure.
 ---@param handle ShipLuaActorHandle
 ---@param field string
 ---@return any? value
@@ -392,7 +392,7 @@ function ship.actor.exists(handle) end
 function ship.actor.get(handle, field) end
 
 --- Enables or rescales the actor's extended health, from 1 to 65535, and returns true; a stale handle returns false. The game keeps seeing health on the vanilla scale. Rejects Link and actors with no health at init. Requires the world.entities.write permission.
---- API oot; stability: experimental; since: 0.5.0; capability: actor.health; errors: invalid_argument, unsupported, permission_denied, invalid_state, host_failure.
+--- API common; stability: experimental; since: 0.5.0; capability: actor.health; errors: invalid_argument, unsupported, permission_denied, invalid_state, host_failure.
 ---@param handle ShipLuaActorHandle
 ---@param max_health integer
 ---@return boolean? value
@@ -628,13 +628,13 @@ function ship.storage.shared.delete(key) end
 ---@return integer
 function ship.storage.shared.clear() end
 
---- Returns whether a save file is loaded in gameplay, the condition for ship.save.get, set and delete.
---- API oot; stability: experimental; since: 0.5.0; capability: core.save; errors: unsupported.
+--- Returns whether a save file is loaded in gameplay, the condition for ship.save.get, set and delete; without the core.save capability, returns false.
+--- API common; stability: experimental; since: 0.5.0; capability: core.save; errors: none.
 ---@return boolean
 function ship.save.available() end
 
 --- Reads a mod key in the loaded save file. Returns the value, the supplied default or nil; without a file, returns nil and an invalid_state operation_error.
---- API oot; stability: experimental; since: 0.5.0; capability: core.save; errors: invalid_argument, invalid_state, unsupported.
+--- API common; stability: experimental; since: 0.5.0; capability: core.save; errors: invalid_argument, invalid_state, unsupported.
 ---@param key string
 ---@param default? any
 ---@return any? value
@@ -642,7 +642,7 @@ function ship.save.available() end
 function ship.save.get(key, default) end
 
 --- Stores a boolean, integer, number or string in the loaded save file and returns true. It lives in memory and reaches disk on the game's next save; copying or deleting the file carries the data.
---- API oot; stability: experimental; since: 0.5.0; capability: core.save; errors: invalid_argument, invalid_state, resource_limit, unsupported.
+--- API common; stability: experimental; since: 0.5.0; capability: core.save; errors: invalid_argument, invalid_state, resource_limit, unsupported.
 ---@param key string
 ---@param value any
 ---@return boolean? value
@@ -650,20 +650,20 @@ function ship.save.get(key, default) end
 function ship.save.set(key, value) end
 
 --- Removes a mod key from the loaded save file and returns whether it existed.
---- API oot; stability: experimental; since: 0.5.0; capability: core.save; errors: invalid_argument, invalid_state, unsupported.
+--- API common; stability: experimental; since: 0.5.0; capability: core.save; errors: invalid_argument, invalid_state, unsupported.
 ---@param key string
 ---@return boolean? value
 ---@return ShipLuaOperationError? error
 function ship.save.delete(key) end
 
 --- Plays a centered sound effect by id and returns true; returns false outside gameplay, with an id outside 0 to 65535 or beyond 8 per frame.
---- API oot; stability: experimental; since: 0.5.0; capability: audio.play; errors: unsupported.
+--- API common; stability: experimental; since: 0.5.0; capability: audio.play; errors: invalid_argument, unsupported.
 ---@param id integer
 ---@return boolean
 function ship.audio.play_sfx(id) end
 
 --- Plays a fanfare from the allowlist (0x22, 0x24, 0x2B, 0x39, 0x3B, 0x43) and returns true; returns false outside the list or gameplay.
---- API oot; stability: experimental; since: 0.5.0; capability: audio.play; errors: unsupported.
+--- API common; stability: experimental; since: 0.5.0; capability: audio.play; errors: invalid_argument, unsupported.
 ---@param id integer
 ---@return boolean
 function ship.audio.play_fanfare(id) end

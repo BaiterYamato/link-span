@@ -21,8 +21,8 @@ local FUNCTIONS = {
   { name = "ship.actor.spawn", availability = "common", required_arguments = 2, error_mode = "return" },
   { name = "ship.actor.destroy", availability = "common", required_arguments = 1, error_mode = "return" },
   { name = "ship.actor.exists", availability = "common", required_arguments = 1, error_mode = "return" },
-  { name = "ship.actor.get", availability = "oot", required_arguments = 2, error_mode = "return" },
-  { name = "ship.actor.set_max_health", availability = "oot", required_arguments = 2, error_mode = "return" },
+  { name = "ship.actor.get", availability = "common", required_arguments = 2, error_mode = "return" },
+  { name = "ship.actor.set_max_health", availability = "common", required_arguments = 2, error_mode = "return" },
   { name = "ship.world.travel", availability = "common", required_arguments = 2, error_mode = "raise" },
   { name = "ship.mm.player.jump", availability = "mm", required_arguments = 0, error_mode = "raise" },
   { name = "ship.mm.spawn_dog", availability = "mm", required_arguments = 0, error_mode = "raise" },
@@ -60,12 +60,12 @@ local FUNCTIONS = {
   { name = "ship.storage.shared.set", availability = "common", required_arguments = 2, error_mode = "raise" },
   { name = "ship.storage.shared.delete", availability = "common", required_arguments = 1, error_mode = "raise" },
   { name = "ship.storage.shared.clear", availability = "common", required_arguments = 0, error_mode = "raise" },
-  { name = "ship.save.available", availability = "oot", required_arguments = 0, error_mode = "raise" },
-  { name = "ship.save.get", availability = "oot", required_arguments = 1, error_mode = "return" },
-  { name = "ship.save.set", availability = "oot", required_arguments = 2, error_mode = "return" },
-  { name = "ship.save.delete", availability = "oot", required_arguments = 1, error_mode = "return" },
-  { name = "ship.audio.play_sfx", availability = "oot", required_arguments = 1, error_mode = "raise" },
-  { name = "ship.audio.play_fanfare", availability = "oot", required_arguments = 1, error_mode = "raise" },
+  { name = "ship.save.available", availability = "common", required_arguments = 0, error_mode = "raise" },
+  { name = "ship.save.get", availability = "common", required_arguments = 1, error_mode = "return" },
+  { name = "ship.save.set", availability = "common", required_arguments = 2, error_mode = "return" },
+  { name = "ship.save.delete", availability = "common", required_arguments = 1, error_mode = "return" },
+  { name = "ship.audio.play_sfx", availability = "common", required_arguments = 1, error_mode = "raise" },
+  { name = "ship.audio.play_fanfare", availability = "common", required_arguments = 1, error_mode = "raise" },
   { name = "ship.hud.draw_rect", availability = "oot", required_arguments = 4, error_mode = "raise" },
   { name = "ship.hud.draw_text", availability = "oot", required_arguments = 3, error_mode = "raise" },
   { name = "ship.hud.draw_ring", availability = "oot", required_arguments = 3, error_mode = "raise" },
@@ -185,6 +185,9 @@ if ok_value then check_return_type("ship.storage.clear", "integer", value) end
 local ok_value, value = pcall(ship.storage.shared.clear)
 check(ok_value, "ship.storage.shared.clear deveria executar sem argumentos")
 if ok_value then check_return_type("ship.storage.shared.clear", "integer", value) end
+local ok_value, value = pcall(ship.save.available)
+check(ok_value, "ship.save.available deveria executar sem argumentos")
+if ok_value then check_return_type("ship.save.available", "boolean", value) end
 
 -- Capabilities: feature detection reflete o contexto anunciado pelo host.
 local granted = CONTRACT_CAPABILITIES[host] or {}

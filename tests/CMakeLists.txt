@@ -173,6 +173,14 @@ target_link_libraries(menu_api_tests PRIVATE shiplua)
 
 add_test(NAME menu_api_tests COMMAND menu_api_tests)
 
+add_executable(mod_save_store_tests unit/ModSaveStoreTests.cpp)
+target_link_libraries(mod_save_store_tests PRIVATE shiplua)
+add_test(NAME ModSaveStore COMMAND mod_save_store_tests)
+
+add_executable(lua_actor_observe_tests unit/LuaActorObserveTests.cpp)
+target_link_libraries(lua_actor_observe_tests PRIVATE shiplua)
+add_test(NAME LuaActorObserve COMMAND lua_actor_observe_tests)
+
 add_executable(key_value_storage_tests unit/KeyValueStorageTests.cpp)
 target_link_libraries(key_value_storage_tests PRIVATE shiplua)
 

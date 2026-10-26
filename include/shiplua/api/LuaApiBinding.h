@@ -148,6 +148,15 @@ class LuaApiBinding {
     static int ActorSpawn(lua_State* state) noexcept;
     static int ActorDestroy(lua_State* state) noexcept;
     static int ActorExists(lua_State* state) noexcept;
+    static int ActorGet(lua_State* state) noexcept;
+    static int ActorSetMaxHealth(lua_State* state) noexcept;
+    static int SaveAvailable(lua_State* state) noexcept;
+    static int SaveGet(lua_State* state) noexcept;
+    static int SaveSet(lua_State* state) noexcept;
+    static int SaveDelete(lua_State* state) noexcept;
+    static int AudioPlaySfx(lua_State* state) noexcept;
+    static int AudioPlayFanfare(lua_State* state) noexcept;
+    static int AudioPlay(lua_State* state, bool fanfare) noexcept;
     static int NativeHas(lua_State* state) noexcept;
     static int NativeCall(lua_State* state) noexcept;
     static int LogDebug(lua_State* state) noexcept;
@@ -186,6 +195,9 @@ class LuaApiBinding {
     int ActorSpawnFromLua(lua_State* state);
     int ActorDestroyFromLua(lua_State* state);
     int ActorExistsFromLua(lua_State* state);
+    int ActorGetFromLua(lua_State* state);
+    int ActorSetMaxHealthFromLua(lua_State* state);
+    int SaveFromLua(lua_State* state, int operation);
     bool HasPermission(const std::string& permission) const;
     std::size_t EffectiveActorLimit() const;
     void PruneDeadActors() noexcept;

@@ -201,7 +201,10 @@ it, because a new header changes the layout id.
 ## Behavior in MM
 
 Only `core.modules` applies to MM, because it lives in the core. The other capabilities are not announced by the MM
-host, and the functions return `unsupported`.
+host, and the functions return `unsupported`, except `ship.save.available()`, which returns `false`. The bindings live
+in the core, like `ship.menu.register`: the function exists in both hosts (`availability` "common"), and the capability
+decides whether it works. A malformed argument gives `invalid_argument` before the capability check, as the generated
+contract requires.
 
 ## Errors
 
@@ -215,6 +218,7 @@ host, and the functions return `unsupported`.
 | `ship.save.set` beyond the limits | `resource_limit` |
 | `require` with an invalid name, `..`, a missing module or a cycle | Lua error naming the module |
 | Fanfare outside the list, or outside gameplay | `false` |
+| `play_sfx`/`play_fanfare` with a non-integer id | Lua error |
 | Capability missing in the host | `unsupported` |
 
 ## Compatibility

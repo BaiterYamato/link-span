@@ -108,7 +108,9 @@ LuaApiHostContext BuildHostContext(const MockHostOptions& options,
                                    std::shared_ptr<MockHotkeyRegistry> hotkeys,
                                    std::shared_ptr<FrameTimerScheduler> timers,
                                    std::shared_ptr<KeyValueStorage> storage,
-                                   std::shared_ptr<MockActorProvider> actors) {
+                                   std::shared_ptr<MockActorProvider> actors,
+                                   std::shared_ptr<MemoryModSaveBackend> saveBackend,
+                                   std::shared_ptr<std::vector<std::pair<std::string, std::int64_t>>> audioCalls) {
     LuaApiHostContext context;
     context.gameId = options.gameId;
     context.hostVersion = options.hostVersion;
@@ -121,6 +123,23 @@ LuaApiHostContext BuildHostContext(const MockHostOptions& options,
     context.timers = std::move(timers);
     context.storage = std::move(storage);
     context.actors = std::move(actors);
+    const auto has = [&](const char* name) {
+        return std::find(options.extraCapabilities.begin(), options.extraCapabilities.end(), name) !=
+               options.extraCapabilities.end();
+    };
+    if (has("core.save")) context.saveData = std::make_shared<ModSaveStore>(std::move(saveBackend));
+    if (has("core.attributes")) context.attributes = std::make_shared<AttributeRegistry>();
+    if (has("audio.play")) {
+        // Buffer compartilhado mantém as closures válidas depois de mover o runtime.
+        context.playSfx = [audioCalls](std::int64_t id) {
+            audioCalls->emplace_back("sfx", id);
+            return Result<bool>::ok(true);
+        };
+        context.playFanfare = [audioCalls](std::int64_t id) {
+            audioCalls->emplace_back("fanfare", id);
+            return Result<bool>::ok(true);
+        };
+    }
     return context;
 }
 
@@ -134,10 +153,13 @@ MockRuntime::MockRuntime(MockHostOptions options)
       mStorage(std::make_shared<KeyValueStorage>()),
       mHotkeys(std::make_shared<MockHotkeyRegistry>()),
       mActors(std::make_shared<MockActorProvider>(mOptions.gameId)),
-      mHost(BuildHostContext(mOptions, mHotkeys, mTimers, mStorage, mActors), mLogger) {}
+      mSaveBackend(std::make_shared<MemoryModSaveBackend>()),
+      mAudioCalls(std::make_shared<std::vector<std::pair<std::string, std::int64_t>>>()),
+      mHost(BuildHostContext(mOptions, mHotkeys, mTimers, mStorage, mActors,
+                             mSaveBackend, mAudioCalls), mLogger) {}
 
 std::vector<std::string> MockRuntime::CoreCapabilities() {
-    return {"core.events", "core.timers", "core.storage", "core.input",
+    return {"core.events", "core.timers", "core.storage", "core.input", "core.modules",
             "actor.spawn", "actor.destroy", "actor.exists"};
 }
 
@@ -148,7 +170,9 @@ Result<MockRuntime> MockRuntime::Create(MockHostOptions options) {
     }
     const auto valid = ValidateLuaApiHostContext(
         BuildHostContext(options, nullptr, nullptr, nullptr,
-                         std::make_shared<MockActorProvider>(options.gameId)));
+                         std::make_shared<MockActorProvider>(options.gameId),
+                         std::make_shared<MemoryModSaveBackend>(),
+                         std::make_shared<std::vector<std::pair<std::string, std::int64_t>>>()));
     if (!valid.isOk()) {
         return Result<MockRuntime>::err(valid.code, valid.message);
     }
@@ -289,6 +313,8 @@ bool MockRuntime::TriggerHotkey(const std::string& id) {
 
 void MockRuntime::ResetSimulation() {
     ClearLogs();
+    mSaveBackend->Unload();
+    mAudioCalls->clear();
     if (IsLoaded()) {
         (void)mStorage->Clear(mModId);
     }
@@ -333,6 +359,11 @@ MockActorProvider& MockRuntime::Actors() {
 const MockActorProvider& MockRuntime::Actors() const {
     return *mActors;
 }
+
+MemoryModSaveBackend& MockRuntime::SaveBackend() { return *mSaveBackend; }
+const MemoryModSaveBackend& MockRuntime::SaveBackend() const { return *mSaveBackend; }
+std::vector<std::pair<std::string, std::int64_t>>& MockRuntime::AudioCalls() { return *mAudioCalls; }
+const std::vector<std::pair<std::string, std::int64_t>>& MockRuntime::AudioCalls() const { return *mAudioCalls; }
 
 ModHost& MockRuntime::Host() {
     return mHost;

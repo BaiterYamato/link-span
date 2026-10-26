@@ -23,8 +23,8 @@ Derivada dos schemas canônicos em `schema/` (IDL); regenere com
 | `ship.actor.spawn` | `0.4.0` | `experimental` | sim | sim | `actor.spawn` | `invalid_argument`, `unsupported`, `permission_denied`, `invalid_state`, `resource_limit`, `host_failure` |
 | `ship.actor.destroy` | `0.4.0` | `experimental` | sim | sim | `actor.destroy` | `invalid_argument`, `unsupported`, `permission_denied`, `invalid_handle`, `host_failure` |
 | `ship.actor.exists` | `0.4.0` | `experimental` | sim | sim | `actor.exists` | `invalid_argument`, `unsupported`, `permission_denied`, `host_failure` |
-| `ship.actor.get` | `0.5.0` | `experimental` | sim | — | `actor.observe` | `invalid_argument`, `unsupported`, `permission_denied`, `host_failure` |
-| `ship.actor.set_max_health` | `0.5.0` | `experimental` | sim | — | `actor.health` | `invalid_argument`, `unsupported`, `permission_denied`, `invalid_state`, `host_failure` |
+| `ship.actor.get` | `0.5.0` | `experimental` | sim | sim | `actor.observe` | `invalid_argument`, `unsupported`, `permission_denied`, `host_failure` |
+| `ship.actor.set_max_health` | `0.5.0` | `experimental` | sim | sim | `actor.health` | `invalid_argument`, `unsupported`, `permission_denied`, `invalid_state`, `host_failure` |
 | `ship.world.travel` | `0.3.0` | `experimental` | sim | sim | `world.travel` | `invalid_argument`, `unsupported`, `invalid_state`, `host_failure` |
 | `ship.mm.player.jump` | `0.2.0` | `experimental` | — | sim | `mm.player.jump` | — |
 | `ship.mm.spawn_dog` | `0.3.0` | `experimental` | — | sim | `mm.spawn_dog` | — |
@@ -62,12 +62,12 @@ Derivada dos schemas canônicos em `schema/` (IDL); regenere com
 | `ship.storage.shared.set` | `0.4.0` | `experimental` | sim | sim | `core.storage.shared` | `invalid_argument`, `resource_limit`, `unsupported` |
 | `ship.storage.shared.delete` | `0.4.0` | `experimental` | sim | sim | `core.storage.shared` | `invalid_argument`, `unsupported` |
 | `ship.storage.shared.clear` | `0.4.0` | `experimental` | sim | sim | `core.storage.shared` | `unsupported` |
-| `ship.save.available` | `0.5.0` | `experimental` | sim | — | `core.save` | `unsupported` |
-| `ship.save.get` | `0.5.0` | `experimental` | sim | — | `core.save` | `invalid_argument`, `invalid_state`, `unsupported` |
-| `ship.save.set` | `0.5.0` | `experimental` | sim | — | `core.save` | `invalid_argument`, `invalid_state`, `resource_limit`, `unsupported` |
-| `ship.save.delete` | `0.5.0` | `experimental` | sim | — | `core.save` | `invalid_argument`, `invalid_state`, `unsupported` |
-| `ship.audio.play_sfx` | `0.5.0` | `experimental` | sim | — | `audio.play` | `unsupported` |
-| `ship.audio.play_fanfare` | `0.5.0` | `experimental` | sim | — | `audio.play` | `unsupported` |
+| `ship.save.available` | `0.5.0` | `experimental` | sim | sim | `core.save` | — |
+| `ship.save.get` | `0.5.0` | `experimental` | sim | sim | `core.save` | `invalid_argument`, `invalid_state`, `unsupported` |
+| `ship.save.set` | `0.5.0` | `experimental` | sim | sim | `core.save` | `invalid_argument`, `invalid_state`, `resource_limit`, `unsupported` |
+| `ship.save.delete` | `0.5.0` | `experimental` | sim | sim | `core.save` | `invalid_argument`, `invalid_state`, `unsupported` |
+| `ship.audio.play_sfx` | `0.5.0` | `experimental` | sim | sim | `audio.play` | `invalid_argument`, `unsupported` |
+| `ship.audio.play_fanfare` | `0.5.0` | `experimental` | sim | sim | `audio.play` | `invalid_argument`, `unsupported` |
 | `ship.hud.draw_rect` | `0.4.0` | `experimental` | sim | — | `hud.draw` | `invalid_argument`, `invalid_state` |
 | `ship.hud.draw_text` | `0.4.0` | `experimental` | sim | — | `hud.draw` | `invalid_argument`, `invalid_state` |
 | `ship.hud.draw_ring` | `0.4.0` | `experimental` | sim | — | `hud.draw` | `invalid_argument`, `invalid_state` |

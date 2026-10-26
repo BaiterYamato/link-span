@@ -17,6 +17,7 @@
 #include "shiplua/runtime/Logger.h"
 #include "shiplua/runtime/Result.h"
 #include "shiplua/storage/KeyValueStorage.h"
+#include "shiplua/save/ModSaveStore.h"
 #include "shiplua/timer/FrameTimerScheduler.h"
 
 struct lua_State;
@@ -129,6 +130,10 @@ class MockRuntime {
     const MockHotkeyRegistry& Hotkeys() const;
     MockActorProvider& Actors();
     const MockActorProvider& Actors() const;
+    MemoryModSaveBackend& SaveBackend();
+    const MemoryModSaveBackend& SaveBackend() const;
+    std::vector<std::pair<std::string, std::int64_t>>& AudioCalls();
+    const std::vector<std::pair<std::string, std::int64_t>>& AudioCalls() const;
     ModHost& Host();
     const MockHostOptions& Options() const;
 
@@ -145,6 +150,8 @@ class MockRuntime {
     std::shared_ptr<KeyValueStorage> mStorage;
     std::shared_ptr<MockHotkeyRegistry> mHotkeys;
     std::shared_ptr<MockActorProvider> mActors;
+    std::shared_ptr<MemoryModSaveBackend> mSaveBackend;
+    std::shared_ptr<std::vector<std::pair<std::string, std::int64_t>>> mAudioCalls;
     ModHost mHost;
     std::string mModId;
 };

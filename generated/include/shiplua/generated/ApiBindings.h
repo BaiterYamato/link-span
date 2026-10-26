@@ -551,8 +551,7 @@ inline constexpr std::array<std::string_view, 1> kShipStorageSharedClearErrors{{
 }};
 inline constexpr std::array<FieldBinding, 0> kShipSaveAvailableArguments{{
 }};
-inline constexpr std::array<std::string_view, 1> kShipSaveAvailableErrors{{
-    "unsupported",
+inline constexpr std::array<std::string_view, 0> kShipSaveAvailableErrors{{
 }};
 inline constexpr std::array<FieldBinding, 2> kShipSaveGetArguments{{
     {"key", "string", true},
@@ -584,13 +583,15 @@ inline constexpr std::array<std::string_view, 3> kShipSaveDeleteErrors{{
 inline constexpr std::array<FieldBinding, 1> kShipAudioPlaySfxArguments{{
     {"id", "integer", true},
 }};
-inline constexpr std::array<std::string_view, 1> kShipAudioPlaySfxErrors{{
+inline constexpr std::array<std::string_view, 2> kShipAudioPlaySfxErrors{{
+    "invalid_argument",
     "unsupported",
 }};
 inline constexpr std::array<FieldBinding, 1> kShipAudioPlayFanfareArguments{{
     {"id", "integer", true},
 }};
-inline constexpr std::array<std::string_view, 1> kShipAudioPlayFanfareErrors{{
+inline constexpr std::array<std::string_view, 2> kShipAudioPlayFanfareErrors{{
+    "invalid_argument",
     "unsupported",
 }};
 inline constexpr std::array<FieldBinding, 8> kShipHudDrawRectArguments{{
@@ -742,8 +743,8 @@ inline constexpr std::array<FunctionBinding, 73> kFunctions{{
     {FunctionId::ShipActorSpawn, "ship.actor.spawn", "0.4.0", "experimental", "actor_handle", "return", "operation_error", "common", "actor.spawn", kShipActorSpawnArguments, kShipActorSpawnErrors},
     {FunctionId::ShipActorDestroy, "ship.actor.destroy", "0.4.0", "experimental", "boolean", "return", "operation_error", "common", "actor.destroy", kShipActorDestroyArguments, kShipActorDestroyErrors},
     {FunctionId::ShipActorExists, "ship.actor.exists", "0.4.0", "experimental", "boolean", "return", "operation_error", "common", "actor.exists", kShipActorExistsArguments, kShipActorExistsErrors},
-    {FunctionId::ShipActorGet, "ship.actor.get", "0.5.0", "experimental", "any", "return", "operation_error", "oot", "actor.observe", kShipActorGetArguments, kShipActorGetErrors},
-    {FunctionId::ShipActorSetMaxHealth, "ship.actor.set_max_health", "0.5.0", "experimental", "boolean", "return", "operation_error", "oot", "actor.health", kShipActorSetMaxHealthArguments, kShipActorSetMaxHealthErrors},
+    {FunctionId::ShipActorGet, "ship.actor.get", "0.5.0", "experimental", "any", "return", "operation_error", "common", "actor.observe", kShipActorGetArguments, kShipActorGetErrors},
+    {FunctionId::ShipActorSetMaxHealth, "ship.actor.set_max_health", "0.5.0", "experimental", "boolean", "return", "operation_error", "common", "actor.health", kShipActorSetMaxHealthArguments, kShipActorSetMaxHealthErrors},
     {FunctionId::ShipWorldTravel, "ship.world.travel", "0.3.0", "experimental", "boolean", "raise", {}, "common", "world.travel", kShipWorldTravelArguments, kShipWorldTravelErrors},
     {FunctionId::ShipMmPlayerJump, "ship.mm.player.jump", "0.2.0", "experimental", "boolean", "raise", {}, "mm", "mm.player.jump", kShipMmPlayerJumpArguments, kShipMmPlayerJumpErrors},
     {FunctionId::ShipMmSpawnDog, "ship.mm.spawn_dog", "0.3.0", "experimental", "boolean", "raise", {}, "mm", "mm.spawn_dog", kShipMmSpawnDogArguments, kShipMmSpawnDogErrors},
@@ -781,12 +782,12 @@ inline constexpr std::array<FunctionBinding, 73> kFunctions{{
     {FunctionId::ShipStorageSharedSet, "ship.storage.shared.set", "0.4.0", "experimental", "boolean", "raise", {}, "common", "core.storage.shared", kShipStorageSharedSetArguments, kShipStorageSharedSetErrors},
     {FunctionId::ShipStorageSharedDelete, "ship.storage.shared.delete", "0.4.0", "experimental", "boolean", "raise", {}, "common", "core.storage.shared", kShipStorageSharedDeleteArguments, kShipStorageSharedDeleteErrors},
     {FunctionId::ShipStorageSharedClear, "ship.storage.shared.clear", "0.4.0", "experimental", "integer", "raise", {}, "common", "core.storage.shared", kShipStorageSharedClearArguments, kShipStorageSharedClearErrors},
-    {FunctionId::ShipSaveAvailable, "ship.save.available", "0.5.0", "experimental", "boolean", "raise", {}, "oot", "core.save", kShipSaveAvailableArguments, kShipSaveAvailableErrors},
-    {FunctionId::ShipSaveGet, "ship.save.get", "0.5.0", "experimental", "any", "return", "operation_error", "oot", "core.save", kShipSaveGetArguments, kShipSaveGetErrors},
-    {FunctionId::ShipSaveSet, "ship.save.set", "0.5.0", "experimental", "boolean", "return", "operation_error", "oot", "core.save", kShipSaveSetArguments, kShipSaveSetErrors},
-    {FunctionId::ShipSaveDelete, "ship.save.delete", "0.5.0", "experimental", "boolean", "return", "operation_error", "oot", "core.save", kShipSaveDeleteArguments, kShipSaveDeleteErrors},
-    {FunctionId::ShipAudioPlaySfx, "ship.audio.play_sfx", "0.5.0", "experimental", "boolean", "raise", {}, "oot", "audio.play", kShipAudioPlaySfxArguments, kShipAudioPlaySfxErrors},
-    {FunctionId::ShipAudioPlayFanfare, "ship.audio.play_fanfare", "0.5.0", "experimental", "boolean", "raise", {}, "oot", "audio.play", kShipAudioPlayFanfareArguments, kShipAudioPlayFanfareErrors},
+    {FunctionId::ShipSaveAvailable, "ship.save.available", "0.5.0", "experimental", "boolean", "raise", {}, "common", "core.save", kShipSaveAvailableArguments, kShipSaveAvailableErrors},
+    {FunctionId::ShipSaveGet, "ship.save.get", "0.5.0", "experimental", "any", "return", "operation_error", "common", "core.save", kShipSaveGetArguments, kShipSaveGetErrors},
+    {FunctionId::ShipSaveSet, "ship.save.set", "0.5.0", "experimental", "boolean", "return", "operation_error", "common", "core.save", kShipSaveSetArguments, kShipSaveSetErrors},
+    {FunctionId::ShipSaveDelete, "ship.save.delete", "0.5.0", "experimental", "boolean", "return", "operation_error", "common", "core.save", kShipSaveDeleteArguments, kShipSaveDeleteErrors},
+    {FunctionId::ShipAudioPlaySfx, "ship.audio.play_sfx", "0.5.0", "experimental", "boolean", "raise", {}, "common", "audio.play", kShipAudioPlaySfxArguments, kShipAudioPlaySfxErrors},
+    {FunctionId::ShipAudioPlayFanfare, "ship.audio.play_fanfare", "0.5.0", "experimental", "boolean", "raise", {}, "common", "audio.play", kShipAudioPlayFanfareArguments, kShipAudioPlayFanfareErrors},
     {FunctionId::ShipHudDrawRect, "ship.hud.draw_rect", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "hud.draw", kShipHudDrawRectArguments, kShipHudDrawRectErrors},
     {FunctionId::ShipHudDrawText, "ship.hud.draw_text", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "hud.draw", kShipHudDrawTextArguments, kShipHudDrawTextErrors},
     {FunctionId::ShipHudDrawRing, "ship.hud.draw_ring", "0.4.0", "experimental", "boolean", "raise", {}, "oot", "hud.draw", kShipHudDrawRingArguments, kShipHudDrawRingErrors},

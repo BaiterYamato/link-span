@@ -148,6 +148,11 @@ probe("ship.storage.clear", {  }, "integer")
 probe("ship.storage.shared.set", { "probe", "probe" }, "boolean")
 probe("ship.storage.shared.delete", { "probe" }, "boolean")
 probe("ship.storage.shared.clear", {  }, "integer")
+probe("ship.save.available", {  }, "boolean")
+probe("ship.save.set", { "probe", "probe" }, "boolean")
+probe("ship.save.delete", { "probe" }, "boolean")
+probe("ship.audio.play_sfx", { 1 }, "boolean")
+probe("ship.audio.play_fanfare", { 1 }, "boolean")
 probe("ship.menu.register", { "probe" }, "boolean")
 probe("ship.attributes.value", { "probe" }, "number")
 probe("ship.attributes.breakdown", { "probe" }, "table")
@@ -179,11 +184,6 @@ probe("ship.oot.player.set_held_item_model", { "probe", "probe" }, "boolean")
 probe("ship.oot.cutscene.start", { 1, "probe" }, "boolean")
 probe("ship.oot.cutscene.stop", {  }, "boolean")
 probe("ship.oot.cutscene.is_active", {  }, "boolean")
-probe("ship.save.available", {  }, "boolean")
-probe("ship.save.set", { "probe", "probe" }, "boolean")
-probe("ship.save.delete", { "probe" }, "boolean")
-probe("ship.audio.play_sfx", { 1 }, "boolean")
-probe("ship.audio.play_fanfare", { 1 }, "boolean")
 probe("ship.hud.draw_rect", { 1, 1, 1, 1, 1, 1, 1, 1 }, "boolean")
 probe("ship.hud.draw_text", { "probe", 1, 1, 1, 1, 1, 1, 1 }, "boolean")
 probe("ship.hud.draw_ring", { 1, 1, 1, 1, 1, 1, 1, 1, 1 }, "boolean")
@@ -200,12 +200,6 @@ probe("ship.mm.player.set_sword_skin", { "probe" }, "boolean")
 mock.configure({ game = "oot", capabilities = {} })
 ship_mod = mock.build()
 check(resolve(ship_mod, "game.state") == nil, "ship.game.state sem capability não deveria existir")
-mock.configure({ game = "oot", capabilities = {} })
-ship_mod = mock.build()
-check(resolve(ship_mod, "actor.get") == nil, "ship.actor.get sem capability não deveria existir")
-mock.configure({ game = "oot", capabilities = {} })
-ship_mod = mock.build()
-check(resolve(ship_mod, "actor.set_max_health") == nil, "ship.actor.set_max_health sem capability não deveria existir")
 mock.configure({ game = "mm", capabilities = {} })
 ship_mod = mock.build()
 check(resolve(ship_mod, "mm.player.jump") == nil, "ship.mm.player.jump sem capability não deveria existir")
@@ -266,24 +260,6 @@ check(resolve(ship_mod, "oot.cutscene.is_active") == nil, "ship.oot.cutscene.is_
 mock.configure({ game = "oot", capabilities = {} })
 ship_mod = mock.build()
 check(resolve(ship_mod, "oot.env.get") == nil, "ship.oot.env.get sem capability não deveria existir")
-mock.configure({ game = "oot", capabilities = {} })
-ship_mod = mock.build()
-check(resolve(ship_mod, "save.available") == nil, "ship.save.available sem capability não deveria existir")
-mock.configure({ game = "oot", capabilities = {} })
-ship_mod = mock.build()
-check(resolve(ship_mod, "save.get") == nil, "ship.save.get sem capability não deveria existir")
-mock.configure({ game = "oot", capabilities = {} })
-ship_mod = mock.build()
-check(resolve(ship_mod, "save.set") == nil, "ship.save.set sem capability não deveria existir")
-mock.configure({ game = "oot", capabilities = {} })
-ship_mod = mock.build()
-check(resolve(ship_mod, "save.delete") == nil, "ship.save.delete sem capability não deveria existir")
-mock.configure({ game = "oot", capabilities = {} })
-ship_mod = mock.build()
-check(resolve(ship_mod, "audio.play_sfx") == nil, "ship.audio.play_sfx sem capability não deveria existir")
-mock.configure({ game = "oot", capabilities = {} })
-ship_mod = mock.build()
-check(resolve(ship_mod, "audio.play_fanfare") == nil, "ship.audio.play_fanfare sem capability não deveria existir")
 mock.configure({ game = "oot", capabilities = {} })
 ship_mod = mock.build()
 check(resolve(ship_mod, "hud.draw_rect") == nil, "ship.hud.draw_rect sem capability não deveria existir")
@@ -355,6 +331,20 @@ do
   check(value == nil, "ship.actor.exists sem argumentos não deveria retornar valor")
   check(type(err) == "table" and err.code == "invalid_argument",
     "erro de ship.actor.exists deveria carregar invalid_argument")
+end
+do
+  local fn = resolve(ship_mod, "actor.get")
+  local value, err = fn()
+  check(value == nil, "ship.actor.get sem argumentos não deveria retornar valor")
+  check(type(err) == "table" and err.code == "invalid_argument",
+    "erro de ship.actor.get deveria carregar invalid_argument")
+end
+do
+  local fn = resolve(ship_mod, "actor.set_max_health")
+  local value, err = fn()
+  check(value == nil, "ship.actor.set_max_health sem argumentos não deveria retornar valor")
+  check(type(err) == "table" and err.code == "invalid_argument",
+    "erro de ship.actor.set_max_health deveria carregar invalid_argument")
 end
 do
   local fn = resolve(ship_mod, "world.travel")
@@ -460,6 +450,41 @@ do
   check(not ok, "ship.storage.shared.delete sem argumentos deveria falhar")
   check(type(err) == "string" and err:find("invalid_argument", 1, true) ~= nil,
     "erro de ship.storage.shared.delete deveria carregar invalid_argument")
+end
+do
+  local fn = resolve(ship_mod, "save.get")
+  local value, err = fn()
+  check(value == nil, "ship.save.get sem argumentos não deveria retornar valor")
+  check(type(err) == "table" and err.code == "invalid_argument",
+    "erro de ship.save.get deveria carregar invalid_argument")
+end
+do
+  local fn = resolve(ship_mod, "save.set")
+  local value, err = fn()
+  check(value == nil, "ship.save.set sem argumentos não deveria retornar valor")
+  check(type(err) == "table" and err.code == "invalid_argument",
+    "erro de ship.save.set deveria carregar invalid_argument")
+end
+do
+  local fn = resolve(ship_mod, "save.delete")
+  local value, err = fn()
+  check(value == nil, "ship.save.delete sem argumentos não deveria retornar valor")
+  check(type(err) == "table" and err.code == "invalid_argument",
+    "erro de ship.save.delete deveria carregar invalid_argument")
+end
+do
+  local fn = resolve(ship_mod, "audio.play_sfx")
+  local ok, err = pcall(fn)
+  check(not ok, "ship.audio.play_sfx sem argumentos deveria falhar")
+  check(type(err) == "string" and err:find("invalid_argument", 1, true) ~= nil,
+    "erro de ship.audio.play_sfx deveria carregar invalid_argument")
+end
+do
+  local fn = resolve(ship_mod, "audio.play_fanfare")
+  local ok, err = pcall(fn)
+  check(not ok, "ship.audio.play_fanfare sem argumentos deveria falhar")
+  check(type(err) == "string" and err:find("invalid_argument", 1, true) ~= nil,
+    "erro de ship.audio.play_fanfare deveria carregar invalid_argument")
 end
 do
   local fn = resolve(ship_mod, "menu.register")

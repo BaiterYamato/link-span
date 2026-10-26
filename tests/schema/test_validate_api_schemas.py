@@ -54,6 +54,11 @@ class SchemaValidationTests(unittest.TestCase):
             {"name": "damage_effect", "type": "integer", "required": True},
             {"name": "base_damage", "type": "number", "required": True},
             {"name": "damage", "type": "number", "required": True},
+            {"name": "target", "type": "actor_snapshot", "required": True},
+            {"name": "attacker", "type": "actor_snapshot", "required": False},
+            {"name": "target_health", "type": "integer", "required": True},
+            {"name": "target_max_health", "type": "integer", "required": True},
+            {"name": "target_extended", "type": "boolean", "required": True},
         ], event["payload"])
         self.assertEqual([], self.validate())
 

@@ -269,7 +269,7 @@ M.functions = {
   ["ship.actor.get"] = {
     version = "0.5.0",
     stability = "experimental",
-    availability = "oot",
+    availability = "common",
     capability = "actor.observe",
     arguments = {
       { name = "handle", type = "actor_handle", required = true },
@@ -283,7 +283,7 @@ M.functions = {
   ["ship.actor.set_max_health"] = {
     version = "0.5.0",
     stability = "experimental",
-    availability = "oot",
+    availability = "common",
     capability = "actor.health",
     arguments = {
       { name = "handle", type = "actor_handle", required = true },
@@ -736,17 +736,17 @@ M.functions = {
   ["ship.save.available"] = {
     version = "0.5.0",
     stability = "experimental",
-    availability = "oot",
+    availability = "common",
     capability = "core.save",
     arguments = {},
     returns = "boolean",
     error_mode = "raise",
-    errors = { "unsupported" },
+    errors = {},
   },
   ["ship.save.get"] = {
     version = "0.5.0",
     stability = "experimental",
-    availability = "oot",
+    availability = "common",
     capability = "core.save",
     arguments = {
       { name = "key", type = "string", required = true },
@@ -760,7 +760,7 @@ M.functions = {
   ["ship.save.set"] = {
     version = "0.5.0",
     stability = "experimental",
-    availability = "oot",
+    availability = "common",
     capability = "core.save",
     arguments = {
       { name = "key", type = "string", required = true },
@@ -774,7 +774,7 @@ M.functions = {
   ["ship.save.delete"] = {
     version = "0.5.0",
     stability = "experimental",
-    availability = "oot",
+    availability = "common",
     capability = "core.save",
     arguments = {
       { name = "key", type = "string", required = true },
@@ -787,26 +787,26 @@ M.functions = {
   ["ship.audio.play_sfx"] = {
     version = "0.5.0",
     stability = "experimental",
-    availability = "oot",
+    availability = "common",
     capability = "audio.play",
     arguments = {
       { name = "id", type = "integer", required = true },
     },
     returns = "boolean",
     error_mode = "raise",
-    errors = { "unsupported" },
+    errors = { "invalid_argument", "unsupported" },
   },
   ["ship.audio.play_fanfare"] = {
     version = "0.5.0",
     stability = "experimental",
-    availability = "oot",
+    availability = "common",
     capability = "audio.play",
     arguments = {
       { name = "id", type = "integer", required = true },
     },
     returns = "boolean",
     error_mode = "raise",
-    errors = { "unsupported" },
+    errors = { "invalid_argument", "unsupported" },
   },
   ["ship.hud.draw_rect"] = {
     version = "0.4.0",

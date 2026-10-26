@@ -195,7 +195,9 @@ A `actor.events`, que já está no schema, passa a ser anunciada pelo host OoT j
 ## Comportamento em MM
 
 Só `core.modules` vale no MM, porque fica no core. As outras capacidades não são anunciadas no host MM, e as funções
-devolvem `unsupported`.
+devolvem `unsupported`, exceto `ship.save.available()`, que devolve `false`. Os bindings ficam no core, como o do
+`ship.menu.register`: a função existe nos dois hosts (`availability` "common"), e a capacidade decide se funciona.
+Argumento malformado dá `invalid_argument` antes da checagem de capacidade, como pede o contrato gerado.
 
 ## Erros
 
@@ -209,6 +211,7 @@ devolvem `unsupported`.
 | `ship.save.set` além dos limites | `resource_limit` |
 | `require` com nome inválido, `..`, módulo ausente ou ciclo | erro Lua com o nome do módulo |
 | Fanfarra fora da lista, ou fora de gameplay | `false` |
+| `play_sfx`/`play_fanfare` com id que não é inteiro | erro Lua |
 | Capacidade ausente no host | `unsupported` |
 
 ## Compatibilidade
