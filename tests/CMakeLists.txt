@@ -126,6 +126,15 @@ add_executable(attribute_registry_tests unit/AttributeRegistryTests.cpp)
 target_link_libraries(attribute_registry_tests PRIVATE shiplua)
 add_test(NAME attribute_registry_tests COMMAND attribute_registry_tests)
 
+add_library(native_attributes_fixture MODULE native/AttributesFixture.c)
+target_include_directories(native_attributes_fixture PRIVATE "${SHIPLUA_SOURCE_DIR}/include")
+set_target_properties(native_attributes_fixture PROPERTIES C_STANDARD 11 C_STANDARD_REQUIRED ON C_EXTENSIONS OFF)
+
+add_executable(attribute_native_tests native/AttributeNativeTests.cpp)
+target_link_libraries(attribute_native_tests PRIVATE shiplua)
+add_dependencies(attribute_native_tests native_attributes_fixture)
+add_test(NAME attribute_native_tests COMMAND attribute_native_tests $<TARGET_FILE:native_attributes_fixture>)
+
 add_executable(atomic_file_tests unit/AtomicFileTests.cpp)
 target_link_libraries(atomic_file_tests PRIVATE shiplua)
 
