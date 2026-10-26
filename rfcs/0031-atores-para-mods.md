@@ -38,14 +38,24 @@ A RFC 0030 dividiu o port do leveled em três subprojetos. O 2 virou dois:
 Hoje um handle de ator só existe para o ator que um mod criou com `ship.actor.spawn`. Este RFC dá handle a todo ator
 do jogo:
 
-- o host cria o handle na primeira vez que o ator aparece num evento entregue ao Lua, com o mesmo formato
-  `actor_handle` (kind, slot, geração, cena) e dono `"linkspan.host"`;
+- fora do teardown de cena, o host cria o handle de observação na primeira vez que o ator aparece num evento
+  entregue ao Lua, com o mesmo formato `actor_handle` (kind, slot, geração, cena) e dono `"linkspan.host"`;
 - o registro do provider OoT passa a 1024 handles no total, sem limite por dono. O limite de 16 atores criados por
   mod fica no próprio provider;
-- um ator tem um só handle enquanto vive. O ator criado por um mod continua com o handle do mod, e os eventos
-  entregam esse mesmo handle;
-- o handle expira no `OnActorDestroy` do ator e na troca de cena, como os de hoje. Um handle velho nunca resolve
-  para outro ator (guarda de geração do `HandleRegistry`);
+- um ator tem um só handle enquanto vive. No spawn de um mod, o handle já pertence ao mod antes do init nativo:
+  `actor.init` publica a mesma identidade completa que `ship.actor.spawn` devolve. Se o host recusa o ator depois
+  do init (por exemplo, falha no attach do boneco), o spawn devolve erro e o `actor.destroy` posterior usa esse
+  mesmo handle. Falha antes do init não publica eventos de ator;
+- `ship.actor.destroy` agenda o kill nativo. Até a destruição nativa, `ship.actor.exists` devolve `false`, mas
+  `ship.actor.get` ainda lê o ator, inclusive dentro de `actor.destroy`, que usa o handle do init e do spawn.
+  O ator deixa de contar no limite de spawn do mod assim que a API o marca para remoção. Descarregar o mod também
+  agenda a remoção dos seus atores e preserva os handles e a leitura até o destroy nativo, sem transferir posse;
+- no teardown de cena, o host preserva os handles conhecidos e recusa novos handles e spawns. Cada `actor.destroy`
+  usa o handle conhecido; dentro do callback, `ship.actor.get` ainda lê `health`, `max_health` e `extended`.
+  Só depois do evento se invalidam o handle e a conta de vida do ator. Ator sem handle conhecido não ganha um nem
+  emite `actor.destroy` nesse teardown. O fecho global, com invalidação dos registros restantes e reset da vida,
+  roda no fim de `Actor_CleanupContext` (`func_80031C3C`), depois dos destroys nativos;
+- um handle velho nunca resolve para outro ator (guarda de geração do `HandleRegistry`);
 - o handle de observação serve para leitura (`ship.actor.get`) e para `ship.actor.set_max_health`. As funções que
   exigem posse (`ship.actor.destroy`, `ship.actor.exists`) continuam exigindo;
 - `ship.actor.get` exige a permissão de manifesto `world.entities.read`, como `ship.actor.exists`.
@@ -55,7 +65,8 @@ do jogo:
 
 - O `actor_snapshot` ganha `params` (`Actor.params`).
 - O host OoT passa a emitir `actor.init` e `actor.destroy`, que já estão no schema, para todo ator. O `actor.init`
-  sai depois da função de init do ator, com a vida já definida. O `actor.destroy` sai antes de o handle expirar.
+  sai depois da função de init do ator, com a vida já definida e o handle do spawn já associado. O `actor.destroy`
+  sai antes de o handle e a conta de vida expirarem, inclusive no teardown de cena para atores já conhecidos.
 - O `actor.update` continua sem emissão no OoT: um callback Lua por ator a cada frame custa demais. O schema registra
   isso na descrição.
 - `hook.oot.actor.damage` ganha `target` (snapshot), `attacker` (snapshot ou nil), `target_health`,
@@ -88,31 +99,52 @@ Para o Link, `health` e `max_health` são a vida e a capacidade do save. Handle 
 - Na primeira chamada, a vida atual vira `n` vezes a fração de vida vanilla que o ator tem. Chamadas seguintes
   reescalam pela fração estendida. Se dois mods chamarem, vale a última, e o host registra a troca no log de debug.
 - Não vale para o Link (`invalid_argument`) nem para ator sem vida no init (`invalid_state`).
-- O host guarda a vida real (`hp`) e a vanilla registrada no init (`V`). No campo `u8` do jogo fica o **espelho**:
-  `0` se `hp == 0`, senão `max(1, ceil(V * hp / n))`. Fases, morte, barra de vida do SoH e o resto do código do ator
-  continuam vendo números vanilla, e a morte acontece junto com `hp == 0`.
+- O host guarda a vida real (`hp`) e a vanilla registrada no init (`V`). No campo `u8` do jogo fica o **espelho**
+  `M(hp)`: `0` se `hp == 0`, senão `max(1, ceil(V * hp / n))`. O código do ator vê a escala vanilla, exceto pela
+  folga temporária de 1 descrita abaixo. No consumo suportado, a morte acontece junto com `hp == 0`; fases e limiares
+  que leem a vida antes do consumo exigem validação individual.
 - Ao ligar a vida estendida, o host grava o espelho no campo do jogo. Com `n` menor que `V`, a granularidade muda, e o
   espelho pode diferir da vida vanilla de antes.
 - **No funil de dano**, para um alvo estendido, o `damage` que os hooks veem e devolvem está nas unidades do alvo.
   O valor inicial é o que o jogo calculou, então um ataque vanilla contra um inimigo com o dobro de vida precisa do
-  dobro de golpes. O resultado é limitado a 0..65535 e à vida que resta, em vez de 0..255. O host converte o débito
-  pendente em espelho e soma ao `colChkInfo.damage` só a diferença de espelho.
-- **Confirmação.** O débito pendente é confirmado quando o ator aplica o dano (`Actor_ApplyDamage`) ou quando, depois
-  do update dele, o espelho caiu o esperado. Se o ator descartou o golpe, o pendente é descartado nesse mesmo ponto.
+  dobro de golpes. Cada contribuição final é limitada/truncada a 0..65535, multiplicada uma única vez pelo coop do
+  Ivan e acumulada até a vida real restante. O host soma ao `colChkInfo.damage` a queda incremental do espelho, mais
+  a folga quando necessária. O C não multiplica novamente o acumulador estendido; o apply também não reaplica coop.
+- **Golpe subgranular.** Se uma contribuição inteira positiva não reduz o espelho, o alvo ainda sobrevive, não há
+  folga, o espelho de entrada é menor que 255 e o ator permite folga, o host eleva temporariamente
+  `colChkInfo.health` de `M(hp)` para `M(hp)+1` e entrega delta 1. O ator recebe um sinal de dano u8 de 1 para reagir
+  ao golpe, sem perder a vida antes da hora: com `V=1`, subtrai 1 de 2 e continua vivo. Vários elementos no mesmo
+  update compartilham no máximo uma folga. Golpe diretamente letal não abre folga; se uma contribuição posterior
+  torna o total letal, a folga já aberta permanece incluída no acumulador até o consumo, que resulta em zero junto
+  com a vida real.
+- **Sem folga por espécie.** Iron Knuckle (`ACTOR_EN_IK`), Dead Hand (`ACTOR_EN_DH`) e Lizalfos/Dinolfos
+  (`ACTOR_EN_ZF`) comparam a vida anterior com limiares de fase. A lista fica no host, em
+  `kActorsWithoutHealthHeadroom`, em `OotActorHealthGame.cpp`. Eles mantêm a vida estendida, mas não recebem folga:
+  um golpe isolado menor que um grão do espelho não conta, mesmo se chamarem `Actor_ApplyDamage`. Se contribuições
+  do mesmo frame somadas derrubam o espelho, o débito inteiro conta quando consumido. O resto é descartado nesse
+  update; golpes pequenos de frames diferentes não se acumulam.
+- **Confirmação.** `Actor_ApplyDamage` confirma o pendente aceito uma única vez, limpa pendente/folga e grava `M(hp)`.
+  Preserva `colChkInfo.damage` até o reset upstream. No consumo manual suportado (subtração única do acumulador no
+  mesmo update), o settle confirma quando o u8 chega a `M(hp-pending)` e há queda observável, inclusive se a única
+  queda foi a devolução da folga. O golpe conta e emite `hook.oot.actor.damaged` com a perda real, mesmo sem queda do
+  espelho confirmado. Se o u8 fica em `M(hp)+folga`, o settle descarta o débito e restaura `M(hp)`. Outro resultado
+  reescala a conta como mudança externa, sem evento de dano. Nenhuma transação segue para outro update; reescalar
+  o máximo também a limpa.
 - **O espelho manda.** Se o código do ator mudar a própria vida fora do débito (cura, ressurreição, restauração), o
   host reescala `hp` a partir do espelho novo.
-- Com o modo cooperativo do Ivan, o multiplicador dele multiplica também o débito estendido.
-- Um golpe cujo débito é pequeno demais para mudar o espelho soma 0 ao `colChkInfo.damage`. O acerto ainda marca
-  `AC_HIT`, e a maioria dos atores reage por ele; os que não reagem entram na matriz de teste. Num ator que consome o
-  dano à mão, sem chamar `Actor_ApplyDamage`, o host não tem como saber se esse golpe valeu: o pendente que não mudou
-  o espelho é descartado, e o caso entra na matriz de exclusões.
-- Alvo sem vida estendida segue exatamente como hoje (0..255, limite da F2i).
+- **Limites.** Com espelho de entrada 255 não há folga: permanece a limitação dos golpes subgranulares no consumo
+  manual. Antes do consumo, a folga pode mostrar `M(hp)+1`, inclusive `V+1`; outros atores que usam a vida como
+  limiar/fase/índice exigem validação individual. Consumo manual parcial, diferido, repetido ou especial fica fora
+  da garantia. Ajustes locais posteriores do próprio ator, como o ×4 do Wolfos pelas costas e a substituição de dano
+  do Floormaster com hookshot, não passam pelo funil nem são incorporados ao débito real: não escalam na vida estendida.
+- Alvo sem vida estendida segue exatamente como hoje (0..255, limite da F2i), inclusive o cálculo upstream do coop.
 
 ### Dano efetivo
 
-Novo `hook.oot.actor.damaged` (observe), emitido quando o ator aplica o dano, com `target`, `amount` (o que saiu de
-fato, nas unidades do alvo), `health`, `max_health` e `extended`. Cobre todo ator que passa por
-`Actor_ApplyDamage` e os débitos estendidos confirmados. O Link não usa esse caminho; a mudança de vida dele segue em
+Novo `hook.oot.actor.damaged` (observe), emitido quando o ator aplica o dano ou no settle do consumo manual
+estendido confirmado, com `target`, `amount` (o que saiu de fato, nas unidades do alvo), `health`, `max_health` e
+`extended`. Cobre todo ator que passa por `Actor_ApplyDamage` e os débitos estendidos confirmados, inclusive golpes
+subgranulares cujo espelho confirmado não mudou. O Link não usa esse caminho; a mudança de vida dele segue em
 `hook.oot.player.health_change`. Chefes com conta própria ficam fora.
 
 ### Dados no save
@@ -190,7 +222,9 @@ A `actor.events`, que já está no schema, passa a ser anunciada pelo host OoT j
   `Actor_ApplyDamage` e no fim do update de cada ator estendido. O C do jogo chama o host por funções `extern`
   declaradas no próprio `.c`, como a F2i, sem header novo no glob do layout.
 - `save.saving` usa o mesmo ponto do `oot.save.saving`.
-- Sem nenhuma inscrição Lua, o caminho é o de hoje: a mesma checagem de assinatura da F2i, e nenhum handle é criado.
+- Sem mods carregados no boot (`gLinkSpanEngineExtended==0`), os caminhos novos de init/destroy/settle/apply/funil
+  não consultam nem alimentam tabelas por ator; o dano original segue ao C. A chave fica fixa durante a sessão.
+  Sem inscrição Lua, a checagem de assinatura da F2i evita os snapshots e os handles de observação.
 
 ## Comportamento em MM
 
@@ -218,7 +252,13 @@ Argumento malformado dá `invalid_argument` antes da checagem de capacidade, com
 
 - Tudo é aditivo. Os campos novos dos payloads não mudam os antigos, e o `leveling-demo` 0.1.0 segue igual.
 - O layout id não muda: as mudanças do host ficam em `.cpp`/`.c` e no schema do core. Os mods nativos do RC10 seguem
-  valendo.
+  valendo, com a ressalva das funções sobrepostas pelo NEI abaixo.
+- **NEI e funções sobrepostas.** `linkspan.nei` desvia funções do host com cópias extraídas da fonte do host no
+  configure do NEI, entre elas `Actor_UpdateAll`, `CollisionCheck_ApplyDamage`, `Play_Update` e `Play_Destroy`.
+  Um pacote extraído de um host anterior à RFC 0031 desliga o settle da vida estendida sem erro, mesmo com layout
+  compatível. Desde esta correção, o configure do NEI depende dos fontes do host listados em
+  `soh/hookable_sources.txt`. O pacote precisa ser re-extraído e gerado a partir do mesmo host; layout compatível
+  não prova que essas cópias incluem as chamadas de vida estendida.
 - O `soh.exe` muda como em qualquer atualização do core. Nenhum código de RPG entra no host.
 - Um arquivo de save com dados de um mod abre sem o mod: o bloco fica preservado e é ignorado.
 

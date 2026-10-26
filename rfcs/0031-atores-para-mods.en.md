@@ -41,14 +41,25 @@ RFC 0030 split the leveled port into three subprojects. Subproject 2 became two:
 Today an actor handle only exists for an actor a mod created with `ship.actor.spawn`. This RFC gives a handle to
 every game actor:
 
-- the host mints the handle the first time the actor appears in an event delivered to Lua, with the same
-  `actor_handle` format (kind, slot, generation, scene) and owner `"linkspan.host"`;
+- outside scene teardown, the host mints the observation handle the first time the actor appears in an event
+  delivered to Lua, with the same `actor_handle` format (kind, slot, generation, scene) and owner `"linkspan.host"`;
 - the OoT provider registry grows to 1024 handles in total, with no per-owner limit. The limit of 16 actors
   spawned per mod moves into the provider itself;
-- an actor has a single handle while it lives. An actor created by a mod keeps the mod's handle, and events deliver
-  that same handle;
-- the handle expires on the actor's `OnActorDestroy` and on scene change, like today's handles. A stale handle never
-  resolves to another actor (`HandleRegistry` generation guard);
+- an actor has a single handle while it lives. For a mod spawn, the handle already belongs to the mod before native
+  init: `actor.init` publishes the same full identity that `ship.actor.spawn` returns. If the host rejects the actor
+  after init (for example, puppet attach fails), spawn returns an error and the later `actor.destroy` uses that
+  same handle. Failure before init publishes no actor events;
+- `ship.actor.destroy` schedules the native kill. Until native destruction, `ship.actor.exists` returns `false`, but
+  `ship.actor.get` can still read the actor, including inside `actor.destroy`, which uses the init and spawn handle.
+  The actor stops counting against the mod's spawn limit as soon as the API marks it for removal. Unloading the mod
+  also schedules removal of its actors and preserves their handles and readability until native destruction,
+  without transferring ownership;
+- during scene teardown, the host preserves known handles and refuses new handles and spawns. Each `actor.destroy`
+  uses the known handle; inside the callback, `ship.actor.get` can still read `health`, `max_health` and `extended`.
+  Only after the event are that actor's handle and health account invalidated. An actor without a known handle gets
+  neither a new one nor an `actor.destroy` event during that teardown. Global closure, invalidating remaining records
+  and resetting health, runs at the end of `Actor_CleanupContext` (`func_80031C3C`), after native destroys;
+- a stale handle never resolves to another actor (`HandleRegistry` generation guard);
 - the observation handle works for reading (`ship.actor.get`) and for `ship.actor.set_max_health`. Functions that
   require ownership (`ship.actor.destroy`, `ship.actor.exists`) still require it;
 - `ship.actor.get` requires the `world.entities.read` manifest permission, like `ship.actor.exists`.
@@ -58,7 +69,8 @@ every game actor:
 
 - `actor_snapshot` gains `params` (`Actor.params`).
 - The OoT host starts emitting `actor.init` and `actor.destroy`, already in the schema, for every actor. `actor.init`
-  fires after the actor's init function, with health already set. `actor.destroy` fires before the handle expires.
+  fires after the actor's init function, with health already set and the spawn handle already bound. `actor.destroy`
+  fires before the handle and health account expire, including during scene teardown for already known actors.
 - `actor.update` is still not emitted in OoT: one Lua callback per actor per frame costs too much. The schema states
   this in the description.
 - `hook.oot.actor.damage` gains `target` (snapshot), `attacker` (snapshot or nil), `target_health`,
@@ -92,32 +104,54 @@ For Link, `health` and `max_health` are the save health and capacity. A stale ha
   extended fraction. If two mods call it, the last one wins, and the host logs the change at debug level.
 - It does not apply to Link (`invalid_argument`) nor to an actor with no health at init (`invalid_state`).
 - The host keeps the real health (`hp`) and the vanilla value recorded at init (`V`). The game's `u8` field holds the
-  **mirror**: `0` if `hp == 0`, otherwise `max(1, ceil(V * hp / n))`. Phases, death, the SoH health bar and the rest
-  of the actor's code keep seeing vanilla numbers, and death happens together with `hp == 0`.
+  **mirror** `M(hp)`: `0` if `hp == 0`, otherwise `max(1, ceil(V * hp / n))`. Actor code sees the vanilla scale,
+  except for the temporary headroom of 1 described below. With supported consumption, death happens together with
+  `hp == 0`; phases and thresholds that read health before consumption require individual validation.
 - When extended health is enabled, the host writes the mirror into the game's field. With `n` below `V` the
   granularity changes, and the mirror may differ from the previous vanilla health.
 - **In the damage funnel**, for an extended target, the `damage` hooks see and return is in the target's units. The
   initial value is what the game computed, so a vanilla attack against an enemy with twice the health takes twice
-  the hits. The result is limited to 0..65535 and to the remaining health, instead of 0..255. The host converts the
-  pending debit into the mirror and adds only the mirror difference to `colChkInfo.damage`.
-- **Confirmation.** The pending debit is confirmed when the actor applies damage (`Actor_ApplyDamage`) or when, after
-  its update, the mirror dropped as expected. If the actor discarded the hit, the pending debit is discarded at that
-  same point.
+  the hits. Each final contribution is clamped/truncated to 0..65535, multiplied exactly once by Ivan's coop
+  multiplier and accumulated up to the remaining real health. The host adds the incremental mirror drop to
+  `colChkInfo.damage`, plus headroom when needed. C does not multiply the extended accumulator again; apply does not
+  reapply coop either.
+- **Subgranular hit.** If a positive integer contribution does not lower the mirror, the target still survives,
+  there is no headroom, the entry mirror is below 255 and the actor allows headroom, the host temporarily raises
+  `colChkInfo.health` from `M(hp)` to `M(hp)+1` and returns delta 1. The actor receives a u8 damage signal of 1 to
+  react to the hit without dying early: with `V=1`, it subtracts 1 from 2 and stays alive. Multiple elements in the
+  same update share at most one unit of headroom. A directly lethal hit does not open headroom; if a later
+  contribution makes the total lethal, existing headroom stays included in the accumulator until consumption,
+  which reaches zero with real health.
+- **No headroom by species.** Iron Knuckle (`ACTOR_EN_IK`), Dead Hand (`ACTOR_EN_DH`) and Lizalfos/Dinolfos
+  (`ACTOR_EN_ZF`) compare previous health against phase thresholds. The list lives in the host, in
+  `kActorsWithoutHealthHeadroom`, in `OotActorHealthGame.cpp`. They retain extended health but receive no headroom:
+  a single hit smaller than one mirror grain does not count, even if they call `Actor_ApplyDamage`. If contributions
+  in the same frame add up to lower the mirror, the entire debit counts when consumed. The rest is discarded in
+  that update; small hits from different frames do not accumulate.
+- **Confirmation.** `Actor_ApplyDamage` commits accepted pending damage exactly once, clears pending/headroom and
+  writes `M(hp)`. It preserves `colChkInfo.damage` until the upstream reset. For supported manual consumption (one
+  subtraction of the accumulator in the same update), settlement commits when the u8 reaches `M(hp-pending)` with
+  an observable drop, even if the only drop returned the borrowed headroom. The hit counts and emits
+  `hook.oot.actor.damaged` with real HP lost, even without a drop in the committed mirror. If the u8 stays at
+  `M(hp)+headroom`, settlement discards the debit and restores `M(hp)`. Any other outcome rescales the account as
+  an external change, without a damage event. No transaction carries into another update; rescaling the maximum
+  clears it too.
 - **The mirror rules.** If the actor's code changes its own health outside the debit (healing, revival, restore), the
   host rescales `hp` from the new mirror.
-- With Ivan's coop mode, its multiplier also multiplies the extended debit.
-- A hit whose debit is too small to change the mirror adds 0 to `colChkInfo.damage`. The hit still sets `AC_HIT`, and
-  most actors react to that; the ones that do not go into the test matrix. On an actor that consumes damage by
-  hand, without calling `Actor_ApplyDamage`, the host cannot tell whether that hit counted: a pending debit that did
-  not change the mirror is discarded, and the case goes into the exclusion matrix.
-- A target without extended health behaves exactly as today (0..255, the F2i limit).
+- **Limits.** At entry mirror 255 there is no headroom: the subgranular-hit limitation remains for manual consumption.
+  Before consumption, headroom may show `M(hp)+1`, including `V+1`; other actors using health as a threshold/phase/index
+  require individual validation. Partial, deferred, repeated or special manual consumption is outside the guarantee.
+  Later local adjustments by the actor itself, such as Wolfos's ×4 back hit and Floormaster's hookshot damage
+  replacement, do not pass through the funnel or enter the real debit: they do not scale in extended health.
+- A target without extended health behaves exactly as today (0..255, the F2i limit), including upstream coop math.
 
 ### Effective damage
 
-New `hook.oot.actor.damaged` (observe), emitted when the actor applies damage, with `target`, `amount` (what was
-actually removed, in the target's units), `health`, `max_health` and `extended`. It covers every actor that goes
-through `Actor_ApplyDamage` and confirmed extended debits. Link does not use this path; his health change stays in
-`hook.oot.player.health_change`. Bosses with their own math are out.
+New `hook.oot.actor.damaged` (observe), emitted when the actor applies damage or on settlement of confirmed
+extended manual consumption, with `target`, `amount` (what was actually removed, in the target's units), `health`,
+`max_health` and `extended`. It covers every actor that goes through `Actor_ApplyDamage` and confirmed extended
+debits, including subgranular hits whose committed mirror did not change. Link does not use this path; his health
+change stays in `hook.oot.player.health_change`. Bosses with their own math are out.
 
 ### Save data
 
@@ -196,7 +230,9 @@ it, because a new header changes the layout id.
   in `Actor_ApplyDamage` and at the end of each extended actor's update. The game's C calls the host through `extern`
   functions declared in the `.c` itself, like F2i, with no new header in the layout glob.
 - `save.saving` uses the same point as `oot.save.saving`.
-- With no Lua subscription, the path is today's: the same subscription check as F2i, and no handle is minted.
+- Without mods loaded at boot (`gLinkSpanEngineExtended==0`), the new init/destroy/settle/apply/funnel paths do not
+  query or populate per-actor tables; the original damage reaches C. The switch stays fixed for the session.
+  With no Lua subscription, the F2i subscription check avoids snapshots and observation handles.
 
 ## Behavior in MM
 
@@ -225,7 +261,13 @@ contract requires.
 
 - Everything is additive. The new payload fields do not change the old ones, and `leveling-demo` 0.1.0 is unchanged.
 - The layout id does not change: host changes stay in `.cpp`/`.c` and in the core schema. RC10 native mods keep
-  working.
+  working, subject to the NEI function overrides below.
+- **NEI and function overrides.** `linkspan.nei` redirects host functions to copies extracted from host source during
+  NEI configure, including `Actor_UpdateAll`, `CollisionCheck_ApplyDamage`, `Play_Update` and `Play_Destroy`.
+  A package extracted from a host predating RFC 0031 silently disables extended-health settlement, even with a
+  compatible layout. Since this fix, NEI configure depends on the host sources listed in `soh/hookable_sources.txt`.
+  The package must be re-extracted and built from the same host; layout compatibility does not prove that these
+  copies include the extended-health calls.
 - `soh.exe` changes as with any core update. No RPG code enters the host.
 - A save file with a mod's data opens without the mod: the block is preserved and ignored.
 

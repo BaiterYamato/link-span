@@ -162,14 +162,28 @@ Regras do port:
 | Magia por nível (72/144 unidades) | Fora; subprojeto 3 |
 | Mais de 20 corações, unidades por coração | Fora; o bônus para em 20 corações |
 | Informação da Navi, nível no seletor de arquivos, stats na tela de pausa | Fora |
-| Números de atores que não passam por `Actor_ApplyDamage` | Sem número |
+| Números de atores sem `Actor_ApplyDamage` nem confirmação estendida | Sem número; consumo manual estendido confirmado emite `damaged` e pode ter número |
 | Inimigos que definem a vida depois do init | Vida vanilla; quais são sai da matriz em jogo |
-| Inimigos que ignoram golpe com débito 0 no espelho | Listados a partir da matriz em jogo |
-| Golpe que não muda o espelho num ator que consome o dano à mão | Descartado pelo host (RFC 0031) |
+| Golpe subgranular com espelho de entrada 255 | Sem folga; mantém a limitação anterior no consumo manual; listar casos na matriz em jogo |
+| Iron Knuckle (`ACTOR_EN_IK`), Dead Hand (`ACTOR_EN_DH`), Lizalfos/Dinolfos (`ACTOR_EN_ZF`) | Vida estendida sem folga pelos limiares com vida anterior; golpe isolado menor que um grão não conta, nem pelo apply; golpes do mesmo frame que somados derrubam o espelho contam quando consumidos |
+| Outros usos da vida como limiar/fase/índice antes do consumo | Folga pode mostrar espelho+1, inclusive V+1; validar individualmente |
+| Consumo manual parcial, diferido, repetido ou especial | Fora da garantia da conta; reescala/descarte sem inferir confirmação integral |
+| Ajustes locais posteriores do ator (Wolfos ×4 pelas costas, Floormaster com hookshot) | Fora do funil; não incorporados ao débito real nem escalados na vida estendida; integrar/validar em tarefa própria |
+
 | Faca de Biggoron quebrada | Conta como Biggoron (+2/−8), não −7/−12: a fonte `oot` não distingue |
 | Vida escalada em categoria que não é ENEMY | Fora; o original escala toda categoria que não é o Link |
 | Força da criança com manopla | Segue o item que a fonte `oot` emite (+1/+2/+3); o original usa `Player_GetStrength`, que dá 1 |
 | Valores acima de 65535 nas fórmulas | Seguem até o corte; o original dá a volta no cast para u16 |
+
+Golpes subgranulares com espelho de entrada abaixo de 255 deixam de ser uma exclusão geral quando o ator permite
+folga. A folga de no máximo 1 por update permite confirmar consumo manual normal e sinaliza dano 1 para a reação,
+sem matar antes da hora um ator com `V=1`. As três espécies acima não recebem folga; a lista fica no host, em
+`kActorsWithoutHealthHeadroom`, em `OotActorHealthGame.cpp`. A inclusão de cada inimigo depende da matriz em jogo
+(RFC 0031).
+
+A prova em jogo da linha 3 da matriz do §6 vale com o NEI re-extraído do mesmo host: `linkspan.nei` sobrepõe funções
+como `Actor_UpdateAll`; um pacote extraído antes da RFC 0031 desliga o settle da vida estendida sem erro. O configure
+do NEI depende dos fontes do host listados em `soh/hookable_sources.txt`; gere o pacote a partir do mesmo host.
 
 ## 8. Ordem
 
