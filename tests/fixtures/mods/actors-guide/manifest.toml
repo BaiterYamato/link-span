@@ -1,0 +1,14 @@
+id = "example.actors_guide"
+name = "Actors for mods guide"
+version = "0.1.0"
+api = ">=0.5 <0.6"
+entrypoint = "main.lua"
+description = "Exemplos executáveis da RFC 0031, sem ROM."
+authors = ["BaiterYamato"]
+games = ["oot"]
+
+[capabilities]
+required = ["actor.events", "actor.observe", "actor.health", "core.save", "core.modules", "hooks.bridge"]
+
+[permissions]
+grants = ["world.entities.read", "world.entities.write"]

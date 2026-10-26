@@ -12,6 +12,7 @@ Registros do projeto (`PLAN`, `AGENTS`, RFCs e `coordination/`) continuam em por
 
 - [Escrevendo mods](writing-mods.pt-BR.md)
 - [Atributos de item](item-attributes.pt-BR.md)
+- [Atores para mods](actors-for-mods.pt-BR.md)
 - [Manifesto](manifest.pt-BR.md)
 - [CLI de desenvolvimento](shipmod-cli.pt-BR.md)
 - [Validador de manifesto](manifest-validator.pt-BR.md)
