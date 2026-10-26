@@ -3,7 +3,7 @@
 - Status: review
 - Agent: Claude (Opus 5.5), com subagentes Codex (gpt-6.1-sol) nas análises
 - Platform: Windows
-- Branch: agent/HOST-SLIM-001-f3-atributos-core
+- Branch: agent/HOST-SLIM-001-f3-fechamento
 - Started: 2026-10-19T12:00:00Z
 - Depends on: OOT-RELEASE-002 (RC10, host `e9da99b515`, layout `ee6449e8`)
 - Files (fase F0):
@@ -285,7 +285,11 @@
 
 ## F3 subprojeto 1 (atributos de item) - 25/10/2026
 
-- Status (fase F3-1, core): review. Código pronto para o PR na `main`; o host vem depois do merge.
+- Status (fase F3-1, core): done. link-span#74 mergeado na `main` em `24e280f` (26/10/2026).
+- Status (fase F3-1, host): review; o código está integrado. Shipwright#19 mergeado na integração em `d45b510ba3` (26/10/2026, 5 workflows verdes). Prova em jogo A/B/C ok em 26/10.
+- Branch (fase F3-1, host): `agent/HOST-SLIM-001-f3-atributos-host` em `BaiterYamato/Shipwright`, sobre a integração
+  `agent/OOT-UPSTREAM-001-78dc6d970-integration` @ `088a94855a`; worktree `HOST-SLIM-001-host`.
+- Branch (fase F3-1, coordenação): `agent/HOST-SLIM-001-f3-fechamento` (core).
 - Branch (fase F3-1, core): `agent/HOST-SLIM-001-f3-atributos-core`, empilhada sobre
   `agent/HOST-SLIM-001-f3-rfc-atributos` (RFC e plano). A linha `Branch` do topo passa a apontar para ela; o
   fechamento da F2 segue em `agent/HOST-SLIM-001-f2-fechamento`.
@@ -306,9 +310,15 @@
     tests/native/AttributeNativeTests.cpp, tests/contract/ApiContractTests.cpp
   - coordination/claims/HOST-SLIM-001.md (só este bloco), coordination/handoffs/HOST-SLIM-001.md (só a seção F3),
     docs/agents/Plans.md (só o apêndice)
-- Files (fase F3-1, host, a declarar na abertura da branch do host): `extern/ship-lua`,
-  `soh/soh/ShipLuaBootstrap.cpp` (só o bloco do `core.attributes`), `soh/native-sdk/oot-item-source/**`,
-  `soh/native-sdk/nei-core/**` (fonte `nei`), `soh/native-sdk/tests/attributes-probe/**`.
+- Files (fase F3-1, host):
+  - extern/ship-lua (submódulo em `24e280f`)
+  - soh/soh/ShipLuaBootstrap.cpp (só o include e o bloco do `core.attributes`)
+  - soh/native-sdk/oot-item-source/**
+  - soh/native-sdk/nei-core/attribute_source.cpp, soh/native-sdk/nei-core/attribute_source.h,
+    soh/native-sdk/nei-core/nei_core.cpp, soh/native-sdk/nei-core/tests.cpp, soh/native-sdk/nei-core/CMakeLists.txt,
+    soh/native-sdk/nei-core/README.md, soh/native-sdk/nei-core/README.pt-BR.md
+  - tools/package-nei-core.ps1 (versão 0.3.26)
+  - soh/native-sdk/tests/attributes-probe/**
 - Goal (fase F3-1): registro de atributos, modificadores e tags de item entre mods (RFC 0030), com o
   `attributes.toml`, a API `ship.attributes` e o serviço nativo `linkspan.attributes` v1; fontes `oot` e `nei` no
   host. É o subprojeto 1 dos 3 do port do leveled.
