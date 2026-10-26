@@ -118,6 +118,7 @@ class LuaApiBinding {
     static LuaApiBinding* FromUpvalue(lua_State* state);
     static int InstallProtected(lua_State* state) noexcept;
     static int Require(lua_State* state) noexcept;
+    bool LoadRequiredModule(lua_State* state, const char*& error) noexcept;
     static int GameId(lua_State* state) noexcept;
     static int HostVersion(lua_State* state) noexcept;
     static int RuntimeVersion(lua_State* state) noexcept;
@@ -222,6 +223,7 @@ class LuaApiBinding {
     EventPayload* mActiveTransformPayload = nullptr;
     std::vector<Handle> mActorHandles;
     int mShipReference = -2;
+    int mModuleCacheReference = -2;
     bool mInstalled = false;
 };
 

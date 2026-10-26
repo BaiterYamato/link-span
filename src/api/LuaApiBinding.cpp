@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cstdint>
 #include <exception>
+#include <fstream>
 #include <limits>
 #include <optional>
 #include <set>
@@ -14,6 +15,7 @@
 #include <utility>
 
 #include "shiplua/generated/ApiBindings.h"
+#include "shiplua/host/ModPath.h"
 #include "shiplua/native/NativeProvider.h"
 
 #if __has_include(<lua.hpp>)
@@ -709,6 +711,10 @@ Result<void> LuaApiBinding::Install() {
     if (status != LUA_OK) {
         const std::string message = TopToString(state);
         lua_pop(state, 1);
+        if (mModuleCacheReference != kNoReference) {
+            luaL_unref(state, LUA_REGISTRYINDEX, mModuleCacheReference);
+            mModuleCacheReference = kNoReference;
+        }
         if (mShipReference != kNoReference) {
             luaL_unref(state, LUA_REGISTRYINDEX, mShipReference);
             mShipReference = kNoReference;
@@ -729,6 +735,8 @@ int LuaApiBinding::InstallProtected(lua_State* state) noexcept {
     }
     bool failed = false;
     try {
+        lua_newtable(state);
+        binding->mModuleCacheReference = luaL_ref(state, LUA_REGISTRYINDEX);
         binding->BuildModule(state);
     } catch (...) {
         failed = true;
@@ -1074,6 +1082,10 @@ void LuaApiBinding::Uninstall() noexcept {
                 callback->registryReference = kNoReference;
             }
         }
+        if (mModuleCacheReference != kNoReference) {
+            luaL_unref(state, LUA_REGISTRYINDEX, mModuleCacheReference);
+            mModuleCacheReference = kNoReference;
+        }
         if (mShipReference != kNoReference) {
             luaL_unref(state, LUA_REGISTRYINDEX, mShipReference);
             mShipReference = kNoReference;
@@ -1089,17 +1101,141 @@ std::size_t LuaApiBinding::SubscriptionCount() const {
     return mCallbacks.size();
 }
 
+bool LuaApiBinding::LoadRequiredModule(lua_State* state, const char*& error) noexcept {
+    try {
+        std::size_t length = 0;
+        const char* name = lua_tolstring(state, 1, &length);
+        std::string relative(name, length);
+        std::replace(relative.begin(), relative.end(), '.', '/');
+        relative += ".lua";
+        const auto path = ResolveModFile(mModPolicy.modDirectory, relative);
+        if (!path.isOk()) {
+            error = "module '%s' not found";
+            return false;
+        }
+        std::ifstream file(*path.value, std::ios::binary);
+        if (!file.is_open()) {
+            error = "module '%s' not found";
+            return false;
+        }
+        // Lê no máximo o limite mais um byte, mesmo se o arquivo crescer.
+        constexpr std::size_t maxBytes = 1024 * 1024;
+        std::vector<char> source(maxBytes + 1);
+        file.read(source.data(), static_cast<std::streamsize>(source.size()));
+        const auto bytes = static_cast<std::size_t>(file.gcount());
+        if (bytes > maxBytes) {
+            error = "module '%s' is too large";
+            return false;
+        }
+        if (file.bad() || (file.fail() && !file.eof())) {
+            error = "module '%s' not found";
+            return false;
+        }
+        const std::string chunkName = mRuntime.ModId() + "/" + relative;
+        struct Chunk {
+            const char* source;
+            std::size_t size;
+            const char* name;
+        } chunk{source.data(), bytes, chunkName.c_str()};
+        // Até a alocação do nome do chunk pode falhar. O pcall preserva o RAII
+        // dos buffers acima; lua_error só roda com locais triviais no callback.
+        lua_pushcfunction(state, +[](lua_State* target) noexcept -> int {
+            const auto* input = static_cast<const Chunk*>(lua_touserdata(target, 1));
+            if (luaL_loadbufferx(target, input->source, input->size, input->name, "t") != LUA_OK) {
+                return lua_error(target);
+            }
+            return 1;
+        });
+        lua_pushlightuserdata(state, &chunk);
+        return lua_pcall(state, 1, 1, 0) == LUA_OK;
+    } catch (...) {
+        error = "C++ exception while loading module '%s'";
+        return false;
+    }
+}
+
 int LuaApiBinding::Require(lua_State* state) noexcept {
     LuaApiBinding* binding = FromUpvalue(state);
+    if (binding == nullptr) {
+        return Fail(state, "ship API context unavailable");
+    }
     if (lua_type(state, 1) != LUA_TSTRING) {
-        return Fail(state, "only the built-in 'ship' module can be required");
+        return Fail(state, "module name must be a string");
     }
-    size_t length = 0;
+    std::size_t length = 0;
     const char* name = lua_tolstring(state, 1, &length);
-    if (binding == nullptr || name == nullptr || std::string_view(name, length) != "ship") {
-        return Fail(state, "only the built-in 'ship' module can be required");
+    if (std::string_view(name, length) == "ship") {
+        lua_rawgeti(state, LUA_REGISTRYINDEX, binding->mShipReference);
+        return 1;
     }
-    lua_rawgeti(state, LUA_REGISTRYINDEX, binding->mShipReference);
+    std::size_t segments = 1;
+    bool hasCharacter = false;
+    bool valid = length != 0;
+    for (std::size_t index = 0; valid && index < length; ++index) {
+        const char c = name[index];
+        if (c == '.') {
+            valid = hasCharacter && ++segments <= 8;
+            hasCharacter = false;
+        } else {
+            valid = (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
+                    (c >= '0' && c <= '9') || c == '_';
+            hasCharacter = true;
+        }
+    }
+    if (!valid || !hasCharacter) {
+        lua_pushfstring(state, "invalid module name '%s'", name);
+        return lua_error(state);
+    }
+    if (binding->mModPolicy.modDirectory.empty()) {
+        lua_pushfstring(state, "module '%s' not found", name);
+        return lua_error(state);
+    }
+    lua_rawgeti(state, LUA_REGISTRYINDEX, binding->mModuleCacheReference);
+    const int cache = lua_gettop(state);
+    lua_pushvalue(state, 1);
+    lua_rawget(state, cache);
+    if (lua_islightuserdata(state, -1) && lua_touserdata(state, -1) == binding) {
+        lua_pushfstring(state, "require cycle at '%s'", name);
+        return lua_error(state);
+    }
+    if (!lua_isnil(state, -1)) {
+        return 1;
+    }
+    lua_pop(state, 1);
+    std::size_t count = 0;
+    lua_pushnil(state);
+    while (lua_next(state, cache) != 0) {
+        ++count;
+        lua_pop(state, 1);
+    }
+    if (count >= 64) {
+        return Fail(state, "too many modules");
+    }
+    lua_pushcfunction(state, &TracebackHandler);
+    const int handler = lua_gettop(state);
+    const char* error = nullptr;
+    if (!binding->LoadRequiredModule(state, error)) {
+        if (error != nullptr) lua_pushfstring(state, error, name);
+        return lua_error(state);
+    }
+    lua_pushvalue(state, 1);
+    lua_pushlightuserdata(state, binding);
+    lua_rawset(state, cache);
+    const int status = lua_pcall(state, 0, 1, handler);
+    if (status != LUA_OK) {
+        // Uma falha não envenena o cache nem consome uma vaga.
+        lua_pushvalue(state, 1);
+        lua_pushnil(state);
+        lua_rawset(state, cache);
+        return lua_error(state);
+    }
+    if (lua_isnil(state, -1)) {
+        lua_pop(state, 1);
+        lua_pushboolean(state, 1);
+    }
+    lua_pushvalue(state, 1);
+    lua_pushvalue(state, -2);
+    lua_rawset(state, cache);
     return 1;
 }
 

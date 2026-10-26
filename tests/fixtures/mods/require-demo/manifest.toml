@@ -1,0 +1,8 @@
+id = "fixture.require_demo"
+name = "Módulos Lua"
+version = "0.1.0"
+api = ">=0.5 <0.6"
+entrypoint = "main.lua"
+description = "Fixture de módulos locais e ciclos de require."
+authors = ["BaiterYamato"]
+games = ["oot", "mm"]

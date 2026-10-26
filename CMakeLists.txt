@@ -150,3 +150,10 @@ add_dependencies(shiplua_mod_test_runner package_examples)
 # ---------------------------------------------------------------------------
 enable_testing()
 add_subdirectory(tests)
+
+# RFC 0031: require de módulos do pacote do mod.
+add_executable(lua_require_tests tests/unit/LuaRequireTests.cpp)
+target_link_libraries(lua_require_tests PRIVATE shiplua)
+target_compile_definitions(lua_require_tests PRIVATE
+    SHIPLUA_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests")
+add_test(NAME LuaRequireTests COMMAND lua_require_tests)
