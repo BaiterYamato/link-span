@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <map>
 #include <memory>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -23,6 +24,7 @@ struct ModLoadReport {
     std::vector<std::string> loadedIds;
     std::map<std::string, std::filesystem::path> loadedDirectories; // id → pasta de onde o mod carregou
     std::map<std::string, std::string> rejected;
+    std::vector<std::string> toolIds; // RFC 0032: ferramentas do SDK, fora de loadedIds
 };
 
 // Owns a collection of loaded mods, each running in its own isolated
@@ -77,6 +79,11 @@ class ModHost {
     // O jogo rodou o suficiente: crashes posteriores não desativam mods.
     void ConfirmBoot();
 
+    // Ferramentas do SDK (RFC 0032): cada pasta é um pacote core_extension nativo, não uma raiz. O próximo
+    // LoadModsFromRoot as carrega antes dos mods, sem boot guard, e as lista em toolIds, nunca em loadedIds.
+    void SetToolDirectories(std::vector<std::filesystem::path> directories);
+    bool IsTool(const std::string& id) const;
+
     bool IsLoaded(const std::string& id) const;
     std::size_t Count() const;
     std::size_t SubscriptionCount() const;
@@ -114,6 +121,8 @@ class ModHost {
     NativeProviderPolicy mNativePolicy;
     AttributeNativeService mAttributeService; // Vive além dos providers e de lua_close.
     std::filesystem::path mBootGuardDirectory;
+    std::vector<std::filesystem::path> mToolDirectories;
+    std::set<std::string> mToolIds;
     std::unique_ptr<EventDispatcher> mEvents;
     std::size_t mNextModLoadOrder = 0;
     std::map<std::string, LoadedMod> mMods;
