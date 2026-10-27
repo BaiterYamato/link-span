@@ -126,6 +126,8 @@ Both store booleans, integers, finite numbers and strings, not tables, functions
 
 The host chooses the mod-id namespace in `linkspan.oot.save` version 1. Copying a game file copies its mod data; deleting the file deletes it; a new file starts empty. Opening it without the mod preserves its block. A Lua write alone does not force a disk save. Do not silently fall back to `ship.storage` for per-file progress.
 
+On the OoT host, `ship.save` cannot use mod ids starting with `linkspan.`, which is reserved for host save blocks; use another id prefix.
+
 `examples/progress.lua` keeps XP per game file and the numbers preference across files. `add_xp` returns false if no file is available; otherwise it propagates the store result and any structured error:
 
 ```lua
