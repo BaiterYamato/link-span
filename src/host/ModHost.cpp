@@ -408,7 +408,8 @@ Result<void> ModHost::LoadMod(const Manifest& manifest, const std::string& luaSo
         return run;
     }
 
-    mLogger.info(manifest.id, "loaded mod '" + manifest.name + "' v" + manifest.version +
+    mLogger.info(manifest.id, (mToolIds.count(manifest.id) ? "loaded tool '" : "loaded mod '") + manifest.name + "' v" +
+                              manifest.version +
                               (provider ? " [native]" : ""));
     mMods.emplace(manifest.id,
                   LoadedMod{manifest, std::move(provider), std::move(runtime), std::move(binding), {}});
@@ -640,12 +641,13 @@ Result<ModLoadReport> ModHost::LoadModsFromRoot(const std::filesystem::path& roo
             report.rejected[key] = "tool: " + compatible.message;
             continue;
         }
+        mToolIds.insert(manifest.id); // antes do LoadMod, para o log dizer "tool"
         auto loaded = LoadModFromDirectory(toolDirectory.string(), memoryLimitBytes);
         if (!loaded.isOk()) {
+            mToolIds.erase(manifest.id);
             report.rejected[key] = "tool: " + loaded.message;
             continue;
         }
-        mToolIds.insert(manifest.id);
         report.toolIds.push_back(manifest.id);
     }
 
@@ -784,7 +786,7 @@ Result<void> ModHost::UnloadMod(const std::string& id) {
         LogAttributeDiagnostics(mLogger, modId, mHostContext.attributes->RemoveMod(modId));
     }
     std::erase(mLoadOrder, modId);
-    mToolIds.erase(modId);
+    const bool tool = mToolIds.erase(modId) != 0;
     {
         // Hooks e desvios já saíram; os finalizadores Lua ainda chamam a DLL, que só desliga no destrutor.
         auto unloaded = mMods.extract(it);
@@ -798,7 +800,7 @@ Result<void> ModHost::UnloadMod(const std::string& id) {
                                          error.message());
         }
     }
-    mLogger.info(modId, "unloaded mod");
+    mLogger.info(modId, tool ? "unloaded tool" : "unloaded mod");
     return Result<void>::ok();
 }
 

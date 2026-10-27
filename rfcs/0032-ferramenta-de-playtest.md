@@ -82,8 +82,12 @@ CRIGHT DUP DDOWN DLEFT DRIGHT`. `stick` e `cstick` vão de -128 a 127. `mode` é
 fica ignorado durante o passo) ou `merge`.
 
 O retrato traz `frame`, `game_state` (`title`, `file_select`, `play`, `other`), `scene`, `room`, `entrance`, posição e
-rotação do Link, idade, vida e vida máxima, magia, rupias, pausa, caixa de texto aberta e o tamanho da fila. Campos que
-não se aplicam ao estado atual vêm `null`.
+rotação do Link, idade, vida e vida máxima, magia, rupias, pausa, caixa de texto aberta, o tamanho da fila, `game_mode` e
+`file_num`. Campos que não se aplicam ao estado atual vêm `null`.
+
+O estado vem do `destroy` do `GameState` atual, comparado com os `*_Destroy` do catálogo público: o `GameState_Init`
+zera `init` depois de rodá-lo, e o campo só volta a ter valor como "próximo estado". A tela de título do OoT é um
+`PlayState` (demo em Hyrule Field) com `gameMode == GAMEMODE_TITLE_SCREEN`; o agente a informa como `title`.
 
 ### 4. Servidor MCP
 
@@ -118,8 +122,8 @@ isso o console é opcional e o retrato informa `sail: true` quando ativo.
 ### 6. Captura sem foco
 
 `PrintWindow` com `PW_RENDERFULLCONTENT` na janela do jogo, conferindo que a imagem não saiu preta. Se sair, a
-ferramenta traz a janela para frente só durante a captura e marca `focus_used: true` na resposta. O plano B existe porque
-a captura em segundo plano de swapchain DX11 ainda não foi comprovada nesta máquina.
+ferramenta traz a janela para frente só durante a captura e marca `focus_used: true` na resposta. Em 27/10 a captura da
+janela DX11 em segundo plano funcionou sem foco nas quatro capturas da prova; o plano B continua para janela minimizada.
 
 ## Contrato nativo
 
