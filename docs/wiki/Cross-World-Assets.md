@@ -26,7 +26,7 @@ On Windows, the sibling names are case-insensitive. For another layout, set `SHI
 
 ## Try the examples
 
-- [`elegy-statue`](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/elegy-statue): in OoT, K toggles the MM statue using actor key `oot.mm_elegy_statue`.
+- `elegy-statue` (retired): the MM statue in OoT moved to the host's `puppets` mod shell with RFC 0029, outside the RC.
 - [`rauru`](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/rauru): in MM, K toggles Rauru using `mm.oot_rauru`.
 - [`oot-kokiri-sword`](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/oot-kokiri-sword): in MM, T changes the sword appearance using OoT resources.
 

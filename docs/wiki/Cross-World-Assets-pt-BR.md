@@ -26,7 +26,7 @@ No Windows, os nomes das pastas irmãs não diferenciam maiúsculas e minúscula
 
 ## Experimente os exemplos
 
-- [`elegy-statue`](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/elegy-statue): no OoT, K alterna a estátua MM usando a chave de ator `oot.mm_elegy_statue`.
+- `elegy-statue` (retirado): a estátua MM no OoT foi para a casca de mod `puppets` do host com a RFC 0029, fora do RC.
 - [`rauru`](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/rauru): no MM, K alterna Rauru usando `mm.oot_rauru`.
 - [`oot-kokiri-sword`](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/oot-kokiri-sword): no MM, T muda o visual da espada usando recursos OoT.
 

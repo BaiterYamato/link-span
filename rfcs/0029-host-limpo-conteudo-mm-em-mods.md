@@ -1,6 +1,7 @@
 # RFC 0029 — Host limpo: conteúdo do MM em mods
 
-Status: aceita em 19/10/2026 (HOST-SLIM-001). F1 implementada no core; F2–F6 pendentes.
+Status: aceita em 19/10/2026 (HOST-SLIM-001). F1 implementada no core; F2 no host. Em 27/10, o conteúdo do MM saiu
+do exe como cascas de mod fora do RC (F3/F4 parciais, ver as notas de implementação); F5 (NEI) e F6 pendentes.
 Inventários e contratos propostos: [docs/plans/host-slim-001](../docs/plans/host-slim-001/README.md).
 
 ## Motivação
@@ -256,6 +257,34 @@ mudar uma vez só.
   ausência de resultado, tipos não numéricos, erros, escopo e `off`. No host: despacho nativo, contrato Lua, cortes,
   caminho sem mods bit a bit e prova em jogo.
 - Depreciação: nada sai nem é depreciado.
+
+### F3/F4 em cascas (host, 27/10/2026)
+
+Decisão do mantenedor: o exe não leva nada que não seja do SoH, e os assets do MM ficam de lado por enquanto. O
+conteúdo do MM sai do exe agora, mas como **casca**: mods nativos em `soh/native-sdk/` que compilam contra o SDK do
+host, ficam fora do RC e não têm prova em jogo até o MM voltar.
+
+| Casca | Id | Conteúdo |
+|---|---|---|
+| `mm-base` | `linkspan.mm.base` | Motor de áudio do MM, montagem do `mm.o2r` em `mm/` com tradução de DL só nesse arquivo, serviço `linkspan.mm.audio`, hooks `oot.audio.mix` e `oot.player.voice_sfx` |
+| `mm-forms` | `linkspan.mm.forms` | Forma Goron, coreografia da máscara e mapa de voz; é o mod das máscaras e formas, separado do NEI |
+| `puppets` | `linkspan.oot.puppets` | Link criança e estátua da Elegia como tipos registrados por `linkspan.oot.actors` |
+
+Diferenças em relação à §5 e às fases:
+
+- MM Forms e Bonecos ficam no host, ao lado do MM Base, e não no `link-span-examples`, para o CTest
+  `oot_native_mod_shells` compilá-los a cada CI. Os exemplos `goron-form`, `kafei-puppet` e `elegy-statue` saíram do
+  repo de exemplos; `bunny-hood` e `dog-spawner` usam só a API genérica.
+- O NEI perdeu as três pontes do exe (`ShipLua_TransformVoiceSfx` e `ShipLua_DrawMaskTransitionHand/Head`); parte da
+  F5 entrou junto. O mapa de voz e a máscara chegam pelos hooks da F2.
+- Os `.o2r` soltos em `mods/` continuam sob `mod/<id>/`, com alias por arquivo, mas sem a tradução de DL do MM, que
+  corrompia os opcodes 0x44/0x45 do dialeto do SoH.
+- O corpo customizado genérico mantém a neutralização da raiz e as animações convencionais de escada
+  (`climb_start_a/b`, `climb_up_l/r`, `climb_down_l/r`, `climb_wait`); saem só os campos Goron.
+- Lacunas registradas nas cascas: Bonecos registra os tipos, mas o host não resolve os nomes lógicos em
+  `ship.actor.spawn`; MM Forms usa `ResourceMgr_LoadAnimByName` e MM Base `ResourceGetDataByName` pelo caminho privado
+  (presos ao SHA do exe). Antes de entrar num RC, cada casca precisa da prova da seção "Testes e critério de pronto".
+- Ficam para depois: a política do Unbound no bootstrap (vai para o `unbound-core`) e as lacunas V2–V5 e V7.
 
 ## Fora de escopo
 
