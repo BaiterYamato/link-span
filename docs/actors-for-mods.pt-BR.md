@@ -126,6 +126,8 @@ Ambos guardam booleanos, inteiros, números finitos e textos, não tabelas, fun�
 
 O host escolhe o namespace do id do mod no `linkspan.oot.save` versão 1. Copiar um arquivo de jogo leva os dados do mod; apagá-lo apaga os dados; um arquivo novo começa vazio. Abri-lo sem o mod preserva seu bloco. Uma escrita Lua sozinha não força um save em disco. Não use `ship.storage` silenciosamente como alternativa para progresso por arquivo.
 
+No host OoT, `ship.save` não aceita ids de mod que começam com `linkspan.`, reservado para blocos de save do host; use outro prefixo.
+
 `examples/progress.lua` mantém XP por arquivo e a preferência dos números entre arquivos. `add_xp` devolve false se nenhum arquivo estiver disponível; senão, propaga o resultado do armazenamento e o erro estruturado, se houver:
 
 ```lua

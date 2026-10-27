@@ -159,6 +159,8 @@ subgranulares cujo espelho confirmado não mudou. O Link não usa esse caminho; 
   junto, pelo serviço que já existe. Um arquivo novo começa vazio;
 - os limites estão no anexo.
 
+No host OoT, `ship.save` não aceita ids de mod que começam com `linkspan.`, reservado para blocos de save do host; use outro prefixo.
+
 ### Módulos do mod
 
 `require("a.b")` carrega `a/b.lua` do próprio pacote, além do `require("ship")` de hoje:

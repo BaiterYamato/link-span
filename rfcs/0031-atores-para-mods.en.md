@@ -166,6 +166,8 @@ change stays in `hook.oot.player.health_change`. Bosses with their own math are 
   the existing service. A new file starts empty;
 - limits are in the annex.
 
+On the OoT host, `ship.save` cannot use mod ids starting with `linkspan.`, which is reserved for host save blocks; use another id prefix.
+
 ### Mod modules
 
 `require("a.b")` loads `a/b.lua` from the mod's own package, in addition to today's `require("ship")`:

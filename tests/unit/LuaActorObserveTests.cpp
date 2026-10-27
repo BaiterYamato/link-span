@@ -101,12 +101,16 @@ class ProbeActors final : public ShipLua::ActorProvider {
 
 class FailedSave final : public ShipLua::ModSaveBackend {
   public:
+    bool failLoad = true;
+    ShipLua::ErrorCode code = ShipLua::ErrorCode::ResourceLimit;
+    std::string message = "load limit";
     bool Available() const override { return true; }
     ShipLua::Result<ShipLua::ModSaveValues> Load(const std::string&) override {
-        return ShipLua::Result<ShipLua::ModSaveValues>::err(ShipLua::ErrorCode::ResourceLimit, "load limit");
+        if (failLoad) return ShipLua::Result<ShipLua::ModSaveValues>::err(code, message);
+        return ShipLua::Result<ShipLua::ModSaveValues>::ok({{"xp", std::int64_t{30}}});
     }
     ShipLua::Result<void> Store(const std::string&, const ShipLua::ModSaveValues&) override {
-        return ShipLua::Result<void>::err(ShipLua::ErrorCode::HostFailure, "unused");
+        return ShipLua::Result<void>::err(code, message);
     }
 };
 
@@ -184,6 +188,42 @@ assert(ship.audio.play_fanfare(34) == false)
           "argumentos inválidos não chamam providers");
 }
 
+void CheckSaveBackendInvalidArgument() {
+    using namespace ShipLua;
+    // A restrição é do host; aqui só verificamos a propagação pelo core e pelo Lua.
+    for (const bool failLoad : {true, false}) {
+        auto backend = std::make_shared<FailedSave>();
+        backend->failLoad = failLoad;
+        backend->code = ErrorCode::InvalidArgument;
+        backend->message = "mod ids starting with 'linkspan.' are reserved for host save blocks; use another id prefix";
+        LuaApiHostContext context;
+        context.gameId = "oot";
+        context.capabilities = {"core.save"};
+        context.saveData = std::make_shared<ModSaveStore>(backend);
+        ModHost host(context, Logger{});
+        auto manifest = MakeManifest();
+        manifest.id = "linkspan.oot.item_source";
+        const auto source = std::string("local fail_load = ") + (failLoad ? "true\n" : "false\n") + R"lua(
+local ship = require('ship')
+assert(ship.save.available())
+local expected = "mod ids starting with 'linkspan.' are reserved for host save blocks; use another id prefix"
+local value, err = ship.save.get('xp', 99)
+if fail_load then
+    assert(value == nil and err.code == 'invalid_argument' and err.message == expected)
+else
+    assert(value == 30 and err == nil)
+end
+for _, fn in ipairs({ship.save.set, ship.save.delete}) do
+    value, err = fn('xp', 31)
+    assert(value == nil and err.code == 'invalid_argument' and err.message == expected)
+end
+)lua";
+        const auto loaded = host.LoadModFromManifestAndSource(manifest, source);
+        Check(loaded.isOk(), std::string(failLoad ? "erro de Load" : "erro de Store") +
+              " preserva código e mensagem no Lua: " + loaded.message);
+    }
+}
+
 void CheckRunnerModule(const ShipLua::MockHostOptions& options) {
     // Fixture sintética própria; nenhum arquivo do repositório é alterado.
     const auto suffix = std::to_string(std::chrono::steady_clock::now().time_since_epoch().count());
@@ -254,6 +294,7 @@ int main() {
     using namespace ShipLua;
     CheckHostValidation();
     CheckUnsupportedAndFailures();
+    CheckSaveBackendInvalidArgument();
     MockHostOptions options;
     options.extraCapabilities = {"actor.observe", "actor.health", "core.save", "audio.play", "core.attributes"};
     auto created = MockRuntime::Create(options);
