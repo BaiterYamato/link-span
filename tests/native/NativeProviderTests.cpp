@@ -162,6 +162,47 @@ int main(int argc, char** argv) {
             Check(host.UnloadMod("test.core").isOk(), "core unload after consumer");
         }
         {
+            // Ferramentas do SDK (RFC 0032): fora de loadedIds e sem marcador de boot.
+            const auto mods = root / ("tools-mods-" + game);
+            const auto tools = root / ("tools-" + game);
+            const std::string core = "kind='core_extension'\nload_phase='pre_game'\n";
+            MakeMod(mods / "plain", argv[1], "test.tools.mod");
+            MakeMod(mods / "needs-tool", argv[1], "test.tools.needs", "loaded=true",
+                    "[dependencies]\n\"test.tool\" = \">=1.0 <2.0\"\n");
+            MakeMod(tools / "tool", argv[7], "test.tool", "loaded=true", core, "1.1");
+            MakeMod(tools / "clash", argv[7], "test.tools.mod", "loaded=true", core, "1.1");
+            MakeMod(tools / "not-core", argv[1], "test.tools.notcore");
+            ModHost host(context, {}, policy);
+            host.EnableBootGuard(mods);
+            host.SetToolDirectories({ tools / "tool", tools / "clash", tools / "not-core", tools / "missing" });
+            const auto loaded = host.LoadModsFromRoot(mods, root / ("tools-cache-" + game));
+            Check(loaded.isOk(), "tool root load: " + loaded.message);
+            if (loaded.isOk()) {
+                const auto& report = *loaded.value;
+                Check(report.loadedIds == std::vector<std::string>{ "test.tools.mod" },
+                      "tools stay out of loadedIds and mods cannot depend on them");
+                Check(report.toolIds == std::vector<std::string>{ "test.tool" },
+                      "tool loads: " + (report.rejected.count((tools / "tool").generic_string())
+                                            ? report.rejected.at((tools / "tool").generic_string())
+                                            : std::string("sem motivo")));
+                Check(report.rejected.count("test.tools.needs") == 1, "dependency on a tool is rejected");
+                const auto reason = [&report](const fs::path& path) {
+                    const auto found = report.rejected.find(path.generic_string());
+                    return found == report.rejected.end() ? std::string() : found->second;
+                };
+                Check(reason(tools / "clash").find("already used by a mod") != std::string::npos,
+                      "tool id clash rejected: " + reason(tools / "clash"));
+                Check(reason(tools / "not-core").find("native core_extension") != std::string::npos,
+                      "non-core tool rejected: " + reason(tools / "not-core"));
+                Check(!reason(tools / "missing").empty(), "missing tool directory rejected");
+            }
+            Check(host.IsTool("test.tool") && host.IsLoaded("test.tool") && !host.IsTool("test.tools.mod"),
+                  "IsTool tells tools from mods");
+            std::ifstream marker(mods / ".shiplua-boot", std::ios::binary);
+            const std::string markerText((std::istreambuf_iterator<char>(marker)), std::istreambuf_iterator<char>());
+            Check(markerText == "running\t\n", "boot marker never names a tool: " + markerText);
+        }
+        {
             const auto mods = root / ("hooks-" + game);
             MakeMod(mods / "z-core", argv[9], "test.hooks.core", "loaded=true",
                     "kind='core_extension'\nload_phase='pre_game'\n", "1.2");

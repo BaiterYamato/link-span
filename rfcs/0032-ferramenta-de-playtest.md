@@ -127,13 +127,13 @@ a captura em segundo plano de swapchain DX11 ainda não foi comprovada nesta má
 #define LINKSPAN_OOT_HOOK_INPUT_PAD "oot.input.pad"
 
 typedef struct ShipOotInputPadV1 {
-    uint16_t button;
+    uint32_t button;     /* CONTROLLERBUTTONS_T do SoH: BTN_* do N64 nos 16 bits baixos */
     int8_t stick_x;
     int8_t stick_y;
     int8_t right_stick_x;
     int8_t right_stick_y;
     uint8_t err_no;
-    uint8_t reserved;
+    uint8_t reserved[3];
 } ShipOotInputPadV1;
 
 typedef struct ShipOotInputPadHookV1 {

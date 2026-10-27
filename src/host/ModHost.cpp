@@ -227,6 +227,8 @@ ModHost::ModHost(ModHost&& other) noexcept
       mHostContext(std::move(other.mHostContext)),
       mNativePolicy(std::move(other.mNativePolicy)),
       mAttributeService(std::move(other.mAttributeService)),
+      mToolDirectories(std::move(other.mToolDirectories)),
+      mToolIds(std::move(other.mToolIds)),
       mEvents(std::move(other.mEvents)),
       mNextModLoadOrder(other.mNextModLoadOrder),
       mMods(std::move(other.mMods)),
@@ -246,6 +248,8 @@ ModHost& ModHost::operator=(ModHost&& other) noexcept {
         mMods = std::move(other.mMods);
         mLoadOrder = std::move(other.mLoadOrder);
         mExtensionServices = std::move(other.mExtensionServices);
+        mToolDirectories = std::move(other.mToolDirectories);
+        mToolIds = std::move(other.mToolIds);
     }
     return *this;
 }
@@ -610,6 +614,41 @@ Result<ModLoadReport> ModHost::LoadModsFromRoot(const std::filesystem::path& roo
     report.rejected.insert(resolution.value->rejected.begin(),
                            resolution.value->rejected.end());
 
+    // RFC 0032: ferramentas são core_extension e entram antes dos mods, sem marcador de boot. A resolução acima só
+    // viu os mods, então nenhum mod depende de uma ferramenta.
+    for (const std::filesystem::path& toolDirectory : mToolDirectories) {
+        const std::string key = toolDirectory.generic_string();
+        auto parsed = ParseManifestFile((toolDirectory / "manifest.toml").string());
+        if (!parsed.isOk()) {
+            report.rejected[key] = "tool: " + parsed.message;
+            continue;
+        }
+        const Manifest& manifest = *parsed.value;
+        if (manifest.kind != ModKind::CoreExtension || !manifest.provider.has_value()) {
+            report.rejected[key] = "tool must be a native core_extension";
+            continue;
+        }
+        const bool taken = IsLoaded(manifest.id) ||
+            std::any_of(manifests.begin(), manifests.end(),
+                        [&manifest](const Manifest& mod) { return mod.id == manifest.id; });
+        if (taken) {
+            report.rejected[key] = "tool id '" + manifest.id + "' is already used by a mod";
+            continue;
+        }
+        auto compatible = ValidateCompatibility(manifest, mHostContext);
+        if (!compatible.isOk()) {
+            report.rejected[key] = "tool: " + compatible.message;
+            continue;
+        }
+        auto loaded = LoadModFromDirectory(toolDirectory.string(), memoryLimitBytes);
+        if (!loaded.isOk()) {
+            report.rejected[key] = "tool: " + loaded.message;
+            continue;
+        }
+        mToolIds.insert(manifest.id);
+        report.toolIds.push_back(manifest.id);
+    }
+
     for (const std::string& id : resolution.value->orderedIds) {
         auto candidate = std::find_if(candidates.begin(), candidates.end(),
                                       [&id](const Candidate& item) {
@@ -661,6 +700,14 @@ Result<ModLoadReport> ModHost::LoadModsFromRoot(const std::filesystem::path& roo
         }
     }
     return Result<ModLoadReport>::ok(std::move(report));
+}
+
+void ModHost::SetToolDirectories(std::vector<std::filesystem::path> directories) {
+    mToolDirectories = std::move(directories);
+}
+
+bool ModHost::IsTool(const std::string& id) const {
+    return mToolIds.count(id) != 0 && IsLoaded(id);
 }
 
 bool ModHost::IsLoaded(const std::string& id) const {
@@ -737,6 +784,7 @@ Result<void> ModHost::UnloadMod(const std::string& id) {
         LogAttributeDiagnostics(mLogger, modId, mHostContext.attributes->RemoveMod(modId));
     }
     std::erase(mLoadOrder, modId);
+    mToolIds.erase(modId);
     {
         // Hooks e desvios já saíram; os finalizadores Lua ainda chamam a DLL, que só desliga no destrutor.
         auto unloaded = mMods.extract(it);

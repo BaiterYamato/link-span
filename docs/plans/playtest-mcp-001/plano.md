@@ -109,7 +109,7 @@ struct ModLoadReport {
     std::vector<std::string> toolIds; // RFC 0032: carregadas por SetToolDirectories, fora de loadedIds
 };
 // RFC 0032: pastas de ferramenta do SDK (cada uma é um pacote nativo, não uma raiz). O próximo
-// LoadModsFromRoot as carrega depois dos mods, sem boot guard e sem entrar em loadedIds.
+// LoadModsFromRoot as carrega antes dos mods (são core_extension), sem boot guard e sem entrar em loadedIds.
 void SetToolDirectories(std::vector<std::filesystem::path> directories);
 bool IsTool(const std::string& id) const;
 ```
