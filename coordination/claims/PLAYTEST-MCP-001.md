@@ -1,6 +1,6 @@
 # PLAYTEST-MCP-001
 
-- Status: claimed
+- Status: review
 - Agent: Claude
 - Platform: Windows
 - Branch: agent/PLAYTEST-MCP-001-rfc

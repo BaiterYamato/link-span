@@ -44,10 +44,11 @@ MCP, sem foco, mouse ou teclado do Windows.
 - core `agent/PLAYTEST-MCP-001-rfc`:
   - `4e0dbda`: RFC 0032, claim e handoff;
   - `5c6c526`: plano;
-  - `d47fd6e`: raízes de ferramenta.
+  - `d47fd6e`: raízes de ferramenta;
+  - `ee4d8fb`: log `loaded tool`/`unloaded tool`, RFC e handoff com a prova.
 - host `agent/PLAYTEST-MCP-001-host` (sobre a ponta da #26, `bb9591df74`):
   - `4ccf204a39`: hook, flag e `extern/ship-lua` em `d47fd6e`;
-  - commit da ferramenta: ver `git log`.
+  - `65c1822905`: ferramenta (agente, MCP, CTest) e `extern/ship-lua` em `ee4d8fb`.
 
 ## Arquivos alterados
 
@@ -68,7 +69,7 @@ MCP, sem foco, mouse ou teclado do Windows.
 ```text
 core: cmake VS 2022 x64 Release; ctest --test-dir build -C Release            -> 69/69
 host: cmake --build build/x64 --config Release (soh, soh_symbols, ALL)
-      ctest --test-dir build/x64 -C Release (completo)                         -> ver resultado abaixo
+      ctest --test-dir build/x64 -C Release (completo)                         -> 85/85
       oot_native_input_pad_tests, oot_native_mod_shells, oot_native_playtest_tool -> verdes
 python -m unittest discover -s soh/native-sdk/tools/playtest/mcp/tests        -> 22/22
 prova no jogo: logs/playtest-mcp-001/prova.py (cliente MCP stdio)             -> prova-2.json ok
@@ -76,7 +77,7 @@ prova no jogo: logs/playtest-mcp-001/prova.py (cliente MCP stdio)             ->
 
 ## Resultado da validação
 
-Prova no jogo em 27/10:
+Prova no jogo em 27/10 (repetida com o exe final `1753DE4A`, mesmos números, `prova-3.json`):
 - **Identidade:** exe `442800205A56`, runtime `D:\lst33\playtest-mcp` (cópia da f3-leveled, fixture `s1.sav`, sem
   mods), evidências em `logs/playtest-mcp-001/sessoes/20261027-134232-b12a05`.
 - **Roteiro em cerca de 26 s, com a janela em segundo plano:**
@@ -91,11 +92,11 @@ Prova no jogo em 27/10:
   mesma sessão.
 - **1ª rodada (`prova-1.json`):** o `game_state` ficou sempre `other` porque comparava `init`. Isso levou à troca para
   `destroy`.
+- **Bateria do host:** a 1ª rodada completa deu 83/85 porque o `oot_native_engine_tests.exe` era de antes do layout
+  novo (só o alvo `soh` tinha sido compilado). Com o build completo deu 85/85.
 
 ## Pendências
 
-- O core ainda loga "loaded mod 'Link-Span Playtest'" (log genérico do `LoadMod`) ao lado da linha de ferramenta. Os
-  gates "sem mods" que procuram `loaded mod` falham se rodarem com a ferramenta.
 - O `PYTHONPATH` do registro aponta para o worktree `HOST-SLIM-001-host`. Se ele trocar para uma branch sem
   `tools/playtest`, o MCP não sobe até o merge.
 - Não testados: pacote do agente a cada layout novo (recompilar `agent-build`), janela minimizada, `game_attach` com
