@@ -4,7 +4,7 @@
 
 Um host pode expor recursos do archive do outro jogo para que um mod Lua os use pelas APIs suportadas de atores ou visuais. Referenciar um modelo de MM no OoT é diferente de trocar para o processo de MM. Para viagem, veja [launcher.pt-BR.md](launcher.pt-BR.md).
 
-Comece com [hello-world](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/hello-world) para verificar identidade e API do host. Depois use um exemplo pequeno específico de host, como [elegy-statue](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/elegy-statue), [rauru](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/rauru) ou [goron-form](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/goron-form).
+Comece com [hello-world](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/hello-world) para verificar identidade e API do host. Depois use um exemplo pequeno específico de host, como [rauru](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/rauru) no MM. Os exemplos do lado OoT `elegy-statue` e `goron-form` saíram com a [RFC 0029](../rfcs/0029-host-limpo-conteudo-mm-em-mods.md): o conteúdo deles agora vive nas cascas de mod do host (`soh/native-sdk/puppets` e `soh/native-sdk/mm-forms`), fora do RC e ainda sem prova em jogo.
 
 ## Prepare a instalação
 
@@ -98,7 +98,7 @@ ship.hotkeys.register("cross_world_actor", { default = "K", label = "Toggle cros
 end)
 ```
 
-Isso combina os nomes usados por `elegy-statue` e `rauru`. Exige um host que realmente registre o nome selecionado e forneça seus recursos estrangeiros; capabilities genéricas de atores não garantem que esse nome exista. Execute durante gameplay válido. A convenção de posição zero vem dos hosts dos exemplos, não de uma regra universal de coordenadas. Os manifestos dos exemplos separados são específicos de cada jogo e não declaram `requires_both_games`; o manifesto acima é deliberadamente mais restritivo.
+Isso combina os nomes usados por `elegy-statue` e `rauru`. Exige um host que realmente registre o nome selecionado e forneça seus recursos estrangeiros; capabilities genéricas de atores não garantem que esse nome exista. Execute durante gameplay válido. A convenção de posição zero vem dos hosts dos exemplos, não de uma regra universal de coordenadas. Os manifestos dos exemplos separados são específicos de cada jogo e não declaram `requires_both_games`; o manifesto acima é deliberadamente mais restritivo. Desde a RFC 0029, o host OoT não registra mais `oot.mm_elegy_statue`: a estátua vive na casca `puppets`, fora do RC, então a metade OoT deste exemplo não roda nos hosts atuais.
 
 ## Limites e validação
 

@@ -4,7 +4,7 @@
 
 A host can expose resources from the other game's archive so a Lua mod can use them through supported actor or visual APIs. Referencing an MM model in OoT is different from switching to the MM process. For travel, see [launcher.md](launcher.md).
 
-Start with [hello-world](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/hello-world) to verify the host identity and API. Then use a small, host-specific example such as [elegy-statue](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/elegy-statue), [rauru](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/rauru) or [goron-form](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/goron-form).
+Start with [hello-world](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/hello-world) to verify the host identity and API. Then use a small, host-specific example such as [rauru](https://github.com/BaiterYamato/link-span-examples/tree/main/lua/rauru) in MM. The OoT-side `elegy-statue` and `goron-form` examples were retired with [RFC 0029](../rfcs/0029-host-limpo-conteudo-mm-em-mods.md): their content now lives in the host's mod shells (`soh/native-sdk/puppets` and `soh/native-sdk/mm-forms`), which are outside the RC and not yet validated in game.
 
 ## Prepare the installation
 
@@ -98,7 +98,7 @@ ship.hotkeys.register("cross_world_actor", { default = "K", label = "Toggle cros
 end)
 ```
 
-This combines the actor names used by `elegy-statue` and `rauru`. It requires a host that actually registers the selected name and supplies its foreign resources; generic actor capabilities alone do not guarantee that name exists. Run it during valid gameplay. The zero-position convention comes from the example hosts, not a universal coordinate rule. The separate example manifests target their respective games and do not themselves declare `requires_both_games`; the manifest above is intentionally stricter.
+This combines the actor names used by `elegy-statue` and `rauru`. It requires a host that actually registers the selected name and supplies its foreign resources; generic actor capabilities alone do not guarantee that name exists. Run it during valid gameplay. The zero-position convention comes from the example hosts, not a universal coordinate rule. The separate example manifests target their respective games and do not themselves declare `requires_both_games`; the manifest above is intentionally stricter. Since RFC 0029, the OoT host no longer registers `oot.mm_elegy_statue`: the statue lives in the `puppets` shell, outside the RC, so the OoT half of this example does not run on current hosts.
 
 ## Limits and validation
 

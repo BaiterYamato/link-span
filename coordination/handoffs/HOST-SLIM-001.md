@@ -1197,3 +1197,65 @@ Windows 11, MSVC 2022, Release:
 ### Próxima ação recomendada
 
 Resolver os conflitos do overlay do NEI e responder as perguntas do subprojeto 3 e do leveled (D2/D7).
+
+## F3/F4 em cascas - 27/10/2026 - conteúdo do MM fora do exe
+
+### Pendências da F3-2 fechadas (26/10)
+
+- NEI: os seis conflitos do overlay do player foram resolvidos, e o configure agora falha quando há conflito
+  (Shipwright#22, `7273232ea9`).
+- `nei_fnaddr_` vale entre fontes (Shipwright#23, `aa0e744b8e`).
+- CTest `oot_actor_health_game_tests` (Shipwright#24, `eeee4e20b4`).
+- Erro `invalid_argument` claro no `ship.save` para ids `linkspan.*` (Shipwright#25, `4ae28b6fb1`;
+  link-span#81, `93c6980`).
+
+### Resultado
+
+Decisões do mantenedor:
+
+- nada que não seja do SoH fica no exe;
+- assets do MM ficam de lado;
+- máscaras e formas viram um mod separado do NEI;
+- a casca compila no CI, mas fica fora do RC e sem prova em jogo.
+
+O que a branch `agent/HOST-SLIM-001-f4-mm-cascas` do host entrega:
+
+- três cascas em `soh/native-sdk`: `mm-base`, `mm-forms` e `puppets` (tabela na RFC 0029, "F3/F4 em cascas");
+- o exe sem `mmaudio`, `mmform`, `ShipLuaPuppet`, `MmCrossWorldArchive`, pontes do NEI e bindings da §6;
+- NEI remesclado sem as pontes;
+- CTest `oot_native_mod_shells`.
+
+No `link-span-examples`, a branch `agent/HOST-SLIM-001-f4-mm-exemplos` aposenta `goron-form`, `kafei-puppet` e
+`elegy-statue` e migra `bunny-hood` e `dog-spawner`.
+
+Autoria: cada casca foi escrita por um Codex (A, B e C), assim como a revisão do lado do exe (D) e a migração dos
+exemplos (E). A integração, os seis conflitos, as correções dos achados P2 da revisão, o clang-format 14, o build MSVC,
+o NEI e a prova em jogo ficaram com o Claude.
+
+### Validação
+
+- Build MSVC do exe; nenhum símbolo do MM no `soh.symbols` regenerado; layout id e8f10de8 inalterado.
+- CTest `oot_|linkspan_` 17/17, com as três cascas compiladas contra o SDK do build.
+- NEI: 319 funções sobrepostas, zero imports das pontes.
+- Em jogo, exe `E135314F` + NEI novo:
+  - cenário completo e cenário da máscara com `ok=True`, `host: 316/316 desvios`;
+  - Link andando, com espada e escudo;
+  - máscara Keaton desenhada.
+- Exemplos: 88/88 testes Lua (Codex) e reexecução de `bunny-hood` e `dog-spawner` (4, 6 e 2).
+
+### Pendências
+
+- As cascas só valem como forma validada depois da prova com `mm.o2r`. A lista de cada uma está nas notas do Codex
+  (`logs/host-slim-f4-mm`) e na RFC 0029.
+- Bonecos registra os tipos, mas o host não resolve nomes lógicos em `ship.actor.spawn`.
+- Política do Unbound no bootstrap (vai para o `unbound-core`) e lacunas V2–V5 e V7: próxima fatia da F4.
+
+### Riscos
+
+- Os `.o2r` soltos em `mods/` perderam a tradução de DL do MM. Ela era aplicada a todo archive de mod e trocava os
+  opcodes 0x44/0x45 do SoH. Um archive de mod com DL no dialeto do MM deixa de ser corrigido.
+- MM Base e MM Forms usam um símbolo privado cada um, presos ao SHA do exe.
+
+### Próxima ação recomendada
+
+Mergear os PRs da F4 com CI verde. Depois, a fatia do Unbound (política do bootstrap para o `unbound-core`).
