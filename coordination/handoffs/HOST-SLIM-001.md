@@ -1353,3 +1353,81 @@ Autoria:
 ### Próxima ação recomendada
 
 Mergear os PRs desta fatia com CI verde e abrir a fatia V2–V5/V7.
+
+## F4 vanilla - 30/10/2026 - V2–V5 e V7
+
+### Resultado
+
+Branches:
+
+- host: `agent/HOST-SLIM-001-f4-vanilla`, em `BaiterYamato/Shipwright`, base
+  `agent/OOT-UPSTREAM-001-78dc6d970-integration`;
+- core: `agent/HOST-SLIM-001-f4-vanilla-docs`.
+
+Série preparada contra `3d25b07217456ac86f4aaa88b6dd8596701cdc4e`, na ordem V2 → V3 → V4 → V5 → V7.
+Upstream de comparação: `ecd889c2019b87e78b0a3d942a6a3fe98b7efaed`. Aplicação no host:
+`759beaf60e`, build MSVC ok. PR do host: Shipwright#29.
+
+- **V2:** limite efetivo de 128 objetos sem mods, incluindo reservas; 1024 com mods. O ajuste da revisão deixa a
+  vaga 127 só na contagem do laço C++, sem preenchê-la, como upstream; preserva incrementos, limite seguro e caminho C.
+- **V3:** sem mods, tabelas/bytes originais, overrides só de IDs existentes, mutações recusadas e capacidades
+  1280/200; com mods, ficam tabelas extensíveis, normalização, IDs novos, mutações e capacidades 8192/1024.
+- **V4:** laço upstream de destruição das luzes sem mods, incluindo o defeito histórico; com mods, ficam a recusa
+  por luz de ator ocupada e o laço seguro.
+- **V5:** `-32000.0f` nas duas recusas da câmera sem água/natação; sentinela ampla com mods. Sucesso e `-2` iguais.
+- **V7:** conversões e contagens vanilla, XML inteiro, transição por `params` e sort até 64 sem mods; capacidades
+  amplas, XML fracionário, índice independente e sort até 1024 com mods.
+- **Docs:** nota da RFC 0029 depois da nota Unbound, esta seção do handoff e bloco do claim.
+
+São 15 caminhos de código. Não se alteram `soh/include/` nem `soh/soh/native/`; o header interno alterado não entra
+no fingerprint. Não se afirma layout regenerado nesta entrega.
+
+Autoria:
+
+- Codex: patches, revisão adversarial, ajuste da V2 e roteiro de jogo (`prova-v.py`).
+- Claude: aplicação no host, build, CTest e prova em jogo; resultados abaixo.
+
+### Validação
+
+- `SERIE.md`: checks individuais, sequenciais, composição e reversão passaram; V2 final SHA-256
+  `0f9bd7eeb066aad148d27245efed5d106e68292a9311855f0a9a8ac686dc2909`. O hash antigo do relatório é o de
+  `V2.orig.patch`.
+- Probe V2 em MSVC 19.44, `/W3 /WX`: 32 combinações sem mods e 50 com mods, com canários intactos. Dois keeps +
+  126 objetos: `num=128`, vaga 127 inválida e 125 chamadas; com mods, a última vaga é preenchida.
+- `REVISAO-V.md`: nenhum P0/P1 confirmado; P2 da vaga 127 tratado na série final. Probes MSVC de V3/V7 passaram;
+  são recortes, sem decoder, parsers, renderer ou ResourceManager integrados.
+- Host: build MSVC, `soh_symbols`, CTest 85/85 e clang-format 14 limpo. Exe `2F8844BA`.
+- Em jogo, sem mods e com mods (framework + camada de demonstração), exe `2F8844BA`, pelo MCP de playtest:
+  - cenas: Deku Tree (saguão com Deku Babas e luzes), Kokiri Forest, Lake Hylia em terra e Hyrule Field carregam;
+  - V3: a placa da saída do rio (`entrance 181`) abre "Zora's River", igual sem mods e com mods;
+  - V7: o EnHoll tipo 4 de Kokiri Forest (`entrance 266`) troca a sala de 0 para 1 em z=-201 e volta para 0 em
+    z=-96, na mesma posição nos dois modos, e a sala 1 carrega com os atores dela;
+  - V5: em terra, a câmera passa todo frame pela saída sem água;
+  - `game_close` sem `[error]`;
+  - roteiros: `logs/host-slim-f4-vanilla/prova-sala2.py`, `prova-texto.py` e o `prova-v.py` do Codex.
+  Limite: o `oot.o2r` é NTSC-US 1.1 (D43DA81F), só em inglês, então alemão, francês, JPN e créditos não foram vistos.
+
+### Riscos
+
+- **V3, condicionado:** bytes emprestados do cache, como upstream. Unload do último dono pode deixar ponteiros
+  pendentes; não há promessa de segurança depois de unload de textos. Não foi encontrado unload dos textos base
+  no fluxo vanilla normal.
+- **V4, intencional:** o segundo avanço após `RemoveLight` pode ler NULL ou abandonar nós. Nenhuma chamada vanilla
+  alcança a função nas revisões examinadas; os registros de endereço não a invocam. Uma chamada artificial/externa
+  pode reproduzir o defeito. Portas/luzes sem chamada comprovada são apenas smoke.
+- **Exceções mantidas:** V1 (heap/tipos/arrays físicos maiores), V6 (sentinelas/contratos de colisão) e V8
+  (guardas, clamps e correções para dados inválidos). V3 mantém init único; hot-load não foi provado.
+- O inventário de recursos da revisão não tinha o `oot.o2r` alvo. Não certifica todos os textos/idiomas nem todas
+  as cenas da distribuição. Probes e checks não encerram o gate `semmods`.
+
+### Pendências
+
+- Merge do Shipwright#29 com CI verde (merge-quando-verde em segundo plano).
+- Executar decode/idiomas/créditos, comandos C/OTR, parsers e renderer com os archives alvo; limites extremos pedem
+  fixtures dedicadas, além do roteiro visual. V4 pede instrumentação de alcance e teste de morte isolado.
+- Manter o gate `semmods` aberto até a evidência integrada. Esta seção não fecha a F4 inteira.
+
+### Próxima ação recomendada
+
+Com o #29 mergeado: os idiomas e os créditos com um `oot.o2r` PAL e o gate `semmods` com o mantenedor. Sem
+release, tag ou RC.

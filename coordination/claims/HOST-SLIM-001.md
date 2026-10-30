@@ -3,7 +3,7 @@
 - Status: review
 - Agent: Claude (Opus 5.5), com subagentes Codex (gpt-6.1-sol) nas análises
 - Platform: Windows
-- Branch: agent/HOST-SLIM-001-f4-unbound-docs
+- Branch: agent/HOST-SLIM-001-f4-vanilla-docs
 - Started: 2026-10-19T12:00:00Z
 - Depends on: OOT-RELEASE-002 (RC10, host `e9da99b515`, layout `ee6449e8`)
 - Files (fase F0):
@@ -396,4 +396,33 @@
 - Goal (fase F4, Unbound): tirar do exe a política das camadas Unbound (reconhecimento do `unbound.json`, id do
   framework, fila e montagem na raiz). O `unbound-core` passa a montar as camadas pelo `oot.mods.archives`. Nenhum
   header muda, então o layout id fica.
+- Sem release, tag ou RC público.
+- Branch (fase F4, vanilla, host): `agent/HOST-SLIM-001-f4-vanilla` em `BaiterYamato/Shipwright`, a partir de
+  `agent/OOT-UPSTREAM-001-78dc6d970-integration` (base da série: `3d25b07217456ac86f4aaa88b6dd8596701cdc4e`).
+- Branch (fase F4, vanilla, coordenação): `agent/HOST-SLIM-001-f4-vanilla-docs` (core). A linha `Branch` do topo
+  passa a apontar para ela.
+- Files (fase F4, vanilla, host):
+  - soh/src/code/z_scene.c
+  - soh/soh/z_scene_otr.cpp
+  - soh/soh/z_message_OTR.cpp
+  - soh/src/code/linkspan_vanilla.h
+  - soh/src/code/z_message_PAL.c
+  - soh/src/code/z_kanfont.c
+  - soh/src/code/z_lights.c
+  - soh/src/code/z_camera.c
+  - soh/src/code/z_actor.c
+  - soh/src/code/z_room.c
+  - soh/soh/resource/importer/scenecommand/SetEntranceListFactory.cpp
+  - soh/soh/resource/importer/scenecommand/SetTransitionActorListFactory.cpp
+  - soh/soh/resource/importer/scenecommand/SetMeshFactory.cpp
+  - soh/soh/resource/importer/scenecommand/SetActorListFactory.cpp
+  - soh/soh/resource/importer/scenecommand/SetStartPositionListFactory.cpp
+- Files (fase F4, vanilla, core): rfcs/0029-host-limpo-conteudo-mm-em-mods.md (só a nota depois da nota Unbound),
+  coordination/claims/HOST-SLIM-001.md (só este bloco e a linha `Branch` do topo),
+  coordination/handoffs/HOST-SLIM-001.md (só a seção F4 vanilla)
+- Goal (fase F4, vanilla): restaurar sem mods o comportamento upstream de V2–V5 e V7 da RFC 0029 §7, preservando
+  o ramo amplo com mods e as exceções V1/V6/V8. Inclui o ajuste da vaga 127 no laço C++ da V2; registra o defeito
+  upstream restaurado de propósito na V4 e a dependência do cache na V3. Não altera headers de `soh/include/` ou
+  `soh/soh/native/` nem os insumos de headers do fingerprint. Build MSVC, CTest 85/85 e prova em jogo feitos (Shipwright#29);
+  o gate `semmods` continua com o mantenedor.
 - Sem release, tag ou RC público.
