@@ -286,6 +286,47 @@ Diferenças em relação à §5 e às fases:
   (presos ao SHA do exe). Antes de entrar num RC, cada casca precisa da prova da seção "Testes e critério de pronto".
 - Ficam para depois: a política do Unbound no bootstrap (vai para o `unbound-core`) e as lacunas V2–V5 e V7.
 
+### F4: política do Unbound no `unbound-core` (host, 30/10/2026)
+
+Saiu do bootstrap o que restava do Unbound no exe: a leitura do `unbound.json`, o id `linkspan.unbound.framework`, a
+fila das camadas e a montagem delas na raiz. Como previa o plano da F2 (decisão 4), nenhum header muda e a ordem fica:
+
+- o host trata a camada como qualquer `.o2r` de mod: montagem privada sob `mod/<nome>/`, com alias por arquivo de
+  `objects/` e `textures/`;
+- depois da carga dos mods, o host dispara o `oot.mods.archives` com os archives aceitos (soltos em `mods/` e os de
+  mods carregados);
+- o `unbound-core` lê `mod/<nome>/unbound.json` pela montagem privada, aplica a regra antiga do host
+  (`IsLayerManifest`: objeto JSON estrito, `"format": "unbound"`, `"formatVersion": 2`, até 64 KiB) e monta a camada
+  na raiz com `resources.mount_archive`, ainda depois dos providers e consumidores e antes do `game.ready`. Desmonta
+  no shutdown, em ordem inversa.
+
+Diferenças em relação ao comportamento anterior:
+
+- sem o framework, a camada fica na montagem privada e não sombreia nada; o host não loga mais o aviso de camada
+  ignorada (o framework registra as montagens em `logs/linkspan-unbound.log` e na linha `camadas:` do
+  `unbound_report`);
+- a camada ganha a montagem privada com alias, que antes não tinha. O alias só entra em caminho livre, então não
+  muda o que o jogo já tem nem a conversão da base;
+- com dois `.o2r` de mesmo nome em pastas de mod diferentes, o framework escolhe o `unbound.json` do próprio archive
+  pela leitura em camadas, não pelo prefixo compartilhado;
+- o framework novo num host anterior a esta fatia (mesmo layout) não monta de novo o archive que já fornece o
+  `unbound.json` da raiz;
+- o archive da pasta de um mod que não carregou sai do VFS logo depois da carga e fica fora do hook (antes só a
+  camada Unbound era adiada e descartada; agora vale para qualquer archive de pasta);
+- durante o despacho do `oot.mods.archives`, o `mount_archive` de um archive da lista o promove: a raiz monta e
+  depois a montagem privada sai, para o mesmo arquivo não aparecer duas vezes nas leituras por camada. Se a raiz
+  falhar, a privada fica. Fora do despacho o `mount_archive` continua só acrescentando, então um provider que monta o
+  próprio archive na raiz mantém o `mod/<nome>/`.
+
+Limitação conhecida: o alias que o archive de um mod rejeitado ocupou no boot não passa para outro archive com o
+mesmo caminho quando ele sai. Já valia para qualquer archive de pasta antes da F4; a F4 só estende o caso às camadas.
+Recalcular os aliases depois do aceite pede separar a montagem privada da publicação dos aliases, e fica para outra
+tarefa.
+
+A política ficou em `layer_archives.h/.cpp` do `unbound-core`, com teste sem jogo (`linkspan_unbound_archives_tests`,
+33 casos: extensão e prefixo, manifestos recusados, mesmo stem, archive de mesmo stem acima dos limites, archive já na
+raiz, falha de montagem, payload truncado, stride maior, ordem e desmontagem inversa).
+
 ## Fora de escopo
 
 - A rota fixa OoT → MM do `ship.world.travel` no bootstrap. É infraestrutura de viagem entre jogos, não conteúdo do

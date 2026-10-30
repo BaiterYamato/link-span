@@ -1259,3 +1259,97 @@ o NEI e a prova em jogo ficaram com o Claude.
 ### Próxima ação recomendada
 
 Mergear os PRs da F4 com CI verde. Depois, a fatia do Unbound (política do bootstrap para o `unbound-core`).
+
+## F4 Unbound - 30/10/2026 - política das camadas no `unbound-core`
+
+### Resultado
+
+Branches:
+
+- host: `agent/HOST-SLIM-001-f4-unbound` (Shipwright#28);
+- core: `agent/HOST-SLIM-001-f4-unbound-docs`.
+
+Nenhum header muda; o layout id continua `875d1455`.
+
+- **Exe sem o Unbound.** O `ShipLuaBootstrap.cpp` não lê mais `unbound.json`, não conhece o id
+  `linkspan.unbound.framework` e não tem mais a fila nem a montagem das camadas na raiz. Uma camada é um `.o2r` como
+  outro qualquer: fica privada sob `mod/<stem>/`, com alias de `objects/` e `textures/` livres.
+- **Regras genéricas novas no exe:**
+  - o laço de aceite roda sempre;
+  - o archive da pasta de um mod que não carregou sai do VFS e fica fora do `oot.mods.archives`;
+  - durante o despacho desse hook, o `mount_archive` de um archive da lista o promove: a raiz monta primeiro e depois
+    a privada sai. A janela fecha por RAII.
+  - fora do despacho, o `mount_archive` continua só acrescentando.
+- **`unbound-core`:**
+  - a política foi para `layer_archives.h/.cpp` (`MountLayerArchives`, `UnmountLayerArchives`), junto com o coletor
+    por camadas, sem cópia;
+  - `IsLayerManifest` aplica a regra antiga do host (64 KiB, JSON estrito, `format`/`formatVersion` 2) e o limite de
+    aninhamento;
+  - o manifesto privado é lido só da camada do próprio archive (`CollectOwnManifest`);
+  - o shutdown desmonta as camadas em ordem inversa;
+  - a linha `camadas:` aparece no `unbound_report`.
+- **Docs:** `docs/native-mods(.pt-BR).md`, seção "Unbound layers / Camadas Unbound (HOST-SLIM-001 F4)", e os README
+  do `unbound-core`. No core, a nota da F4 na RFC 0029.
+
+Autoria:
+
+- Codex:
+  - as docs (duas rodadas);
+  - a extração para `layer_archives` com `archives_tests.cpp` (32 casos);
+  - três revisões adversariais;
+  - a série V2-V7 com sua revisão;
+  - o desenho do alias e a checagem de CI.
+- Claude:
+  - o código do bootstrap e do `unbound_core.cpp`;
+  - as correções dos achados (mesmo stem, codificação, rejeitados, promoção na janela, N3, RAII);
+  - a remoção da cópia do coletor que a extração trazia;
+  - os builds MSVC e a prova em jogo.
+
+### Validação
+
+- Host: build MSVC, `soh_symbols` e CTest 85/85.
+- `unbound-core`: CTest 8/8, com `linkspan_unbound_archives_tests` (33 casos) e `format_tests` com `IsLayerManifest`.
+- Em jogo pelo MCP de playtest (`logs/host-slim-f4-unbound/prova-f4.py`, exe `EA2439FB`, framework 0.6.15 reempacotado,
+  `LinkSpan-Unbound09-Actors-Demo.o2r`). Os cinco casos foram até Hyrule Field pelo spawn 0 (`entrance cd`):
+
+  | Caso | Montagem | Atores | Texto | Outros |
+  |---|---|---|---|---|
+  | camada solta em `mods/` | `camada montada na raiz`, `camadas: montadas=1 ja_na_raiz=0 falhas=0`, privada trocada pela raiz | `tipos=4 nomes=433` | `texto eng` aplicado | — |
+  | camada em `mods/f4layer/assets/` de um mod Lua carregado | igual | igual | igual | — |
+  | camada em pasta de mod rejeitado (`games = ["mm"]`) | `fora de oot.mods.archives e desmontado`, `montadas=0` | `tipos=0 nomes=429` | — | — |
+  | camada sem o framework | só a montagem privada | — | — | nenhuma linha do Unbound |
+  | sem mods | — | — | — | `carregou 0 mod(s)` |
+
+  Captura A/B no spawn 0: com a camada, aparecem a vidraça, o pote e o carpinteiro da demonstração; com o mod
+  rejeitado, nenhum deles.
+- Revisões do Codex:
+  - revisão 1: 5 P1 e 3 P2, todos tratados;
+  - revisão 2: o alias residual e o N1 (`mount_archive` apagava a privada de qualquer provider) como P1, mais N2 e
+    N3 como P2;
+  - revisão 3: N2 e N3 resolvidos; N4 (janela sem RAII) corrigido. Restam o N1 e o alias residual (ver Riscos).
+
+### Riscos
+
+- **N1 (contrato).** Durante o despacho do `oot.mods.archives`, todo `mount_archive` de um archive da lista é tratado
+  como promoção. Um observer que quisesse só acrescentar perde o `mod/<stem>/`. Hoje o único observer é o framework.
+  A promoção explícita por chamada pede ABI nova (resources V5), o que muda o layout.
+- **Alias residual.** O alias que o archive de um mod rejeitado ocupou no boot não passa a outro archive. Já valia
+  para qualquer archive de pasta antes da F4. O desenho da correção está em `logs/host-slim-f4-unbound/alias-design`.
+- **Remoção por caminho.** `RemoveArchive` do libultraship remove por caminho em texto. Num provider que monta o
+  próprio archive fora da janela, com `modsRoot` absoluto (Linux/macOS), o unmount pode levar a privada. Isso já
+  existia antes da F4 (N5).
+- **`.o2r` solto em `mods/`.** O menu de mods do SoH também o monta na raiz, então o texto da camada solta aparece
+  em 2 camadas. É igual ao que acontecia antes da F4.
+
+### Pendências
+
+- A fatia V2–V5 e V7 ("sem mods = vanilla"), em PR separado. A série está pronta e revisada (Codex), com a V2
+  ajustada para não preencher a vaga 127 sem mods. A V4 restaura de propósito um defeito do upstream que nenhuma
+  chamada vanilla alcança. Falta aplicar, compilar e provar em jogo; o roteiro `prova-v.py` está com o Codex.
+- Follow-ups:
+  - promoção explícita no `linkspan.oot.resources` quando o layout puder mudar;
+  - recálculo dos aliases depois do aceite.
+
+### Próxima ação recomendada
+
+Mergear os PRs desta fatia com CI verde e abrir a fatia V2–V5/V7.

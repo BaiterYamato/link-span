@@ -3,7 +3,7 @@
 - Status: review
 - Agent: Claude (Opus 5.5), com subagentes Codex (gpt-6.1-sol) nas análises
 - Platform: Windows
-- Branch: agent/HOST-SLIM-001-f3-leveled-fechamento
+- Branch: agent/HOST-SLIM-001-f4-unbound-docs
 - Started: 2026-10-19T12:00:00Z
 - Depends on: OOT-RELEASE-002 (RC10, host `e9da99b515`, layout `ee6449e8`)
 - Files (fase F0):
@@ -378,4 +378,22 @@
   entram no claim quando o plano abrir a branch.
 - Sobreposição registrada: `docs/agents/Plans.md` com CLAIMS-CLEANUP-001 e OOT-COREMODS-PLAN-001, como na F3-1. Só
   apêndice.
+- Sem release, tag ou RC público.
+- Branch (fase F4, Unbound, host): `agent/HOST-SLIM-001-f4-unbound` em `BaiterYamato/Shipwright`, a partir da
+  integração em `3d25b07217`.
+- Branch (fase F4, Unbound, coordenação): `agent/HOST-SLIM-001-f4-unbound-docs` (core), a partir da `main` em
+  `d9e7089`. A linha `Branch` do topo passa a apontar para ela.
+- Files (fase F4, Unbound, host): soh/soh/ShipLuaBootstrap.cpp (só a política das camadas Unbound),
+  soh/native-sdk/unbound-core/unbound_core.cpp, soh/native-sdk/unbound-core/unbound_docs.h,
+  soh/native-sdk/unbound-core/unbound_docs.cpp, soh/native-sdk/unbound-core/format_tests.cpp,
+  soh/native-sdk/unbound-core/layer_archives.h, soh/native-sdk/unbound-core/layer_archives.cpp,
+  soh/native-sdk/unbound-core/archives_tests.cpp, soh/native-sdk/unbound-core/CMakeLists.txt,
+  soh/native-sdk/unbound-core/README.md, soh/native-sdk/unbound-core/README.pt-BR.md, docs/native-mods.md,
+  docs/native-mods.pt-BR.md
+- Files (fase F4, Unbound, core): rfcs/0029-host-limpo-conteudo-mm-em-mods.md (só a nota de implementação),
+  coordination/claims/HOST-SLIM-001.md (só este bloco e a linha `Branch` do topo),
+  coordination/handoffs/HOST-SLIM-001.md (só a seção nova)
+- Goal (fase F4, Unbound): tirar do exe a política das camadas Unbound (reconhecimento do `unbound.json`, id do
+  framework, fila e montagem na raiz). O `unbound-core` passa a montar as camadas pelo `oot.mods.archives`. Nenhum
+  header muda, então o layout id fica.
 - Sem release, tag ou RC público.
