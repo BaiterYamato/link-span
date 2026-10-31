@@ -1542,3 +1542,70 @@ dormentes `linkspan`/`unbound` do save.
 
 Com #32 e #33 na integração, a F6 (RC11) parte de um host com a F4 e a F5 completas. A pipeline do RC11 precisa do
 perfil do NEI sem MM e do produtor de VFS antes da bateria. Sem release, tag ou RC.
+
+## F6 - 31/10/2026 - NEI do RC11 sem assets do MM
+
+### Resultado
+
+Decisão do mantenedor ("Desligar no RC11"): item ou recurso do NEI que pede asset do MM fica indisponível. O save
+guarda os dados MM intactos, e o que é OoT ou página 2 sem MM segue igual.
+
+Branches: host `agent/HOST-SLIM-001-f6-nei-oot` (Shipwright#36, base integração `f14db695aa`); core
+`agent/HOST-SLIM-001-f6-docs`.
+
+| Commit (host) | O que faz | Autoria |
+|---|---|---|
+| `44d2863860` | perfil `oot` do gerador e do empacotador | Codex K |
+| `eae57b11b9` | auditoria pelo fecho da DLL (`nei-code-closure.py`, `--code-allow`) | Claude |
+| `ca4ccf7895` | pá em C pede as texturas do jogo pelo caminho dele | Claude |
+| `c9f94d3c97` | `OceffWipe_Draw` fora do overlay | Claude |
+| `662779bf77` | patch `0013-rc11-sem-mm`, correções, fixture RC11, `code-allow-oot.txt` | Codex O, P e Q; ajustes do Claude |
+| `4ce317ad2d` | clang-format 14 | Claude |
+
+Os ajustes do Claude no `662779bf77`:
+
+- **Botas:** voltou a migração original do fork, que passa o layout antigo para a versão 1. O bit do Pendant vai
+  direto para a troca, porque o `TradeAdult_GiveIndex` do 0013 recusa itens MM. A proposta do Codex Q era uma chave
+  auxiliar no JSON.
+- **Cane:** as trocas dela vão pelo `extracted-fixes.txt` sobre `extracted/nei_save.c`, o arquivo que a DLL
+  compila, e a fixture passou a testar esse arquivo. Antes, um save só com a Statue nunca ganhava a Cane nativa.
+
+### Validação
+
+Windows 11, MSVC 19.44, x64 Release, layout `875d1455…`.
+
+| Etapa | Resultado |
+|---|---|
+| Host | exe `9f8fd335`, `soh_symbols`, CTest ok |
+| NEI | 426 arquivos do fork, 40 substituições, DLL `efb0391e`, CTest 7/7 |
+| Gerador `oot` | exit 0, 52 referências inativas cobertas, `--verify-assets` ok |
+| Pacote | `LinkSpan-NEI-0.3.26-layout-875d1455.shipmod` |
+
+Em jogo pelo MCP de playtest (runtime `D:\lst33\f6`; `logs/host-slim-f6-nei-oot/prova-f6.py` e `save-f6.py`):
+
+- **Carga:** NEI com 27 itens, 315/315 desvios, kaleido com 3, 2 páginas de inventário e assets core+ssbb. Nenhum
+  `Failed to load file` em gameplay, na página 2, no mapa, na quest, no equipamento ou ao salvar.
+- **Save com dados MM:** Statue com a seleção, Shadow com a seleção, Ikana equipado, Pendant e troca MM, Picto, Keg,
+  espadas MM, Chateau, Moon's Tear no slot de troca e cogumelo MM em garrafa.
+  - Depois de carregar e salvar no jogo, todos os campos voltam iguais.
+  - Cane e Wand ganham Block e Sand ao lado dos bits MM.
+  - Itens MM ficam ocultos; os nativos aparecem na página 2.
+
+### Riscos
+
+- Limitação de antes do RC11: o `ClearEquips` do `linkspan.oot.items` tira de botão C um id `0xA0–0xEF` sem
+  registro, como o `0xDE`. O item fica na garrafa e só o botão volta a vazio. O NEI completo da F5 faz o mesmo.
+- A DLL compila partes do fork a partir dos blobs extraídos. Patch em arquivo extraído (`nei_save.cpp`) não chega à
+  DLL sem a linha correspondente no `extracted-fixes.txt`.
+- O equipamento estendido (Ikana, Climb/Roc Boots) não foi visto na tela, porque a página estendida depende da CVar
+  `gCheats.ExtEquip.Enabled`. Os dados foram conferidos no save.
+
+### Pendências
+
+- Merge do Shipwright#36 com CI verde (em segundo plano).
+- Pipeline do RC11 (`logs/rc-pipeline-oot-rc11`): composição congelada, atestado semmods físico,
+  `native-provenance.json`. Publicação é decisão do mantenedor.
+
+### Próxima ação recomendada
+
+Com o #36 na integração, rodar a bateria do RC11 com o pacote NEI do perfil `oot`. Sem release, tag ou RC.
