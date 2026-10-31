@@ -1431,3 +1431,114 @@ Autoria:
 
 Com o #29 mergeado: os idiomas e os créditos com um `oot.o2r` PAL e o gate `semmods` com o mantenedor. Sem
 release, tag ou RC.
+
+## F4 alias residual - 30/10/2026 - follow-up do Shipwright#28
+
+### Resultado
+
+Quando um mod de pasta é rejeitado, o alias que o archive dele ocupava no boot passa ao primeiro archive
+sobrevivente com o mesmo caminho, na ordem original. Sem rejeitados, nada muda. A reconciliação publica o lote antes
+de `oot.mods.archives` e `game.ready`, invalida no cache os nomes afetados (inclusive `.meta` e `alt/`) e avança um
+epoch. Se a redistribuição falhar, os rejeitados saem pelo mesmo lote sem redistribuir (`PlanRetirement`); a retirada
+um a um antiga fica como último recurso. O boot segue sempre.
+
+- libultraship#2: `PublishArchiveBatch`, `ReplaceArchiveBatch`, remoção por identidade e prioridade atômica. Mergeado
+  em `dc49904b`. O PR tinha base `port-maintenance` (a branch do `.gitmodules`); a linha do Link-Span,
+  `agent/OOT-UPSTREAM-001-linkspan-extensions`, avançou por fast-forward para o mesmo commit.
+- Shipwright#32: `ModAssetArchive` e `ModAssetAliasPlan` em `soh/soh/modassets`, reconciliação no bootstrap e o
+  CTest `oot_mod_asset_alias_tests` (9 grupos). Gitlink do libultraship em `dc49904b` (`1b6351f894`).
+
+Autoria: Codex na implementação e nas revisões; Claude no build MSVC, nos ajustes de integração e na prova em jogo.
+Ajustes ao código do Codex: o `range-for` sobre o `shared_ptr` temporário de `GetArchives()` (UB que só o MSVC
+mostrou: a reserva saía vazia), o `return` que pulava a API OoT e o `game.ready` quando a reconciliação falhava, e o
+escape `\xAD` seguido de `d` (C7744). A revisão final do Codex achou um P2 no caminho de reserva (o rejeitado podia
+continuar no cache); corrigido com o `PlanRetirement` publicado pelo lote.
+
+### Validação
+
+- Build MSVC x64 Release, `soh_symbols` e CTest 86/86 (exe `31631522`).
+- Prova em jogo pelo MCP de playtest (`logs/host-slim-f4-alias/prova-alias.py`): A tem textura vermelha e B verde; B
+  desenha o caminho sem prefixo com `ship.hud.draw_icon`.
+
+  | Caso | Exe do #28 | Exe novo |
+  |---|---|---|
+  | A rejeitado, B aceito | alias ausente, `draw_icon=false` | verde, "reconciliou aliases: 1 rejeitado(s)" |
+  | Só B | verde | verde |
+  | A e B aceitos | vermelho | vermelho |
+
+- CI do libultraship#2 verde (3 workflows), depois que o mantenedor reativou o Actions do fork.
+
+### Riscos
+
+- Durante o `Init`, o mod depois rejeitado ainda expõe o alias; recurso derivado já retido continua apontando para
+  ele.
+- A prova em jogo cobre a publicação bem-sucedida; o caminho de falha da redistribuição só tem cobertura no CTest.
+- A `port-maintenance` do fork deixou de espelhar o upstream (`2c63e7ed`): agora carrega a linha do Link-Span.
+
+### Pendências
+
+- Merge do Shipwright#32 com CI verde (em segundo plano).
+
+### Próxima ação recomendada
+
+Com o #32 mergeado, o RC11 parte da integração com a F4 completa.
+
+## F5 - 30/10/2026 - NEI regenerado e DMR na ABI 1.4
+
+### Resultado
+
+Branches: host `agent/HOST-SLIM-001-f5` (Shipwright#33, base integração); core `agent/HOST-SLIM-001-f5-docs`.
+Commits do host: `eff077b08d` (DMR 1.4 e testes T1/T2), `a9dfc542d6` (readaptação de `Message_DecodeChecked`),
+`4c60fec1d6` (`readapt.py`) e `a7c763ed51` (merge da integração com #28, #29, #30 e #31). Plano em
+`docs/plans/host-slim-001/plano-f5.md`.
+
+- **DMR:** manifesto ABI 1.4 com `[provider].host_layout_id` gerado do SDK, sem `host_fingerprints`, no CMake local e
+  no exemplo do bundle. `gItemIcons` e `OLib_Vec3fDiffToVecSphGeo` pelo catálogo público; fixture de ícones com 256
+  posições.
+- **NEI:** a remesclagem de voz, pós-limb e máscara veio da F4 em cascas; a F5 readaptou a resolução de
+  `Message_DecodeChecked` envelhecida pela V3 e regenerou o NEI com `NEI_ALLOW_OVERLAY_CONFLICTS=OFF`.
+- **`fork/readapt.py`:** refaz `overlay-extra`/`overlay-merges` por mescla de três vias quando só o host mudou,
+  ignorando `overlay-exclude.txt`; `--verificar` sai 0. 19 testes (`linkspan_nei_readapt_tests`).
+
+Autoria: Codex no plano, no rascunho T1/T2 e no `readapt.py`; Claude nos ajustes, nos builds, nos pacotes e na
+prova em jogo.
+
+### Validação
+
+Árvore `507fb577` (o rebase validado e o merge enviado têm a mesma árvore). MSVC 19.44, x64 Release, layout
+`875d1455aa6e54fbc706cd3f7ce3a50ccdf07328c1dff2049f35467f95515929`.
+
+| Etapa | Resultado |
+|---|---|
+| Host, `soh_symbols`, CTest | exe `1d020088f12c407f`, símbolos `eb464947b72b2288`, 87/87 |
+| NEI | 426 arquivos do fork, 319 funções do host sobrepostas, nenhuma das três pontes, `Actor_UpdateAll` com o settle, DLL `2dddae61be75ea66`, CTest 7/7 |
+| DMR | DLL `92d34142937e4fe4`, CTest 3/3, manifesto 1.4 com layout e sem fingerprint |
+| Pacotes | NEI 0.3.26 `88e8a86907652c1d`; DMR 0.2.24 `97ef86a2d8cb5c1d` |
+
+Em jogo pelo MCP de playtest (`logs/host-slim-f5/prova-f5.py`), arquivo 1 até o gameplay, código de saída 0:
+
+- sem mods: 0 mods;
+- só o DMR, sem `soh.symbols` no runtime: carrega pela ABI 1.4, movimento ativo, pausa e retomada;
+- só o NEI: `fork: active (27 items)`, `kaleido: ativo (3 desvios)`, `host: 316/316 desvios`, assets do pacote;
+- NEI e DMR: os dois carregados, kaleido do NEI na pausa, movimento e retomada.
+
+Os avisos dos logs são os de antes: validação de assets do mundo, comandos do console com o Sail e seções
+dormentes `linkspan`/`unbound` do save.
+
+### Riscos
+
+- O NEI segue preso ao SHA-256 do exe: cada host novo pede reextração, build e pacote, mesmo com o layout igual.
+- O fallback do DMR esconde falha do catálogo no jogo; a resolução pública está provada no CTest, e os ícones reais
+  pedem o seletor, que lê o gamepad SDL.
+- O build da F5 não inclui o alias (#32).
+
+### Pendências
+
+- Merge do Shipwright#33 com CI verde (em segundo plano).
+- Controle físico: ícones do seletor e retomada da câmera do DMR, input real com NEI e DMR.
+- Voz e coreografia do MM dependem das cascas e do `mm.o2r`, adiados.
+
+### Próxima ação recomendada
+
+Com #32 e #33 na integração, a F6 (RC11) parte de um host com a F4 e a F5 completas. A pipeline do RC11 precisa do
+perfil do NEI sem MM e do produtor de VFS antes da bateria. Sem release, tag ou RC.

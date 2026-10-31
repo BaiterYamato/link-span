@@ -3,7 +3,7 @@
 - Status: review
 - Agent: Claude (Opus 5.5), com subagentes Codex (gpt-6.1-sol) nas análises
 - Platform: Windows
-- Branch: agent/HOST-SLIM-001-f4-vanilla-docs
+- Branch: agent/HOST-SLIM-001-f5-docs
 - Started: 2026-10-19T12:00:00Z
 - Depends on: OOT-RELEASE-002 (RC10, host `e9da99b515`, layout `ee6449e8`)
 - Files (fase F0):
@@ -425,4 +425,36 @@
   upstream restaurado de propósito na V4 e a dependência do cache na V3. Não altera headers de `soh/include/` ou
   `soh/soh/native/` nem os insumos de headers do fingerprint. Build MSVC, CTest 85/85 e prova em jogo feitos (Shipwright#29);
   o gate `semmods` continua com o mantenedor.
+- Sem release, tag ou RC público.
+- Branch (fase F4, alias residual, host): `agent/HOST-SLIM-001-f4-alias` em `BaiterYamato/Shipwright` (Shipwright#32),
+  com `agent/HOST-SLIM-001-f4-alias` em `BaiterYamato/libultraship` (libultraship#2, mergeado em `dc49904b`).
+- Files (fase F4, alias residual, host):
+  - libultraship (gitlink)
+  - soh/CMakeLists.txt
+  - soh/soh/ShipLuaBootstrap.cpp
+  - soh/soh/modassets/**
+  - soh/tests/ModAssetAliasTests.cpp
+- Files (fase F4, alias residual, libultraship): `include/ship/resource/ResourceManager.h`,
+  `include/ship/resource/archive/{Archive,ArchiveManager}.h`, `src/ship/resource/ResourceManager.cpp`,
+  `src/ship/resource/archive/{Archive,ArchiveManager}.cpp`
+- Goal (fase F4, alias residual): passar o alias de um mod rejeitado ao primeiro sobrevivente com o mesmo caminho,
+  publicado em lote com invalidação do cache e epoch antes de `oot.mods.archives`. Não altera headers do layout.
+- Branch (fase F5, host): `agent/HOST-SLIM-001-f5` em `BaiterYamato/Shipwright` (Shipwright#33), base
+  `agent/OOT-UPSTREAM-001-78dc6d970-integration`.
+- Branch (fase F5 e alias, coordenação): `agent/HOST-SLIM-001-f5-docs` (core). A linha `Branch` do topo passa a
+  apontar para ela.
+- Files (fase F5, host):
+  - soh/native-sdk/example/**
+  - soh/native-sdk/nei-core/CMakeLists.txt
+  - soh/native-sdk/nei-core/fork/{readapt.py,test_readapt.py,sync.py}
+  - soh/native-sdk/nei-core/fork/overlay-extra/z_message_PAL.Message_DecodeChecked.c
+  - soh/native-sdk/ExportSdk.cmake
+  - soh/native-sdk/tests/{EngineTests.cpp,DmrIconFixtureTests.cpp,dmr_public_binding.cpp,dmr_public_fixture.h,test_independent.py}
+  - tools/build-linkspan-sdk-bundle.ps1
+- Files (fase F5 e alias, core): rfcs/0029-host-limpo-conteudo-mm-em-mods.md (nota do alias no lugar da limitação e
+  nota F5 depois da nota V), docs/plans/host-slim-001/plano-f5.md, coordination/claims/HOST-SLIM-001.md (estes
+  blocos e a linha `Branch` do topo), coordination/handoffs/HOST-SLIM-001.md (seções do alias e da F5)
+- Goal (fase F5): DMR na ABI 1.4 pelo layout, NEI regenerado para o host limpo sem tolerar conflitos de overlay e
+  `readapt.py` para refazer resoluções quando só o host muda. Build MSVC, CTests e prova em jogo feitos
+  (Shipwright#33); controle físico e voz do MM ficam fora.
 - Sem release, tag ou RC público.
