@@ -1609,3 +1609,44 @@ Em jogo pelo MCP de playtest (runtime `D:\lst33\f6`; `logs/host-slim-f6-nei-oot/
 ### Próxima ação recomendada
 
 Com o #36 na integração, rodar a bateria do RC11 com o pacote NEI do perfil `oot`. Sem release, tag ou RC.
+
+
+## Preparação do RC11 - 31/10/2026
+
+### Resultado
+
+- **Core no gitlink:** Shipwright#37 (`b1a6e6e937`) sobe `extern/ship-lua` de `ee4d8fb6` para `f8b1d6c6`, a main do core.
+  A diferença são 17 commits só de docs e coordenação, e o layout id não muda. O empacotador do SDK copia `include/`,
+  `tools/LinkSpanPackaging.psm1` e `docs/*.md` do core embutido. A pipeline exige `RcCoreRoot == <host>/extern/ship-lua`,
+  então build, SDK e composição declarada passam a usar o mesmo core, sem mexer no empacotador.
+- **NEI sem nomes MM na DLL:** Shipwright#39 (`023080d881`). O `z_en_rd.c` do fork carregava por nome três animações do MM
+  (dança dos ReDead com a Gibdo Mask), e o gate de conteúdo do RC11 reprovava o pacote pela DLL mesmo com a referência
+  inativa. O `extracted-fixes.txt` troca as cargas por `NULL`; o idle do OoT já era o fallback. Ficam 49 inativas
+  (antes 52).
+- **Prova VFS:** PLAYTEST-MCP-004 (Shipwright#38) certifica ausência no agente 0.2.2. A fase `after-unload` sai dos gates
+  do RC11, porque o host só descarrega mod no shutdown (ver o handoff da PLAYTEST-MCP-004).
+- **Pipeline** (`logs/rc-pipeline-oot-rc11`, fora do repositório, 181 testes), por Codex R/S/T/V/W com revisão e
+  integração minhas:
+  - receita do NEI no perfil `oot`;
+  - `native-provenance.json` produzido a partir de `native-build-record-1` emitidos no build;
+  - SHAs esperados de host, core e examples, com recusa de árvore suja;
+  - índice OoT/MM (`game-data-index.json`) gerado das bases do jogador, com o MM só no índice e nunca como base do NEI.
+
+### Validação
+
+- NEI com o #39: CTest 7/7, gerador `oot` com exit 0, `--verify-assets` ok, pacote 0.3.26. `check_content` +
+  `check_game_data` reais contra o índice gerado de `oot.o2r` + `mm.o2r`: o pacote da F6 reprova pela DLL e o novo passa
+  (1927 entradas).
+- Suíte da pipeline: 181 testes verdes e parser PowerShell sem erro nos scripts tocados. Não houve build nem execução da
+  bateria.
+
+### Pendências
+
+- Merge de #37, #38 e #39 com CI verde (em segundo plano).
+- Prova VFS na sessão do próprio gate (Codex U, rodada 2) e agente 0.2.2 compilado contra o SDK do RC11.
+- Bateria do RC11 com a composição congelada, atestado semmods físico e playtest. Publicação é decisão do mantenedor.
+
+### Próxima ação recomendada
+
+Com #37–#39 na integração, fixar `RcExpectedHostSha` no merge final, gerar o candidato e rodar a bateria. Sem release,
+tag ou RC.
