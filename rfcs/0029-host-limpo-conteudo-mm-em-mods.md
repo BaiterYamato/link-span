@@ -327,6 +327,62 @@ A política ficou em `layer_archives.h/.cpp` do `unbound-core`, com teste sem jo
 33 casos: extensão e prefixo, manifestos recusados, mesmo stem, archive de mesmo stem acima dos limites, archive já na
 raiz, falha de montagem, payload truncado, stride maior, ordem e desmontagem inversa).
 
+### F4: chave sem mods = upstream (V2–V5, V7) (host, 30/10/2026)
+
+A série V2 → V3 → V4 → V5 → V7 fecha as lacunas da §7 nos consumidores internos, usando a chave
+`LinkSpan_EngineExtended()` já fixada no boot. Não muda a detecção de mods nem toca `soh/include/` ou
+`soh/soh/native/`; o único header alterado é o interno `soh/src/code/linkspan_vanilla.h`, fora dos insumos do
+fingerprint. Upstream de comparação: `ecd889c2019b87e78b0a3d942a6a3fe98b7efaed`.
+
+- **V2, objetos:** sem mods, limite efetivo de 128 vagas, contando keeps e demais reservas; com mods, ficam as
+  1024 vagas e o fluxo anterior. O ajuste da revisão conserva a particularidade do laço C++ upstream: a vaga 127
+  entra na contagem, mas não recebe `OTRfunc_800982FC`. Os incrementos continuam, e o laço para em 128. O caminho C
+  não ganha essa exclusão. Com mods, a última vaga continua sendo preenchida.
+- **V3, texto:** sem mods, tabelas dimensionadas pelo recurso base, bytes/tamanhos originais, sem acrescentar
+  `0x02`; overrides só substituem IDs existentes, e as operações de mutação devolvem zero sem operar. Capacidades
+  efetivas: 1280 bytes raw e 200 decoded (640/100 unidades largas), incluindo JPN, créditos e AskToEquip. Com mods,
+  ficam as tabelas extensíveis/hash, IDs novos, normalização, mutações e capacidades 8192/1024.
+- **V4, luzes:** sem mods, volta literalmente o laço upstream de `LightContext_DestroyList`, sem a recusa por luz
+  de ator ocupada. Com mods, ficam a recusa atômica e a iteração segura.
+- **V5, câmera:** sem mods, as duas saídas sem waterbox/natação escrevem `-32000.0f` e retornam `-1`; com mods,
+  fica a sentinela ampla. Sucesso e retorno `-2` não mudam.
+- **V7, salas e meshes:** sem mods, voltam as conversões `u8/s8/s16`, posições XML por `IntAttribute`, índice de
+  transição pelos seis bits de `params` (`transitionIndex = -1` e soma upstream) e orçamento de sort de 64 meshes
+  tipo 2. Entradas XML usam sala `u8`, não `s8`; o binário já entregava esse resultado. Com mods, ficam contagens
+  amplas, posições fracionárias, índice independente, packing mascarado e sort até 1024.
+
+Diferenças aceitas que permanecem:
+
+- **V1:** heap, arrays e representações físicas continuam ampliados; os gates restauram os limites efetivos,
+  não os tamanhos/offsets antigos.
+- **V6:** continuam as sentinelas e os contratos de colisão/bgId aceitos na §7; a V5 corrige apenas aquelas duas
+  atribuições da câmera.
+- **V8:** continuam recusas/clamps para dados inválidos, guardas de decode, busca limitada ao tamanho real da
+  tabela, tratamento de recursos ausentes, leitura binária de contagem de mesh por `ReadUByte` e correções de
+  ownership de paths/união de mesh tipo 1. Não se reproduzem os acessos inválidos correspondentes do upstream.
+- A V3 usa vetores no lugar do `malloc` antigo e mantém o init único herdado da base. Não há hot-load vanilla
+  demonstrado que dependa da tentativa posterior do upstream; não se promete equivalência nesse cenário.
+
+**V4 restaura de propósito um defeito upstream:** `RemoveLight` já avança a cabeça, e o segundo avanço pode
+desreferenciar NULL ou abandonar nós/ocupação. Nenhuma chamada vanilla alcança essa função nas revisões examinadas:
+a revisão encontrou declaração/definição e registros de endereço, sem chamada direta ou callback vanilla. Uma
+chamada artificial/externa pode reproduzir o defeito; atravessar portas ou observar luzes não prova esse caminho.
+
+**V3 tem risco condicionado, igual ao upstream:** as tabelas emprestam bytes dos recursos mantidos no cache do
+ResourceManager, sem reter seus `shared_ptr`. Se um unload retirar a última referência, os ponteiros ficam pendentes
+(por exemplo, texto alternativo sob `alt/*`). Não foi encontrado unload dos textos base no fluxo vanilla normal.
+Esta série não garante segurança após unload de textos.
+
+Verificações:
+
+- `SERIE.md` e `REVISAO-V.md`: checks de aplicação e composição, mais probes MSVC de recortes. Não substituem o host
+  integrado.
+- Host (Shipwright#29, exe `2F8844BA`): build MSVC e CTest 85/85.
+- Em jogo, sem mods e com mods: cenas, texto da placa e troca de sala por EnHoll saem iguais.
+- Alemão, francês, JPN e créditos ficam por ver, porque o `oot.o2r` disponível é NTSC-US.
+
+O gate `semmods` continua com o mantenedor.
+
 ## Fora de escopo
 
 - A rota fixa OoT → MM do `ship.world.travel` no bootstrap. É infraestrutura de viagem entre jogos, não conteúdo do
