@@ -318,10 +318,14 @@ Diferenças em relação ao comportamento anterior:
   falhar, a privada fica. Fora do despacho o `mount_archive` continua só acrescentando, então um provider que monta o
   próprio archive na raiz mantém o `mod/<nome>/`.
 
-Limitação conhecida: o alias que o archive de um mod rejeitado ocupou no boot não passa para outro archive com o
-mesmo caminho quando ele sai. Já valia para qualquer archive de pasta antes da F4; a F4 só estende o caso às camadas.
-Recalcular os aliases depois do aceite pede separar a montagem privada da publicação dos aliases, e fica para outra
-tarefa.
+Alias residual, corrigido depois (Shipwright#32 e BaiterYamato/libultraship#2): quando um mod é rejeitado, o alias
+que o archive dele ocupava no boot passa ao primeiro archive sobrevivente com o mesmo caminho, na ordem original. O
+plano (`ModAssetAliasPlan`) reabre só os wrappers que mudam, e o host publica o lote pelo `PublishArchiveBatch` do
+libultraship antes de `oot.mods.archives` e `game.ready`. A publicação invalida no cache os nomes afetados
+(inclusive `.meta` e `alt/`) e avança um epoch, para que uma carga em andamento não regrave o recurso antigo. Se a
+redistribuição falhar, os rejeitados saem pelo mesmo lote sem redistribuir; o boot segue sempre. Sem rejeitados,
+nada muda. Ficam dois limites: durante o `Init`, o mod depois rejeitado ainda expõe o alias, e um recurso derivado
+já retido continua apontando para ele.
 
 A política ficou em `layer_archives.h/.cpp` do `unbound-core`, com teste sem jogo (`linkspan_unbound_archives_tests`,
 33 casos: extensão e prefixo, manifestos recusados, mesmo stem, archive de mesmo stem acima dos limites, archive já na
@@ -382,6 +386,34 @@ Verificações:
 - Alemão, francês, JPN e créditos ficam por ver, porque o `oot.o2r` disponível é NTSC-US.
 
 O gate `semmods` continua com o mantenedor.
+
+### F5: NEI regenerado e DMR na ABI 1.4 (host, 30/10/2026)
+
+A F4 em cascas já tinha remesclado `Player_PlayVoiceSfx`, `Player_PostLimbDrawGameplay` e `Player_DrawGameplay` do
+NEI: voz, callbacks de limb e desenho de máscara passam pelos hooks genéricos, sem as três pontes retiradas do exe
+(`ShipLua_TransformVoiceSfx` e `ShipLua_DrawMaskTransitionHand/Head`). A F5 regenera o NEI para o host limpo e
+migra o DMR; não recoloca conteúdo do MM no exe.
+
+- **DMR:** o manifesto passa à ABI 1.4 e grava `[provider].host_layout_id` a partir do SDK, sem
+  `host_fingerprints`, tanto pelo CMake local quanto pelo exemplo exportado no bundle. O provider pega `gItemIcons`
+  e `OLib_Vec3fDiffToVecSphGeo` pelo catálogo público (minor ≥ 4), sem `soh.symbols` e sem autorização de patches.
+  A fixture de ícones do `EngineTests` passa de 1 para 256 posições, o tamanho que o DMR indexa.
+- **NEI:** a V3 mudou `Message_DecodeChecked` e envelheceu a resolução em `overlay-extra`. A mescla de três vias saiu
+  limpa e o NEI volta a configurar com `NEI_ALLOW_OVERLAY_CONFLICTS=OFF`. O `fork/readapt.py` reproduz essa
+  readaptação quando só o host muda (19 testes, `linkspan_nei_readapt_tests`).
+
+O contrato que fica: o DMR depende só do layout; o NEI segue pelo escape hatch, preso ao SHA-256 do exe, e cada host
+novo pede reextração, build e pacote do NEI, mesmo com o layout igual. Nenhum header dos insumos do layout mudou
+(`875d1455…`).
+
+Verificações (Shipwright#33, exe `1d020088`):
+
+- Host: build MSVC, `soh_symbols` e CTest 87/87. NEI: 319 funções do host sobrepostas, nenhuma ponte no fork gerado,
+  `Actor_UpdateAll` copiado com `LinkSpan_ActorSettleDamage`, CTest 7/7. DMR: CTest 3/3.
+- Em jogo, pelo MCP de playtest: sem mods; só o DMR sem `soh.symbols` no runtime; só o NEI (`fork: active`,
+  `host: 316/316 desvios`, kaleido com 3); NEI e DMR juntos, com pausa e retomada.
+- Ficam por ver: ícones do seletor e câmera do DMR com controle físico (o seletor lê o gamepad SDL) e voz/coreografia
+  do MM, que dependem das cascas e do `mm.o2r` adiados.
 
 ## Fora de escopo
 
