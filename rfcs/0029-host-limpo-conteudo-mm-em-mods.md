@@ -1,7 +1,8 @@
 # RFC 0029 — Host limpo: conteúdo do MM em mods
 
 Status: aceita em 19/10/2026 (HOST-SLIM-001). F1 implementada no core; F2 no host. Em 27/10, o conteúdo do MM saiu
-do exe como cascas de mod fora do RC (F3/F4 parciais, ver as notas de implementação); F5 (NEI) e F6 pendentes.
+do exe como cascas de mod fora do RC (F3/F4 parciais, ver as notas de implementação). F5 (NEI) concluída em 30/10;
+F6 em andamento: em 31/10 o NEI ganhou o perfil `oot` sem MM, e falta a bateria do RC11.
 Inventários e contratos propostos: [docs/plans/host-slim-001](../docs/plans/host-slim-001/README.md).
 
 ## Motivação
@@ -414,6 +415,28 @@ Verificações (Shipwright#33, exe `1d020088`):
   `host: 316/316 desvios`, kaleido com 3); NEI e DMR juntos, com pausa e retomada.
 - Ficam por ver: ícones do seletor e câmera do DMR com controle físico (o seletor lê o gamepad SDL) e voz/coreografia
   do MM, que dependem das cascas e do `mm.o2r` adiados.
+
+### F6: NEI do RC11 sem assets do MM (host, 31/10/2026)
+
+Decisão do mantenedor: no RC11, item ou recurso do NEI que pede asset do MM fica indisponível (não aparece, não é
+obtido, não é usado), e o save guarda os dados MM intactos para quando o MM voltar.
+
+- **Perfil `oot` do pacote:** core + SSBB, conferido contra `oot.o2r` e `soh.o2r`; o `mm.o2r` nunca entra. A
+  auditoria de código lê o fecho da DLL (`tools/nei-code-closure.py`). Referência MM só pode ficar num ramo que o RC11
+  desliga, e cada uma é declarada com o motivo em `fork/code-allow-oot.txt`.
+- **Fork (`patches/0013-rc11-sem-mm.patch`):** Picto, Keg, espadas e upgrades MM, Pendant, Ikana, Statue da Cane,
+  Shadow da Wand, conteúdos MM de garrafa, troca MM e a página de máscaras MM saem da posse e da exibição sem apagar
+  bit nem id. Leitura filtrada não vira espaço livre para escrita (projeção de sessão nos slots), e os escritores de
+  Wand/Cane só mexem nos bits nativos. Deku Leaf, Clawshot, Climb/Roc Boots e garrafas OoT seguem iguais.
+- **Armadilha:** a DLL compila `extracted/nei_save.c`, que o sync tira do blob do fork sem os patches. Mudança no
+  `nei_save.cpp` vai pelo `extracted-fixes.txt`.
+- **Host:** `OceffWipe_Draw` fica fora do overlay (a versão do fork pedia o frustum do MM).
+
+Verificações (Shipwright#36, exe `9f8fd335`): NEI com CTest 7/7 e a fixture RC11 sobre os corpos extraídos; gerador
+`oot` com 52 referências inativas e `--verify-assets` ok. Em jogo: 27 itens, 315/315 desvios, 2 páginas de inventário,
+nenhum `Failed to load file`, e um save com dados MM volta intacto depois de salvar no jogo. Limitação anterior ao
+RC11: o `ClearEquips` do `linkspan.oot.items` derruba de botão C um id `0xA0–0xEF` sem registro, como o `0xDE`
+(cogumelo MM); o item fica na garrafa.
 
 ## Fora de escopo
 
